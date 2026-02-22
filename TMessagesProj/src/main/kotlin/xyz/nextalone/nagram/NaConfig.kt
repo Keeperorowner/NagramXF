@@ -1183,7 +1183,7 @@ object NaConfig {
         addConfig(
             "GroupedMessageMenu",
             ConfigItem.configTypeBool,
-            false
+            true
         )
     val autoUpdateChannel =
         addConfig(
