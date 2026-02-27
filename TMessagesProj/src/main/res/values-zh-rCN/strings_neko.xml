@@ -252,7 +252,6 @@
     <string name="repeatConfirm">复读前确认</string>
     <string name="repeatConfirmText">确定要复读这条消息？</string>
     <string name="rememberAllBackMessages">记住所有已点击的回复</string>
-    <string name="DisableInstantCamera">禁用相机即时预览</string>
     <string name="showSeconds">以秒为单位显示时间戳</string>
     <string name="Name">名称</string>
     <string name="StickerSettings">贴纸</string>

@@ -250,7 +250,6 @@
     <string name="repeatConfirm">Zapytaj przed repostem</string>
     <string name="repeatConfirmText">Czy na pewno chcesz repostować?</string>
     <string name="rememberAllBackMessages">Zapamiętaj wszystkie kliknięte odpowiedzi</string>
-    <string name="DisableInstantCamera">Wyłącz natychmiastową kamerę</string>
     <string name="showSeconds">Pokaż znacznik czasu w sekundach</string>
     <string name="Name">Nazwa</string>
     <string name="StickerSettings">Naklejki</string>

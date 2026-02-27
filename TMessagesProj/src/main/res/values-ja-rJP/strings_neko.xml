@@ -250,7 +250,6 @@
     <string name="repeatConfirm">リポストに確認</string>
     <string name="repeatConfirmText">本当にリポストしますか？</string>
     <string name="rememberAllBackMessages">全てのクリックされた返信を記憶</string>
-    <string name="DisableInstantCamera">インスタントカメラを無効化</string>
     <string name="showSeconds">タイムスタンプを秒単位で表示</string>
     <string name="Name">名前</string>
     <string name="StickerSettings">ステッカー</string>

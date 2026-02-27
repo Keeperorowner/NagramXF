@@ -77,7 +77,6 @@ public class NekoConfig {
     public static ConfigItem unreadBadgeOnBackButton = addConfig("unreadBadgeOnBackButton", configTypeBool, false);
     public static ConfigItem useCustomEmoji = addConfig("useCustomEmoji", configTypeBool, false);
     public static ConfigItem repeatConfirm = addConfig("repeatConfirm", configTypeBool, true);
-    public static ConfigItem disableInstantCamera = addConfig("DisableInstantCamera", configTypeBool, true);
     public static ConfigItem showSeconds = addConfig("showSeconds", configTypeBool, false);
 
     // From NekoConfig
