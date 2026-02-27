@@ -49,6 +49,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
     private RecyclerListView listView;
     private ListAdapter adapter;
+    private final ArrayList<ChatHistoryActivity.HistoryItem> historyItems = new ArrayList<>();
     private ArrayList<ChatHistoryActivity.HistoryItem> results = new ArrayList<>();
     private ArrayList<String> recentSearches = new ArrayList<>();
     private ActionBarMenuItem searchItem;
@@ -172,6 +173,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
         fragmentView = container;
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        reloadHistoryItems();
         loadRecentSearch();
         fragmentView.post(() -> actionBar.openSearchField("", true));
         updateTabs();
@@ -213,21 +215,21 @@ public class ChatHistorySearchActivity extends BaseFragment {
     }
 
     private void performSearch(String query) {
+        searchQuery = query == null ? "" : query;
         results.clear();
         
         if (adapter != null) {
             adapter.invalidateGroupingCache();
         }
-        
-        ArrayList<ChatHistoryActivity.HistoryItem> source = ChatHistoryActivity.loadRecentHistoryItems(currentAccount);
-        if (TextUtils.isEmpty(query)) {
+
+        if (TextUtils.isEmpty(searchQuery)) {
             adapter.notifyDataSetChanged();
             updateResultCounter(0);
             updateSearchModeUI();
             return;
         }
-        String lower = query.toLowerCase();
-        for (ChatHistoryActivity.HistoryItem item : source) {
+        String lower = searchQuery.toLowerCase();
+        for (ChatHistoryActivity.HistoryItem item : historyItems) {
             if (ChatHistoryActivity.matchesSearchQuery(item, lower)) {
                 results.add(item);
             }
@@ -254,6 +256,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
     }
 
     private void loadRecentSearch() {
+        recentSearches.clear();
         android.content.SharedPreferences preferences = org.telegram.messenger.ApplicationLoader
             .applicationContext.getSharedPreferences(PREF_RECENT_SEARCH, android.app.Activity.MODE_PRIVATE);
         int count = preferences.getInt(KEY_COUNT, 0);
@@ -294,11 +297,19 @@ public class ChatHistorySearchActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        reloadHistoryItems();
         if (isOpeningChat) {
             isOpeningChat = false;
             restoreState();
             restoreScrollPosition();
             return;
+        }
+        if (TextUtils.isEmpty(searchQuery)) {
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+        } else {
+            performSearch(searchQuery);
         }
     }
 
@@ -559,7 +570,56 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
     private void refreshAllPages() {
         if (viewPager != null) {
-            viewPager.setAdapter(new SearchCategoryPagerAdapter());
+            bindSearchPage(viewPager.getCurrentView(), viewPager.getCurrentPosition());
+        }
+    }
+
+    private void reloadHistoryItems() {
+        historyItems.clear();
+        historyItems.addAll(ChatHistoryActivity.loadRecentHistoryItems(currentAccount));
+    }
+
+    private void bindSearchPage(View view, int position) {
+        if (!(view instanceof android.widget.FrameLayout)) {
+            return;
+        }
+        android.widget.FrameLayout container = (android.widget.FrameLayout) view;
+        RecyclerListView lv = null;
+        for (int i = 0; i < container.getChildCount(); i++) {
+            View child = container.getChildAt(i);
+            if (child instanceof RecyclerListView) {
+                lv = (RecyclerListView) child;
+                break;
+            }
+        }
+        if (lv == null) {
+            return;
+        }
+        SearchCategoryListAdapter ad;
+        RecyclerView.Adapter existingAdapter = lv.getAdapter();
+        if (existingAdapter instanceof SearchCategoryListAdapter &&
+                ((SearchCategoryListAdapter) existingAdapter).getCategoryIndex() == position) {
+            ad = (SearchCategoryListAdapter) existingAdapter;
+            ad.refresh();
+            ad.notifyDataSetChanged();
+        } else {
+            Context context = getContext();
+            if (context == null) {
+                return;
+            }
+            ad = new SearchCategoryListAdapter(context, position);
+            lv.setAdapter(ad);
+        }
+        lv.setOnItemClickListener((itemView, itemPosition) -> ad.onItemClick(itemView, itemPosition));
+        android.widget.TextView counter = container.getTag() instanceof android.widget.TextView
+                ? (android.widget.TextView) container.getTag() : null;
+        if (counter != null) {
+            if (TextUtils.isEmpty(searchQuery)) {
+                counter.setVisibility(View.GONE);
+            } else {
+                counter.setText(LocaleController.formatString(R.string.ChatHistory_ResultCount, ad.getRealCount()));
+                counter.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -608,28 +668,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
         @Override
         public void bindView(View view, int position, int viewType) {
-            if (view instanceof android.widget.FrameLayout) {
-                android.widget.FrameLayout container = (android.widget.FrameLayout) view;
-                RecyclerListView lv = null;
-                for (int i = 0; i < container.getChildCount(); i++) {
-                    View child = container.getChildAt(i);
-                    if (child instanceof RecyclerListView) { lv = (RecyclerListView) child; break; }
-                }
-                if (lv == null) return;
-                SearchCategoryListAdapter ad = new SearchCategoryListAdapter(getContext(), position);
-                lv.setAdapter(ad);
-                lv.setOnItemClickListener((itemView, itemPosition) -> ad.onItemClick(itemView, itemPosition));
-                android.widget.TextView counter = (android.widget.TextView) container.getTag();
-                boolean hasQuery = !TextUtils.isEmpty(searchQuery);
-                if (counter != null) {
-                    if (hasQuery) {
-                        counter.setText(LocaleController.formatString(R.string.ChatHistory_ResultCount, ad.getRealCount()));
-                        counter.setVisibility(View.VISIBLE);
-                    } else {
-                        counter.setVisibility(View.GONE);
-                    }
-                }
-            }
+            bindSearchPage(view, position);
         }
     }
 
@@ -641,6 +680,14 @@ public class ChatHistorySearchActivity extends BaseFragment {
         public SearchCategoryListAdapter(Context context, int categoryIndex) {
             mContext = context;
             this.categoryIndex = categoryIndex;
+            updateCategoryData();
+        }
+
+        public int getCategoryIndex() {
+            return categoryIndex;
+        }
+
+        public void refresh() {
             updateCategoryData();
         }
 
@@ -727,6 +774,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
                 resultCountView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground)));
             }
             if (viewPager != null) {
+                viewPager.removeAllViews();
                 viewPager.setAdapter(new SearchCategoryPagerAdapter());
             }
             if (adapter != null) {

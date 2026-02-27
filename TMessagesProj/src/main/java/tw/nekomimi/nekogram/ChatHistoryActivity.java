@@ -149,6 +149,10 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void restoreState() {
+        restoreState(true);
+    }
+
+    private void restoreState(boolean refreshSearchResults) {
         if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Start restoring state: searchMode=" + savedSearchMode + ", query=" + savedSearchQuery + ", currentTab=" + savedCurrentTab);
         
         if (viewPager != null && savedCurrentTab >= 0 && savedCurrentTab < ChatCategory.values().length) {
@@ -174,7 +178,9 @@ public class ChatHistoryActivity extends BaseFragment {
                 }, 50);
             }
             
-            performSearch(savedSearchQuery);
+            if (refreshSearchResults) {
+                performSearch(savedSearchQuery);
+            }
             if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Search state restored");
         }
     }
@@ -211,7 +217,7 @@ public class ChatHistoryActivity extends BaseFragment {
         hasBeenInitialized = true;
 
         if (isOpeningChat) {
-            fragmentView.post(() -> restoreState());
+            fragmentView.post(() -> restoreState(false));
         }
 
         return fragmentView;
@@ -664,13 +670,8 @@ public class ChatHistoryActivity extends BaseFragment {
         if (isOpeningChat && hasBeenInitialized) {
             if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Returning from chat");
             isOpeningChat = false;
-            
-            if (savedSearchMode && !android.text.TextUtils.isEmpty(savedSearchQuery)) {
-                if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Restoring search state, no list refresh");
-                restoreState();
-                return;
-            }
-            
+
+             
             if (isSearchMode && android.text.TextUtils.isEmpty(searchQuery)) {
                 if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Exiting empty search mode on return");
                 try {
@@ -681,7 +682,7 @@ public class ChatHistoryActivity extends BaseFragment {
                 exitSearchMode();
             }
             
-            restoreState();
+            restoreState(false);
             restoreScrollPosition();
             
             return;
@@ -1010,10 +1011,16 @@ public class ChatHistoryActivity extends BaseFragment {
 
         if (item.dialogId > 0) {
             TLRPC.User user = MessagesController.getInstance(selectedAccount).getUser(item.dialogId);
+            if (user == null) {
+                user = loadUserFromDatabase(item.dialogId, selectedAccount);
+            }
             return user != null;
         } else {
             long chatId = -item.dialogId;
             TLRPC.Chat chat = MessagesController.getInstance(selectedAccount).getChat(chatId);
+            if (chat == null) {
+                chat = loadChatFromDatabase(chatId, selectedAccount);
+            }
             return chat != null;
         }
     }
