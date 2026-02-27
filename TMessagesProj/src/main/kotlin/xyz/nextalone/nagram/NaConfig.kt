@@ -237,6 +237,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val replaceBlockedMyInfo =
+        addConfig(
+            "ReplaceBlockedMyInfo",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showFullAbout =
         addConfig(
             "ShowFullAbout",

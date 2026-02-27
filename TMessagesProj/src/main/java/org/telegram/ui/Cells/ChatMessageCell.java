@@ -21158,6 +21158,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 }
             }
+            if (NaConfig.INSTANCE.getReplaceBlockedMyInfo().Bool() && UserObject.isLikelyBlockedByUser(currentUser)) {
+                Theme.chat_namePaint.setColor(0xFFBEBEBE);
+            }
             if (currentMessagesGroup != null && currentMessagesGroup.transitionParams.backgroundChangeBounds) {
                 nameX += currentMessagesGroup.transitionParams.offsetLeft;
                 nameY += currentMessagesGroup.transitionParams.offsetTop - getTranslationY();

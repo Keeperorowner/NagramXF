@@ -52,6 +52,16 @@ public class UserObject {
         return user != null && user.bot;
     }
 
+    public static boolean isLikelyBlockedByUser(TLRPC.User user) {
+        return user != null
+                && user.id != 0
+                && !isDeleted(user)
+                && user.status == null
+                && user.photo == null
+                && !user.apply_min_photo
+                && !user.stories_unavailable;
+    }
+
     public static boolean isReplyUser(long did) {
         return did == 708513 || did == REPLY_BOT;
     }
