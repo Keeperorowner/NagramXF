@@ -146,7 +146,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
     // Camera
     private final AbstractConfigCell headerCamera = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.CameraSettings)));
-    private final AbstractConfigCell disableInstantCameraRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableInstantCamera));
     private final AbstractConfigCell cameraInVideoMessages = cellGroup.appendCell(new ConfigCellSelectBox("CameraInVideoMessages", NaConfig.INSTANCE.getCameraInVideoMessages(), new String[]{
             getString(R.string.CameraInVideoMessagesFront),
             getString(R.string.CameraInVideoMessagesRear),

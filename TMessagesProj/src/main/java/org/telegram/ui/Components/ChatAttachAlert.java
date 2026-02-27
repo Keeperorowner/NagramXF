@@ -1138,6 +1138,12 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentId = id;
         }
 
+        public void setTextAndIcon(int id, CharSequence text, int iconRes) {
+            glassTabView.setText(text);
+            glassTabView.setIcon(iconRes);
+            currentId = id;
+        }
+
         @Override
         public boolean hasOverlappingRendering() {
             return false;
@@ -2650,6 +2656,18 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         showLayout(restrictedLayout = new ChatAttachRestrictedLayout(1, this, getContext(), resourcesProvider));
                     }
                     showLayout(photoLayout);
+                } else if (num == 1390) {
+                    if (!photosEnabled && !videosEnabled && checkCanRemoveRestrictionsByBoosts()) {
+                        return;
+                    }
+                    if (!photosEnabled && !videosEnabled) {
+                        showLayout(restrictedLayout = new ChatAttachRestrictedLayout(1, this, getContext(), resourcesProvider));
+                        return;
+                    }
+                    if (currentAttachLayout != photoLayout) {
+                        showLayout(photoLayout);
+                    }
+                    openCameraLayout();
                 } else if (num == 3) {
                     if (!musicEnabled && checkCanRemoveRestrictionsByBoosts()) {
                         return;
@@ -2784,6 +2802,16 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     return false;
                 }
                 onLongClickBotButton(button.attachMenuBot, button.currentUser);
+                return true;
+            } else if (position == buttonsAdapter.cameraButton) {
+                if (!photosEnabled && !videosEnabled && checkCanRemoveRestrictionsByBoosts()) {
+                    return false;
+                }
+                if (!photosEnabled && !videosEnabled) {
+                    showLayout(restrictedLayout = new ChatAttachRestrictedLayout(1, this, getContext(), resourcesProvider));
+                    return true;
+                }
+                onLongClickCameraButton();
                 return true;
             }
             return false;
@@ -5945,6 +5973,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         private Context mContext;
         private int galleryButton;
+        private int cameraButton;
 
         private int attachBotsStartRow;
         private int attachBotsEndRow;
@@ -5993,6 +6022,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     if (position == galleryButton) {
                         attachButton.setTextAndIcon(1, getString(R.string.ChatGallery), GlassTabView.TabAnimation.GALLERY);
                         attachButton.setTag(1);
+                        err = !checkPhotoAndCameraPermission(mContext);
+                    } else if (position == cameraButton) {
+                        attachButton.setTextAndIcon(1390, LocaleController.getString(R.string.VoipCamera), R.drawable.msg_camera_solar);
+                        attachButton.setTag(1390);
                         err = !checkPhotoAndCameraPermission(mContext);
                     } else if (position == documentButton) {
                         attachButton.setTextAndIcon(4, getString(R.string.ChatDocument), GlassTabView.TabAnimation.FILES);
@@ -6065,6 +6098,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         public void notifyDataSetChanged() {
             buttonsCount = 0;
             galleryButton = -1;
+            cameraButton = -1;
             documentButton = -1;
             musicButton = -1;
             pollButton = -1;
@@ -6076,6 +6110,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             attachBotsEndRow = -1;
             if (!(baseFragment instanceof ChatActivity)) {
                 galleryButton = buttonsCount++;
+                cameraButton = buttonsCount++;
                 documentButton = buttonsCount++;
                 if (allowEnterCaption) {
                     musicButton = buttonsCount++;
@@ -6083,11 +6118,13 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             } else if (editingMessageObject != null) {
                 if (editType == EDITMEDIA_TYPE_ANY) {
                     galleryButton = buttonsCount++;
+                    cameraButton = buttonsCount++;
                     documentButton = buttonsCount++;
                     musicButton = buttonsCount++;
                 } else {
                     if (editType == EDITMEDIA_TYPE_PHOTOVIDEO) {
                         galleryButton = buttonsCount++;
+                        cameraButton = buttonsCount++;
                     }
                     if (editType == EDITMEDIA_TYPE_FILE) {
                         documentButton = buttonsCount++;
@@ -6101,6 +6138,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 TLRPC.Chat chat = baseFragment instanceof ChatActivity ? ((ChatActivity) baseFragment).getCurrentChat() : null;
                 final boolean paidUser = user != null && ((ChatActivity) baseFragment).getMessagesController().getSendPaidMessagesStars(user.id) > 0;
                 galleryButton = buttonsCount++;
+                cameraButton = buttonsCount++;
                 if ((photosEnabled || videosEnabled) && !paidUser && (chat == null || !ChatObject.isMonoForum(chat))) {
                     if (baseFragment instanceof ChatActivity && !((ChatActivity) baseFragment).isInScheduleMode() && !((ChatActivity) baseFragment).isSecretChat() && ((ChatActivity) baseFragment).getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
                         ChatActivity chatActivity = (ChatActivity) baseFragment;
@@ -6344,6 +6382,21 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
     public void setDocumentsDelegate(ChatAttachAlertDocumentLayout.DocumentSelectActivityDelegate documentsDelegate) {
         this.documentsDelegate = documentsDelegate;
+    }
+
+    private void openCameraLayout() {
+        photoLayout.openCameraWithPermissionCheck();
+    }
+
+    public void onLongClickCameraButton() {
+        if (!photosEnabled && !videosEnabled && checkCanRemoveRestrictionsByBoosts()) {
+            return;
+        }
+        if (delegate != null) {
+            AlertsCreator.ensurePaidMessageConfirmation(currentAccount, getDialogId(), (currentAttachLayout == null ? 1 : currentAttachLayout.getSelectedItemsCount()) + getAdditionalMessagesCount(), payStars -> {
+                delegate.didPressedButton(0, false, true, 0, 0, 0, false, false, payStars);
+            });
+        }
     }
 
     private void replaceWithText(int start, int len, CharSequence text, boolean parseEmoji) {

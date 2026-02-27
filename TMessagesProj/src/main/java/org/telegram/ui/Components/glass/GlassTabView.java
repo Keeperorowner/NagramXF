@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.RawRes;
 import androidx.annotation.StringRes;
@@ -595,6 +596,15 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         lastBotIconId = 0;
         imageView.clearAnimationDrawable();
         checkPlayAnimation(false);
+    }
+
+    public void setIcon(@DrawableRes int iconRes) {
+        tabAnimation = null;
+        tabAnimationBot = null;
+        lastIconAnimationRaw = 0;
+        lastBotIconId = 0;
+        imageView.clearAnimationDrawable();
+        imageView.setImageResource(iconRes);
     }
 
     public void setText(CharSequence text) {

@@ -250,7 +250,6 @@
     <string name="repeatConfirm">Chiedere prima di ripubblicare</string>
     <string name="repeatConfirmText">Sei sicuro di voler ripubblicare?</string>
     <string name="rememberAllBackMessages">Ricorda tutte le risposte cliccate</string>
-    <string name="DisableInstantCamera">Disattiva Instant Camera</string>
     <string name="showSeconds">Mostra timestamp in secondi</string>
     <string name="Name">Nome</string>
     <string name="StickerSettings">Stickers</string>

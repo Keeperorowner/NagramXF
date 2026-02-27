@@ -250,7 +250,6 @@
     <string name="repeatConfirm">Запитувати перед повтором</string>
     <string name="repeatConfirmText">Ви хочете повторити повідомлення?</string>
     <string name="rememberAllBackMessages">Запам’ятати всі натиснуті відповіді</string>
-    <string name="DisableInstantCamera">Приховати прев\'ю з камери на панелі «Прикріпити»</string>
     <string name="showSeconds">Показувати час у секундах</string>
     <string name="Name">Ім’я</string>
     <string name="StickerSettings">Наліпки</string>

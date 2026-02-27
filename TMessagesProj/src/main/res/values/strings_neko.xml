@@ -253,7 +253,6 @@
     <string name="repeatConfirm">Ask Before Repost</string>
     <string name="repeatConfirmText">Are you sure you want to Repost?</string>
     <string name="rememberAllBackMessages">Remember All Clicked Replies</string>
-    <string name="DisableInstantCamera">Disable Instant Camera</string>
     <string name="showSeconds">Show Timestamp in Seconds</string>
     <string name="Name">Name</string>
     <string name="StickerSettings">Stickers</string>
