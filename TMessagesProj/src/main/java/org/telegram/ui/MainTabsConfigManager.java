@@ -5,7 +5,6 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.R;
-import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.glass.GlassTabView;
 
@@ -20,7 +19,8 @@ public class MainTabsConfigManager {
     public enum TabType {
         CHATS,
         CONTACTS,
-        CALLS_SETTINGS,
+        SETTINGS,
+        CALLS,
         PROFILE
     }
 
@@ -38,7 +38,7 @@ public class MainTabsConfigManager {
         }
     }
 
-    private static final String DEFAULT_ORDER = "CHATS,CONTACTS,CALLS_SETTINGS,PROFILE";
+    private static final String DEFAULT_ORDER = "CHATS,CONTACTS,SETTINGS,!CALLS,PROFILE";
 
     @NonNull
     public static ArrayList<TabState> getAllTabs() {
@@ -58,17 +58,20 @@ public class MainTabsConfigManager {
             }
             boolean enabled = !part.startsWith("!");
             String typeName = enabled ? part : part.substring(1);
+            if ("CALLS_SETTINGS".equals(typeName)) {
+                addTabState(result, missing, TabType.SETTINGS, enabled);
+                continue;
+            }
             try {
                 TabType type = TabType.valueOf(typeName);
-                result.add(new TabState(type, enabled));
-                missing.remove(type);
+                addTabState(result, missing, type, enabled);
             } catch (Exception ignore) {
             }
         }
 
         for (TabType tabType : TabType.values()) {
             if (missing.contains(tabType)) {
-                result.add(new TabState(tabType, true));
+                result.add(new TabState(tabType, getDefaultEnabled(tabType)));
             }
         }
 
@@ -138,9 +141,19 @@ public class MainTabsConfigManager {
         return switch (type) {
             case CHATS -> 0;
             case CONTACTS -> 1;
-            case CALLS_SETTINGS -> 2;
-            case PROFILE -> 3;
+            case SETTINGS -> 2;
+            case CALLS -> 3;
+            case PROFILE -> 4;
         };
+    }
+
+    public static boolean isTabEnabled(TabType type) {
+        for (TabState state : getAllTabs()) {
+            if (state.type == type) {
+                return state.enabled;
+            }
+        }
+        return false;
     }
 
     @NonNull
@@ -164,23 +177,18 @@ public class MainTabsConfigManager {
                 GlassTabView.TabAnimation.CONTACTS,
                 R.string.MainTabsContacts
             );
-            case CALLS_SETTINGS -> {
-                if (UserConfig.getInstance(currentAccount).showCallsTab) {
-                    yield GlassTabView.createMainTab(
-                        context,
-                        resourceProvider,
-                        GlassTabView.TabAnimation.CALLS,
-                        R.string.MainTabsCalls
-                    );
-                } else {
-                    yield GlassTabView.createMainTab(
-                        context,
-                        resourceProvider,
-                        GlassTabView.TabAnimation.SETTINGS,
-                        R.string.Settings
-                    );
-                }
-            }
+            case SETTINGS -> GlassTabView.createMainTab(
+                context,
+                resourceProvider,
+                GlassTabView.TabAnimation.SETTINGS,
+                R.string.Settings
+            );
+            case CALLS -> GlassTabView.createMainTab(
+                context,
+                resourceProvider,
+                GlassTabView.TabAnimation.CALLS,
+                R.string.MainTabsCalls
+            );
             case PROFILE -> GlassTabView.createAvatar(
                 context,
                 resourceProvider,
@@ -229,6 +237,18 @@ public class MainTabsConfigManager {
         } else {
             tabs.add(new TabState(TabType.CHATS, true));
         }
+    }
+
+    private static boolean getDefaultEnabled(TabType type) {
+        return type != TabType.CALLS;
+    }
+
+    private static void addTabState(ArrayList<TabState> result, EnumSet<TabType> missing, TabType type, boolean enabled) {
+        if (!missing.contains(type)) {
+            return;
+        }
+        result.add(new TabState(type, enabled));
+        missing.remove(type);
     }
 
     private static void ensureChatsEnabled(List<TabState> tabs) {
