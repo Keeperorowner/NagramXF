@@ -443,7 +443,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (viewPager != null) {
             final int currentPosition = viewPager.getCurrentPosition();
             if (dropCallsFragmentAfterPageScroll) {
-                int callsTabPosition = getTabIndex(MainTabsConfigManager.TabType.CALLS_SETTINGS);
+                int callsTabPosition = getTabIndex(MainTabsConfigManager.TabType.CALLS);
                 if (callsTabPosition >= 0 && currentPosition != callsTabPosition) {
                     dropFragmentAtPosition(callsTabPosition);
                     dropCallsFragmentAfterPageScroll = false;
@@ -532,16 +532,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 args.putBoolean("hasMainTabs", true);
                 return new ContactsActivity(args);
             }
-            case CALLS_SETTINGS -> {
-                if (getUserConfig().showCallsTab) {
-                    Bundle args = new Bundle();
-                    args.putBoolean("needFinishFragment", false);
-                    args.putBoolean("hasMainTabs", true);
-                    return new CallLogActivity(args);
-                }
+            case SETTINGS -> {
                 Bundle args = new Bundle();
                 args.putBoolean("hasMainTabs", true);
                 return new SettingsActivity(args);
+            }
+            case CALLS -> {
+                Bundle args = new Bundle();
+                args.putBoolean("needFinishFragment", false);
+                args.putBoolean("hasMainTabs", true);
+                return new CallLogActivity(args);
             }
             case PROFILE -> {
                 Bundle args = new Bundle();
@@ -845,19 +845,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         } else if (id == NotificationCenter.needSetDayNightTheme) {
             clearAllHiddenFragments();
         } else if (id == NotificationCenter.callTabsVisibleToggled) {
-            final boolean callTabsVisible = getUserConfig().showCallsTab;
-            checkUi_callTabVisible(callTabsVisible, true);
-            int callsPosition = getTabIndex(MainTabsConfigManager.TabType.CALLS_SETTINGS);
-            int chatsPosition = getTabIndex(MainTabsConfigManager.TabType.CHATS);
-            int fallbackPosition = chatsPosition >= 0 ? chatsPosition : getPreferredStartPosition();
-
-            if (callsPosition >= 0 && viewPager != null && viewPager.getCurrentPosition() == callsPosition) {
-                viewPager.scrollToPosition(fallbackPosition);
-                selectTab(fallbackPosition, true);
-                dropCallsFragmentAfterPageScroll = true;
-            } else if (callsPosition >= 0) {
-                dropFragmentAtPosition(callsPosition);
-            }
+            checkUi_callTabVisible(getUserConfig().showCallsTab, true);
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             int profileTabIndex = getTabIndex(MainTabsConfigManager.TabType.PROFILE);
             if (tabs != null && profileTabIndex >= 0 && profileTabIndex < tabs.length && tabs[profileTabIndex] != null) {
@@ -1112,7 +1100,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             openAccountSelector(button);
             return true;
         }
-        if (tabType == MainTabsConfigManager.TabType.CALLS_SETTINGS && !getUserConfig().showCallsTab) {
+        if (tabType == MainTabsConfigManager.TabType.SETTINGS) {
             ItemOptions o = ItemOptions.makeOptions(this, button);
             if (NekoConfig.showGhostInDrawer.Bool()) {
                 final String msg = NekoConfig.isGhostModeActive()
