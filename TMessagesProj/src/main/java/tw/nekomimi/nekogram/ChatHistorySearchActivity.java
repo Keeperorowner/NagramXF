@@ -155,7 +155,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
                     }
                 };
         viewPager.setAdapter(new SearchCategoryPagerAdapter());
-        tabsView = viewPager.createTabsView(true, 3);
+        tabsView = viewPager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
         tabsView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         container.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP));
         container.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 48, 0, 0));

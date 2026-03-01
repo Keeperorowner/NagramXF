@@ -239,7 +239,7 @@ public class ChatHistoryActivity extends BaseFragment {
         };
         viewPager.setAdapter(new CategoryPagerAdapter());
 
-        tabsView = viewPager.createTabsView(true, 3);
+        tabsView = viewPager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
         tabsView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
         fragmentView.addView(tabsView,
