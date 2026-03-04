@@ -94,6 +94,7 @@
     <string name="InstantViewTranslation">即时预览</string>
     <string name="SaveDeletedMessageForBot">在机器人聊天中保存</string>
     <string name="HideArchive">移除聊天列表中的\"已归档聊天\"</string>  
+    <string name="HideHomeSearchField">隐藏主页搜索框</string>
     <string name="ReplaceBlockedMyInfo">替换屏蔽我的用户信息</string>
     <string name="ReplaceBlockedMyInfoDescription">对已将你屏蔽的用户，使用灰色头像占位图进行显示。</string>
     <string name="ConfirmAllLinks">打开内联链接前确认</string>
