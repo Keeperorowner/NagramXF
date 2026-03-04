@@ -849,7 +849,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 h += storiesHeight * (1f - searchAnimationProgress) * (1f - rightSlidingProgress) * (1f - progressToActionMode);
             }
             h += storiesOverscroll;
-            h += dp(SEARCH_FIELD_HEIGHT) * (1f - progressToActionMode) * (1f - searchAnimationProgress) * (1f - rightSlidingProgress);
+            h += getSearchFieldReservedHeight() * (1f - progressToActionMode) * (1f - searchAnimationProgress) * (1f - rightSlidingProgress);
 
             return (int) h;
         }
@@ -1026,9 +1026,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             tabsYOffset = 0;
             storiesYOffset = 0;
+            final int reservedSearchFieldHeight = getSearchFieldReservedHeight();
             tabsYOffset -= Math.min(
-                dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + dp(SEARCH_FIELD_HEIGHT) + scrollYOffset,
-                progressToActionMode * (dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + dp(SEARCH_FIELD_HEIGHT))
+                dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + reservedSearchFieldHeight + scrollYOffset,
+                progressToActionMode * (dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + reservedSearchFieldHeight)
             );
             storiesYOffset = tabsYOffset;
             if ((rightSlidingDialogContainer != null && rightSlidingDialogContainer.hasFragment())) {
@@ -1054,7 +1055,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (hasStories) {
                     addH += dp(DialogStoriesCell.HEIGHT_IN_DP);
                 }
-                addH += dp(SEARCH_FIELD_HEIGHT);
+                addH += getSearchFieldReservedHeight();
                 addH *= rightSlidingDialogContainer.openedProgress;
 
                 viewPages[0].setTranslationY(rightFragmentOffset - addH);
@@ -1153,7 +1154,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (hasStories) {
                             h += dp(DialogStoriesCell.HEIGHT_IN_DP);
                         }
-                        h += dp(SEARCH_FIELD_HEIGHT);
+                        h += getSearchFieldReservedHeight();
                     }
                     h += actionModeAdditionalHeight;
                     if (actionBarColorAnimator == null) {
@@ -1289,7 +1290,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     childTop = 0;
                 } else if (child == topPanelLayout || child == topBubblesFadeView || child == filterTabsView) {
                     childTop += actionBar.getMeasuredHeight();
-                    childTop += dp(SEARCH_FIELD_HEIGHT);
+                    childTop += getSearchFieldReservedHeight();
                 } else if (dialogStoriesCell != null && dialogStoriesCell.getPremiumHint() == child) {
                     continue;
                 }
@@ -1993,8 +1994,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 RecyclerView.ViewHolder holder = parentPage.listView.findViewHolderForAdapterPosition(pos);
                 if (holder != null) {
                     int top = holder.itemView.getTop();
-                    if (parentPage.dialogsType == DIALOGS_TYPE_DEFAULT && hasHiddenArchive() && parentPage.archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN) {
-                        pos = Math.max(1, pos);
+                    if (parentPage.dialogsType == DIALOGS_TYPE_DEFAULT && hasHiddenArchive() && parentPage.archivePullViewState == ARCHIVE_ITEM_STATE_HIDDEN && pos == 0) {
+                        top = holder.itemView.getBottom();
+                        pos = 1;
                     }
                     ignoreLayout = true;
                     parentPage.layoutManager.scrollToPositionWithOffset(pos, (int) (top - lastListPadding + scrollAdditionalOffset + parentPage.pageAdditionalOffset));
@@ -2010,7 +2012,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 t += dp(DialogStoriesCell.HEIGHT_IN_DP);
             }
             if (!actionModeFullyShowed) {
-                t += dp(SEARCH_FIELD_HEIGHT);
+                t += getSearchFieldReservedHeight();
             }
             additionalPadding = 0;
 
@@ -2329,7 +2331,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         offset += dp(DialogStoriesCell.HEIGHT_IN_DP);
                     }
                     if (backward) {
-                        offset += dp(SEARCH_FIELD_HEIGHT);
+                        offset += getSearchFieldReservedHeight();
                         // offset += canShowFilterTabsView ? dp(50) : 0;
                     }
                     if (p >= 0) {
@@ -2851,6 +2853,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getNotificationCenter().addObserver(this, NotificationCenter.messageReceivedByServer);
             getNotificationCenter().addObserver(this, NotificationCenter.messageSendError);
             getNotificationCenter().addObserver(this, NotificationCenter.needReloadRecentDialogsSearch);
+            getNotificationCenter().addObserver(this, NotificationCenter.updateSearchSettings);
             getNotificationCenter().addObserver(this, NotificationCenter.replyMessagesDidLoad);
             getNotificationCenter().addObserver(this, NotificationCenter.topicsDidLoaded);
             getNotificationCenter().addObserver(this, NotificationCenter.reloadHints);
@@ -3058,6 +3061,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             getNotificationCenter().removeObserver(this, NotificationCenter.messageReceivedByServer);
             getNotificationCenter().removeObserver(this, NotificationCenter.messageSendError);
             getNotificationCenter().removeObserver(this, NotificationCenter.needReloadRecentDialogsSearch);
+            getNotificationCenter().removeObserver(this, NotificationCenter.updateSearchSettings);
             getNotificationCenter().removeObserver(this, NotificationCenter.replyMessagesDidLoad);
             getNotificationCenter().removeObserver(this, NotificationCenter.topicsDidLoaded);
             getNotificationCenter().removeObserver(this, NotificationCenter.reloadHints);
@@ -4303,13 +4307,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 }
                                 int canScrollDy = -(view.getTop() - pTop) + viewsH;
                                 if (!rightSlidingDialogContainer.hasFragment()) {
-                                    canScrollDy -= dp(SEARCH_FIELD_HEIGHT);
+                                    canScrollDy -= getSearchFieldReservedHeight();
                                 }
                                 if (hasStories && (viewPage.scroller.isRunning() || dialogStoriesCell.isExpanded()) && !rightSlidingDialogContainer.hasFragment() && !fixScrollYAfterArchiveOpened) {
                                     canScrollDy += dp(DialogStoriesCell.HEIGHT_IN_DP);
                                 }
                                 if ((viewPage.scroller.isRunning() || dialogStoriesCell.isExpanded()) && !rightSlidingDialogContainer.hasFragment() && !fixScrollYAfterArchiveOpened) {
-                                    canScrollDy += dp(SEARCH_FIELD_HEIGHT);
+                                    canScrollDy += getSearchFieldReservedHeight();
                                 }
                                 int positiveDy = Math.abs(dy);
                                 if (canScrollDy < positiveDy) {
@@ -4672,7 +4676,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (applyScrollY) {
                             int maxScrollYOffset = getMaxScrollYOffset();
                             if (!(filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && animatorFilterTabsVisible.getValue())) {
-                                maxScrollYOffset = dp(SEARCH_FIELD_HEIGHT);
+                                maxScrollYOffset = getSearchFieldReservedHeight();
                             }
                             if (newTranslation < -maxScrollYOffset) {
                                 newTranslation = -maxScrollYOffset;
@@ -5749,7 +5753,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
 
                 if (actionBarHeightNoSearch < scrollY && scrollY < actionBarHeight) {
-                    int h = dp(SEARCH_FIELD_HEIGHT);
+                    int h = getSearchFieldReservedHeight();
+                    if (h == 0) {
+                        return false;
+                    }
                     int s = scrollY - actionBarHeightNoSearch;
                     if (s < h / 2) {
                         viewPage.scroller.smoothScrollBy(-s);
@@ -5785,12 +5792,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private boolean shouldHideHomeSearchField() {
+        return NaConfig.INSTANCE.getHideHomeSearchField().Bool()
+                && initialDialogsType == DIALOGS_TYPE_DEFAULT
+                && !onlySelect
+                && folderId == 0
+                && searchString == null;
+    }
+
+    private int getSearchFieldReservedHeight() {
+        return shouldHideHomeSearchField() ? 0 : dp(SEARCH_FIELD_HEIGHT);
+    }
+
     private int getMaxScrollYOffset() {
-        if (hasStories) {
-            return dp(DialogStoriesCell.HEIGHT_IN_DP) + dp(SEARCH_FIELD_HEIGHT);
-        } else {
-            return dp(SEARCH_FIELD_HEIGHT);
-        }
+        return getMaxScrollYOffsetWithoutSearch() + getSearchFieldReservedHeight();
     }
 
     public boolean isStarsSubscriptionHintVisible() {
@@ -7217,7 +7232,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0) +
                     (topPanelLayout != null ? topPanelLayout.getHeight() : 0) +
                     (dialogStoriesCell != null && dialogStoriesCellVisible ? (int) ((1f - dialogStoriesCell.getCollapsedProgress()) * dp(DialogStoriesCell.HEIGHT_IN_DP)) : 0) +
-                    (dp(SEARCH_FIELD_HEIGHT))
+                    getSearchFieldReservedHeight()
                 );
             }
 
@@ -7592,7 +7607,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (searchViewPager != null) {
                 animators.add(ObjectAnimator.ofFloat(searchViewPager, View.ALPHA, show ? 1.0f : 0.0f));
                 if (hasStories) {
-                    float translationY = dp(DialogStoriesCell.HEIGHT_IN_DP) + scrollYOffset + dp(SEARCH_FIELD_HEIGHT);
+                    float translationY = dp(DialogStoriesCell.HEIGHT_IN_DP) + scrollYOffset + getSearchFieldReservedHeight();
                     animators.add(ObjectAnimator.ofFloat(searchViewPager, SEARCH_TRANSLATION_Y, show ? translationY : 0, show ? 0 : translationY));
                 }
                 if (!budget) {
@@ -8997,7 +9012,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 viewPages[i].listView.cancelClickRunnables(true);
             }
         }
-        translateListHeight = Math.max(0, dp((hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + SEARCH_FIELD_HEIGHT) + scrollYOffset);
+        translateListHeight = Math.max(0, getMaxScrollYOffset() + scrollYOffset);
         float finalTranslateListHeight = translateListHeight;
         actionBarColorAnimator = ValueAnimator.ofFloat(progressToActionMode, 0);
         actionBarColorAnimator.addUpdateListener(valueAnimator -> {
@@ -9023,7 +9038,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 invalidateScrollY = true;
                 fixScrollYAfterArchiveOpened = true;
                 fragmentView.invalidate();
-                scrollAdditionalOffset = -(dp((hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + SEARCH_FIELD_HEIGHT) - finalTranslateListHeight);
+                scrollAdditionalOffset = -(getMaxScrollYOffset() - finalTranslateListHeight);
                 viewPages[0].setTranslationY(0);
                 for (int i = 0; i < viewPages.length; i++) {
                     if (viewPages[i] != null) {
@@ -9983,7 +9998,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     viewPages[i].listView.cancelClickRunnables(true);
                 }
             }
-            translateListHeight = Math.max(0, dp((hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + SEARCH_FIELD_HEIGHT) + scrollYOffset);
+            translateListHeight = Math.max(0, getMaxScrollYOffset() + scrollYOffset);
             if (translateListHeight != 0) {
                 actionModeAdditionalHeight = (int) translateListHeight;
                 fragmentView.requestLayout();
@@ -10010,7 +10025,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     actionBarColorAnimator = null;
                     actionModeAdditionalHeight = 0;
                     actionModeFullyShowed = true;
-                    scrollAdditionalOffset = dp((hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0) + SEARCH_FIELD_HEIGHT) - finalTranslateListHeight;
+                    scrollAdditionalOffset = getMaxScrollYOffset() - finalTranslateListHeight;
                     viewPages[0].setTranslationY(0);
                     for (int i = 0; i < viewPages.length; i++) {
                         if (viewPages[i] != null) {
@@ -10574,6 +10589,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             updateVisibleRows(MessagesController.UPDATE_MASK_SEND_STATE);
         } else if (id == NotificationCenter.didSetPasscode) {
             checkUi_itemPasscodeVisibility();
+        } else if (id == NotificationCenter.updateSearchSettings) {
+            invalidateScrollY = true;
+            if (viewPages != null) {
+                for (ViewPage page : viewPages) {
+                    if (page != null && page.listView != null) {
+                        page.listView.requestLayout();
+                    }
+                }
+            }
+            if (fragmentView != null) {
+                fragmentView.requestLayout();
+                fragmentView.invalidate();
+            }
+            checkUi_searchFieldVisibility();
+            blur3_InvalidateBlur();
         } else if (id == NotificationCenter.needReloadRecentDialogsSearch) {
             if (searchViewPager != null && searchViewPager.dialogsSearchAdapter != null) {
                 searchViewPager.dialogsSearchAdapter.loadRecentSearch();
@@ -13729,10 +13759,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         final float actionModeVisible = Math.max(progressToActionMode, animatorActionModeVisible.getFloatValue());
         final float searchFieldVisible = animatorSearchVisible.getFloatValue();
+        final boolean hideHomeSearchField = shouldHideHomeSearchField();
 
         final float factor0 = isSupportSearch() ? 1 : 0;
         final float factor1 = (1f - actionModeVisible) * (1f - animatorDoneButtonVisible.getFloatValue());
-        final float factor2 = Math.max(searchFieldVisible, alphaByScrollOffset * (1f - getRightSlidingProgress()));
+        final float factor2 = hideHomeSearchField
+                ? searchFieldVisible
+                : Math.max(searchFieldVisible, alphaByScrollOffset * (1f - getRightSlidingProgress()));
 
         final float alpha = factor0 * factor1 * factor2;
 
@@ -13860,7 +13893,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final int mainTabTop = mainTabBottom - dp(MainTabsHelper.getMainTabsHeight());
 
         final int actionBarHeight = actionBar.getMeasuredHeight()
-            + dp(DialogsActivity.SEARCH_FIELD_HEIGHT)
+            + getSearchFieldReservedHeight()
             + dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0)
             + (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0)
             + (topPanelLayout != null && topPanelLayout.getVisibility() == View.VISIBLE ? topPanelLayout.getSumHeightOfAllVisibleChild() : 0)

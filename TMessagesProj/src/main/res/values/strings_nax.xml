@@ -107,6 +107,7 @@
     <string name="InstantViewTranslation">Instant View</string>
     <string name="SaveDeletedMessageForBot">Save in Bot Chats</string>
     <string name="HideArchive">Remove \"Archived Chats\" from Chat List</string>
+    <string name="HideHomeSearchField">Hide Home Search Box</string>
     <string name="ReplaceBlockedMyInfo">Replace Info of Users Who Blocked Me</string>
     <string name="ReplaceBlockedMyInfoDescription">Show users who blocked you with a gray avatar placeholder.</string>
     <string name="ConfirmAllLinks">Ask Before Opening Inline Links</string>
