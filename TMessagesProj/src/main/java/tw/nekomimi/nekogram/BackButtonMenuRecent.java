@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class BackButtonMenuRecent {
 
-    private static final int MAX_RECENT_DIALOGS = 25;
+    private static final int MAX_RECENT_DIALOGS = 1000;
 
     private static final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekorecentdialogs", Context.MODE_PRIVATE);
     private static final SparseArray<LinkedList<Long>> recentDialogs = new SparseArray<>();
@@ -265,7 +265,7 @@ public class BackButtonMenuRecent {
             }
         }
 
-        if (recentDialog.size() > MAX_RECENT_DIALOGS) {
+        if (recentDialog.size() >= MAX_RECENT_DIALOGS) {
             recentDialog.removeLast();
         }
         recentDialog.addFirst(dialogId);
