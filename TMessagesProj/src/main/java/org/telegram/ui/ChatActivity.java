@@ -362,6 +362,8 @@ import me.vkryl.core.reference.ReferenceList;
 import tw.nekomimi.nekogram.BackButtonMenuRecent;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
+import tw.nekomimi.nekogram.filters.RegexChatFiltersListActivity;
+import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 import tw.nekomimi.nekogram.filters.RegexFilterEditActivity;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
 import tw.nekomimi.nekogram.helpers.ForceForward;
@@ -372,7 +374,10 @@ import tw.nekomimi.nekogram.helpers.remote.PagePreviewRulesHelper;
 import tw.nekomimi.nekogram.llm.LlmConfig;
 import tw.nekomimi.nekogram.menu.copy.CopyPopupWrapper;
 import tw.nekomimi.nekogram.menu.forward.ForwardPopupWrapper;
+import tw.nekomimi.nekogram.menu.ghostmode.GhostModeExclusionPopupWrapper;
+import tw.nekomimi.nekogram.menu.regexfilters.RegexFiltersExclusionPopupWrapper;
 import tw.nekomimi.nekogram.menu.reply.ReplyPopupWrapper;
+import tw.nekomimi.nekogram.menu.saveDeleted.SaveExclusionPopupWrapper;
 import tw.nekomimi.nekogram.menu.translate.TranslatePopupWrapper;
 import tw.nekomimi.nekogram.parts.DialogTransKt;
 import tw.nekomimi.nekogram.parts.MessageTransKt;
@@ -4793,6 +4798,8 @@ public class ChatActivity extends BaseFragment implements
                         muteItem.openSwipeBack();
                     }
                 });
+                headerItem.lazilyAddColoredGap();
+                createAyuGramMenuItem();
                 muteItemGap = headerItem.lazilyAddColoredGap();
             }
 
@@ -4908,8 +4915,11 @@ public class ChatActivity extends BaseFragment implements
                 headerItem.setSubItemShown(nkbtn_bookmarks_manager, BookmarksHelper.getBookmarkedMessageIds(currentAccount, dialog_id).length > 0);
             }
             hideTitleItem = NaConfig.INSTANCE.getChatMenuItemHideTitle().Bool() ? headerItem.lazilyAddSubItem(nkheaderbtn_hide_title, R.drawable.hide_title, getString(R.string.HideTitle)) : null;
-            if (NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) headerItem.lazilyAddSubItem(nkbtn_viewDeleted, R.drawable.msg_view_file, getString(R.string.ViewDeleted));
-            if (NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) headerItem.lazilyAddSubItem(nkbtn_clearDeleted, R.drawable.msg_clear, getString(R.string.ClearDeleted));
+            if (muteItem == null) {
+                headerItem.lazilyAddColoredGap();
+                createAyuGramMenuItem();
+                headerItem.lazilyAddColoredGap();
+            }
             if (!isTopic) {
                 if (NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages().Bool() && (ChatObject.isMegagroup(currentChat) || currentChat != null && !ChatObject.isChannel(currentChat))) {
                     headerItem.lazilyAddSubItem(nkheaderbtn_zibi, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteAllFromSelf));
@@ -9459,6 +9469,170 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean lastInAppInputVisible;
+    private void createAyuGramMenuItem() {
+        if (headerItem == null || getParentActivity() == null) {
+            return;
+        }
+
+        boolean showGhostMode = !ChatObject.isChannelAndNotMegaGroup(currentChat);
+        boolean showSaveDeleted = NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool();
+        boolean showRegexFilters = NaConfig.INSTANCE.getRegexFiltersEnabled().Bool();
+        boolean showViewDeleted = showSaveDeleted && NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool();
+        boolean showClearDeleted = showSaveDeleted && NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool();
+        if (!showGhostMode && !showSaveDeleted && !showRegexFilters && !showViewDeleted && !showClearDeleted) {
+            return;
+        }
+
+        ActionBarPopupWindow.ActionBarPopupWindowLayout ayuLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(
+                actionBar.getContext(),
+                0,
+                getResourceProvider(),
+                ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK
+        );
+        ayuLayout.setFitItems(true);
+
+        ActionBarPopupWindow.ActionBarPopupWindowLayout parentPopupLayout = headerItem.getPopupLayout();
+        PopupSwipeBackLayout parentSwipeBack = parentPopupLayout != null ? parentPopupLayout.getSwipeBack() : null;
+        PopupSwipeBackLayout ayuSwipeBack = ayuLayout.getSwipeBack();
+        if (ayuSwipeBack != null) {
+            final int[] lastAppliedAyuHeight = {-1};
+            ayuSwipeBack.setOnHeightUpdateListener(height -> {
+                if (height <= 0 || lastAppliedAyuHeight[0] == height) {
+                    return;
+                }
+                if (parentSwipeBack == null) {
+                    return;
+                }
+                int ayuSwipeBackIndex = parentSwipeBack.indexOfChild(ayuLayout);
+                if (ayuSwipeBackIndex < 0) {
+                    return;
+                }
+                lastAppliedAyuHeight[0] = height;
+                parentSwipeBack.setNewForegroundHeight(ayuSwipeBackIndex, height, false);
+            });
+        }
+        if (parentSwipeBack != null) {
+            ActionBarMenuSubItem backItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.msg_arrow_back, getString(R.string.Back), false, getResourceProvider());
+            backItem.setOnClickListener(v -> parentSwipeBack.closeForeground());
+            ActionBarMenuItem.addColoredGap(ayuLayout, getResourceProvider());
+        }
+
+        Runnable dismissMenu = () -> {
+            if (headerItem != null && headerItem.isSubMenuShowing()) {
+                headerItem.toggleSubMenu();
+            }
+        };
+
+        if (showGhostMode) {
+            GhostModeExclusionPopupWrapper ghostModePopupWrapper = new GhostModeExclusionPopupWrapper(
+                    this,
+                    ayuSwipeBack,
+                    dialog_id,
+                    getResourceProvider()
+            );
+            int ghostModeSwipeBackIndex = ayuLayout.addViewToSwipeBack(ghostModePopupWrapper.windowLayout);
+            if (ayuSwipeBack != null) {
+                ayuSwipeBack.setNewForegroundHeight(ghostModeSwipeBackIndex, ghostModePopupWrapper.windowLayout.precalculateHeight(), false);
+            }
+            ActionBarMenuSubItem ghostModeItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.ayu_ghost_solar, getString(R.string.GhostMode), false, getResourceProvider());
+            View.OnClickListener ghostModeClickListener = v -> {
+                if (ayuSwipeBack != null) {
+                    ayuSwipeBack.openForeground(ghostModeSwipeBackIndex);
+                }
+            };
+            ghostModeItem.setOnClickListener(ghostModeClickListener);
+            ghostModeItem.setRightIcon(R.drawable.msg_arrowright, ghostModeClickListener);
+        }
+
+        if (showSaveDeleted) {
+            SaveExclusionPopupWrapper savePopupWrapper = new SaveExclusionPopupWrapper(
+                    this,
+                    ayuSwipeBack,
+                    dialog_id,
+                    getResourceProvider()
+            );
+            int saveDeletedSwipeBackIndex = ayuLayout.addViewToSwipeBack(savePopupWrapper.windowLayout);
+            if (ayuSwipeBack != null) {
+                ayuSwipeBack.setNewForegroundHeight(saveDeletedSwipeBackIndex, savePopupWrapper.windowLayout.precalculateHeight(), false);
+            }
+            ActionBarMenuSubItem saveDeletedItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.msg_delete_24_solar, getString(R.string.SaveDeletedExclusionMenu), false, getResourceProvider());
+            View.OnClickListener saveDeletedClickListener = v -> {
+                if (ayuSwipeBack != null) {
+                    ayuSwipeBack.openForeground(saveDeletedSwipeBackIndex);
+                }
+            };
+            saveDeletedItem.setOnClickListener(saveDeletedClickListener);
+            saveDeletedItem.setRightIcon(R.drawable.msg_arrowright, saveDeletedClickListener);
+        }
+
+        if (showRegexFilters) {
+            RegexFiltersExclusionPopupWrapper regexFiltersPopupWrapper = new RegexFiltersExclusionPopupWrapper(
+                    this,
+                    ayuSwipeBack,
+                    dialog_id,
+                    getResourceProvider()
+            );
+            int regexFiltersSwipeBackIndex = ayuLayout.addViewToSwipeBack(regexFiltersPopupWrapper.windowLayout);
+            if (ayuSwipeBack != null) {
+                ayuSwipeBack.setNewForegroundHeight(regexFiltersSwipeBackIndex, regexFiltersPopupWrapper.windowLayout.precalculateHeight(), false);
+            }
+            ActionBarMenuSubItem regexFiltersItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.hide_title, getString(R.string.RegexFilters), false, getResourceProvider());
+            regexFiltersItem.setOnClickListener(v -> {
+                dismissMenu.run();
+                AndroidUtilities.runOnUIThread(() -> presentFragment(new RegexChatFiltersListActivity(dialog_id)), 50);
+            });
+            regexFiltersItem.setOnLongClickListener(v -> {
+                dismissMenu.run();
+                AndroidUtilities.runOnUIThread(() -> presentFragment(new RegexFiltersSettingActivity()), 50);
+                return true;
+            });
+            regexFiltersItem.setRightIcon(R.drawable.msg_arrowright, v -> {
+                if (ayuSwipeBack != null) {
+                    ayuSwipeBack.openForeground(regexFiltersSwipeBackIndex);
+                }
+            });
+        }
+
+        if (showViewDeleted) {
+            ActionBarMenuSubItem viewDeletedItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.msg_view_file, getString(R.string.ViewDeleted), false, getResourceProvider());
+            viewDeletedItem.setOnClickListener(v -> {
+                dismissMenu.run();
+                AndroidUtilities.runOnUIThread(() -> presentFragment(new AyuViewDeleted(dialog_id)), 50);
+            });
+        }
+
+        if (showClearDeleted) {
+            ActionBarMenuSubItem clearDeletedItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.msg_clear, getString(R.string.ClearDeleted), false, getResourceProvider());
+            clearDeletedItem.setOnClickListener(v -> {
+                dismissMenu.run();
+                AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity(), getResourceProvider());
+                builder.setTitle(LocaleController.getString(R.string.ClearDeleted));
+                builder.setMessage(LocaleController.getString(R.string.ClearDeletedAlertMessage));
+                builder.setPositiveButton(LocaleController.getString(R.string.Clear), (dialogInterface, i) -> {
+                    AyuMessagesController.getInstance().deleteCurrent(dialog_id, mergeDialogId, () -> {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            getNotificationCenter().removeObserver(ChatActivity.this, NotificationCenter.closeChats);
+                            getNotificationCenter().postNotificationName(NotificationCenter.closeChats);
+                            finishFragment();
+                        });
+                        if (!NekoConfig.disableVibration.Bool() && LaunchActivity.getLastFragment() != null && LaunchActivity.getLastFragment().getFragmentView() != null) {
+                            LaunchActivity.getLastFragment().getFragmentView().performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                        }
+                    });
+                });
+                builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                AlertDialog alertDialog = builder.create();
+                showDialog(alertDialog);
+                TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                if (button != null) {
+                    button.setTextColor(Theme.getColor(Theme.key_dialogTextRed));
+                }
+            });
+        }
+
+        headerItem.lazilyAddSwipeBackItem(R.drawable.msg_fave, null, getString(R.string.AyuGramMenu), ayuLayout);
+    }
+
     private void checkInsets() {
         chatInputViewsContainer.checkInsets();
         updatePagedownButtonsPosition();
