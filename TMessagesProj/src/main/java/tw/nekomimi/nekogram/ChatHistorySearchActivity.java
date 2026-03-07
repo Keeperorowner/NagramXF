@@ -24,6 +24,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -46,6 +47,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
     private static final String KEY_COUNT = "count";
     private static final String KEY_RECENT_PREFIX = "recent";
     private static final int MAX_RECENT_SEARCHES = 20;
+    private static final long SEARCH_DEBOUNCE_MS = 250L;
 
     private RecyclerListView listView;
     private ListAdapter adapter;
@@ -61,6 +63,9 @@ public class ChatHistorySearchActivity extends BaseFragment {
     private boolean isOpeningChat = false;
     private String savedSearchQuery = "";
     private String searchQuery = "";
+    private Runnable searchRunnable;
+    private int searchRequestId;
+    private boolean searchInProgress;
     
     private android.os.Parcelable savedScrollState = null;
     private int savedScrollTab = -1;
@@ -216,27 +221,77 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
     private void performSearch(String query) {
         searchQuery = query == null ? "" : query;
-        results.clear();
-        
+        cancelPendingSearch();
+        searchRequestId++;
+
         if (adapter != null) {
             adapter.invalidateGroupingCache();
         }
 
         if (TextUtils.isEmpty(searchQuery)) {
+            searchInProgress = false;
+            results.clear();
             adapter.notifyDataSetChanged();
+            refreshAllPages();
             updateResultCounter(0);
             updateSearchModeUI();
             return;
         }
-        String lower = searchQuery.toLowerCase();
-        for (ChatHistoryActivity.HistoryItem item : historyItems) {
-            if (ChatHistoryActivity.matchesSearchQuery(item, lower)) {
-                results.add(item);
+
+        searchInProgress = true;
+        results.clear();
+        refreshAllPages();
+        updateResultCounter(0);
+        updateSearchModeUI();
+
+        final int requestId = searchRequestId;
+        final String queryText = searchQuery;
+        final ArrayList<ChatHistoryActivity.HistoryItem> historyItemsSnapshot = new ArrayList<>(historyItems);
+        Runnable runnable = () -> {
+            String lower = queryText.toLowerCase();
+            ArrayList<ChatHistoryActivity.HistoryItem> filtered = new ArrayList<>();
+            for (ChatHistoryActivity.HistoryItem item : historyItemsSnapshot) {
+                if (ChatHistoryActivity.matchesSearchQuery(item, lower)) {
+                    filtered.add(item);
+                }
             }
+            AndroidUtilities.runOnUIThread(() -> applySearchResults(queryText, requestId, filtered));
+        };
+        searchRunnable = runnable;
+        Utilities.searchQueue.postRunnable(runnable, SEARCH_DEBOUNCE_MS);
+    }
+
+    private void applySearchResults(String query, int requestId, ArrayList<ChatHistoryActivity.HistoryItem> filtered) {
+        if (requestId != searchRequestId || !TextUtils.equals(query, searchQuery)) {
+            return;
+        }
+        searchRunnable = null;
+        searchInProgress = false;
+        results.clear();
+        results.addAll(filtered);
+        if (adapter != null) {
+            adapter.invalidateGroupingCache();
         }
         refreshAllPages();
         updateResultCounter(results.size());
         updateSearchModeUI();
+    }
+
+    private void cancelPendingSearch() {
+        if (searchRunnable != null) {
+            Utilities.searchQueue.cancelRunnable(searchRunnable);
+            searchRunnable = null;
+        }
+    }
+
+    private CharSequence getSearchEmptyText() {
+        if (TextUtils.isEmpty(searchQuery)) {
+            return LocaleController.getString(R.string.ChatHistory_EnterSearchQuery);
+        }
+        if (searchInProgress) {
+            return LocaleController.getString(R.string.Loading);
+        }
+        return LocaleController.formatString(R.string.ChatHistory_NoResultsFor, searchQuery);
     }
 
     private void updateResultCounter(int count) {
@@ -311,6 +366,14 @@ public class ChatHistorySearchActivity extends BaseFragment {
         } else {
             performSearch(searchQuery);
         }
+    }
+
+    @Override
+    public void onFragmentDestroy() {
+        super.onFragmentDestroy();
+        cancelPendingSearch();
+        searchRequestId++;
+        searchInProgress = false;
     }
 
     private class ListAdapter extends RecyclerListView.SelectionAdapter {
@@ -614,7 +677,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
         android.widget.TextView counter = container.getTag() instanceof android.widget.TextView
                 ? (android.widget.TextView) container.getTag() : null;
         if (counter != null) {
-            if (TextUtils.isEmpty(searchQuery)) {
+            if (TextUtils.isEmpty(searchQuery) || searchInProgress) {
                 counter.setVisibility(View.GONE);
             } else {
                 counter.setText(LocaleController.formatString(R.string.ChatHistory_ResultCount, ad.getRealCount()));
@@ -732,7 +795,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
             View view;
             if (viewType == 1) {
                 org.telegram.ui.Cells.HeaderCell empty = new org.telegram.ui.Cells.HeaderCell(mContext);
-                empty.setText(TextUtils.isEmpty(searchQuery) ? LocaleController.getString(R.string.ChatHistory_EnterSearchQuery) : LocaleController.formatString(R.string.ChatHistory_NoResultsFor, searchQuery));
+                empty.setText(getSearchEmptyText());
                 view = empty;
             } else {
                 UserCell cell = new UserCell(mContext, 0, 0, false);
@@ -748,7 +811,9 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
-            if (holder.itemView instanceof UserCell && position >= 0 && position < categoryItems.size()) {
+            if (holder.itemView instanceof org.telegram.ui.Cells.HeaderCell && categoryItems.isEmpty()) {
+                ((org.telegram.ui.Cells.HeaderCell) holder.itemView).setText(getSearchEmptyText());
+            } else if (holder.itemView instanceof UserCell && position >= 0 && position < categoryItems.size()) {
                 UserCell cell = (UserCell) holder.itemView;
                 ChatHistoryActivity.HistoryItem item = categoryItems.get(position);
                 ChatHistoryUtils.bindUserCell(cell, item);
