@@ -9,6 +9,7 @@
     <string name="DeleteKeepLocally">本地保留</string>
     <string name="ClearMessageDatabase">清除消息数据库</string>
     <string name="ClearMessageDatabaseNotification">消息数据库已清除</string>
+    <string name="AyuGramMenu">AyuGram</string>
     <string name="CustomDeletedMark">自定义已删除消息标记</string>
     <string name="HidePremiumSection">在设置中隐藏 Telegram Premium</string>
     <string name="HideHelpSection">在设置中隐藏帮助</string>
