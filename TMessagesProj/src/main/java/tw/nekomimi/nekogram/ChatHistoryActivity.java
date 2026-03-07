@@ -36,6 +36,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -72,6 +73,7 @@ import java.util.HashSet;
 public class ChatHistoryActivity extends BaseFragment {
 
     private static final String TAG = "ChatHistoryActivity";
+    private static final long SEARCH_DEBOUNCE_MS = 250L;
 
     private static final long TELEGRAM_SERVICE_USER_ID = 777000L;
     private static final long REPLIES_BOT_USER_ID = 708513L;
@@ -107,6 +109,9 @@ public class ChatHistoryActivity extends BaseFragment {
     private boolean isSearchMode = false;
     private String searchQuery = "";
     private ActionBarMenuItem searchItem;
+    private Runnable searchRunnable;
+    private int searchRequestId;
+    private boolean searchInProgress;
 
     private boolean savedSearchMode = false;
     private String savedSearchQuery = "";
@@ -129,6 +134,9 @@ public class ChatHistoryActivity extends BaseFragment {
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        cancelPendingSearch();
+        searchRequestId++;
+        searchInProgress = false;
         saveState();
     }
 
@@ -324,6 +332,7 @@ public class ChatHistoryActivity extends BaseFragment {
         if (isSearchMode) {
             performSearch(searchQuery);
         } else {
+            searchInProgress = false;
             filteredHistoryItems.clear();
             filteredHistoryItems.addAll(allHistoryItems);
         }
@@ -428,6 +437,9 @@ public class ChatHistoryActivity extends BaseFragment {
         if (isRestoringSearchState) {
             return;
         }
+        cancelPendingSearch();
+        searchRequestId++;
+        searchInProgress = false;
         isSearchMode = false;
         searchQuery = "";
         
@@ -441,20 +453,65 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void performSearch(String query) {
-        filteredHistoryItems.clear();
+        searchQuery = query == null ? "" : query;
+        cancelPendingSearch();
+        searchRequestId++;
 
-        if (TextUtils.isEmpty(query)) {
+        if (TextUtils.isEmpty(searchQuery)) {
+            searchInProgress = false;
+            filteredHistoryItems.clear();
             filteredHistoryItems.addAll(allHistoryItems);
-        } else {
-            String lowerQuery = query.toLowerCase();
-            for (HistoryItem item : allHistoryItems) {
-            if (matchesSearchQuery(item, lowerQuery)) {
-                filteredHistoryItems.add(item);
-            }
-        }
+            refreshAllPages();
+            return;
         }
 
+        searchInProgress = true;
+        filteredHistoryItems.clear();
         refreshAllPages();
+
+        final int requestId = searchRequestId;
+        final String queryText = searchQuery;
+        final ArrayList<HistoryItem> allHistoryItemsSnapshot = new ArrayList<>(allHistoryItems);
+        Runnable runnable = () -> {
+            String lowerQuery = queryText.toLowerCase();
+            ArrayList<HistoryItem> filtered = new ArrayList<>();
+            for (HistoryItem item : allHistoryItemsSnapshot) {
+                if (matchesSearchQuery(item, lowerQuery)) {
+                    filtered.add(item);
+                }
+            }
+            AndroidUtilities.runOnUIThread(() -> applySearchResults(queryText, requestId, filtered));
+        };
+        searchRunnable = runnable;
+        Utilities.searchQueue.postRunnable(runnable, SEARCH_DEBOUNCE_MS);
+    }
+
+    private void applySearchResults(String query, int requestId, ArrayList<HistoryItem> filtered) {
+        if (requestId != searchRequestId || !TextUtils.equals(query, searchQuery)) {
+            return;
+        }
+        searchRunnable = null;
+        searchInProgress = false;
+        filteredHistoryItems.clear();
+        filteredHistoryItems.addAll(filtered);
+        refreshAllPages();
+    }
+
+    private void cancelPendingSearch() {
+        if (searchRunnable != null) {
+            Utilities.searchQueue.cancelRunnable(searchRunnable);
+            searchRunnable = null;
+        }
+    }
+
+    private String getSearchEmptyText() {
+        if (TextUtils.isEmpty(searchQuery)) {
+            return getString(R.string.ChatHistory_EnterSearchQuery);
+        }
+        if (searchInProgress) {
+            return LocaleController.getString(R.string.Loading);
+        }
+        return LocaleController.formatString(R.string.ChatHistory_NoResultsFor, searchQuery);
     }
 
     public static boolean matchesSearchQuery(HistoryItem item, String query) {
@@ -880,11 +937,7 @@ public class ChatHistoryActivity extends BaseFragment {
                     EmptyStateCell emptyStateCell = (EmptyStateCell) holder.itemView;
 
                     if (isSearchMode) {
-                        if (TextUtils.isEmpty(searchQuery)) {
-                            emptyStateCell.setText("", getString(R.string.ChatHistory_EnterSearchQuery));
-                        } else {
-                            emptyStateCell.setText("", LocaleController.formatString(R.string.ChatHistory_NoResultsFor, searchQuery));
-                        }
+                        emptyStateCell.setText("", getSearchEmptyText());
                     } else if (category == ChatCategory.ALL) {
                         emptyStateCell.setText("", getString(R.string.ChatHistory_NoRecentChats));
                     } else {
