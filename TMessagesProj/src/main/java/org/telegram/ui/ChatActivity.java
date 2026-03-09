@@ -30546,6 +30546,7 @@ public class ChatActivity extends BaseFragment implements
         fixLayout();
         applyDraftMaybe(false);
         applyChatLinkMessageMaybe();
+        updateBottomOverlay();
         if (bottomChannelButtonsLayout != null && bottomChannelButtonsLayout.getVisibility() != View.VISIBLE && !actionBar.isSearchFieldVisible() && chatMode != MODE_SEARCH && !BaseFragment.hasSheets(this)) {
             chatActivityEnterView.setFieldFocused(true);
         }
