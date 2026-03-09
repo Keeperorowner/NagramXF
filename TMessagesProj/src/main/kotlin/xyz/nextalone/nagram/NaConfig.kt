@@ -487,6 +487,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val userAvatarsInMessagePreview =
+        addConfig(
+            "UserAvatarsInMessagePreview",
+            ConfigItem.configTypeBool,
+            false
+        )
     val customTitleUserName =
         addConfig(
             "CustomTitleUserName",
