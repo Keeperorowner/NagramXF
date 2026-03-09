@@ -101,62 +101,6 @@ public class ForceForward {
         return chat.noforwards;
     }
 
-    private static boolean isPornIosRestriction(TLRPC.RestrictionReason reason) {
-        if (reason == null) {
-            return false;
-        }
-        if ("porn-ios".equals(reason.reason)) {
-            return true;
-        }
-        if (TextUtils.isEmpty(reason.reason) || TextUtils.isEmpty(reason.platform)) {
-            return false;
-        }
-        String normalizedPlatform = reason.platform.toLowerCase();
-        String normalizedReason = reason.reason.toLowerCase();
-        return normalizedPlatform.contains("ios") && normalizedReason.contains("porn");
-    }
-
-    private static boolean hasPornIosRestriction(ArrayList<TLRPC.RestrictionReason> reasons) {
-        if (reasons == null || reasons.isEmpty()) {
-            return false;
-        }
-        for (int i = 0; i < reasons.size(); i++) {
-            if (isPornIosRestriction(reasons.get(i))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static boolean isPornIosRestricted(MessageObject messageObject) {
-        if (messageObject == null || messageObject.currentAccount < 0) {
-            return false;
-        }
-        if (messageObject.messageOwner != null && hasPornIosRestriction(messageObject.messageOwner.restriction_reason)) {
-            return true;
-        }
-        long chatId = messageObject.getChatId();
-        if (chatId < 0) {
-            chatId = -chatId;
-        }
-        if (chatId == 0) {
-            return false;
-        }
-        MessagesController controller = MessagesController.getInstance(messageObject.currentAccount);
-        TLRPC.Chat chat = controller.getChat(chatId);
-        if (chat == null) {
-            return false;
-        }
-        if (hasPornIosRestriction(chat.restriction_reason)) {
-            return true;
-        }
-        if (chat.migrated_to != null) {
-            TLRPC.Chat migratedTo = controller.getChat(chat.migrated_to.channel_id);
-            return migratedTo != null && hasPornIosRestriction(migratedTo.restriction_reason);
-        }
-        return false;
-    }
-
     public static boolean isUnforwardable(MessageObject messageObject) {
         if (messageObject == null || messageObject.messageOwner == null) {
             return false;
@@ -181,7 +125,7 @@ public class ForceForward {
     }
 
     public static boolean isForceForwardNeeded(MessageObject messageObject) {
-        return isChatNoForwards(messageObject) || isUnforwardable(messageObject) || isPornIosRestricted(messageObject);
+        return isChatNoForwards(messageObject) || isUnforwardable(messageObject);
     }
 
     private static boolean isPaidRestricted(MessageObject messageObject) {
