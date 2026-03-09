@@ -207,6 +207,7 @@
     <string name="DebugMenuShowFrameMetrics">Show Frame Metrics</string>
     <string name="DebugMenuHideFrameMetrics">Hide Frame Metrics</string>
     <string name="TranslateMessageLLM">Translate with AI</string>
+    <string name="UserAvatarsInMessagePreview">User Avatars in Message Preview</string>
     <string name="EditLocalNameOverride">Editing local name override.</string>
     <string name="ResetChatNameOverrides">Reset Chat Name Overrides</string>
     <string name="ResetChatNameNotification">Chat name overrides cleared.</string>
