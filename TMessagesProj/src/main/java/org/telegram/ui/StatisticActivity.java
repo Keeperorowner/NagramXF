@@ -121,6 +121,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+import xyz.nextalone.nagram.NaConfig;
+
 public class StatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
 
@@ -256,6 +258,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.boostByChannelCreated);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesListUpdated);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsLayoutChanged);
         StoriesController storiesController = getMessagesController().getStoriesController();
         storiesList = storiesController.getStoriesList(-chatId, StoriesController.StoriesList.TYPE_STATISTICS);
         if (storiesList != null) {
@@ -489,6 +492,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         getNotificationCenter().removeObserver(this, NotificationCenter.messagesDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.storiesListUpdated);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsLayoutChanged);
 
         if (progressDialog[0] != null) {
             progressDialog[0].dismiss();
@@ -602,6 +606,8 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     loadStatistic();
                 }
             }
+        } else if (id == NotificationCenter.mainTabsLayoutChanged) {
+            applyMainTabsAppearanceConfig();
         }
     }
 
@@ -625,6 +631,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
         tabs = tabViews.toArray(new GlassTabView[0]);
         tabsView = new MainTabsLayout(context);
+        tabsView.setEqualWidthWhenTitlesVisible(true);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
 
         for (int index = 0; index < tabs.length; index++) {
@@ -639,6 +646,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             tabsView.addView(tabs[index]);
             tabsView.setViewVisible(view, true, false);
         }
+        applyMainTabsAppearanceConfig();
 
         viewPagerFixed = new ViewPagerFixed(getContext()) {
             @Override
@@ -3583,11 +3591,28 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        applyMainTabsAppearanceConfig();
+    }
+
     public void selectTab(int position, boolean animated) {
         for (int a = 0; a < tabs.length; a++) {
             GlassTabView tab = tabs[a];
             tab.setSelected(a == position, animated);
         }
+    }
+
+    private void applyMainTabsAppearanceConfig() {
+        if (tabsView == null || tabs == null) {
+            return;
+        }
+        final boolean showTitles = NaConfig.INSTANCE.getMainTabsShowTitles().Bool();
+        for (GlassTabView tab : tabs) {
+            tab.setTitleVisible(showTitles);
+        }
+        tabsView.requestLayout();
     }
 
     public void setGestureSelectedOverride(float animatedPosition, boolean allow) {
