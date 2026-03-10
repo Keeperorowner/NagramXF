@@ -109,13 +109,13 @@
         android:restoreAnyVersion="true"
         android:backupAgent=".BackupAgent"
         android:hardwareAccelerated="true"
-        android:icon="@mipmap/ic_launcher_nagram_blue"
-        android:label="@string/NagramX"
+        android:icon="@mipmap/ic_launcher_nagram_dark_blue"
+        android:label="@string/AppName"
         android:largeHeap="true"
         android:theme="@style/Theme.TMessages.Start"
         android:manageSpaceActivity="org.telegram.ui.ExternalActionActivity"
         android:networkSecurityConfig="@xml/network_security_config"
-        android:roundIcon="@mipmap/ic_launcher_nagram_blue_round"
+        android:roundIcon="@mipmap/ic_launcher_nagram_dark_blue_round"
         android:supportsRtl="false"
         android:requestLegacyExternalStorage="true"
         android:hasFragileUserData="true"
@@ -224,7 +224,7 @@
         </activity-alias>
 
         <activity-alias
-            android:enabled="true"
+            android:enabled="false"
             android:name="org.telegram.messenger.BlueIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/ic_launcher_nagram_blue"
@@ -240,7 +240,7 @@
         </activity-alias>
 
         <activity-alias
-            android:enabled="false"
+            android:enabled="true"
             android:name="org.telegram.messenger.DarkBlueIcon"
             android:targetActivity="org.telegram.ui.LaunchActivity"
             android:icon="@mipmap/ic_launcher_nagram_dark_blue"
@@ -412,7 +412,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.nu.gpu.nagram.android.profile"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.fork.risin42.nagramx.android.profile"/>
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
@@ -459,8 +459,8 @@
             <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.nu.gpu.nagram.android.call"/>
-                <data android:mimeType="vnd.android.cursor.item/vnd.nu.gpu.nagram.android.call.video"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.fork.risin42.nagramx.android.call"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.fork.risin42.nagramx.android.call.video"/>
             </intent-filter>
         </activity-alias>
         <activity

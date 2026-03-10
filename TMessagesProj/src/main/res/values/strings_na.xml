@@ -88,6 +88,7 @@
     <string name="RegexFiltersSharedHeader">Shared Filters</string>
     <string name="RegexFiltersSubMenuDescription">You can choose to exclude Shared Filters for this chat.</string>
     <string name="RegexFiltersChatHeader">Chat Filters</string>
+    <string name="RegexFiltersEnabled">Enable Message Filters</string>
     <string name="RegexFiltersEnableInChats">Enable Filters in Private Chats</string>
     <string name="RegexFiltersCaseInsensitive">Case insensitive expressions</string>
     <string name="RegexFiltersAdd">Add filter</string>

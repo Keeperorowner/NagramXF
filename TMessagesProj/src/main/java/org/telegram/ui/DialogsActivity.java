@@ -273,6 +273,7 @@ import me.vkryl.android.animator.FactorAnimator;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
+import tw.nekomimi.nekogram.ChatHistoryActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import xyz.nextalone.nagram.NaConfig;
@@ -13333,6 +13334,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (!isArchive()) {
+            io.add(R.drawable.msg_recent_solar, getString(R.string.RecentChats), () -> {
+                presentFragment(new ChatHistoryActivity());
+            });
+            io.addGap();
+
             final boolean isCurrentThemeDark;
             if (resourceProvider != null) {
                 isCurrentThemeDark = resourceProvider.isDark();

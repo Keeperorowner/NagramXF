@@ -15,13 +15,13 @@ public class LauncherIconController {
             }
         }
 
-        setIcon(LauncherIcon.BLUE);
+        setIcon(LauncherIcon.DARKBLUE);
     }
 
     public static boolean isEnabled(LauncherIcon icon) {
         Context ctx = ApplicationLoader.applicationContext;
         int i = ctx.getPackageManager().getComponentEnabledSetting(icon.getComponentName(ctx));
-        return i == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || i == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.BLUE;
+        return i == PackageManager.COMPONENT_ENABLED_STATE_ENABLED || i == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.DARKBLUE;
     }
 
     public static void setIcon(LauncherIcon icon) {
