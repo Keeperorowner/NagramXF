@@ -32,6 +32,7 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsCustomizeActivity extends UniversalFragment {
     private static final int BUTTON_SHOW_TAB_TITLES = 1;
+    private static final int BUTTON_HIDE_BOTTOM_BAR = 2;
 
     private MainTabsPreviewCell previewCell;
     private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
@@ -80,6 +81,7 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
         items.add(UItem.asCustom(container, previewRowHeight));
         items.add(UItem.asShadow(getString(R.string.MainTabsCustomizeDesc)));
         items.add(UItem.asCheck(BUTTON_SHOW_TAB_TITLES, getString(R.string.MainTabsShowTitles)).setChecked(!NaConfig.INSTANCE.getMainTabsHideTitles().Bool()));
+        items.add(UItem.asCheck(BUTTON_HIDE_BOTTOM_BAR, getString(R.string.MainTabsHideBottomBar)).setChecked(NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool()));
     }
 
     @Override
@@ -93,6 +95,12 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
             if (listView != null && listView.adapter != null) {
                 listView.adapter.update(true);
             }
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
+            return;
+        }
+        if (item.id == BUTTON_HIDE_BOTTOM_BAR) {
+            boolean checked = NaConfig.INSTANCE.getMainTabsHideBottomBar().toggleConfigBool();
+            ((TextCheckCell) view).setChecked(checked);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
             return;
         }

@@ -212,6 +212,7 @@
     <string name="MainTabsCustomize">Customize Bottom Tabs</string>
     <string name="MainTabsCustomizeDesc">Tap a tab to show or hide it. Long-press and drag to reorder.</string>
     <string name="MainTabsShowTitles">Show Tab Titles</string>
+    <string name="MainTabsHideBottomBar">Hide Bottom Bar</string>
     <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">Configure OpenAI-compatible API. You can refer to this **documentation**.\n</string>
     <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
