@@ -121,7 +121,6 @@ import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
 import tw.nekomimi.nekogram.parts.MessageTransKt;
 import xyz.nextalone.nagram.NaConfig;
-import tw.nekomimi.nekogram.helpers.ForceForward;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.syntaxhighlight.SyntaxHighlight;
 
@@ -10867,17 +10866,11 @@ public class MessageObject {
     public boolean canForwardMessage() {
         if (isQuickReply()) return false;
         if (type == TYPE_GIFT_STARS || type == TYPE_GIFT_THEME_UPDATE || type == TYPE_SUGGEST_BIRTHDAY || type == TYPE_GIFT_OFFER || type == TYPE_SHARING_OFFER) return false;
-        return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != MessageObject.TYPE_PHONE_CALL && !isSponsored() && (ForceForward.isEnabled() || !messageOwner.noforwards) && !isAyuDeleted();
+        return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != MessageObject.TYPE_PHONE_CALL && !isSponsored() && !isAyuDeleted();
     }
 
     public boolean isNoforwards() {
-        if (ForceForward.isEnabled()) {
-            return false;
-        }
-        if (messageOwner != null && messageOwner.noforwards)
-            return true;
-        final TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-getDialogId());
-        return chat != null && chat.noforwards;
+        return false;
     }
     public boolean canEditMedia() {
         if (isSecretMedia()) {

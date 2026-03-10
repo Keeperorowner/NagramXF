@@ -12725,7 +12725,7 @@ public class ChatActivity extends BaseFragment implements
 
     public void openForward(boolean fromActionBar) {
         boolean hasSelectedAyuDeletedMessage = hasSelectedAyuDeletedMessage();
-        if (isPeerNoForwards() || hasSelectedNoforwardsMessage() || hasSelectedAyuDeletedMessage) {
+        if (hasSelectedAyuDeletedMessage) {
             // We should update text if user changed locale without re-opening chat activity
             String str;
             if (isPeerNoForwards()) {
@@ -14883,30 +14883,89 @@ public class ChatActivity extends BaseFragment implements
         return forceForwardHandler;
     }
 
-    private boolean shouldUseForceForward(ArrayList<MessageObject> messages) {
-        if (messages == null || messages.isEmpty() || !ForceForward.isEnabled()) {
+    private boolean shouldUseForceForward(MessageObject messageObject) {
+        return ForceForward.isForceForwardNeeded(messageObject);
+    }
+
+    private boolean canUseForwardAction(MessageObject messageObject) {
+        if (chatMode == MODE_SCHEDULED || messageObject == null || messageObject.isAyuDeleted()) {
             return false;
         }
+        return messageObject.canForwardMessage() || shouldUseForceForward(messageObject);
+    }
+
+    private void showForceForwardNoticeIfNeeded(ArrayList<MessageObject> messages, boolean hasForceForwardChunk) {
+        if (!hasForceForwardChunk || !BulletinFactory.canShowBulletin(this)) {
+            return;
+        }
+        String notice = ForceForward.buildForceForwardNotice(messages);
+        if (!TextUtils.isEmpty(notice)) {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, notice).show();
+        }
+    }
+
+    private void forwardMessagesByChunks(ArrayList<MessageObject> messages, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
+        ArrayList<ArrayList<MessageObject>> chunks = new ArrayList<>();
+        ArrayList<Boolean> forceForwardModes = new ArrayList<>();
+        ArrayList<MessageObject> currentChunk = null;
+        boolean currentChunkForceForward = false;
         for (int i = 0; i < messages.size(); i++) {
             MessageObject messageObject = messages.get(i);
-            if (messageObject == null || messageObject.messageOwner == null) {
-                continue;
+            boolean useForceForward = shouldUseForceForward(messageObject);
+            if (currentChunk == null || currentChunkForceForward != useForceForward) {
+                currentChunk = new ArrayList<>();
+                chunks.add(currentChunk);
+                forceForwardModes.add(useForceForward);
+                currentChunkForceForward = useForceForward;
             }
-            if (messageObject.messageOwner.noforwards) {
-                return true;
-            }
-            long chatId = messageObject.getChatId();
-            if (chatId < 0) {
-                chatId = -chatId;
-            }
-            if (chatId != 0) {
-                TLRPC.Chat chat = getMessagesController().getChat(chatId);
-                if (chat != null && chat.noforwards) {
-                    return true;
-                }
-            }
+            currentChunk.add(messageObject);
         }
-        return currentChat != null && currentChat.noforwards;
+        boolean hasForceForwardChunk = forceForwardModes.contains(Boolean.TRUE);
+        showForceForwardNoticeIfNeeded(messages, hasForceForwardChunk);
+        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED) && forceForwardModes.contains(Boolean.FALSE)) {
+            waitingForSendingMessageLoad = true;
+        }
+        forwardMessagesByChunks(chunks, forceForwardModes, 0, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
+    }
+
+    private void forwardMessagesByChunks(ArrayList<ArrayList<MessageObject>> chunks, ArrayList<Boolean> forceForwardModes, int index, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
+        if (index >= chunks.size()) {
+            return;
+        }
+        ArrayList<MessageObject> chunk = chunks.get(index);
+        if (forceForwardModes.get(index)) {
+            getForceForwardHandler().runForceForward(chunk, targetDid, false, hideCaption, notify, scheduleDate, payStars, shouldContinue -> {
+                if (!shouldContinue) {
+                    String failureReason = getForceForwardHandler().consumeLastFailureReason();
+                    if (!TextUtils.isEmpty(failureReason) && BulletinFactory.canShowBulletin(ChatActivity.this)) {
+                        BulletinFactory.of(ChatActivity.this).createErrorBulletin(failureReason, resourcesProvider != null ? resourcesProvider : themeDelegate).show();
+                    }
+                    if (clearWaitingOnError) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            waitingForSendingMessageLoad = false;
+                            hideFieldPanel(true);
+                        });
+                    }
+                    return;
+                }
+                forwardMessagesByChunks(chunks, forceForwardModes, index + 1, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
+            });
+            return;
+        }
+        int result = getSendMessagesHelper().sendMessage(chunk, targetDid, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
+        AlertsCreator.showSendMediaAlert(result, this, resourcesProvider);
+        if (result != 0 && clearWaitingOnError) {
+            AndroidUtilities.runOnUIThread(() -> {
+                waitingForSendingMessageLoad = false;
+                hideFieldPanel(true);
+            });
+            return;
+        }
+        forwardMessagesByChunks(chunks, forceForwardModes, index + 1, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
+    }
+
+    public void refreshForceForwardStatus() {
+        updateSecretStatus();
     }
 
     private void forwardMessages(ArrayList<MessageObject> arrayList, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars) {
@@ -14916,40 +14975,15 @@ public class ChatActivity extends BaseFragment implements
         if (!checkSlowModeAlert()) {
             return;
         }
-        if (shouldUseForceForward(arrayList)) {
-            getForceForwardHandler().runForceForward(arrayList, dialog_id, false);
-            return;
-        }
-        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
-            waitingForSendingMessageLoad = true;
-            if (chatAdapter != null) {
-                chatAdapter.checkRemoveBotForumRowsStartThreadRow();
-            }
-        }
-        int result = getSendMessagesHelper().sendMessage(arrayList, dialog_id, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
-        AlertsCreator.showSendMediaAlert(result, this, themeDelegate);
-        if (result != 0) {
-            AndroidUtilities.runOnUIThread(() -> {
-                waitingForSendingMessageLoad = false;
-                hideFieldPanel(true);
-            });
-        }
+        forwardMessagesByChunks(arrayList, dialog_id, fromMyName, hideCaption, notify, scheduleDate, payStars, themeDelegate, true);
     }
 
-    // This method is used to forward messages to Saved Messages, or to multi Dialogs
     private void forwardMessages(ArrayList<MessageObject> arrayList, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long did, long payStars) {
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
         final long targetDid = did == 0 ? dialog_id : did;
-        if (shouldUseForceForward(arrayList)) {
-            getForceForwardHandler().runForceForward(arrayList, targetDid, false);
-            return;
-        }
-        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
-            waitingForSendingMessageLoad = true;
-        }
-        AlertsCreator.showSendMediaAlert(getSendMessagesHelper().sendMessage(arrayList, targetDid, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams()), this);
+        forwardMessagesByChunks(arrayList, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, null, false);
     }
 
     public boolean shouldShowImport() {
@@ -19181,6 +19215,23 @@ public class ChatActivity extends BaseFragment implements
         boolean hideKeyboard = false;
         bottomOverlayText.setBackground(null);
         bottomOverlayText.setOnClickListener(null);
+        if (forceForwardHandler != null && forceForwardHandler.isForwarding()) {
+            String forceForwardStatus = forceForwardHandler.getForwardingStatus();
+            if (!TextUtils.isEmpty(forceForwardStatus)) {
+                bottomOverlayText.setText(forceForwardStatus + " - " + LocaleController.getString(R.string.CancelForwarding));
+                bottomOverlayText.setBackground(Theme.createSelectorWithBackgroundDrawable(0, Theme.getColor(Theme.key_listSelector)));
+                bottomOverlayText.setOnClickListener(v -> forceForwardHandler.stopCurrentRun());
+                bottomOverlay.setVisibility(inPreviewMode ? View.INVISIBLE : View.VISIBLE);
+                if (mentionListAnimation != null) {
+                    mentionListAnimation.cancel();
+                    mentionListAnimation = null;
+                }
+                mentionContainer.setVisibility(View.GONE);
+                mentionContainer.setTag(null);
+                updateMessageListAccessibilityVisibility();
+                return;
+            }
+        }
         if (chatMode == MODE_SAVED && getSavedDialogId() == UserObject.ANONYMOUS) {
             bottomOverlayText.setText(LocaleController.getString(R.string.AuthorHiddenDescription));
             bottomOverlay.setVisibility(View.VISIBLE);
@@ -19611,12 +19662,12 @@ public class ChatActivity extends BaseFragment implements
                     if (!messageObject.canDeleteMessage(chatMode == MODE_SCHEDULED, currentChat)) {
                         cantDeleteMessagesCount--;
                     }
-                    boolean noforwards = isPeerNoForwards();
-                    if (chatMode == MODE_SCHEDULED || !messageObject.canForwardMessage() || noforwards) {
-                        cantForwardMessagesCount--;
-                    } else {
+                    if (canUseForwardAction(messageObject)) {
                         canForwardMessagesCount--;
+                    } else {
+                        cantForwardMessagesCount--;
                     }
+                    boolean noforwards = getMessagesController().isChatNoForwards(currentChat);
                     if (messageObject.isMusic() && !noforwards) {
                         canSaveMusicCount--;
                     } else if (messageObject.isDocument() && !noforwards) {
@@ -19648,12 +19699,12 @@ public class ChatActivity extends BaseFragment implements
                     if (!messageObject.canDeleteMessage(chatMode == MODE_SCHEDULED, currentChat)) {
                         cantDeleteMessagesCount++;
                     }
-                    boolean noforwards = isPeerNoForwards();
-                    if (chatMode == MODE_SCHEDULED || !messageObject.canForwardMessage() || noforwards) {
-                        cantForwardMessagesCount++;
-                    } else {
+                    if (canUseForwardAction(messageObject)) {
                         canForwardMessagesCount++;
+                    } else {
+                        cantForwardMessagesCount++;
                     }
+                    boolean noforwards = getMessagesController().isChatNoForwards(currentChat);
                     if (messageObject.isMusic() && !noforwards) {
                         canSaveMusicCount++;
                     } else if (messageObject.isDocument() && !messageObject.isRoundOnce() && !messageObject.isVoiceOnce() && !noforwards) {
@@ -19701,7 +19752,7 @@ public class ChatActivity extends BaseFragment implements
                 }
 
                 boolean hasSelectedAyuDeletedMessage = hasSelectedAyuDeletedMessage();
-                boolean noforwards = isPeerNoForwards() || hasSelectedNoforwardsMessage() || hasSelectedAyuDeletedMessage;
+                boolean noforwards = hasSelectedAyuDeletedMessage;
                 boolean canForward = chatMode != MODE_SCHEDULED && cantForwardMessagesCount == 0 && !noforwards;
                 boolean showForward = NaConfig.INSTANCE.getActionBarButtonForward().Bool();
                 boolean canSendMessage = ChatObject.canSendMessages(currentChat);
