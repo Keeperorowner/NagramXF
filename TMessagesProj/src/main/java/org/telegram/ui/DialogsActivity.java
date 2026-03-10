@@ -276,6 +276,7 @@ import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.ChatHistoryActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
+import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
 import xyz.nextalone.nagram.NaConfig;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, FloatingDebugProvider, FactorAnimator.Target, MainTabsActivity.TabFragmentDelegate {
@@ -13317,6 +13318,37 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private boolean addHiddenMainTabsShortcuts(ItemOptions io) {
+        if (mainTabsActivityController == null || !NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool()) {
+            return false;
+        }
+
+        io.addGap();
+        io.add(R.drawable.tabs_reorder, getString(R.string.MainTabsCustomize), () -> presentFragment(new MainTabsCustomizeActivity()));
+        io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
+            Bundle args = new Bundle();
+            args.putInt("folderId", 1);
+            presentFragment(new DialogsActivity(args));
+        });
+        if (MainTabsConfigManager.isTabEnabled(MainTabsConfigManager.TabType.CONTACTS)) {
+            io.add(R.drawable.msg_contacts, getString(R.string.MainTabsContacts), () -> {
+                Bundle args = new Bundle();
+                args.putBoolean("needPhonebook", true);
+                args.putBoolean("needFinishFragment", false);
+                presentFragment(new ContactsActivity(args));
+            });
+        }
+        if (MainTabsConfigManager.isTabEnabled(MainTabsConfigManager.TabType.CALLS)) {
+            io.add(R.drawable.msg_calls, getString(R.string.MainTabsCalls), () -> {
+                Bundle args = new Bundle();
+                args.putBoolean("needFinishFragment", false);
+                presentFragment(new CallLogActivity(args));
+            });
+        }
+        io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> presentFragment(new SettingsActivity()));
+        return true;
+    }
+
     private void showItemOptions() {
         ItemOptions io = ItemOptions.makeOptions(this, optionsItem);
         io.setColors(getThemedColor(Theme.key_actionBarDefaultTitle), getThemedColor(Theme.key_actionBarDefaultTitle));
@@ -13410,6 +13442,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                 presentFragment(new ChatActivity(args));
             });
+            final boolean addedHiddenMainTabsShortcuts = addHiddenMainTabsShortcuts(io);
             if (ApplicationLoader.applicationLoaderInstance != null) {
                 ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
             }
@@ -13437,7 +13470,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     }
                 }
             }
-            if (getUserConfig().showCallsTab) {
+            if (getUserConfig().showCallsTab && !addedHiddenMainTabsShortcuts) {
                 io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> {
                     presentFragment(new SettingsActivity());
                 });

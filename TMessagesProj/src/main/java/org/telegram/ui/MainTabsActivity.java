@@ -100,6 +100,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private BlurredBackgroundDrawable tabsViewBackground;
     private View fadeView;
     private ArrayList<MainTabsConfigManager.TabState> configuredTabs = new ArrayList<>();
+    private boolean lastBottomBarHidden = isBottomBarHidden();
 
     public MainTabsActivity() {
         super();
@@ -204,7 +205,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         Bulletin.Delegate delegate = new Bulletin.Delegate() {
             @Override
             public int getBottomOffset(int tag) {
-                return navigationBarHeight + dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin());
+                return navigationBarHeight + getVisibleBottomBarOffset();
             }
         };
 
@@ -314,6 +315,20 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         } else {
             tabs[chatsTabIndex].setCounter(null, false, animated);
         }
+    }
+
+    private boolean isBottomBarHidden() {
+        return NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool();
+    }
+
+    private boolean shouldUseMainTabsPadding() {
+        return !isBottomBarHidden();
+    }
+
+    private int getVisibleBottomBarOffset() {
+        return shouldUseMainTabsPadding()
+            ? dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin())
+            : 0;
     }
 
     public void openAccountSelector(View button) {
@@ -509,7 +524,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
 
         ensureConfiguredTabsLoaded();
-        bundle.putBoolean("hasMainTabs", true);
+        bundle.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
         dialogsActivity = new DialogsActivity(bundle);
         dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
         putFragmentAtPosition(getPreferredStartPositionFor(MainTabsConfigManager.TabType.CHATS), dialogsActivity);
@@ -529,30 +544,30 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 Bundle args = new Bundle();
                 args.putBoolean("needPhonebook", true);
                 args.putBoolean("needFinishFragment", false);
-                args.putBoolean("hasMainTabs", true);
+                args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
                 return new ContactsActivity(args);
             }
             case SETTINGS -> {
                 Bundle args = new Bundle();
-                args.putBoolean("hasMainTabs", true);
+                args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
                 return new SettingsActivity(args);
             }
             case CALLS -> {
                 Bundle args = new Bundle();
                 args.putBoolean("needFinishFragment", false);
-                args.putBoolean("hasMainTabs", true);
+                args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
                 return new CallLogActivity(args);
             }
             case PROFILE -> {
                 Bundle args = new Bundle();
                 args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                 args.putBoolean("my_profile", true);
-                args.putBoolean("hasMainTabs", true);
+                args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
                 return new ProfileActivity(args);
             }
             case CHATS -> {
                 Bundle args = new Bundle();
-                args.putBoolean("hasMainTabs", true);
+                args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
                 dialogsActivity = new DialogsActivity(args);
                 dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
                 return dialogsActivity;
@@ -678,12 +693,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         ArrayList<MainTabsConfigManager.TabState> newTabs = MainTabsConfigManager.getEnabledTabs();
         boolean layoutChanged = !isSameTabsLayout(configuredTabs, newTabs);
+        boolean bottomBarHidden = isBottomBarHidden();
+        boolean hiddenStateChanged = lastBottomBarHidden != bottomBarHidden;
+        lastBottomBarHidden = bottomBarHidden;
         configuredTabs = newTabs;
 
         int targetPosition = getSafePagerPosition(getPreferredStartPositionFor(selectedType));
 
         if (viewPager != null) {
-            if (layoutChanged) {
+            if (layoutChanged || hiddenStateChanged) {
                 dropAllTabFragments();
                 viewPager.rebuild(false);
             }
@@ -728,6 +746,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         selectTab(selectedPosition, false);
         tabsView.requestLayout();
         checkUnreadCount(false);
+        checkContactsTabBadge();
+        if (hiddenStateChanged && fragmentView != null) {
+            fragmentView.requestApplyInsets();
+        }
+        if (updateLayoutWrapper != null) {
+            checkUi_tabsPosition();
+        }
+        if (fadeView != null) {
+            checkUi_fadeView();
+        }
         checkContactsTabBadge();
     }
 
@@ -784,7 +812,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         ViewGroup.MarginLayoutParams lp;
         {
-            final int height = navigationBarHeight + updateLayoutHeight + dp(MainTabsHelper.getMainTabsHeightWithMargins());
+            final int height = shouldUseMainTabsPadding()
+                ? navigationBarHeight + updateLayoutHeight + dp(MainTabsHelper.getMainTabsHeightWithMargins())
+                : 0;
             lp = (ViewGroup.MarginLayoutParams) fadeView.getLayoutParams();
             if (lp.height != height) {
                 lp.height = height;
@@ -921,6 +951,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (viewPager == null || fadeView == null) {
             return;
         }
+        if (isBottomBarHidden()) {
+            fadeView.setAlpha(0f);
+            fadeView.setVisibility(View.GONE);
+            return;
+        }
 
         final float animatedPosition = viewPager.getPositionAnimated();
         final int profilePosition = getTabIndex(MainTabsConfigManager.TabType.PROFILE);
@@ -937,6 +972,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private void checkUi_tabsPosition() {
         if (tabsView == null) return;
+        if (isBottomBarHidden()) {
+            tabsView.setClickable(false);
+            tabsView.setEnabled(false);
+            tabsView.setAlpha(0f);
+            tabsView.setVisibility(View.GONE);
+            return;
+        }
         final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
         final int normalY = -(navigationBarHeight + updateLayoutHeight);
