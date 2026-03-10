@@ -364,6 +364,7 @@ import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.filters.RegexFilterEditActivity;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
+import tw.nekomimi.nekogram.helpers.ForceForward;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
@@ -884,6 +885,7 @@ public class ChatActivity extends BaseFragment implements
     private CharSequence formwardingNameText;
     public MessageObject forwardingMessage;
     public MessageObject.GroupedMessages forwardingMessageGroup;
+    private ForceForward forceForwardHandler;
     private MessageObject.GroupedMessages replyingQuoteGroup;
     public MessageObject replyingTopMessage;
     private ReplyQuote replyingQuote;
@@ -8486,7 +8488,7 @@ public class ChatActivity extends BaseFragment implements
             updateSelectedMessageReactions();
         });*/
         // left button action start
-        boolean noForwards = getMessagesController().isChatNoForwards(currentChat) || currentChat != null && currentChat.noforwards;
+        boolean noForwards = getMessagesController().isChatNoForwards(currentChat);
         ChatsHelper chatsHelper = ChatsHelper.getInstance(currentAccount);
         actionsButtonsLayout.setReplyButtonTextAndIcon(ChatsHelper.getLeftButtonText(noForwards), ChatsHelper.getLeftButtonDrawable(noForwards));
         actionsButtonsLayout.setForwardButtonTextAndIcon(LocaleController.getString(R.string.Forward), R.drawable.input_forward, true);
@@ -14874,11 +14876,48 @@ public class ChatActivity extends BaseFragment implements
         getConnectionsManager().bindRequestToGuid(linkSearchRequestId, classGuid);
     }
 
+    private ForceForward getForceForwardHandler() {
+        if (forceForwardHandler == null) {
+            forceForwardHandler = new ForceForward(this, currentAccount);
+        }
+        return forceForwardHandler;
+    }
+
+    private boolean shouldUseForceForward(ArrayList<MessageObject> messages) {
+        if (messages == null || messages.isEmpty() || !ForceForward.isEnabled()) {
+            return false;
+        }
+        for (int i = 0; i < messages.size(); i++) {
+            MessageObject messageObject = messages.get(i);
+            if (messageObject == null || messageObject.messageOwner == null) {
+                continue;
+            }
+            if (messageObject.messageOwner.noforwards) {
+                return true;
+            }
+            long chatId = messageObject.getChatId();
+            if (chatId < 0) {
+                chatId = -chatId;
+            }
+            if (chatId != 0) {
+                TLRPC.Chat chat = getMessagesController().getChat(chatId);
+                if (chat != null && chat.noforwards) {
+                    return true;
+                }
+            }
+        }
+        return currentChat != null && currentChat.noforwards;
+    }
+
     private void forwardMessages(ArrayList<MessageObject> arrayList, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars) {
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
         if (!checkSlowModeAlert()) {
+            return;
+        }
+        if (shouldUseForceForward(arrayList)) {
+            getForceForwardHandler().runForceForward(arrayList, dialog_id, false);
             return;
         }
         if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
@@ -14902,10 +14941,15 @@ public class ChatActivity extends BaseFragment implements
         if (arrayList == null || arrayList.isEmpty()) {
             return;
         }
+        final long targetDid = did == 0 ? dialog_id : did;
+        if (shouldUseForceForward(arrayList)) {
+            getForceForwardHandler().runForceForward(arrayList, targetDid, false);
+            return;
+        }
         if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED)) {
             waitingForSendingMessageLoad = true;
         }
-        AlertsCreator.showSendMediaAlert(getSendMessagesHelper().sendMessage(arrayList, did == 0 ? dialog_id : did, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams()), this);
+        AlertsCreator.showSendMediaAlert(getSendMessagesHelper().sendMessage(arrayList, targetDid, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams()), this);
     }
 
     public boolean shouldShowImport() {

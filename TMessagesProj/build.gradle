@@ -66,11 +66,11 @@ android {
         abi {
             enable = true
             reset()
-            universalApk = false
+            universalApk = nativeTarget.isBlank()
             if (!nativeTarget.isBlank()) {
                 include nativeTarget
             } else {
-                include 'arm64-v8a', 'x86_64'
+                include 'armeabi-v7a', 'arm64-v8a', 'x86_64'
             }
         }
     }
@@ -178,7 +178,7 @@ android {
 androidComponents {
     onVariants(selector().all()) { variant ->
         variant.outputs.forEach { output ->
-            String gramName = 'NagramX'
+            String gramName = 'NagramXF'
             String first = String.format('%s-v%s(%s)', gramName, verName, verCode)
             output.outputFileName.set(
                 output.outputFileName.get()

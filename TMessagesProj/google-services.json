@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "986979746546",
-    "project_id": "nagram-x",
-    "storage_bucket": "nagram-x.firebasestorage.app"
+    "project_number": "446150425635",
+    "project_id": "project-7331853372972374607",
+    "storage_bucket": "project-7331853372972374607.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:986979746546:android:f63a8620cbea5950dcc66b",
+        "mobilesdk_app_id": "1:446150425635:android:88638546dd888934298596",
         "android_client_info": {
-          "package_name": "nu.gpu.nagram"
+          "package_name": "fork.risin42.nagramx"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAzMqM8tLgsWIvmEyfZRS95ubX-TXiNB3w"
+          "current_key": "AIzaSyAnHQcCSoIyCasmAbEbUrK5fys1SScP0DQ"
         }
       ],
       "services": {

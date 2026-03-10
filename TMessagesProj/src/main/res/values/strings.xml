@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Nagram X</string>
+    <string name="AppName">Nagram XF</string>
     <string name="AppNameBeta">Telegram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
@@ -10446,7 +10446,6 @@
     <string name="ChannelAdmins">Channel admins</string>
     <string name="ChannelSubscribers2">Channel subscribers</string>
     <string name="MembersSearch">Search people</string>
-
     <string name="MemberTagTitle">Member Tag</string>
     <string name="MemberTagSelfInfo">Share your role, title or how you’re known in this group. Your tag is visible to all members.</string>
     <string name="MemberTagTheirInfo">Add a short tag next to %s’s name.</string>

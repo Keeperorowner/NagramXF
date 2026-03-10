@@ -237,7 +237,7 @@ public class BackButtonMenuRecent {
         scrimPopupWindow.dimBehind();
     }
 
-    private static LinkedList<Long> getRecentDialogs(int currentAccount) {
+    public static LinkedList<Long> getRecentDialogs(int currentAccount) {
         LinkedList<Long> recentDialog = recentDialogs.get(currentAccount);
         if (recentDialog == null) {
             recentDialog = new LinkedList<>();
@@ -273,7 +273,7 @@ public class BackButtonMenuRecent {
         Utilities.globalQueue.postRunnable(() -> saveRecentDialogs(currentAccount, finalRecentDialog));
     }
 
-    private static void saveRecentDialogs(int currentAccount, LinkedList<Long> recentDialog) {
+    public static void saveRecentDialogs(int currentAccount, LinkedList<Long> recentDialog) {
         SerializedData serializedData = new SerializedData();
         int count = recentDialog.size();
         serializedData.writeInt32(count);

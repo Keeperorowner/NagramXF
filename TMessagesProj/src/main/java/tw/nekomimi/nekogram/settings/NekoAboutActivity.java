@@ -18,6 +18,7 @@ import tw.nekomimi.nekogram.DatacenterActivity;
 public class NekoAboutActivity extends BaseNekoSettingsActivity {
 
     private int xChannelRow;
+    private int forkChannelRow;
     private int channelRow;
     private int channelTipsRow;
     private int sourceCodeRow;
@@ -28,6 +29,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     protected void updateRows() {
         super.updateRows();
 
+        forkChannelRow = addRow();
         xChannelRow = addRow();
         channelRow = addRow();
         channelTipsRow = addRow();
@@ -45,6 +47,8 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     protected void onItemClick(View view, int position, float x, float y) {
         if (position == xChannelRow) {
             MessagesController.getInstance(currentAccount).openByUserName("NagramX", NekoAboutActivity.this, 1);
+        } else if (position == forkChannelRow) {
+            MessagesController.getInstance(currentAccount).openByUserName("NagramX_Fork", NekoAboutActivity.this, 1);
         } else if (position == channelRow) {
             MessagesController.getInstance(currentAccount).openByUserName("nagram_channel", NekoAboutActivity.this, 1);
         } else if (position == channelTipsRow) {
@@ -75,6 +79,8 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                 TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                 if (position == xChannelRow) {
                     textCell.setTextAndValue(getString(R.string.XChannel), "@NagramX", true);
+                } else if (position == forkChannelRow) {
+                    textCell.setTextAndValue(getString(R.string.NagramXForkChannel), "@NagramX_Fork", true);
                 } else if (position == channelRow) {
                     textCell.setTextAndValue(getString(R.string.OfficialChannel), "@nagram_channel", true);
                 } else if (position == channelTipsRow) {

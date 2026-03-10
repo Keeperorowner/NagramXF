@@ -133,6 +133,7 @@ import java.util.stream.Collectors;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
+import tw.nekomimi.nekogram.helpers.ForceForward;
 import tw.nekomimi.nekogram.helpers.LocalNameHelper;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.utils.AlertUtil;
@@ -6596,6 +6597,9 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean isChatNoForwards(TLRPC.Chat chat) {
+        if (ForceForward.isEnabled()) {
+            return false;
+        }
         if (chat == null) {
             return false;
         }

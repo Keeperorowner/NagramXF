@@ -49,6 +49,7 @@ public class Switch extends View {
     public static final int SWITCH_STYLE_DEFAULT = 0;
     public static final int SWITCH_STYLE_MODERN = 1;
     public static final int SWITCH_STYLE_MD3 = 2;
+    public static final int SWITCH_STYLE_ONEUI = 3;
 
     private RectF rectF;
 
@@ -60,6 +61,9 @@ public class Switch extends View {
     private boolean isChecked;
     private Paint paint;
     private Paint paint2;
+    private Paint paint3;
+    private Paint paint4;
+    private Paint paint5;
 
     private int drawIconType;
     private float iconProgress = 1.0f;
@@ -114,6 +118,9 @@ public class Switch extends View {
 
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint3 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint4 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        paint5 = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint2.setStyle(Paint.Style.STROKE);
         paint2.setStrokeCap(Paint.Cap.ROUND);
         paint2.setStrokeWidth(AndroidUtilities.dp(2));
@@ -397,21 +404,41 @@ public class Switch extends View {
             return;
         }
 
+        int switchStyle = NaConfig.INSTANCE.getSwitchStyle().Int();
+        boolean isOneUiStyle = switchStyle == SWITCH_STYLE_ONEUI;
+        boolean isUsingSeparateView = !isOneUiStyle && switchStyle != SWITCH_STYLE_DEFAULT;
+
         int width = AndroidUtilities.dp(31);
         int thumb = AndroidUtilities.dp(20);
+        int x;
+        float y;
+        int tx;
 
-        boolean isUsingSeparateView = NaConfig.INSTANCE.getSwitchStyle().Int() != SWITCH_STYLE_DEFAULT;
-        if (isUsingSeparateView) {
-            width = AndroidUtilities.dp(36);
+        if (isOneUiStyle) {
+            width = AndroidUtilities.dp(30.5f);
+            thumb = AndroidUtilities.dp(17.5f);
+            x = (getMeasuredWidth() - width) / 2;
+            y = getMeasuredHeight() / 2f - thumb / 2f;
+
+            float start = x + thumb / 2f;
+            float end = x + width - thumb / 2f;
+            tx = (int) (start + (end - start) * progress + AndroidUtilities.dp(isChecked ? 2 : 1));
+        } else {
+            if (isUsingSeparateView) {
+                width = AndroidUtilities.dp(36);
+            }
+            x = (getMeasuredWidth() - width) / 2;
+            y = (getMeasuredHeight() - AndroidUtilities.dpf2(14)) / 2;
+            tx = x + AndroidUtilities.dp(7) + (int) (AndroidUtilities.dp(isUsingSeparateView ? 18 : 17) * progress);
         }
-        int x = (getMeasuredWidth() - width) / 2;
-        float y = (getMeasuredHeight() - AndroidUtilities.dpf2(14)) / 2;
-        int tx = x + AndroidUtilities.dp(7) + (int) (AndroidUtilities.dp(isUsingSeparateView ? 18 : 17) * progress);
         int ty = getMeasuredHeight() / 2;
 
 
         int color1;
         int color2;
+        int color3;
+        int color4;
+        int color5;
         float colorProgress;
         int r1;
         int r2;
@@ -450,6 +477,9 @@ public class Switch extends View {
             int originalColor1;
             color1 = originalColor1 = processColor(Theme.getColor(trackColorKey, resourcesProvider));
             color2 = processColor(Theme.getColor(trackCheckedColorKey, resourcesProvider));
+            color3 = Color.WHITE;
+            color4 = 0xffb8b8b8;
+            color5 = 0xff5a5a5a;
 
             if (isUsingSeparateView) {
                 color1 = Color.TRANSPARENT;
@@ -475,8 +505,24 @@ public class Switch extends View {
             color = ((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff);
             paint.setColor(color);
             paint2.setColor(color);
+            paint3.setColor(color3);
+            paint4.setColor(color4);
+            paint5.setColor(color5);
 
-            if (isUsingSeparateView) {
+            if (isOneUiStyle) {
+                rectF.set(x, y, getMeasuredWidth(), getMeasuredHeight() / 2f + thumb / 2f);
+                if (!isChecked) {
+                    canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint4);
+                    canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint4);
+
+                    if (Theme.isCurrentThemeDark() || Theme.isCurrentThemeNight()) {
+                        canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint5);
+                        canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint5);
+                    }
+                }
+                canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(11), AndroidUtilities.dpf2(11), paint);
+                canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dpf2(11), paint);
+            } else if (isUsingSeparateView) {
                 rectF.set(x, y - AndroidUtilities.dpf2(3), x + width, y + AndroidUtilities.dpf2(17));
                 canvasToDraw.drawRoundRect(rectF, AndroidUtilities.dpf2(15), AndroidUtilities.dpf2(15), paint);
 
@@ -548,14 +594,16 @@ public class Switch extends View {
             alpha = (int) (a1 + (a2 - a1) * colorProgress);
             paint.setColor(((alpha & 0xff) << 24) | ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff));
 
-            if (isUsingSeparateView) {
+            if (isOneUiStyle) {
+                canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(9.5f), paint3);
+            } else if (isUsingSeparateView) {
                 canvasToDraw.drawCircle(Utilities.clamp(tx, x + width + AndroidUtilities.dp(2), x + AndroidUtilities.dp(10)), ty, AndroidUtilities.dp(6 + 2 * progress), paint);
             } else {
                 canvasToDraw.drawCircle(tx, ty, AndroidUtilities.dp(8), paint);
             }
 
-            if (a == 0 && NaConfig.INSTANCE.getSwitchStyle().Int() == SWITCH_STYLE_DEFAULT || NaConfig.INSTANCE.getSwitchStyle().Int() == SWITCH_STYLE_MD3) {
-                if (NaConfig.INSTANCE.getSwitchStyle().Int() == SWITCH_STYLE_MD3) {
+            if (a == 0 && (switchStyle == SWITCH_STYLE_DEFAULT || switchStyle == SWITCH_STYLE_MD3)) {
+                if (switchStyle == SWITCH_STYLE_MD3) {
                     int iconWidth = checkDrawable.getIntrinsicWidth() / 2;
                     int iconHeight = checkDrawable.getIntrinsicHeight() / 2;
                     checkDrawable.setBounds(tx - iconWidth / 2, ty - iconHeight / 2, tx + iconWidth / 2, ty + iconHeight / 2);
