@@ -1,6 +1,6 @@
 # Fork Info
 
-A Fork with minor modifications to [NagramX](https://github.com/risin42/NagramX).
+A fork of [NagramX](https://github.com/risin42/NagramX) with additional features.
 
 ## Download
 
