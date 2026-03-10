@@ -73,6 +73,7 @@ public class ForceForward {
         int missingMediaCount;
         int activeDownloadCount;
         long downloadedBytes;
+        boolean cancelledByUser;
     }
     
     public ForceForward(ChatActivity fragment, int account) {
@@ -372,8 +373,21 @@ public class ForceForward {
         pendingDownloadKeys.clear();
     }
 
+    private void resetDownloadCancellationFlags(ArrayList<MessageObject> messagesToSend) {
+        if (messagesToSend == null) {
+            return;
+        }
+        for (int i = 0; i < messagesToSend.size(); i++) {
+            MessageObject messageObject = messagesToSend.get(i);
+            if (messageObject != null) {
+                messageObject.loadingCancelled = false;
+            }
+        }
+    }
+
     private boolean ensureDownloaded(MessageObject mo) {
         if (mo == null || mo.messageOwner == null) return false;
+        if (mo.loadingCancelled) return false;
         
         String path = resolvePath(mo);
         if (!TextUtils.isEmpty(path) && new File(path).exists()) return true;
@@ -465,6 +479,10 @@ public class ForceForward {
             MessageObject messageObject = messagesToSend.get(i);
             if (!needsLocalCopy(messageObject)) {
                 continue;
+            }
+            if (messageObject.loadingCancelled) {
+                result.cancelledByUser = true;
+                return result;
             }
             if (!ensureDownloaded(messageObject)) {
                 result.missingMediaCount++;
@@ -764,6 +782,7 @@ public class ForceForward {
             }
             return;
         }
+        resetDownloadCancellationFlags(messagesToSend);
         long taskId = startRun(messagesToSend.size());
         runForceForward(messagesToSend, targetDialogId, showUndo, hideCaption, notify, scheduleDate, payStars, taskId, 0, onComplete);
     }
@@ -979,6 +998,12 @@ public class ForceForward {
     }
 
     private boolean shouldAbortMediaWait(MediaPreparationResult mediaState, long taskId, CompletionCallback onComplete) {
+        if (mediaState.cancelledByUser) {
+            setFailureReason(null);
+            finishRun(taskId, false, onComplete);
+            return true;
+        }
+
         long now = SystemClock.elapsedRealtime();
         if (mediaWaitStartTime == 0L) {
             mediaWaitStartTime = now;
