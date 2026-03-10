@@ -23,11 +23,11 @@ public final class MainTabsHelper {
     }
 
     public static int getMainTabsHeight() {
-        return isMainTabsHideTitleStyle() ? FILTER_TABS_HEIGHT : MAIN_TABS_HEIGHT;
+        return MAIN_TABS_HEIGHT;
     }
 
     public static int getMainTabsMargin() {
-        return isMainTabsHideTitleStyle() ? MAIN_TABS_MARGIN_COMPACT : MAIN_TABS_MARGIN;
+        return MAIN_TABS_MARGIN;
     }
 
     public static int getMainTabsHeightWithMargins() {
@@ -47,7 +47,12 @@ public final class MainTabsHelper {
     }
 
     public static int getCallsOrSettingsPosition() {
-        return getTabPosition(MainTabsConfigManager.TabType.CALLS_SETTINGS, Math.min(1, Math.max(0, getFragmentsCount() - 1)));
+        int fallback = Math.min(1, Math.max(0, getFragmentsCount() - 1));
+        int settingsPosition = getTabPosition(MainTabsConfigManager.TabType.SETTINGS, -1);
+        if (settingsPosition >= 0) {
+            return settingsPosition;
+        }
+        return getTabPosition(MainTabsConfigManager.TabType.CALLS, fallback);
     }
 
     public static int getProfilePosition() {
