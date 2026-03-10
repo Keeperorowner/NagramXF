@@ -15068,14 +15068,30 @@ public class ChatActivity extends BaseFragment implements
         return messageObject.canForwardMessage() || shouldUseForceForward(messageObject);
     }
 
-    private void showForceForwardNoticeIfNeeded(ArrayList<MessageObject> messages, boolean hasForceForwardChunk) {
-        if (!hasForceForwardChunk || !BulletinFactory.canShowBulletin(this)) {
-            return;
+    private boolean isOfficialChatNoForwards(TLRPC.Chat chat) {
+        if (chat == null) {
+            return false;
         }
-        String notice = ForceForward.buildForceForwardNotice(messages);
-        if (!TextUtils.isEmpty(notice)) {
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.chats_infotip, notice).show();
+        if (chat.migrated_to != null) {
+            TLRPC.Chat migratedTo = getMessagesController().getChat(chat.migrated_to.channel_id);
+            if (migratedTo != null) {
+                return migratedTo.noforwards;
+            }
         }
+        return chat.noforwards;
+    }
+
+    private boolean shouldShowDirectForwardHint(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return false;
+        }
+        if (chatMode == MODE_SCHEDULED || chatMode == MODE_SAVED || getDialogId() == UserObject.VERIFY) {
+            return false;
+        }
+        if (messageObject.messageOwner.action != null || !messageObject.isSent() || messageObject.isEditing()) {
+            return false;
+        }
+        return isOfficialChatNoForwards(currentChat) || ForceForward.isChatNoForwards(messageObject) || messageObject.messageOwner.noforwards;
     }
 
     private void forwardMessagesByChunks(ArrayList<MessageObject> messages, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
@@ -15094,8 +15110,6 @@ public class ChatActivity extends BaseFragment implements
             }
             currentChunk.add(messageObject);
         }
-        boolean hasForceForwardChunk = forceForwardModes.contains(Boolean.TRUE);
-        showForceForwardNoticeIfNeeded(messages, hasForceForwardChunk);
         if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED) && forceForwardModes.contains(Boolean.FALSE)) {
             waitingForSendingMessageLoad = true;
         }
@@ -32768,36 +32782,18 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
 
-                boolean showNoForwards = (isPeerNoForwards() || message.messageOwner.noforwards && currentUser != null && currentUser.bot) && message.messageOwner.action == null && message.isSent() && !message.isEditing() && chatMode != MODE_SCHEDULED && chatMode != MODE_SAVED && getDialogId() != UserObject.VERIFY;
+                boolean showDirectForwardHint = shouldShowDirectForwardHint(message);
                 scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinearRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, 0, isReactionsAvailable ? 36 : 0, 0));
                 scrimPopupContainerLayout.setPopupWindowLayout(popupLayout);
-                if (showNoForwards) {
+                if (showDirectForwardHint) {
                     popupLayout.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-                    boolean isChannel = ChatObject.isChannel(currentChat) && !currentChat.megagroup;
                     TextView tv = new TextView(contentView.getContext());
                     tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     tv.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
-                    if (isPeerNoForwards()) {
-                        final CharSequence str;
-                        if (getDialogId() > 0) {
-                            if (userInfo != null && currentUser != null && userInfo.noforwards_peer_enabled) {
-                                final String name = DialogObject.getShortName(currentUser);
-                                str = LocaleController.formatString(R.string.ForwardsRestrictedInfoUserBecauseUser, name);
-                            } else if (userInfo != null && currentUser != null && userInfo.noforwards_my_enabled) {
-                                str = LocaleController.getString(R.string.ForwardsRestrictedInfoUserBecauseYou);
-                            } else {
-                                str = LocaleController.getString(R.string.ForwardsRestrictedInfoUser);
-                            }
-                        } else {
-                            str = LocaleController.getString(isChannel ? R.string.ForwardsRestrictedInfoChannel : R.string.ForwardsRestrictedInfoGroup);
-                        }
-                        tv.setText(AndroidUtilities.replaceTags(str));
-                    } else {
-                        tv.setText(LocaleController.getString(R.string.ForwardsRestrictedInfoBot));
-                    }
+                    tv.setText(LocaleController.getString(R.string.DirectForwardNotAllowed));
                     tv.setMaxWidth(popupLayout.getMeasuredWidth() - AndroidUtilities.dp(38));
 
-                    Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert4).mutate();
+                    Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
                     shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
 
                     FrameLayout fl = new FrameLayout(contentView.getContext());
@@ -47177,7 +47173,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
                 if (!selectedObject.isSponsored() && chatMode != MODE_QUICK_REPLIES && chatMode != MODE_SCHEDULED && (!selectedObject.needDrawBluredPreview() || selectedObject.hasExtendedMediaPreview()) &&
-                        !selectedObject.isLiveLocation() && selectedObject.type != MessageObject.TYPE_PHONE_CALL && !noforwards && selectedObject.type != MessageObject.TYPE_SHARING_OFFER &&
+                        !selectedObject.isLiveLocation() && selectedObject.type != MessageObject.TYPE_PHONE_CALL && canUseForwardAction(selectedObject) &&
                         selectedObject.type != MessageObject.TYPE_GIFT_PREMIUM && selectedObject.type != MessageObject.TYPE_GIFT_OFFER && selectedObject.type != MessageObject.TYPE_GIFT_OFFER_REJECTED && selectedObject.type != MessageObject.TYPE_GIFT_PREMIUM_CHANNEL && selectedObject.type != MessageObject.TYPE_SUGGEST_PHOTO && !selectedObject.isWallpaperAction()
                         && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION && message.type != MessageObject.TYPE_GIFT_STARS
                 ) {
