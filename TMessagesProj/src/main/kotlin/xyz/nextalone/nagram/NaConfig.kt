@@ -891,6 +891,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val foldersAtBottom =
+        addConfig(
+            "FoldersAtBottom",
+            ConfigItem.configTypeBool,
+            false
+        )
     val translatorKeepMarkdown =
         addConfig(
             "TranslatorKeepMarkdown",
