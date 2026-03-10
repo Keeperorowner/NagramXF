@@ -9,9 +9,11 @@ import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
@@ -19,6 +21,7 @@ import org.telegram.ui.ChatActivity;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HashMap;
 
 public class ForceForward {
@@ -64,6 +67,7 @@ public class ForceForward {
     private long mediaLastProgressTime;
     private long mediaLastObservedBytes;
     private int mediaLastMissingCount;
+    private final HashSet<String> pendingDownloadKeys = new HashSet<>();
 
     private static class MediaPreparationResult {
         int missingMediaCount;
@@ -128,60 +132,6 @@ public class ForceForward {
         return isChatNoForwards(messageObject) || isUnforwardable(messageObject);
     }
 
-    private static boolean isPaidRestricted(MessageObject messageObject) {
-        if (messageObject == null || messageObject.messageOwner == null) {
-            return false;
-        }
-        return messageObject.type == MessageObject.TYPE_PAID_MEDIA || messageObject.messageOwner.media instanceof TLRPC.TL_messageMediaPaidMedia;
-    }
-
-    private static boolean isTimedOrSecretRestricted(MessageObject messageObject) {
-        if (messageObject == null || messageObject.messageOwner == null) {
-            return false;
-        }
-        TLRPC.Message message = messageObject.messageOwner;
-        if (message instanceof TLRPC.TL_message_secret || messageObject.isSecretMedia()) {
-            return true;
-        }
-        if (message.ttl != 0) {
-            return true;
-        }
-        return message.media != null && message.media.ttl_seconds != 0;
-    }
-
-    public static String buildForceForwardNotice(ArrayList<MessageObject> messages) {
-        if (messages == null || messages.isEmpty()) {
-            return null;
-        }
-        boolean hasPaid = false;
-        boolean hasTimedOrSecret = false;
-        for (int i = 0; i < messages.size(); i++) {
-            MessageObject messageObject = messages.get(i);
-            if (!isForceForwardNeeded(messageObject)) {
-                continue;
-            }
-            if (!hasPaid && isPaidRestricted(messageObject)) {
-                hasPaid = true;
-            }
-            if (!hasTimedOrSecret && isTimedOrSecretRestricted(messageObject)) {
-                hasTimedOrSecret = true;
-            }
-            if (hasPaid && hasTimedOrSecret) {
-                break;
-            }
-        }
-        if (!hasPaid && !hasTimedOrSecret) {
-            return null;
-        }
-        if (hasPaid && hasTimedOrSecret) {
-            return "Force forward only copies paid media that is already visible, and timed or secret media must already be downloaded locally.";
-        }
-        if (hasPaid) {
-            return "Force forward only copies paid media that is already visible in this client.";
-        }
-        return "Force forward needs timed or secret media to be downloaded locally before it can be copied.";
-    }
-
     public static void applyToMessage(TLRPC.Message message) {
         if (message == null) {
             return;
@@ -238,6 +188,7 @@ public class ForceForward {
         mediaLastProgressTime = 0L;
         mediaLastObservedBytes = 0L;
         mediaLastMissingCount = 0;
+        pendingDownloadKeys.clear();
     }
 
     public boolean isForwarding() {
@@ -256,8 +207,9 @@ public class ForceForward {
         }
         stopRequested = true;
         currentStatus = STATUS_STOPPING;
-        currentStatusDetail = "Stopping current batch";
+        currentStatusDetail = LocaleController.getString(R.string.ForceForwardStatusStoppingCurrentBatch);
         lastFailureReason = null;
+        cancelPendingDownloads();
         notifyStatusChanged();
         return true;
     }
@@ -268,14 +220,14 @@ public class ForceForward {
         }
         if (currentStatus == STATUS_LOADING) {
             String progress = Math.max(totalMessages - pendingMedia, 0) + "/" + totalMessages;
-            return TextUtils.isEmpty(currentStatusDetail) ? "Preparing media " + progress : currentStatusDetail + " " + progress;
+            return TextUtils.isEmpty(currentStatusDetail) ? LocaleController.getString(R.string.ForceForwardStatusPreparingMedia) + " " + progress : currentStatusDetail + " " + progress;
         }
         if (currentStatus == STATUS_FORWARDING) {
             String progress = sentMessages + "/" + totalMessages;
-            return TextUtils.isEmpty(currentStatusDetail) ? "Forwarding " + progress : currentStatusDetail + " " + progress;
+            return TextUtils.isEmpty(currentStatusDetail) ? LocaleController.getString(R.string.ForceForwardStatusForwarding) + " " + progress : currentStatusDetail + " " + progress;
         }
         if (currentStatus == STATUS_STOPPING) {
-            return TextUtils.isEmpty(currentStatusDetail) ? "Stopping forwarding" : currentStatusDetail;
+            return TextUtils.isEmpty(currentStatusDetail) ? LocaleController.getString(R.string.ForceForwardStatusStopping) : currentStatusDetail;
         }
         return null;
     }
@@ -291,7 +243,7 @@ public class ForceForward {
         totalMessages = Math.max(messageCount, 0);
         sentMessages = 0;
         pendingMedia = totalMessages;
-        currentStatusDetail = "Preparing media";
+        currentStatusDetail = LocaleController.getString(R.string.ForceForwardStatusPreparingMedia);
         lastFailureReason = null;
         stopRequested = false;
         mediaWaitStartTime = 0L;
@@ -309,7 +261,7 @@ public class ForceForward {
     private void updateLoadingState(int missingMedia) {
         currentStatus = STATUS_LOADING;
         pendingMedia = Math.max(missingMedia, 0);
-        currentStatusDetail = missingMedia > 0 ? "Waiting for media downloads" : "Media ready";
+        currentStatusDetail = missingMedia > 0 ? LocaleController.getString(R.string.ForceForwardStatusWaitingDownloads) : LocaleController.getString(R.string.ForceForwardStatusMediaReady);
         notifyStatusChanged();
     }
 
@@ -370,6 +322,7 @@ public class ForceForward {
             mediaLastProgressTime = 0L;
             mediaLastObservedBytes = 0L;
             mediaLastMissingCount = 0;
+            pendingDownloadKeys.clear();
             notifyStatusChanged();
         }
         if (shouldContinue) {
@@ -399,6 +352,26 @@ public class ForceForward {
         return FileLoader.getInstance(currentAccount).getPathToMessage(mo.messageOwner).toString();
     }
 
+    private void trackPendingDownload(String fileName) {
+        if (!TextUtils.isEmpty(fileName)) {
+            pendingDownloadKeys.add(fileName);
+        }
+    }
+
+    private void clearPendingDownload(String fileName) {
+        if (!TextUtils.isEmpty(fileName)) {
+            pendingDownloadKeys.remove(fileName);
+        }
+    }
+
+    private void cancelPendingDownloads() {
+        if (pendingDownloadKeys.isEmpty()) {
+            return;
+        }
+        FileLoader.getInstance(currentAccount).cancelLoadFiles(new ArrayList<>(pendingDownloadKeys));
+        pendingDownloadKeys.clear();
+    }
+
     private boolean ensureDownloaded(MessageObject mo) {
         if (mo == null || mo.messageOwner == null) return false;
         
@@ -407,6 +380,7 @@ public class ForceForward {
 
         if (mo.getDocument() != null) {
             String fileName = FileLoader.getAttachFileName(mo.getDocument());
+            trackPendingDownload(fileName);
             if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                 FileLoader.getInstance(currentAccount).loadFile(mo.getDocument(), mo, FileLoader.PRIORITY_NORMAL, 0);
             }
@@ -419,6 +393,7 @@ public class ForceForward {
                 TLRPC.PhotoSize size = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 1280);
                 if (size != null) {
                     String fileName = FileLoader.getAttachFileName(size);
+                    trackPendingDownload(fileName);
                     if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                         ImageLocation imageLocation = ImageLocation.getForObject(size, mo.messageOwner);
                         if (imageLocation != null) {
@@ -435,6 +410,7 @@ public class ForceForward {
                 TLRPC.TL_messageMediaVideo_old videoMedia = (TLRPC.TL_messageMediaVideo_old) mo.messageOwner.media;
                  if (videoMedia.video_unused != null && videoMedia.video_unused.thumb != null) {
                      String fileName = FileLoader.getAttachFileName(videoMedia.video_unused.thumb);
+                     trackPendingDownload(fileName);
                      if (!FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
                          ImageLocation imageLocation = ImageLocation.getForObject(videoMedia.video_unused.thumb, mo.messageOwner);
                          if (imageLocation != null) {
@@ -494,6 +470,7 @@ public class ForceForward {
                 result.missingMediaCount++;
                 String trackingKey = getDownloadTrackingKey(messageObject);
                 if (!TextUtils.isEmpty(trackingKey)) {
+                    trackPendingDownload(trackingKey);
                     if (FileLoader.getInstance(currentAccount).isLoadingFile(trackingKey)) {
                         result.activeDownloadCount++;
                     }
@@ -508,12 +485,14 @@ public class ForceForward {
     }
 
     private void sendMediaBatch(ArrayList<SendMessagesHelper.SendingMediaInfo> list, long targetDialogId, boolean isDocument, boolean isGrouping, boolean notify, int scheduleDate, long payStars) {
+        MessageObject replyToMsg = parentFragment.getThreadMessage();
+        MessageObject replyToTopMsg = parentFragment.getThreadMessage();
         SendMessagesHelper.prepareSendingMedia(
                 parentFragment.getAccountInstance(),
                 list,
                 targetDialogId,
-                null,
-                null,
+                replyToMsg,
+                replyToTopMsg,
                 null,
                 null,
                 isDocument,
@@ -538,6 +517,13 @@ public class ForceForward {
     private void applySendContext(SendMessagesHelper.SendMessageParams params, long payStars) {
         if (params == null) {
             return;
+        }
+        MessageObject replyToMsg = parentFragment.getThreadMessage();
+        if (params.replyToMsg == null) {
+            params.replyToMsg = replyToMsg;
+        }
+        if (params.replyToTopMsg == null) {
+            params.replyToTopMsg = replyToMsg;
         }
         params.quick_reply_shortcut = parentFragment.quickReplyShortcut;
         params.quick_reply_shortcut_id = parentFragment.getQuickReplyId();
@@ -699,7 +685,7 @@ public class ForceForward {
             return;
         }
 
-        String groupLabel = documentFallback ? "Forwarding document group" : "Forwarding media group";
+        String groupLabel = documentFallback ? LocaleController.getString(R.string.ForceForwardStatusDocumentGroup) : LocaleController.getString(R.string.ForceForwardStatusMediaGroup);
         updateForwardingState(groupLabel);
 
         if (group.size() == 1) {
@@ -710,7 +696,7 @@ public class ForceForward {
                     ? sendMappedPhoto(messageObject, item.caption, targetDialogId, notify, scheduleDate, payStars)
                     : sendMappedDocument(messageObject, item.caption, targetDialogId, notify, scheduleDate, payStars);
             if (!sent) {
-                updateForwardingState(documentFallback ? "Forwarding document fallback" : "Forwarding media fallback");
+                updateForwardingState(documentFallback ? LocaleController.getString(R.string.ForceForwardStatusDocumentFallback) : LocaleController.getString(R.string.ForceForwardStatusMediaFallback));
                 sendMediaBatch(createMediaInfoList(group), targetDialogId, documentFallback, false, notify, scheduleDate, payStars);
             }
             onMessageSent();
@@ -731,7 +717,7 @@ public class ForceForward {
                     ? buildMappedPhotoParams(messageObject, item.caption, targetDialogId, notify, scheduleDate, groupParams)
                     : buildMappedDocumentParams(messageObject, item.caption, targetDialogId, notify, scheduleDate, groupParams);
             if (params == null) {
-                updateForwardingState(documentFallback ? "Forwarding document group fallback" : "Forwarding media group fallback");
+                updateForwardingState(documentFallback ? LocaleController.getString(R.string.ForceForwardStatusDocumentGroupFallback) : LocaleController.getString(R.string.ForceForwardStatusMediaGroupFallback));
                 sendMediaBatch(createMediaInfoList(group), targetDialogId, documentFallback, !documentFallback, notify, scheduleDate, payStars);
                 onMessagesSent(group.size());
                 return;
@@ -772,7 +758,7 @@ public class ForceForward {
     
     public void runForceForward(ArrayList<MessageObject> messagesToSend, long targetDialogId, boolean showUndo, boolean hideCaption, boolean notify, int scheduleDate, long payStars, CompletionCallback onComplete) {
         if (messagesToSend == null || messagesToSend.isEmpty() || parentFragment.getParentActivity() == null) {
-            setFailureReason("Nothing to force forward");
+            setFailureReason(null);
             if (onComplete != null) {
                 onComplete.onComplete(false);
             }
@@ -808,7 +794,7 @@ public class ForceForward {
             return;
         }
 
-        updateForwardingState("Starting forwarding");
+        updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusStarting));
         try {
             HashMap<Long, ArrayList<GroupedMediaItem>> albumMap = new HashMap<>();
             HashMap<Long, ArrayList<GroupedMediaItem>> docAlbumMap = new HashMap<>();
@@ -837,7 +823,7 @@ public class ForceForward {
                 boolean hasMessage = mo.messageOwner != null && !TextUtils.isEmpty(mo.messageOwner.message);
 
                 if (mo.type == MessageObject.TYPE_TEXT || mo.isAnimatedEmoji()) {
-                    updateForwardingState("Forwarding text copy");
+                    updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusTextCopy));
                     sendTextMessage(mo, caption, targetDialogId, notify, scheduleDate, payStars);
                     onMessageSent();
                     continue;
@@ -854,7 +840,7 @@ public class ForceForward {
                     if (gid != 0) {
                         addToGroup(gid, new GroupedMediaItem(mo, caption), albumMap, albumRemain, false, targetDialogId, notify, scheduleDate, payStars);
                     } else {
-                        updateForwardingState(mo.isPhoto() ? "Forwarding photo copy" : "Forwarding media copy");
+                        updateForwardingState(mo.isPhoto() ? LocaleController.getString(R.string.ForceForwardStatusPhotoCopy) : LocaleController.getString(R.string.ForceForwardStatusMediaCopy));
                         boolean sent = mo.isPhoto()
                                 ? sendMappedPhoto(mo, caption, targetDialogId, notify, scheduleDate, payStars)
                                 : sendMappedDocument(mo, caption, targetDialogId, notify, scheduleDate, payStars);
@@ -878,10 +864,12 @@ public class ForceForward {
                     if (gid != 0) {
                         addToGroup(gid, new GroupedMediaItem(mo, caption), docAlbumMap, albumRemain, true, targetDialogId, notify, scheduleDate, payStars);
                     } else {
-                        updateForwardingState("Forwarding document copy");
+                        updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusDocumentCopy));
                         if (!sendMappedDocument(mo, caption, targetDialogId, notify, scheduleDate, payStars)) {
-                            updateForwardingState("Forwarding document fallback");
+                            updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusDocumentFallback));
                             String filePath = resolvePath(mo);
+                            MessageObject replyToMsg = parentFragment.getThreadMessage();
+                            MessageObject replyToTopMsg = parentFragment.getThreadMessage();
                             SendMessagesHelper.prepareSendingDocument(
                                     parentFragment.getAccountInstance(),
                                     filePath,
@@ -890,8 +878,8 @@ public class ForceForward {
                                     caption,
                                     null,
                                     targetDialogId,
-                                    null,
-                                    null,
+                                    replyToMsg,
+                                    replyToTopMsg,
                                     null,
                                     null,
                                     null,
@@ -910,8 +898,9 @@ public class ForceForward {
 
                 if (mo.isSticker() || mo.isAnimatedSticker()) {
                     if (mo.getDocument() != null) {
-                        updateForwardingState("Forwarding sticker copy");
-                        parentFragment.getSendMessagesHelper().sendSticker(mo.getDocument(), null, targetDialogId, null, null, null, null, null, notify, scheduleDate, 0, false, null, parentFragment.quickReplyShortcut, parentFragment.getQuickReplyId(), payStars, parentFragment.getSendMonoForumPeerId(), parentFragment.getSendMessageSuggestionParams());
+                        updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusStickerCopy));
+                        MessageObject replyToMsg = parentFragment.getThreadMessage();
+                        parentFragment.getSendMessagesHelper().sendSticker(mo.getDocument(), null, targetDialogId, replyToMsg, replyToMsg, null, null, null, notify, scheduleDate, 0, false, null, parentFragment.quickReplyShortcut, parentFragment.getQuickReplyId(), payStars, parentFragment.getSendMonoForumPeerId(), parentFragment.getSendMessageSuggestionParams());
                         onMessageSent();
                     } else {
                         onMessageSkipped();
@@ -920,7 +909,7 @@ public class ForceForward {
                 }
                 
                 if (hasMessage) {
-                     updateForwardingState("Forwarding text fallback");
+                     updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusTextFallback));
                      sendTextMessage(mo, null, targetDialogId, notify, scheduleDate, payStars);
                      onMessageSent();
                 } else {
@@ -948,14 +937,14 @@ public class ForceForward {
             for (SendMessagesHelper.SendingMediaInfo info : singles) {
                 ArrayList<SendMessagesHelper.SendingMediaInfo> one = new ArrayList<>();
                 one.add(info);
-                updateForwardingState("Forwarding media fallback");
+                updateForwardingState(LocaleController.getString(R.string.ForceForwardStatusMediaFallback));
                 sendMediaBatch(one, targetDialogId, false, false, notify, scheduleDate, payStars);
                 onMessageSent();
             }
             finishRun(taskId, true, onComplete);
         } catch (Exception e) {
             FileLog.e(e);
-            failRun(taskId, "Force forward failed", onComplete);
+            failRun(taskId, LocaleController.getString(R.string.ForceForwardFailed), onComplete);
         }
     }
     
@@ -1009,14 +998,14 @@ public class ForceForward {
 
         if (now - mediaWaitStartTime >= MAX_MEDIA_WAIT_MS) {
             FileLog.w("ForceForward: media wait exceeded hard timeout");
-            failRun(taskId, "Media download timed out", onComplete);
+            failRun(taskId, LocaleController.getString(R.string.ForceForwardMediaTimedOut), onComplete);
             return true;
         }
 
         if (now - mediaLastProgressTime >= MAX_MEDIA_STALL_TIMEOUT_MS) {
             String failureReason = mediaState.activeDownloadCount > 0
-                    ? "Media download stalled"
-                    : "Media download did not start";
+                    ? LocaleController.getString(R.string.ForceForwardMediaStalled)
+                    : LocaleController.getString(R.string.ForceForwardMediaDidNotStart);
             FileLog.w("ForceForward: " + failureReason);
             failRun(taskId, failureReason, onComplete);
             return true;
@@ -1024,4 +1013,5 @@ public class ForceForward {
 
         return false;
     }
+
 }
