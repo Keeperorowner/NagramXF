@@ -2179,14 +2179,6 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
 
         if (!DialogObject.isEncryptedDialog(dialog_id)) {
             if (!isStoriesView()) {
-                forwardNoQuoteItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarActionModeDefaultSelector), getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
-                forwardNoQuoteItem.setIcon(R.drawable.msg_forward_noquote);
-                forwardNoQuoteItem.setContentDescription(LocaleController.getString("NoQuoteForward", R.string.NoQuoteForward));
-                forwardNoQuoteItem.setDuplicateParentStateEnabled(false);
-                actionModeLayout.addView(forwardNoQuoteItem, new LinearLayout.LayoutParams(dp(54), ViewGroup.LayoutParams.MATCH_PARENT));
-                actionModeViews.add(forwardNoQuoteItem);
-                forwardNoQuoteItem.setOnClickListener(v -> onActionBarItemClick(v, forward_noquote));
-
                 gotoItem = new ActionBarMenuItem(context, null, getThemedColor(Theme.key_actionBarActionModeDefaultSelector), getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
                 gotoItem.setIcon(R.drawable.msg_message);
                 gotoItem.setContentDescription(getString("AccDescrGoToMessage", R.string.AccDescrGoToMessage));
@@ -3731,13 +3723,19 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
         boolean noforwards = profileActivity.getMessagesController().isPeerNoForwards(dialog_id);
         forwardItem.setAlpha(noforwards ? 0.5f : 1f);
-        forwardNoQuoteItem.setAlpha(noforwards ? 0.5f : 1f);
+        if (forwardNoQuoteItem != null) {
+            forwardNoQuoteItem.setAlpha(noforwards ? 0.5f : 1f);
+        }
         if (noforwards) {
             if (forwardItem.getBackground() != null) forwardItem.setBackground(null);
-            if (forwardNoQuoteItem.getBackground() != null) forwardNoQuoteItem.setBackground(null);
+            if (forwardNoQuoteItem != null && forwardNoQuoteItem.getBackground() != null) {
+                forwardNoQuoteItem.setBackground(null);
+            }
         } else if (forwardItem.getBackground() == null) {
             forwardItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 5));
-            forwardNoQuoteItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 5));
+            if (forwardNoQuoteItem != null) {
+                forwardNoQuoteItem.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 5));
+            }
         }
     }
     private boolean hasNoforwardsMessage() {
