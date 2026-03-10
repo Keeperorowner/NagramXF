@@ -982,7 +982,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
         final int normalY = -(navigationBarHeight + updateLayoutHeight);
-        final int hiddenY = normalY + dp(MainTabsHelper.isMainTabsHideTitleStyle() ? 30 : 40);
+        final int hiddenY = normalY + dp(40);
 
         final float factor = animatorTabsVisible.getFloatValue();
         final float scale = lerp(0.85f, 1f, factor);
