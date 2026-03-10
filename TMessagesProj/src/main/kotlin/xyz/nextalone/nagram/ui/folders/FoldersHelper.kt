@@ -40,15 +40,11 @@ object FoldersHelper {
         return AndroidUtilities.dp(if (showMainTabs) 55f else 10f).toFloat()
     }
 
-    private fun getFilterTabsOffset(inForwardMode: Boolean, showMainTabs: Boolean): Int {
+    private fun getFilterTabsOffset(showMainTabs: Boolean): Int {
         if (!moveFoldersToBottom()) {
             return 0
         }
-        return when {
-            inForwardMode -> AndroidUtilities.dp(150f)
-            showMainTabs -> AndroidUtilities.dp(80f)
-            else -> AndroidUtilities.dp(30f)
-        }
+        return if (showMainTabs) AndroidUtilities.dp(80f) else AndroidUtilities.dp(30f)
     }
 
     @JvmStatic
@@ -185,7 +181,7 @@ object FoldersHelper {
     @JvmStatic
     fun updateFoldersOffset(
         filterTabsView: FilterTabsView?,
-        inForwardMode: Boolean,
+        forwardControlsVisibleProgress: Float,
         showMainTabs: Boolean,
         navigationBarHeight: Int,
         additionFloatingButtonOffset: Int,
@@ -197,13 +193,16 @@ object FoldersHelper {
         }
 
         val update = Runnable {
+            val clampedForwardControlsVisibleProgress = forwardControlsVisibleProgress.coerceIn(0f, 1f)
+            val forwardControlsOffset = AndroidUtilities.dp(150f) * clampedForwardControlsVisibleProgress
             filterTabsView.translationY = (
                 -navigationBarHeight
                     - additionFloatingButtonOffset
                     - additionalFloatingTranslation
                     - floatingButtonPanOffset
                     - AndroidUtilities.dp(52f)
-                    - getFilterTabsOffset(inForwardMode, showMainTabs)
+                    - getFilterTabsOffset(showMainTabs)
+                    - forwardControlsOffset
                 ).toFloat()
         }
 
