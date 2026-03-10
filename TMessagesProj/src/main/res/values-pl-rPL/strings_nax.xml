@@ -316,7 +316,4 @@
     <string name="UnifiedPushCurrentEndpoint">Aktualny punkt końcowy UnifiedPush to: %1$s</string>
     <string name="PlayOnce">Zagraj raz</string>
     <string name="StorageSettings">Pamięć</string>
-    <string name="MainTabsSettingsHeader">Główne zakładki</string>
-    <string name="MainTabsHideTitles">Ukryj tytuły</string>
-    <string name="MainTabsHideContacts">Ukryj kartę kontaktów</string>
 </resources>

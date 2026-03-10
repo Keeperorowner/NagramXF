@@ -16,6 +16,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -75,6 +76,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     private TLRPC.TL_attachMenuBot tabAnimationBot;
 
     private final TextPaint defaultTextPaint;
+    private boolean titleVisible = true;
 
     public GlassTabView(@NonNull Context context) {
         super(context);
@@ -119,11 +121,44 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         checkVisualWidth();
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        updateIconVerticalPosition();
+    }
+
     private void checkVisualWidth() {
         if (hasVisualWidth) {
             final float offset = (visualWidth - getMeasuredWidth()) / 2f;
             imageView.setTranslationX(offset);
             textView.setTranslationX(offset);
+        }
+    }
+
+    private void updateIconVerticalPosition() {
+        View activeIcon = backupImageView != null && backupImageView.getVisibility() == VISIBLE ? backupImageView : imageView;
+        if (activeIcon == null) {
+            return;
+        }
+
+        float shift = 0f;
+        if (!titleVisible && getMeasuredHeight() > 0 && activeIcon.getMeasuredHeight() > 0) {
+            float targetCenterY = getMeasuredHeight() / 2f;
+            float currentCenterY = activeIcon.getTop() + activeIcon.getMeasuredHeight() / 2f;
+            shift = targetCenterY - currentCenterY;
+        }
+
+        if (imageView.getVisibility() == VISIBLE) {
+            imageView.setTranslationY(shift);
+        } else {
+            imageView.setTranslationY(0f);
+        }
+        if (backupImageView != null) {
+            if (backupImageView.getVisibility() == VISIBLE) {
+                backupImageView.setTranslationY(shift);
+            } else {
+                backupImageView.setTranslationY(0f);
+            }
         }
     }
 
@@ -499,7 +534,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth() {
-        if (textView.getVisibility() != VISIBLE) {
+        if (!titleVisible || textView.getVisibility() != VISIBLE) {
             return 0;
         }
         return defaultTextPaint.measureText(textView.getText().toString());
@@ -564,6 +599,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     public void setText(CharSequence text) {
         textView.setText(text);
+    }
+
+    public void setTitleVisible(boolean visible) {
+        titleVisible = visible;
+        textView.setVisibility(visible ? VISIBLE : GONE);
+        updateIconVerticalPosition();
+        requestLayout();
+        invalidate();
     }
 
 

@@ -316,9 +316,6 @@
     <string name="UnifiedPushCurrentEndpoint">現在の UnifiedPush エンドポイントは：%1$s</string>
     <string name="PlayOnce">ワンショット</string>
     <string name="StorageSettings">ストレージ</string>
-    <string name="MainTabsSettingsHeader">メインタブ</string>
-    <string name="MainTabsHideTitles">タイトルを非表示</string>
-    <string name="MainTabsHideContacts">連絡先タブを非表示</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">メッセージプレビューを表示</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">パスコードロックが有効な場合でも通知内容を表示します。</string>
     <string name="StickerSavedHint">ステッカーを保存しました。</string>

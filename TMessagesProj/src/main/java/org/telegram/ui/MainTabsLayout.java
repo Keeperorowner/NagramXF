@@ -12,9 +12,15 @@ import org.telegram.ui.Components.glass.GlassTabView;
 import me.vkryl.android.animator.ListAnimator;
 
 public class MainTabsLayout extends AnimatedLinearLayout {
+    private boolean equalWidthWhenTitlesVisible;
 
     public MainTabsLayout(Context context) {
         super(context);
+    }
+
+    public void setEqualWidthWhenTitlesVisible(boolean equalWidthWhenTitlesVisible) {
+        this.equalWidthWhenTitlesVisible = equalWidthWhenTitlesVisible;
+        requestLayout();
     }
 
     @Override
@@ -25,8 +31,43 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
         measureTabTexts();
 
+        if (visibleChildCount <= 0) {
+            setMeasuredDimension(getPaddingLeft() + getPaddingRight(), height);
+            return;
+        }
+
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
-        final int minTotalWidthForTabs = Math.min(dp(320), maxTotalWidthForTabs);
+        if (equalWidthWhenTitlesVisible && biggestTabTextWidth > 0) {
+            int equalTotalWidth = Math.min(dp(80) * visibleChildCount, maxTotalWidthForTabs);
+            int baseWidth = equalTotalWidth / visibleChildCount;
+            int remainder = equalTotalWidth % visibleChildCount;
+            int l = 0;
+            int visibleIndex = 0;
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                final View child = getChildAt(a);
+                if (!isViewVisible(child)) {
+                    tabsWidth[a] = 0;
+                    continue;
+                }
+
+                tabsWidth[a] = baseWidth + (visibleIndex < remainder ? 1 : 0);
+                tabsLeftPos[a] = l;
+                l += tabsWidth[a];
+                visibleIndex++;
+            }
+
+            setMeasuredDimension(l + getPaddingLeft() + getPaddingRight(), height);
+            for (int a = 0, N = getChildCount(); a < N; a++) {
+                final View child = getChildAt(a);
+                child.measure(
+                    MeasureSpec.makeMeasureSpec(tabsWidth[a], MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(tabHeight, MeasureSpec.EXACTLY));
+            }
+            calculateTotalSizesAfterMeasure();
+            return;
+        }
+
+        final int minTotalWidthForTabs = Math.min(dp(80) * visibleChildCount, maxTotalWidthForTabs);
         final int tabPadding = dp(16);
 
         final int minTabTextWidthIfEq = (minTotalWidthForTabs / visibleChildCount) - tabPadding * 2;

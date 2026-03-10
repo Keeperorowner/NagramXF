@@ -316,9 +316,6 @@
     <string name="UnifiedPushCurrentEndpoint">O endpoint atual do UnifiedPush é: %1$s</string>
     <string name="PlayOnce">Reproduzir uma vez</string>
     <string name="StorageSettings">Armazenamento</string>
-    <string name="MainTabsSettingsHeader">Abas principais</string>
-    <string name="MainTabsHideTitles">Ocultar títulos</string>
-    <string name="MainTabsHideContacts">Ocultar aba Contatos</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">Mostrar prévia das mensagens</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Mostrar o conteúdo das notificações mesmo com o bloqueio por senha ativo.</string>
     <string name="StickerSavedHint">Sticker salvo na galeria.</string>

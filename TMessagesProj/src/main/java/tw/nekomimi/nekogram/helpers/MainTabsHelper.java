@@ -1,6 +1,9 @@
 package tw.nekomimi.nekogram.helpers;
 
 import org.telegram.ui.MainTabsActivity;
+import org.telegram.ui.MainTabsConfigManager;
+
+import java.util.ArrayList;
 
 import xyz.nextalone.nagram.NaConfig;
 
@@ -32,30 +35,36 @@ public final class MainTabsHelper {
     }
 
     public static boolean isContactsTabHidden() {
-        return NaConfig.INSTANCE.getMainTabsHideContacts().Bool();
+        return getContactsPosition() < 0;
     }
 
     public static int getChatsPosition() {
-        return 0;
+        return getTabPosition(MainTabsConfigManager.TabType.CHATS, 0);
     }
 
     public static int getContactsPosition() {
-        return 1;
+        return getTabPosition(MainTabsConfigManager.TabType.CONTACTS, -1);
     }
 
     public static int getCallsOrSettingsPosition() {
-        return isContactsTabHidden() ? 1 : 2;
+        return getTabPosition(MainTabsConfigManager.TabType.CALLS_SETTINGS, Math.min(1, Math.max(0, getFragmentsCount() - 1)));
     }
 
     public static int getProfilePosition() {
-        return isContactsTabHidden() ? 2 : 3;
+        return getTabPosition(MainTabsConfigManager.TabType.PROFILE, Math.max(0, getFragmentsCount() - 1));
     }
 
     public static int getFragmentsCount() {
-        return isContactsTabHidden() ? 3 : MainTabsActivity.TABS_COUNT;
+        ArrayList<MainTabsConfigManager.TabState> enabledTabs = MainTabsConfigManager.getEnabledTabs();
+        return Math.max(1, enabledTabs.size());
     }
 
     public static int getTabsViewWidth() {
         return TAB_WIDTH * getFragmentsCount() + (getMainTabsMargin() + TAB_PADDING) * 2;
+    }
+
+    private static int getTabPosition(MainTabsConfigManager.TabType type, int fallback) {
+        int index = MainTabsConfigManager.findTabIndex(MainTabsConfigManager.getEnabledTabs(), type);
+        return index >= 0 ? index : fallback;
     }
 }

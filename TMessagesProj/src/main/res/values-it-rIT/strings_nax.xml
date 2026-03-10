@@ -320,9 +320,6 @@ Non possiamo aiutarti in questo caso; se hai problemi di accesso, contatta il Su
     <string name="UnifiedPushCurrentEndpoint">L\'endpoint UnifiedPush corrente è: %1$s</string>
     <string name="PlayOnce">Esegui una volta</string>
     <string name="StorageSettings">Archiviazione</string>
-    <string name="MainTabsSettingsHeader">Tab Principali</string>
-    <string name="MainTabsHideTitles">Nascondi titoli</string>
-    <string name="MainTabsHideContacts">Nascondi scheda Contatti</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">Mostra anteprime messaggi</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Mostra il contenuto delle notifiche anche quando il blocco con codice è attivo.</string>
     <string name="StickerSavedHint">Sticker salvato nella galleria.</string>

@@ -316,9 +316,6 @@
     <string name="UnifiedPushCurrentEndpoint">Текущая конечная точка UnifiedPush: %1$s</string>
     <string name="PlayOnce">Играть один раз</string>
     <string name="StorageSettings">Хранилище</string>
-    <string name="MainTabsSettingsHeader">Основные вкладки</string>
-    <string name="MainTabsHideTitles">Скрыть заголовки</string>
-    <string name="MainTabsHideContacts">Скрыть вкладку «Контакты»</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">Показывать предпросмотр сообщений</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Показывает содержимое уведомлений даже при включённой блокировке паролем.</string>
     <string name="StickerSavedHint">Стикер сохранён в галерею.</string>

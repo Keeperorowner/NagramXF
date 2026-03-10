@@ -316,9 +316,6 @@
     <string name="UnifiedPushCurrentEndpoint">Titik akhir UnifiedPush saat ini adalah: %1$s</string>
     <string name="PlayOnce">Putar sekali</string>
     <string name="StorageSettings">Penyimpanan</string>
-    <string name="MainTabsSettingsHeader">Tab Utama</string>
-    <string name="MainTabsHideTitles">Sembunyikan Judul</string>
-    <string name="MainTabsHideContacts">Sembunyikan Tab Kontak</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">Tampilkan Pratinjau Pesan</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Menampilkan isi pemberitahuan meskipun kunci sandi aktif.</string>
     <string name="StickerSavedHint">Stiker disimpan ke galeri.</string>
