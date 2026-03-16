@@ -9136,6 +9136,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
 
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if (getLayout() == null) {
+                return false;
+            }
+            if (textSelectionHelper != null && getStaticTextLayout() != null) {
+                textSelectionHelper.setSelectabeleView(this);
+                textSelectionHelper.update(getPaddingLeft(), getPaddingTop());
+                textSelectionHelper.onTouchEvent(event);
+            }
+            return super.onTouchEvent(event);
+        }
+
         private Layout lastLayout;
 
         @Override
