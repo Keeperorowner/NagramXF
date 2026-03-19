@@ -80,6 +80,7 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.Bitmaps;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -151,8 +152,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
-import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MonetHelper;
+import tw.nekomimi.nekogram.utils.AndroidUtil;
 import xyz.nextalone.nagram.NaConfig;
 
 public class Theme {
@@ -2518,10 +2519,6 @@ public class Theme {
             return "Monet Dark".equals(name) || "Monet Light".equals(name) || "Monet AMOLED".equals(name);
         }
 
-        public boolean isMonetLight() {
-            return "Monet Light".equals(name);
-        }
-
         public boolean isDay() {
             return "Day".equals(name);
         }
@@ -4822,7 +4819,7 @@ public class Theme {
 
             themeInfo = new ThemeInfo();
             themeInfo.name = "Monet AMOLED";
-            themeInfo.assetName = "monet_dark.attheme";
+            themeInfo.assetName = "monet_amoled.attheme";
             themeInfo.previewBackgroundColor = MonetHelper.getColor("n1_1000");
             themeInfo.previewInColor = MonetHelper.getColor("n2_800");
             themeInfo.previewOutColor = MonetHelper.getColor("a1_100");
@@ -6477,7 +6474,7 @@ public class Theme {
                 }
                 String[] wallpaperLink = new String[1];
                 if (themeInfo.assetName != null) {
-                    currentColorsNoAccent = getThemeFileValues(null, themeInfo.assetName, null, "Monet AMOLED".equals(themeInfo.name));
+                    currentColorsNoAccent = getThemeFileValues(null, themeInfo.assetName, null);
                 } else {
                     currentColorsNoAccent = getThemeFileValues(new File(themeInfo.pathToFile), null, wallpaperLink);
                 }
@@ -7909,7 +7906,7 @@ public class Theme {
             size = 0;
             FileLog.e(e);
         }
-        if (!file.exists() || size != 0 && file.length() != size) {
+        if (BuildConfig.DEBUG || !file.exists() || size != 0 && file.length() != size || !AndroidUtil.hasSameAssetContent(assetName, file)) {
             try (InputStream in = ApplicationLoader.applicationContext.getAssets().open(assetName)) {
                 AndroidUtilities.copyFile(in, file);
             } catch (Exception e) {
@@ -8243,10 +8240,6 @@ public class Theme {
     }
 
     public static SparseIntArray getThemeFileValues(File file, String assetName, String[] wallpaperLink) {
-        return getThemeFileValues(file, assetName, wallpaperLink, false);
-    }
-
-    public static SparseIntArray getThemeFileValues(File file, String assetName, String[] wallpaperLink, boolean monetAmoled) {
         FileInputStream stream = null;
         SparseIntArray stringMap = new SparseIntArray();
         try {
@@ -8287,7 +8280,7 @@ public class Theme {
                                         value = Utilities.parseInt(param);
                                     }
                                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && (param.startsWith("a") || param.startsWith("n") || param.startsWith("monet"))) {
-                                    value = MonetHelper.getColor(param, monetAmoled);
+                                    value = MonetHelper.getColor(param);
                                 } else {
                                     value = Utilities.parseInt(param);
                                 }

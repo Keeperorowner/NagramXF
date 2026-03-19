@@ -1281,8 +1281,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 hasColorById = false;
                 if (AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_actionBarDefault)) > .8f) {
                     if (NaConfig.INSTANCE.getDisableAvatarBlur().Bool()) {
-                        emojiColor = getThemedColor(Theme.key_windowBackgroundWhiteBlueText);
-                        btnColor = Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlueText), .15f * 2);
+                        if (Theme.getActiveTheme().isMonet()) {
+                            emojiColor = getThemedColor(Theme.key_chat_botKeyboardButtonBackground);
+                            btnColor = Theme.multAlpha(getThemedColor(Theme.key_chat_botKeyboardButtonBackground), .15f * 3);
+                        } else {
+                            emojiColor = getThemedColor(Theme.key_windowBackgroundWhiteBlueText);
+                            btnColor = Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlueText), .15f * 3);
+                        }
                     } else {
                         emojiColor = Color.WHITE; // getThemedColor(Theme.key_windowBackgroundWhiteBlueText);
                         btnColor = Color.WHITE; // Theme.multAlpha(getThemedColor(Theme.key_windowBackgroundWhiteBlueText), .75f);
