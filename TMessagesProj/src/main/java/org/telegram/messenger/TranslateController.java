@@ -267,8 +267,24 @@ public class TranslateController extends BaseController {
         return Objects.hash(messageObject.getDialogId(), messageObject.getId());
     }
 
+    private static String currentPluralLanguage() {
+        LocaleController.LocaleInfo localeInfo = LocaleController.getInstance().getCurrentLocaleInfo();
+        String lang = null;
+        if (localeInfo != null) {
+            lang = !TextUtils.isEmpty(localeInfo.pluralLangCode) ? localeInfo.pluralLangCode : localeInfo.shortName;
+        }
+        if (TextUtils.isEmpty(lang)) {
+            Locale locale = Locale.getDefault();
+            lang = locale.getLanguage();
+        }
+        if (TextUtils.isEmpty(lang)) {
+            lang = "en";
+        }
+        return lang;
+    }
+
     private String currentLanguage() {
-        String lang = LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode;
+        String lang = currentPluralLanguage();
         if (lang != null) {
             lang = lang.split("_")[0];
         }
@@ -460,7 +476,7 @@ public class TranslateController extends BaseController {
     public static void analyzeSuggestedLanguageCodes() {
         LinkedHashSet<String> langs = new LinkedHashSet<>();
         try {
-            langs.add(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode);
+            langs.add(currentPluralLanguage());
         } catch (Exception e1) {
             FileLog.e(e1);
         }
@@ -1710,7 +1726,7 @@ public class TranslateController extends BaseController {
             return RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(lng);
         }
         try {
-            return TextUtils.equals(LocaleController.getInstance().getCurrentLocaleInfo().pluralLangCode, lng);
+            return TextUtils.equals(currentPluralLanguage(), lng);
         } catch (Exception ignore) {
             return false;
         }
