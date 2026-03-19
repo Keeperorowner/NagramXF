@@ -15365,7 +15365,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 String[] translitArgs = new String[searchArgs.length];
                 for (int a = 0; a < searchArgs.length; a++) {
                     translitArgs[a] = LocaleController.getInstance().getTranslitString(searchArgs[a]);
-                    if (translitArgs[a].equals(searchArgs[a])) {
+                    if (TextUtils.isEmpty(translitArgs[a]) || translitArgs[a].equals(searchArgs[a])) {
                         translitArgs[a] = null;
                     }
                 }
@@ -15386,11 +15386,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 index = title.indexOf(searchString);
                             }
                             if (index >= 0) {
-                                index -= 1;
+                                int spanStart = index - 1;
+                                int spanEnd = spanStart + searchString.length();
+                                if (spanStart < 0 || spanEnd > result.searchTitle.length() || spanStart >= spanEnd) {
+                                    break;
+                                }
                                 if (stringBuilder == null) {
                                     stringBuilder = new SpannableStringBuilder(result.searchTitle);
                                 }
-                                stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + searchString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), spanStart, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                             } else {
                                 break;
                             }
@@ -15427,10 +15431,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                     index = title.indexOf(" " + searchString);
                                 }
                                 if (index >= 0) {
+                                    int spanEnd = index + searchString.length();
+                                    if (index < 0 || spanEnd > result.title.length() || index >= spanEnd) {
+                                        break;
+                                    }
                                     if (stringBuilder == null) {
                                         stringBuilder = new SpannableStringBuilder(result.title);
                                     }
-                                    stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), index, index + searchString.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    stringBuilder.setSpan(new ForegroundColorSpan(fragment.getThemedColor(Theme.key_windowBackgroundWhiteBlueText4)), index, spanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 } else {
                                     break;
                                 }
