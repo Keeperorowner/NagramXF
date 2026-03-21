@@ -4,6 +4,8 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.ui.Cells.TextCheckCell;
 
 import tw.nekomimi.nekogram.config.CellGroup;
@@ -14,6 +16,7 @@ public class ConfigCellTextCheck extends AbstractConfigCell implements WithBindC
     private final CharSequence title;
     private final String subtitle;
     private boolean enabled = true;
+    private boolean blockEnable;
     public TextCheckCell cell;
 
     public ConfigCellTextCheck(ConfigItem bind) {
@@ -57,6 +60,11 @@ public class ConfigCellTextCheck extends AbstractConfigCell implements WithBindC
         }
     }
 
+    public ConfigCellTextCheck setBlockEnable(boolean blockEnable) {
+        this.blockEnable = blockEnable;
+        return this;
+    }
+
     public void onBindViewHolder(RecyclerView.ViewHolder holder) {
         TextCheckCell cell = (TextCheckCell) holder.itemView;
         this.cell = cell;
@@ -70,6 +78,12 @@ public class ConfigCellTextCheck extends AbstractConfigCell implements WithBindC
 
     public void onClick(TextCheckCell cell) {
         if (!enabled) return;
+        if (blockEnable && !bindConfig.Bool()) {
+            cell.setChecked(false);
+            BotWebViewVibrationEffect.APP_ERROR.vibrate();
+            AndroidUtilities.shakeViewSpring(cell, -4);
+            return;
+        }
 
         boolean newV = bindConfig.toggleConfigBool();
         cell.setChecked(newV);
