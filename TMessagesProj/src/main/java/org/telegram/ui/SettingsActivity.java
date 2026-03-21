@@ -1199,6 +1199,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         private boolean twoLines;
 
+        private static boolean isMonetSettingsStyle() {
+            Theme.ThemeInfo activeTheme = Theme.getActiveTheme();
+            return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && activeTheme != null && activeTheme.isMonet();
+        }
+
         public void set(
             int iconColorTop, int iconColorBottom, int icon,
             CharSequence title,
@@ -1211,6 +1216,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             iconBackground.setColor(iconColorTop, iconColorBottom);
             iconView.setImageResource(icon);
+            if (isMonetSettingsStyle()) {
+                iconView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhite), PorterDuff.Mode.SRC_IN));
+            } else {
+                iconView.clearColorFilter();
+            }
             titleView.setText(title);
             subtitleView.setVisibility((twoLines = !TextUtils.isEmpty(subtitle)) ? View.VISIBLE : View.GONE);
             subtitleView.setText(subtitle);
@@ -1303,6 +1313,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 return of(id, iconColorTop, iconColorBottom, icon, title, subtitle, null);
             }
             public static UItem of(int id, int iconColorTop, int iconColorBottom, int icon, CharSequence title, CharSequence subtitle, CharSequence value) {
+                if (isMonetSettingsStyle()) {
+                    int monetIconBackground = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader);
+                    iconColorTop = monetIconBackground;
+                    iconColorBottom = monetIconBackground;
+                }
                 final UItem item = UItem.ofFactory(Factory.class);
                 item.id = id;
                 item.iconResId = icon;
