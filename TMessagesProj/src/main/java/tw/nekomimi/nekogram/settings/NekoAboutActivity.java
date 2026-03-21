@@ -56,7 +56,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
         } else if (position == translationRow) {
             Browser.openUrl(getParentActivity(), "https://crowdin.com/project/NagramX");
         } else if (position == sourceCodeRow) {
-            Browser.openUrl(getParentActivity(), "https://github.com/risin42/NagramX");
+            Browser.openUrl(getParentActivity(), "https://github.com/Keeperorowner/NagramX_Fork");
         } else if (position == datacenterStatusRow) {
             presentFragment(new DatacenterActivity(0));
         }
