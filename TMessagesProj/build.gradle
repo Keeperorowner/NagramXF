@@ -142,7 +142,7 @@ android {
         debug {
             isDefault = true
             debuggable = true
-            jniDebuggable = true
+            jniDebuggable = false
             multiDexEnabled = true
             signingConfig = signingConfigs.release
         }
