@@ -1,18 +1,12 @@
-
 package tw.nekomimi.nekogram;
 
-import android.os.Parcelable;
 import android.text.TextUtils;
-import android.util.SparseArray;
-import android.util.SparseIntArray;
-import android.view.View;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.UserCell;
@@ -21,23 +15,62 @@ import java.util.List;
 
 public final class ChatHistoryUtils {
 
-    private ChatHistoryUtils() {
+    // Official Telegram user IDs that should be filtered
+    private static final long TELEGRAM_SERVICE_USER_ID = 777000L;
+    private static final long STICKERS_BOT_USER_ID = 429000L;
+    private static final long BOTFATHER_USER_ID = 136817688L;
+
+    private static final int[] CATEGORY_STRING_IDS = {
+        R.string.ChatCategoryAll,
+        R.string.ChatCategoryChannels,
+        R.string.ChatCategoryGroups,
+        R.string.ChatCategoryUsers,
+        R.string.ChatCategoryBots
+    };
+
+    private ChatHistoryUtils() {}
+
+    /**
+     * Checks if a dialog ID belongs to an official/system account that should be hidden.
+     */
+    public static boolean isOfficialDialog(long dialogId, int account) {
+        if (dialogId > 0) {
+            TLRPC.User user = MessagesController.getInstance(account).getUser(dialogId);
+            if (user != null) {
+                if (UserObject.isUserSelf(user) || UserObject.isReplyUser(user)) {
+                    return true;
+                }
+            }
+            if (dialogId == TELEGRAM_SERVICE_USER_ID ||
+                dialogId == STICKERS_BOT_USER_ID ||
+                dialogId == BOTFATHER_USER_ID) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public static class ChatDisplayInfo {
-        public final String title;
-        public final String subtitle;
+    /**
+     * Checks if a HistoryItem belongs to a given category index.
+     * Category 0=All, 1=Channels, 2=Groups, 3=Users, 4=Bots
+     */
+    public static boolean shouldIncludeInCategory(ChatHistoryActivity.HistoryItem item, int categoryIndex) {
+        if (item == null) return false;
+        if (categoryIndex == 0) return true;
 
-        public ChatDisplayInfo(String title, String subtitle) {
-            this.title = title;
-            this.subtitle = subtitle;
+        if (item.user != null) {
+            return item.user.bot ? categoryIndex == 4 : categoryIndex == 3;
+        } else if (item.chat != null) {
+            return item.chat.broadcast ? categoryIndex == 1 : categoryIndex == 2;
         }
+        return false;
     }
 
-    public static ChatDisplayInfo getChatDisplayInfo(ChatHistoryActivity.HistoryItem item) {
-        if (item == null) {
-            return new ChatDisplayInfo("", "");
-        }
+    /**
+     * Binds data to a UserCell from a HistoryItem.
+     */
+    public static void bindUserCell(UserCell cell, ChatHistoryActivity.HistoryItem item) {
+        if (cell == null || item == null) return;
 
         String title;
         String subtitle;
@@ -45,11 +78,8 @@ public final class ChatHistoryUtils {
         if (item.user != null) {
             title = UserObject.getUserName(item.user);
             String username = UserObject.getPublicUsername(item.user);
-            if (!TextUtils.isEmpty(username)) {
-                subtitle = "@" + username;
-            } else {
-                subtitle = "ID: " + item.user.id;
-            }
+            subtitle = !TextUtils.isEmpty(username) ? "@" + username : "ID: " + item.user.id;
+            cell.setData(item.user, null, title, subtitle, 0, false);
         } else if (item.chat != null) {
             title = item.chat.title;
             String username = ChatObject.getPublicUsername(item.chat);
@@ -60,121 +90,9 @@ public final class ChatHistoryUtils {
             } else {
                 subtitle = LocaleController.getString(R.string.MegaPrivate);
             }
-        } else {
-            title = "";
-            subtitle = "";
-        }
-
-        return new ChatDisplayInfo(title, subtitle);
-    }
-
-    public static void bindUserCell(UserCell cell, ChatHistoryActivity.HistoryItem item) {
-        if (cell == null || item == null) {
-            return;
-        }
-
-        ChatDisplayInfo info = getChatDisplayInfo(item);
-
-        if (item.user != null) {
-            cell.setData(item.user, null, info.title, info.subtitle, 0, false);
-        } else if (item.chat != null) {
-            cell.setData(item.chat, null, info.title, info.subtitle, 0, false);
+            cell.setData(item.chat, null, title, subtitle, 0, false);
         }
     }
-
-    public static void saveListPosition(
-            RecyclerView listView,
-            int tabIndex,
-            SparseIntArray savedFirstVisible,
-            SparseIntArray savedTopOffset,
-            SparseArray<Parcelable> savedLayoutState) {
-        
-        if (listView == null) return;
-
-        RecyclerView.LayoutManager lm = listView.getLayoutManager();
-        if (!(lm instanceof LinearLayoutManager)) return;
-
-        LinearLayoutManager llm = (LinearLayoutManager) lm;
-        int pos = llm.findFirstVisibleItemPosition();
-        View first = llm.findViewByPosition(pos);
-        int offset = first == null ? 0 : first.getTop() - listView.getPaddingTop();
-
-        savedFirstVisible.put(tabIndex, pos);
-        savedTopOffset.put(tabIndex, offset);
-
-        try {
-            Parcelable state = llm.onSaveInstanceState();
-            if (state != null) {
-                savedLayoutState.put(tabIndex, state);
-            }
-        } catch (Exception ignore) {
-        }
-    }
-
-    public static void restoreListPosition(
-            RecyclerView listView,
-            int tabIndex,
-            SparseIntArray savedFirstVisible,
-            SparseIntArray savedTopOffset,
-            SparseArray<Parcelable> savedLayoutState) {
-        
-        if (listView == null) return;
-
-        RecyclerView.LayoutManager lm = listView.getLayoutManager();
-        if (!(lm instanceof LinearLayoutManager)) return;
-
-        LinearLayoutManager llm = (LinearLayoutManager) lm;
-        Parcelable state = savedLayoutState.get(tabIndex);
-        int pos = savedFirstVisible.get(tabIndex, -1);
-        int offset = savedTopOffset.get(tabIndex, 0);
-
-        if (state != null) {
-            try {
-                llm.onRestoreInstanceState(state);
-                return;
-            } catch (Exception ignore) {
-            }
-        }
-
-        if (pos >= 0) {
-            llm.scrollToPositionWithOffset(pos, offset);
-        }
-    }
-
-    public static boolean shouldIncludeInCategory(
-            ChatHistoryActivity.HistoryItem item,
-            int categoryIndex) {
-        
-        if (item == null) return false;
-
-        if (categoryIndex == 0) {
-            return true;
-        }
-
-        if (item.user != null) {
-            if (item.user.bot) {
-                return categoryIndex == 4;
-            } else {
-                return categoryIndex == 3;
-            }
-        } else if (item.chat != null) {
-            if (item.chat.broadcast) {
-                return categoryIndex == 1;
-            } else {
-                return categoryIndex == 2;
-            }
-        }
-
-        return false;
-    }
-
-    private static final int[] CATEGORY_STRING_IDS = {
-        R.string.ChatCategoryAll,
-        R.string.ChatCategoryChannels,
-        R.string.ChatCategoryGroups,
-        R.string.ChatCategoryUsers,
-        R.string.ChatCategoryBots
-    };
 
     public static String getCategoryDisplayName(int categoryIndex) {
         if (categoryIndex >= 0 && categoryIndex < CATEGORY_STRING_IDS.length) {
@@ -184,12 +102,8 @@ public final class ChatHistoryUtils {
     }
 
     public static int getCategoryCount(List<ChatHistoryActivity.HistoryItem> items, int categoryIndex) {
-        if (items == null || items.isEmpty()) {
-            return 0;
-        }
-        if (categoryIndex == 0) {
-            return items.size();
-        }
+        if (items == null || items.isEmpty()) return 0;
+        if (categoryIndex == 0) return items.size();
         int count = 0;
         for (ChatHistoryActivity.HistoryItem item : items) {
             if (shouldIncludeInCategory(item, categoryIndex)) {
