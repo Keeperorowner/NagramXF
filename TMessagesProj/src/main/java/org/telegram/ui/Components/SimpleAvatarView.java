@@ -40,7 +40,7 @@ public class SimpleAvatarView extends View {
     }
 
     {
-        avatarImage.setRoundRadius(AndroidUtilities.dp(28));
+        avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f));
         selectPaint.setStrokeWidth(AndroidUtilities.dp(2));
         selectPaint.setStyle(Paint.Style.STROKE);
     }

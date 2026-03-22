@@ -378,4 +378,8 @@
     <string name="ForceForwardStatusMediaGroup">正在转发媒体组</string>
     <string name="ForceForwardStatusDocumentGroupFallback">正在以文件组回退发送</string>
     <string name="ForceForwardStatusMediaGroupFallback">正在以媒体组回退发送</string>
+    <string name="AvatarCorners">头像圆角</string>
+    <string name="AvatarCornersLeft">更方</string>
+    <string name="AvatarCornersRight">更圆</string>
+    <string name="SingleCornerRadius">论坛头像使用与普通头像相同的圆角</string>
 </resources>

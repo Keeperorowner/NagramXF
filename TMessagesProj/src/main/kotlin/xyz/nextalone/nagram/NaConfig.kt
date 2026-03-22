@@ -463,6 +463,18 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val avatarCorners =
+        addConfig(
+            "avatarCorners",
+            ConfigItem.configTypeFloat,
+            28.0f
+        )
+    val singleCornerRadius =
+        addConfig(
+            "singleCornerRadius",
+            ConfigItem.configTypeBool,
+            false
+        )
     val searchHashtagDefaultPageChannel =
         addConfig(
             "SearchHashtagDefaultPageChannel",

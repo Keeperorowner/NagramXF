@@ -39,7 +39,7 @@ public class BookmarksChatCell extends FrameLayout {
         super(context);
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
         countView = new TextView(context);
@@ -96,11 +96,11 @@ public class BookmarksChatCell extends FrameLayout {
                 avatarDrawable.setInfo(user);
                 imageView.setForUserOrChat(user, avatarDrawable);
             }
-            imageView.setRoundRadius(dp(20));
+            imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         } else if (peer instanceof TLRPC.Chat chat) {
             AvatarDrawable avatarDrawable = new AvatarDrawable();
             avatarDrawable.setInfo(chat);
-            imageView.setRoundRadius(ChatObject.isForum(chat) ? dp(16) : dp(20));
+            imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
             imageView.setForUserOrChat(chat, avatarDrawable);
         } else {
             CombinedDrawable combinedDrawable = Theme.createCircleDrawableWithIcon(dp(40), useSolar ? R.drawable.ghost_solar : R.drawable.ghost);
@@ -108,7 +108,7 @@ public class BookmarksChatCell extends FrameLayout {
             Theme.setCombinedDrawableColor(combinedDrawable, Theme.getColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(0)]), false);
             Theme.setCombinedDrawableColor(combinedDrawable, Theme.getColor(Theme.key_avatar_text), true);
             imageView.setImageDrawable(combinedDrawable);
-            imageView.setRoundRadius(dp(20));
+            imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         }
 
         titleView.setText(!TextUtils.isEmpty(title) ? title : LocaleController.getString(R.string.HiddenName));

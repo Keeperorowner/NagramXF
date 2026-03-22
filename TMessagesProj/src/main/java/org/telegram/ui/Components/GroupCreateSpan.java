@@ -223,7 +223,7 @@ public class GroupCreateSpan extends View {
         }
 
         imageReceiver = new ImageReceiver();
-        imageReceiver.setRoundRadius(dp(16));
+        imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(32.0f));
         imageReceiver.setParentView(this);
         imageReceiver.setImageCoords(drawAvatarBackground ? 0 : dp(4), 0, dp(small ? 28 : 32), dp(small ? 28 : 32));
 

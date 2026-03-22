@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.MediaDataController;
@@ -51,7 +52,7 @@ public class MentionCell extends LinearLayout {
         avatarDrawable.setTextSize(AndroidUtilities.dp(18));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(AndroidUtilities.dp(14));
+        imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(28.0f));
         addView(imageView, LayoutHelper.createLinear(28, 28, 12, 4, 0, 0));
 
         nameTextView = new TextView(context) {
@@ -95,6 +96,7 @@ public class MentionCell extends LinearLayout {
             imageView.setImageDrawable(null);
             return;
         }
+        imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(28.0f));
         avatarDrawable.setInfo(user);
         if (user.photo != null && user.photo.photo_small != null) {
             imageView.setForUserOrChat(user, avatarDrawable);
@@ -136,6 +138,7 @@ public class MentionCell extends LinearLayout {
             imageView.setImageDrawable(null);
             return;
         }
+        imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(28.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
         avatarDrawable.setInfo(chat);
         if (chat.photo != null && chat.photo.photo_small != null) {
             imageView.setForUserOrChat(chat, avatarDrawable);
@@ -230,6 +233,7 @@ public class MentionCell extends LinearLayout {
         resetEmojiSuggestion();
         if (user != null) {
             imageView.setVisibility(VISIBLE);
+            imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(28.0f));
             avatarDrawable.setInfo(user);
             if (user.photo != null && user.photo.photo_small != null) {
                 imageView.setForUserOrChat(user, avatarDrawable);

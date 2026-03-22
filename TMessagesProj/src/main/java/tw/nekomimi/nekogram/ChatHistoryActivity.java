@@ -1253,7 +1253,7 @@ public class ChatHistoryActivity extends BaseFragment {
 
             avatarDrawable = new AvatarDrawable();
             avatarImageView = new BackupImageView(context);
-            avatarImageView.setRoundRadius(AndroidUtilities.dp(25));
+            avatarImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(50.0f));
             addView(avatarImageView, LayoutHelper.createFrame(50, 50, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
             // CheckBox2 for multi-select (shown on avatar corner)
