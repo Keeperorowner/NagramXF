@@ -32,11 +32,17 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import org.telegram.ui.Components.FilterTabsView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ViewPagerFixed;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
+import org.telegram.ui.SearchTabsAndFiltersLayout;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -48,6 +54,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
     private static final String KEY_RECENT_PREFIX = "recent";
     private static final int MAX_RECENT_SEARCHES = 20;
     private static final long SEARCH_DEBOUNCE_MS = 250L;
+    private static final int TABS_CONTAINER_HEIGHT_DP = 50;
 
     private RecyclerListView listView;
     private ListAdapter adapter;
@@ -59,6 +66,10 @@ public class ChatHistorySearchActivity extends BaseFragment {
     private android.widget.TextView resultCountView;
     private ViewPagerFixed viewPager;
     private ViewPagerFixed.TabsView tabsView;
+    private SearchTabsAndFiltersLayout tabsContainer;
+    private BlurredBackgroundDrawable tabsContainerBackground;
+    private final BlurredBackgroundSourceColor tabsBackgroundSourceColor = new BlurredBackgroundSourceColor();
+    private final BlurredBackgroundDrawableViewFactory tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceColor);
     private int savedCurrentTab = 0;
     private boolean isOpeningChat = false;
     private String savedSearchQuery = "";
@@ -160,10 +171,16 @@ public class ChatHistorySearchActivity extends BaseFragment {
                     }
                 };
         viewPager.setAdapter(new SearchCategoryPagerAdapter());
+        tabsContainer = new SearchTabsAndFiltersLayout(context);
+        tabsContainer.setPadding(0, AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7));
         tabsView = viewPager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
-        tabsView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        container.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP));
-        container.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 48, 0, 0));
+        tabsView.setIndicatorAnimation(320, org.telegram.ui.Components.CubicBezierInterpolator.EASE_OUT_QUINT);
+        tabsView.tabMarginDp = (int) (FilterTabsView.TAB_PADDING_WIDTH / 2f);
+        int tabsListPadding = Math.max(0, AndroidUtilities.dp(23.5f - FilterTabsView.TAB_PADDING_WIDTH / 2f));
+        tabsView.listView.setPadding(tabsListPadding, 0, tabsListPadding, 0);
+        tabsContainer.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        container.addView(tabsContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, TABS_CONTAINER_HEIGHT_DP, Gravity.TOP, 4, 0, 4, 0));
+        container.addView(viewPager, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, TABS_CONTAINER_HEIGHT_DP, 0, 0));
 
         resultCountView = new android.widget.TextView(context);
         resultCountView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -182,6 +199,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
         loadRecentSearch();
         fragmentView.post(() -> actionBar.openSearchField("", true));
         updateTabs();
+        updateTabsStyle();
         updateSearchModeUI();
         return fragmentView;
     }
@@ -232,6 +250,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
             searchInProgress = false;
             results.clear();
             adapter.notifyDataSetChanged();
+            updateTabs();
             refreshAllPages();
             updateResultCounter(0);
             updateSearchModeUI();
@@ -240,6 +259,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
         searchInProgress = true;
         results.clear();
+        updateTabs();
         refreshAllPages();
         updateResultCounter(0);
         updateSearchModeUI();
@@ -272,6 +292,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
         if (adapter != null) {
             adapter.invalidateGroupingCache();
         }
+        updateTabs();
         refreshAllPages();
         updateResultCounter(results.size());
         updateSearchModeUI();
@@ -608,8 +629,8 @@ public class ChatHistorySearchActivity extends BaseFragment {
         if (listView != null) {
             listView.setVisibility(hasQuery ? View.GONE : View.VISIBLE);
         }
-        if (tabsView != null) {
-            tabsView.setVisibility(hasQuery ? View.VISIBLE : View.GONE);
+        if (tabsContainer != null) {
+            tabsContainer.setVisibility(hasQuery ? View.VISIBLE : View.GONE);
         }
         if (viewPager != null) {
             viewPager.setVisibility(hasQuery ? View.VISIBLE : View.GONE);
@@ -621,13 +642,49 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
     private void updateTabs() {
         if (tabsView != null) {
+            int currentTab = viewPager != null ? viewPager.getCurrentPosition() : 0;
             tabsView.removeTabs();
-            tabsView.addTab(0, LocaleController.getString(R.string.ChatCategoryAll));
-            tabsView.addTab(1, LocaleController.getString(R.string.ChatCategoryChannels));
-            tabsView.addTab(2, LocaleController.getString(R.string.ChatCategoryGroups));
-            tabsView.addTab(3, LocaleController.getString(R.string.ChatCategoryUsers));
-            tabsView.addTab(4, LocaleController.getString(R.string.ChatCategoryBots));
+            tabsView.addTab(0, getTabTitle(0));
+            tabsView.addTab(1, getTabTitle(1));
+            tabsView.addTab(2, getTabTitle(2));
+            tabsView.addTab(3, getTabTitle(3));
+            tabsView.addTab(4, getTabTitle(4));
             tabsView.finishAddingTabs();
+            tabsView.selectTabWithId(currentTab, 1.0f);
+        }
+    }
+
+    private String getTabTitle(int position) {
+        return ChatHistoryUtils.getCategoryTabTitle(results, position);
+    }
+
+    private int getCategoryCount(int categoryIndex) {
+        return ChatHistoryUtils.getCategoryCount(results, categoryIndex);
+    }
+
+    private void updateTabsStyle() {
+        if (tabsView == null) {
+            return;
+        }
+        tabsBackgroundSourceColor.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+        tabsView.setColors(
+                Theme.key_profile_tabSelectedLine,
+                Theme.key_profile_tabSelectedText,
+                Theme.key_profile_tabText,
+                Theme.key_profile_tabSelector,
+                Theme.key_actionBarDefault
+        );
+        tabsView.updateColors();
+        tabsView.setBackground(null);
+        if (tabsContainer != null) {
+            if (tabsContainerBackground == null) {
+                tabsContainerBackground = tabsBackgroundDrawableFactory.create(tabsContainer, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
+                tabsContainerBackground.setRadius(AndroidUtilities.dp(18));
+                tabsContainerBackground.setPadding(AndroidUtilities.dp(6.666f));
+                tabsContainer.setBlurredBackground(tabsContainerBackground);
+            } else {
+                tabsContainer.updateColors();
+            }
         }
     }
 
@@ -692,14 +749,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
 
         @Override
         public String getItemTitle(int position) {
-            switch (position) {
-                case 0: return LocaleController.getString(R.string.ChatCategoryAll);
-                case 1: return LocaleController.getString(R.string.ChatCategoryChannels);
-                case 2: return LocaleController.getString(R.string.ChatCategoryGroups);
-                case 3: return LocaleController.getString(R.string.ChatCategoryUsers);
-                case 4: return LocaleController.getString(R.string.ChatCategoryBots);
-            }
-            return LocaleController.getString(R.string.ChatCategoryAll);
+            return getTabTitle(position);
         }
 
         @Override
@@ -831,9 +881,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
             if (listView != null) {
                 listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             }
-            if (tabsView != null) {
-                tabsView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            }
+            updateTabsStyle();
             if (resultCountView != null) {
                 resultCountView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
                 resultCountView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground)));
@@ -854,8 +902,8 @@ public class ChatHistorySearchActivity extends BaseFragment {
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 
-        if (tabsView != null) {
-            themeDescriptions.add(new ThemeDescription(tabsView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
+        if (tabsContainer != null) {
+            themeDescriptions.add(new ThemeDescription(tabsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
         }
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{UserCell.class}, new String[]{"nameTextView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
