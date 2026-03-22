@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
@@ -45,6 +46,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.ProxyRotationController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.SvgHelper;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -63,6 +65,7 @@ import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.NumberTextView;
+import org.telegram.ui.Components.QRCodeBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
 
@@ -122,6 +125,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
 
         private TextView textView;
         private TextView valueTextView;
+        private ImageView shareImageView;
         private ImageView checkImageView;
         private SharedConfig.ProxyInfo currentInfo;
         private Drawable checkDrawable;
@@ -135,6 +139,8 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         public TextDetailProxyCell(Context context) {
             super(context);
 
+            float textLeftMargin = LocaleController.isRTL ? 104 : 21;
+            float textRightMargin = LocaleController.isRTL ? 21 : 104;
             textView = new TextView(context);
             textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
@@ -143,7 +149,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             textView.setSingleLine(true);
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 56 : 21), 10, (LocaleController.isRTL ? 21 : 56), 0));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, textLeftMargin, 10, textRightMargin, 0));
 
             valueTextView = new TextView(context);
             valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -154,7 +160,23 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
             valueTextView.setCompoundDrawablePadding(AndroidUtilities.dp(6));
             valueTextView.setEllipsize(TextUtils.TruncateAt.END);
             valueTextView.setPadding(0, 0, 0, 0);
-            addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, (LocaleController.isRTL ? 56 : 21), 35, (LocaleController.isRTL ? 21 : 56), 0));
+            addView(valueTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, textLeftMargin, 35, textRightMargin, 0));
+
+            shareImageView = new ImageView(context);
+            shareImageView.setImageResource(R.drawable.msg_share);
+            shareImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), PorterDuff.Mode.MULTIPLY));
+            shareImageView.setScaleType(ImageView.ScaleType.CENTER);
+            shareImageView.setContentDescription(LocaleController.getString(R.string.ShareFile));
+            addView(shareImageView, LayoutHelper.createFrame(
+                48,
+                48,
+                (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP,
+                LocaleController.isRTL ? 56 : 8,
+                8,
+                LocaleController.isRTL ? 8 : 56,
+                0
+            ));
+            shareImageView.setOnClickListener(v -> showProxyQrCode(context, currentInfo));
 
             checkImageView = new ImageView(context);
             checkImageView.setImageResource(R.drawable.msg_info);
@@ -235,8 +257,13 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 float x = enabled ? toX : fromX;
                 textView.setTranslationX(x);
                 valueTextView.setTranslationX(x);
+                shareImageView.setTranslationX(x);
                 checkImageView.setTranslationX(x);
                 checkBox.setTranslationX((LocaleController.isRTL ? AndroidUtilities.dp(32) : -AndroidUtilities.dp(32)) + x);
+                shareImageView.setVisibility(enabled ? GONE : VISIBLE);
+                shareImageView.setAlpha(1f);
+                shareImageView.setScaleX(1f);
+                shareImageView.setScaleY(1f);
                 checkImageView.setVisibility(enabled ? GONE : VISIBLE);
                 checkImageView.setAlpha(1f);
                 checkImageView.setScaleX(1f);
@@ -253,6 +280,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     float x = AndroidUtilities.lerp(fromX, toX, val);
                     textView.setTranslationX(x);
                     valueTextView.setTranslationX(x);
+                    shareImageView.setTranslationX(x);
                     checkImageView.setTranslationX(x);
                     checkBox.setTranslationX((LocaleController.isRTL ? AndroidUtilities.dp(32) : -AndroidUtilities.dp(32)) + x);
 
@@ -262,6 +290,9 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     checkBox.setAlpha(val);
 
                     scale = 0.5f + (1f - val) * 0.5f;
+                    shareImageView.setScaleX(scale);
+                    shareImageView.setScaleY(scale);
+                    shareImageView.setAlpha(1f - val);
                     checkImageView.setScaleX(scale);
                     checkImageView.setScaleY(scale);
                     checkImageView.setAlpha(1f - val);
@@ -273,6 +304,8 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                             checkBox.setAlpha(0f);
                             checkBox.setVisibility(VISIBLE);
                         } else {
+                            shareImageView.setAlpha(0f);
+                            shareImageView.setVisibility(VISIBLE);
                             checkImageView.setAlpha(0f);
                             checkImageView.setVisibility(VISIBLE);
                         }
@@ -281,6 +314,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         if (enabled) {
+                            shareImageView.setVisibility(GONE);
                             checkImageView.setVisibility(GONE);
                         } else {
                             checkBox.setVisibility(GONE);
@@ -331,6 +365,20 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         protected void onDraw(Canvas canvas) {
             canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
+    }
+
+    private void showProxyQrCode(Context context, SharedConfig.ProxyInfo proxyInfo) {
+        if (context == null || proxyInfo == null) {
+            return;
+        }
+        String link = proxyInfo.getLink();
+        if (TextUtils.isEmpty(link)) {
+            return;
+        }
+        QRCodeBottomSheet alert = new QRCodeBottomSheet(context, LocaleController.getString(R.string.ShareQrCode), link, LocaleController.getString(R.string.QRCodeLinkHelpProxy), true);
+        Bitmap icon = SvgHelper.getBitmap(AndroidUtilities.readRes(R.raw.qr_dog), AndroidUtilities.dp(60), AndroidUtilities.dp(60), false);
+        alert.setCenterImage(icon);
+        showDialog(alert);
     }
 
     @Override
@@ -1178,6 +1226,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, new Class[]{TextDetailProxyCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText2));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, new Class[]{TextDetailProxyCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteGreenText));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_TEXTCOLOR | ThemeDescription.FLAG_CHECKTAG | ThemeDescription.FLAG_IMAGECOLOR, new Class[]{TextDetailProxyCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_text_RedRegular));
+        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{TextDetailProxyCell.class}, new String[]{"shareImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_IMAGECOLOR, new Class[]{TextDetailProxyCell.class}, new String[]{"checkImageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayText3));
 
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{HeaderCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlueHeader));
