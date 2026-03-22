@@ -76,6 +76,7 @@ import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import tw.nekomimi.nekogram.utils.ProxyUtil;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.helper.SystemAiServiceHelper;
 
 import static com.google.zxing.common.detector.MathUtils.distance;
 import static org.telegram.ui.ActionBar.FloatingToolbar.STYLE_THEME;
@@ -1417,6 +1418,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
 
     private static final int TRANSLATE = 3;
     private static final int ADD_TO_FILTER = 4;
+    private static final int SYSTEM_AI = 5;
     private ActionMode.Callback createActionCallback() {
         final ActionMode.Callback callback = new ActionMode.Callback() {
             @Override
@@ -1424,8 +1426,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy);
                 menu.add(Menu.NONE, R.id.menu_quote, 1, LocaleController.getString(R.string.Quote));
                 menu.add(Menu.NONE, android.R.id.selectAll, 2, android.R.string.selectAll);
-                menu.add(Menu.NONE, TRANSLATE, 3, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
-                menu.add(Menu.NONE, ADD_TO_FILTER, 4, getString(R.string.AddToFilter));
+                if (SystemAiServiceHelper.INSTANCE.isSystemAiAvailable(textSelectionOverlay.getContext())) {
+                    menu.add(Menu.NONE, SYSTEM_AI, 3, "AI");
+                }
+                menu.add(Menu.NONE, TRANSLATE, 4, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
+                menu.add(Menu.NONE, ADD_TO_FILTER, 5, getString(R.string.AddToFilter));
                 return true;
             }
 
@@ -1514,6 +1519,15 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                             });
                         }
                     });
+                    return true;
+                } else if (itemId == SYSTEM_AI) {
+                    CharSequence str = getSelectedText();
+                    if (str == null) {
+                        return true;
+                    }
+                    SystemAiServiceHelper.INSTANCE.startSystemAiService(textSelectionOverlay, str.toString());
+                    hideActions();
+                    clear(true);
                     return true;
                 } else if (itemId == R.id.menu_quote) {
                     quoteText();

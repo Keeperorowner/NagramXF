@@ -102,6 +102,8 @@
     <string name="DisableBotOpenButton">禁用 Bot 的打开小程序按钮</string>
     <string name="CustomTitleUserName">使用用户昵称作为标题</string>
     <string name="EnhancedVideoBitrate">改善上传视频画质</string>
+    <string name="UseSystemAiService">使用系统 AI 服务</string>
+    <string name="UseSystemAiServiceDesc">当前仅支持 HyperOS 和 ColorOS</string>
     <string name="ActionBarButtons">导航栏按钮</string>
     <string name="VideoPlayerDecoder">视频解码器</string>
     <string name="VideoPlayerDecoderPreferSW">软解优先</string>

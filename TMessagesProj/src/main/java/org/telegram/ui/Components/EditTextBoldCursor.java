@@ -75,7 +75,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import xyz.nextalone.nagram.helper.SystemAiServiceHelper;
+
 public class EditTextBoldCursor extends EditTextEffects {
+
+    private static final int SYSTEM_AI = 3;
 
     private static Field mEditor;
     private static Field mShowCursorField;
@@ -1161,12 +1165,24 @@ public class EditTextBoldCursor extends EditTextEffects {
             };
             callback.onCreateActionMode(floatingActionMode, floatingActionMode.getMenu());
             extendActionMode(floatingActionMode, floatingActionMode.getMenu());
+            addSystemAi(floatingActionMode.getMenu());
             floatingActionMode.invalidate();
             getViewTreeObserver().addOnPreDrawListener(floatingToolbarPreDrawListener);
             invalidate();
             return floatingActionMode;
         } else {
             return super.startActionMode(callback);
+        }
+    }
+
+    private void addSystemAi(Menu menu) {
+        if (!SystemAiServiceHelper.INSTANCE.isSystemAiAvailable(getContext())) {
+            return;
+        }
+        if (menu.findItem(SYSTEM_AI) == null) {
+            menu.add(Menu.NONE, SYSTEM_AI, SYSTEM_AI, "AI")
+                    .setAlphabeticShortcut('s')
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
         }
     }
 
@@ -1193,6 +1209,15 @@ public class EditTextBoldCursor extends EditTextEffects {
 
     protected void extendActionMode(ActionMode actionMode, Menu menu) {
 
+    }
+
+    @Override
+    public boolean onTextContextMenuItem(int id) {
+        if (id == SYSTEM_AI) {
+            SystemAiServiceHelper.INSTANCE.startSystemAiService(this);
+            return true;
+        }
+        return super.onTextContextMenuItem(id);
     }
 
     protected int getActionModeStyle() {
