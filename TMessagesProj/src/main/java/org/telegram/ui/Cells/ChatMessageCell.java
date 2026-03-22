@@ -1793,7 +1793,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         backgroundDrawable = new MessageBackgroundDrawable(this);
         avatarImage = new ImageReceiver();
         avatarImage.setAllowLoadingOnAttachedOnly(true);
-        avatarImage.setRoundRadius(dp(21));
+        avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(42.0f));
         avatarDrawable = new AvatarDrawable();
         replyImageReceiver = new ImageReceiver(this);
         replyImageReceiver.setAllowLoadingOnAttachedOnly(true);
@@ -1938,7 +1938,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         pollAvatarImagesVisible = new boolean[3];
         for (int a = 0; a < pollAvatarImages.length; a++) {
             pollAvatarImages[a] = new ImageReceiver(this);
-            pollAvatarImages[a].setRoundRadius(dp(8));
+            pollAvatarImages[a].setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(16.0f));
             pollAvatarDrawables[a] = new AvatarDrawable();
             pollAvatarDrawables[a].setTextSize(dp(22));
         }
@@ -1953,7 +1953,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         commentAvatarImagesVisible = new boolean[3];
         for (int a = 0; a < commentAvatarImages.length; a++) {
             commentAvatarImages[a] = new ImageReceiver(this);
-            commentAvatarImages[a].setRoundRadius(dp(12));
+            commentAvatarImages[a].setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(24.0f));
             commentAvatarDrawables[a] = new AvatarDrawable();
             commentAvatarDrawables[a].setTextSize(dp(18));
         }
@@ -8340,7 +8340,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 drawName = isSavedChat && !messageObject.isOutOwner() && (messageObject.getSavedDialogId() < 0 || messageObject.getSavedDialogId() == UserObject.ANONYMOUS) || messageObject.isFromGroup() && messageObject.isSupergroup() || messageObject.isImportedForward() && messageObject.messageOwner.fwd_from.from_id == null;
                 drawForwardedName = !isRepliesChat;
                 drawPhotoImage = true;
-                photoImage.setRoundRadius(dp(22));
+                photoImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(44.0f));
                 canChangeRadius = false;
                 if (AndroidUtilities.isTablet()) {
                     backgroundWidth = Math.min(AndroidUtilities.getMinTabletSide() - dp(50 + (isSideMenued ? ChatActivity.SIDE_MENU_WIDTH : drawAvatar ? 52 : 0)), dp(270));
@@ -8913,7 +8913,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         if (button.avatarImageReceiver == null) {
                             button.avatarImageReceiver = new ImageReceiver(this);
-                            button.avatarImageReceiver.setRoundRadius(dp(20));
+                            button.avatarImageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
                         }
                         if (isCellAttachedToWindow()) {
                             button.attach();

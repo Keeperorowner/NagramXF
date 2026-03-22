@@ -63,6 +63,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import tw.nekomimi.nekogram.ui.PopupBuilder;
+import tw.nekomimi.nekogram.ui.cells.AvatarCornersPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.EmojiSetCell;
 import tw.nekomimi.nekogram.ui.cells.StickerSizePreviewMessagesCell;
 import xyz.nextalone.nagram.NaConfig;
@@ -99,6 +100,8 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
     // Chats
     private final AbstractConfigCell headerChats = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Chat)));
+    private final AbstractConfigCell avatarCornersRow = cellGroup.appendCell(new ConfigCellCustom("AvatarCorners", ConfigCellCustom.CUSTOM_ITEM_AvatarCorners, false));
+    private final AbstractConfigCell singleCornerRadiusRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSingleCornerRadius(), null, getString(R.string.SingleCornerRadius)));
     private final AbstractConfigCell emojiSetsRow = cellGroup.appendCell(new ConfigCellCustom("EmojiSets", ConfigCellCustom.CUSTOM_ITEM_EmojiSet, true));
     private final AbstractConfigCell premiumElementsToggleRow = cellGroup.appendCell(new ConfigCellTextCheck2("PremiumElements", getString(R.string.PremiumElements), new ArrayList<>() {{
         add(new ConfigCellCheckBox(NaConfig.INSTANCE.getPremiumItemEmojiStatus()));
@@ -469,6 +472,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private ListAdapter listAdapter;
     private ActionBarMenuItem menuItem;
     private StickerSizeCell stickerSizeCell;
+    private AvatarCornersPreviewCell avatarCornersCell;
 
     public NekoChatSettingsActivity() {
         if (NaConfig.INSTANCE.getUseEditedIcon().Bool()) {
@@ -543,6 +547,8 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 stickerSizeCell.invalidate();
             } else if (key.equals(NaConfig.INSTANCE.getPremiumItemCustomColorInReplies().getKey())) {
                 stickerSizeCell.invalidate();
+            } else if (key.equals(NaConfig.INSTANCE.getSingleCornerRadius().getKey())) {
+                reloadAvatarCorners();
             } else if (key.equals(NaConfig.INSTANCE.getTranscribeProvider().getKey())) {
                 if ((int) newValue == TranscribeHelper.TRANSCRIBE_OPENAI) {
                     if (!cellGroup.rows.contains(transcribeProviderOpenAiRow)) {
@@ -670,6 +676,17 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         return themeDescriptions;
     }
 
+    private void reloadAvatarCorners() {
+        if (avatarCornersCell != null) {
+            avatarCornersCell.invalidate();
+        }
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
+        if (getParentLayout() != null) {
+            getParentLayout().rebuildAllFragmentViews(false, false);
+        }
+    }
+
     public static boolean[] getDeleteMenuChecks() {
         return new boolean[]{
                 NaConfig.INSTANCE.getDefaultDeleteMenuBanUsers().Bool(),
@@ -784,6 +801,9 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             switch (viewType) {
                 case ConfigCellCustom.CUSTOM_ITEM_StickerSize:
                     view = stickerSizeCell = new StickerSizeCell(mContext);
+                    break;
+                case ConfigCellCustom.CUSTOM_ITEM_AvatarCorners:
+                    view = avatarCornersCell = new AvatarCornersPreviewCell(mContext, NekoChatSettingsActivity.this::reloadAvatarCorners);
                     break;
                 case ConfigCellCustom.CUSTOM_ITEM_EmojiSet:
                     view = new EmojiSetCell(mContext, false);

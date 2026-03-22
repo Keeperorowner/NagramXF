@@ -6651,13 +6651,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private int getSmallAvatarRoundRadius() {
-        if (chatId != 0) {
-            TLRPC.Chat chatLocal = getMessagesController().getChat(chatId);
-            if (ChatObject.isForum(chatLocal)) {
-                return dp(needInsetForStories() ? 24 : 38);
-            }
-        }
-        return dp(50);
+        TLRPC.Chat chatLocal = chatId != 0 ? getMessagesController().getChat(chatId) : null;
+        return org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(100.0f, ChatObject.isForum(chatLocal), ChatObject.isForum(chatLocal) && needInsetForStories());
     }
 
     private void updateTtlIcon() {

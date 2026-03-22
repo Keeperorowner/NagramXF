@@ -21,7 +21,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
@@ -53,7 +55,7 @@ public class AccountSelectCell extends FrameLayout {
         avatarDrawable.setTextSize(dp(12));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(18));
+        imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(36.0f));
         addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 10, 10, 0, 0));
 
         textView = new SimpleTextView(context);
@@ -119,11 +121,13 @@ public class AccountSelectCell extends FrameLayout {
     public void setObject(TLObject object) {
         if (object instanceof TLRPC.User) {
             TLRPC.User user = (TLRPC.User) object;
+            imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(36.0f));
             avatarDrawable.setInfo(user);
             infoTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
             imageView.setForUserOrChat(user, avatarDrawable);
         } else {
             TLRPC.Chat chat = (TLRPC.Chat) object;
+            imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(36.0f, chat != null && (ChatObject.isForum(chat) || ChatObject.isMonoForum(chat))));
             avatarDrawable.setInfo(chat);
             infoTextView.setText(chat == null ? "" : chat.title);
             imageView.setForUserOrChat(chat, avatarDrawable);
@@ -133,6 +137,7 @@ public class AccountSelectCell extends FrameLayout {
     public void setAccount(int account, boolean check) {
         accountNumber = account;
         TLRPC.User user = UserConfig.getInstance(accountNumber).getCurrentUser();
+        imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(36.0f));
         avatarDrawable.setInfo(account, user);
         textView.setText(ContactsController.formatName(user.first_name, user.last_name));
         imageView.getImageReceiver().setCurrentAccount(account);

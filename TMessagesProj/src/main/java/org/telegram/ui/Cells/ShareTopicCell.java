@@ -56,7 +56,7 @@ public class ShareTopicCell extends FrameLayout {
         setWillNotDraw(false);
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(AndroidUtilities.dp(28));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f));
         addView(imageView, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
 
         nameTextView = new TextView(context);
@@ -133,7 +133,7 @@ public class ShareTopicCell extends FrameLayout {
                     nameTextView.setText("");
                 }
                 imageView.setForUserOrChat(user, avatarDrawable);
-                imageView.setRoundRadius(dp(28));
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f));
             } else {
                 TLRPC.Chat chat1 = MessagesController.getInstance(currentAccount).getChat(topicId);
                 if (name != null) {
@@ -160,7 +160,7 @@ public class ShareTopicCell extends FrameLayout {
             combinedDrawable.setFullsize(true);
             imageView.setImageDrawable(combinedDrawable);
         }
-        imageView.setRoundRadius(chat != null && chat.forum && !checked ? AndroidUtilities.dp(16) : AndroidUtilities.dp(28));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f, chat != null && (chat.forum || chat.monoforum) && !checked));
 
         currentDialog = dialog.id;
         currentTopic = topic.id;

@@ -31,6 +31,8 @@ import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.AvatarCornerHelper;
+import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -91,7 +93,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         this.padding = padding;
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.setRoundRadius(dp(21));
+        avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f));
 
         avatarDrawable = new AvatarDrawable();
 
@@ -151,6 +153,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         if (DialogObject.isUserDialog(dialogId)) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
             if (user != null) {
+                avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f));
                 avatarDrawable = new AvatarDrawable(user);
                 name = UserObject.getUserName(user);
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
@@ -158,6 +161,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
             if (chat != null) {
+                avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
                 avatarDrawable = new AvatarDrawable(chat);
                 name = chat.title;
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
@@ -270,6 +274,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             if (fromId > 0) {
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(fromId);
                 if (user != null) {
+                    avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f));
                     avatarDrawable = new AvatarDrawable(user);
                     name = UserObject.getUserName(user);
                     avatarImageView.setForUserOrChat(user, avatarDrawable);
@@ -280,6 +285,7 @@ public class SharingLiveLocationCell extends FrameLayout {
             } else {
                 TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-fromId);
                 if (chat != null) {
+                    avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
                     avatarDrawable = new AvatarDrawable(chat);
                     name = chat.title;
                     avatarImageView.setForUserOrChat(chat, avatarDrawable);
@@ -339,6 +345,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         if (DialogObject.isUserDialog(info.id)) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(info.id);
             if (user != null) {
+                avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f));
                 avatarDrawable.setInfo(currentAccount, user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
@@ -346,6 +353,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-info.id);
             if (chat != null) {
+                avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
                 avatarDrawable.setInfo(currentAccount, chat);
                 nameTextView.setText(chat.title);
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);
@@ -371,6 +379,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         if (DialogObject.isUserDialog(info.did)) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(info.did);
             if (user != null) {
+                avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f));
                 avatarDrawable.setInfo(currentAccount, user);
                 nameTextView.setText(ContactsController.formatName(user.first_name, user.last_name));
                 avatarImageView.setForUserOrChat(user, avatarDrawable);
@@ -378,6 +387,7 @@ public class SharingLiveLocationCell extends FrameLayout {
         } else {
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-info.did);
             if (chat != null) {
+                avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(42.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
                 avatarDrawable.setInfo(currentAccount, chat);
                 nameTextView.setText(chat.title);
                 avatarImageView.setForUserOrChat(chat, avatarDrawable);

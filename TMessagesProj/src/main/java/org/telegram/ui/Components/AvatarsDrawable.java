@@ -271,14 +271,14 @@ public class AvatarsDrawable {
             currentStates[a] = new DrawingState();
             currentStates[a].imageReceiver = new ImageReceiver(parent);
             currentStates[a].imageReceiver.setInvalidateAll(true);
-            currentStates[a].imageReceiver.setRoundRadius(dp(12));
+            currentStates[a].imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(24.0f));
             currentStates[a].avatarDrawable = new AvatarDrawable();
             currentStates[a].avatarDrawable.setTextSize(dp(12));
 
             animatingStates[a] = new DrawingState();
             animatingStates[a].imageReceiver = new ImageReceiver(parent);
             animatingStates[a].imageReceiver.setInvalidateAll(true);
-            animatingStates[a].imageReceiver.setRoundRadius(dp(12));
+            animatingStates[a].imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(24.0f));
             animatingStates[a].avatarDrawable = new AvatarDrawable();
             animatingStates[a].avatarDrawable.setTextSize(dp(12));
         }
@@ -383,7 +383,7 @@ public class AvatarsDrawable {
         } else {
             animatingStates[index].imageReceiver.setForUserOrChat(currentChat, animatingStates[index].avatarDrawable);
         }
-        animatingStates[index].imageReceiver.setRoundRadius(size / 2);
+        animatingStates[index].imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(size));
         animatingStates[index].imageReceiver.setImageCoords(0, 0, size, size);
         invalidate();
     }

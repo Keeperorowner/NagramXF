@@ -36,7 +36,7 @@ public class FiltersChatCell extends FrameLayout {
         super(context);
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         addView(imageView, LayoutHelper.createFrame(40, 40, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
         textView = new TextView(context);
@@ -86,7 +86,7 @@ public class FiltersChatCell extends FrameLayout {
                 title = ContactsController.formatName(user.first_name, user.last_name);
                 AvatarDrawable avatar = new AvatarDrawable();
                 avatar.setInfo(user);
-                imageView.setRoundRadius(dp(20));
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
                 imageView.setForUserOrChat(user, avatar);
             } else {
                 imageView.setImageDrawable(null);
@@ -97,7 +97,7 @@ public class FiltersChatCell extends FrameLayout {
                 title = chat.title;
                 AvatarDrawable avatar = new AvatarDrawable();
                 avatar.setInfo(chat);
-                imageView.setRoundRadius(ChatObject.isForum(chat) ? dp(16) : dp(21));
+                imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
                 imageView.setForUserOrChat(chat, avatar);
             } else {
                 imageView.setImageDrawable(null);
@@ -112,7 +112,7 @@ public class FiltersChatCell extends FrameLayout {
 
     public void setUserFilter(long userId, String title, String subtitle, boolean divider) {
         needDivider = divider;
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
 
         TLRPC.User user = MessagesController.getInstance(UserConfig.selectedAccount).getUser(userId);
         AvatarDrawable avatar = new AvatarDrawable();
