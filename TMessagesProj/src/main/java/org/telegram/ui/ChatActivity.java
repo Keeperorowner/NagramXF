@@ -3530,6 +3530,10 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        if (forceForwardHandler != null) {
+            forceForwardHandler.dispose();
+            forceForwardHandler = null;
+        }
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onDestroy();
         }
