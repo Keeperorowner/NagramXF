@@ -8,11 +8,8 @@ import android.graphics.Canvas;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -32,7 +29,6 @@ import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
@@ -63,10 +59,8 @@ import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.SearchTabsAndFiltersLayout;
 import org.telegram.ui.ChatActivity;
-import org.telegram.messenger.browser.Browser;
 
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 
@@ -74,7 +68,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 import tw.nekomimi.nekogram.BackButtonMenuRecent;
-import java.util.HashSet;
 
 public class ChatHistoryActivity extends BaseFragment {
 
@@ -82,24 +75,17 @@ public class ChatHistoryActivity extends BaseFragment {
     private static final long SEARCH_DEBOUNCE_MS = 250L;
     private static final int TABS_CONTAINER_HEIGHT_DP = 50;
 
-    private static final long TELEGRAM_SERVICE_USER_ID = 777000L;
-    private static final long REPLIES_BOT_USER_ID = 708513L;
-    private static final long STICKERS_BOT_USER_ID = 429000L;
-    private static final long BOTFATHER_USER_ID = 136817688L;
-
     public enum ChatCategory {
-        ALL(0, "All"),
-        CHANNELS(1, "Channels"),
-        GROUPS(2, "Groups"),
-        USERS(3, "Users"),
-        BOTS(4, "Bots");
+        ALL(0),
+        CHANNELS(1),
+        GROUPS(2),
+        USERS(3),
+        BOTS(4);
 
         public final int id;
-        public final String title;
 
-        ChatCategory(int id, String title) {
+        ChatCategory(int id) {
             this.id = id;
-            this.title = title;
         }
     }
 
@@ -124,12 +110,11 @@ public class ChatHistoryActivity extends BaseFragment {
     private int searchRequestId;
     private boolean searchInProgress;
 
+    // State preservation
     private boolean savedSearchMode = false;
     private String savedSearchQuery = "";
     private int savedCurrentTab = 0;
     private boolean isOpeningChat = false;
-    private boolean hasBeenInitialized = false;
-    private boolean isRestoringSearchState = false;
 
     private boolean isMultiSelectMode = false;
     private ArrayList<HistoryItem> selectedItems = new ArrayList<>();
@@ -233,8 +218,6 @@ public class ChatHistoryActivity extends BaseFragment {
 
         createViewPager(context, (SizeNotifierFrameLayout) fragmentView);
 
-        hasBeenInitialized = true;
-
         if (isOpeningChat) {
             fragmentView.post(() -> restoreState(false));
         }
@@ -320,44 +303,6 @@ public class ChatHistoryActivity extends BaseFragment {
         }
     }
 
-    private int getCategoryCount(ChatCategory category) {
-        int count = 0;
-        for (HistoryItem item : allHistoryItems) {
-            if (shouldIncludeItem(item, category)) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private boolean shouldIncludeItem(HistoryItem item, ChatCategory category) {
-        if (item.user != null) {
-            if (item.user.id == TELEGRAM_SERVICE_USER_ID || 
-                item.user.id == REPLIES_BOT_USER_ID ||  
-                item.user.id == UserConfig.getInstance(currentAccount).getClientUserId()) {
-                return false;
-            }
-        }
-
-        if (category == ChatCategory.ALL) {
-            return true;
-        }
-
-        if (item.user != null) {
-            if (item.user.bot) {
-                return category == ChatCategory.BOTS;
-            } else {
-                return category == ChatCategory.USERS;
-            }
-        } else if (item.chat != null) {
-            if (item.chat.broadcast) {
-                return category == ChatCategory.CHANNELS;
-            } else {
-                return category == ChatCategory.GROUPS;
-            }
-        }
-        return false;
-    }
 
     private void loadHistoryItems() {
         allHistoryItems.clear();
@@ -365,7 +310,7 @@ public class ChatHistoryActivity extends BaseFragment {
         LinkedList<Long> recentDialogIds = BackButtonMenuRecent.getRecentDialogs(currentAccount);
 
         for (Long dialogId : recentDialogIds) {
-            if (isOfficialDialog(dialogId, currentAccount)) {
+            if (ChatHistoryUtils.isOfficialDialog(dialogId, currentAccount)) {
                 continue;
             }
 
@@ -449,27 +394,6 @@ public class ChatHistoryActivity extends BaseFragment {
 
 
 
-    public static boolean isOfficialDialog(long dialogId, int account) {
-        if (dialogId > 0) {
-            TLRPC.User user = MessagesController.getInstance(account).getUser(dialogId);
-            if (user != null) {
-                if (UserObject.isUserSelf(user) || UserObject.isReplyUser(user)) {
-                    return true;
-                }
-            }
-
-            if (dialogId == TELEGRAM_SERVICE_USER_ID || 
-                dialogId == STICKERS_BOT_USER_ID || 
-                dialogId == BOTFATHER_USER_ID) { 
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean isOfficialDialog(long dialogId) {
-        return isOfficialDialog(dialogId, currentAccount);
-    }
 
     private void updateTitle() {
         if (isSearchMode) {
@@ -480,15 +404,12 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void exitSearchMode() {
-        if (isRestoringSearchState) {
-            return;
-        }
         cancelPendingSearch();
         searchRequestId++;
         searchInProgress = false;
         isSearchMode = false;
         searchQuery = "";
-        
+
         if (!isMultiSelectMode) {
             savedSearchMode = false;
             savedSearchQuery = "";
@@ -721,18 +642,14 @@ public class ChatHistoryActivity extends BaseFragment {
     private void saveScrollPosition() {
         if (viewPager == null) return;
         View v = viewPager.getCurrentView();
-        if (!(v instanceof FrameLayout)) return;
-        
-        FrameLayout container = (FrameLayout) v;
-        for (int i = 0; i < container.getChildCount(); i++) {
-            View child = container.getChildAt(i);
-            if (child instanceof RecyclerView) {
-                RecyclerView.LayoutManager lm = ((RecyclerView) child).getLayoutManager();
-                if (lm != null) {
-                    savedScrollState = lm.onSaveInstanceState();
-                    savedScrollTab = viewPager.getCurrentPosition();
-                }
-                break;
+        if (v == null) return;
+
+        Object tag = v.getTag();
+        if (tag instanceof RecyclerView) {
+            RecyclerView.LayoutManager lm = ((RecyclerView) tag).getLayoutManager();
+            if (lm != null) {
+                savedScrollState = lm.onSaveInstanceState();
+                savedScrollTab = viewPager.getCurrentPosition();
             }
         }
     }
@@ -744,22 +661,18 @@ public class ChatHistoryActivity extends BaseFragment {
             savedScrollTab = -1;
             return;
         }
-        
+
         View v = viewPager.getCurrentView();
-        if (!(v instanceof FrameLayout)) return;
-        
-        FrameLayout container = (FrameLayout) v;
-        for (int i = 0; i < container.getChildCount(); i++) {
-            View child = container.getChildAt(i);
-            if (child instanceof RecyclerView) {
-                RecyclerView.LayoutManager lm = ((RecyclerView) child).getLayoutManager();
-                if (lm != null) {
-                    lm.onRestoreInstanceState(savedScrollState);
-                }
-                break;
+        if (v == null) return;
+
+        Object tag = v.getTag();
+        if (tag instanceof RecyclerView) {
+            RecyclerView.LayoutManager lm = ((RecyclerView) tag).getLayoutManager();
+            if (lm != null) {
+                lm.onRestoreInstanceState(savedScrollState);
             }
         }
-        
+
         savedScrollState = null;
         savedScrollTab = -1;
     }
@@ -767,14 +680,13 @@ public class ChatHistoryActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
-        
-        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "onResume: isOpeningChat=" + isOpeningChat + ", hasBeenInitialized=" + hasBeenInitialized + ", savedSearchMode=" + savedSearchMode);
-        
-        if (isOpeningChat && hasBeenInitialized) {
+
+        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "onResume: isOpeningChat=" + isOpeningChat + ", savedSearchMode=" + savedSearchMode);
+
+        if (isOpeningChat && viewPager != null) {
             if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Returning from chat");
             isOpeningChat = false;
 
-             
             if (isSearchMode && android.text.TextUtils.isEmpty(searchQuery)) {
                 if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Exiting empty search mode on return");
                 try {
@@ -784,18 +696,13 @@ public class ChatHistoryActivity extends BaseFragment {
                 } catch (Exception ignore) { }
                 exitSearchMode();
             }
-            
+
             restoreState(false);
             restoreScrollPosition();
-            
             return;
         }
-        
+
         isOpeningChat = false;
-        
-        if (hasBeenInitialized) {
-            if (BuildVars.LOGS_ENABLED) Log.d(TAG, "General resume, keep list state");
-        }
     }
 
     @Override
@@ -818,27 +725,34 @@ public class ChatHistoryActivity extends BaseFragment {
 
     private void refreshAllPages() {
         if (viewPager != null) {
-            clearViewPagerCache();
-
-            viewPager.setAdapter(new CategoryPagerAdapter());
             updateTabs();
+            rebindCurrentPage();
         }
     }
 
-    private void clearViewPagerCache() {
-        if (viewPager != null) {
-            try {
-                viewPager.removeAllViews();
+    private void rebindCurrentPage() {
+        if (viewPager == null) return;
+        View currentView = viewPager.getCurrentView();
+        if (currentView == null) return;
 
-                viewPager.requestLayout();
-
-                viewPager.post(() -> {
-                    if (viewPager != null) {
-                        viewPager.invalidate();
-                    }
-                });
-            } catch (Exception e) {
+        int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+        currentView.setBackgroundColor(backgroundColor);
+        Object tag = currentView.getTag();
+        if (tag instanceof BlurredRecyclerView) {
+            BlurredRecyclerView listView = (BlurredRecyclerView) tag;
+            listView.setBackgroundColor(backgroundColor);
+            RecyclerView.Adapter existing = listView.getAdapter();
+            if (existing instanceof CategoryListAdapter) {
+                CategoryListAdapter adapter = (CategoryListAdapter) existing;
+                adapter.updateCategoryData();
+                adapter.notifyDataSetChanged();
+                return;
             }
+        }
+        // Fallback: rebind via adapter
+        CategoryPagerAdapter adapter = (CategoryPagerAdapter) viewPager.adapter;
+        if (adapter != null) {
+            adapter.bindView(currentView, viewPager.getCurrentPosition(), 0);
         }
     }
 
@@ -870,7 +784,7 @@ public class ChatHistoryActivity extends BaseFragment {
             BlurredRecyclerView listView = new BlurredRecyclerView(context);
             listView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
             listView.setVerticalScrollBarEnabled(false);
-            
+
             DefaultItemAnimator itemAnimator = new DefaultItemAnimator();
             itemAnimator.setChangeDuration(350);
             itemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
@@ -882,48 +796,39 @@ public class ChatHistoryActivity extends BaseFragment {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             ));
+            container.setTag(listView);
 
             return container;
         }
 
         @Override
         public void bindView(View view, int position, int viewType) {
-            if (view instanceof FrameLayout) {
-                FrameLayout container = (FrameLayout) view;
+            Object tag = view.getTag();
+            if (!(tag instanceof BlurredRecyclerView)) return;
 
-                BlurredRecyclerView listView = null;
-                for (int i = 0; i < container.getChildCount(); i++) {
-                    View child = container.getChildAt(i);
-                    if (child instanceof BlurredRecyclerView) {
-                        listView = (BlurredRecyclerView) child;
-                        break;
+            int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+            view.setBackgroundColor(backgroundColor);
+            BlurredRecyclerView listView = (BlurredRecyclerView) tag;
+            listView.setBackgroundColor(backgroundColor);
+            CategoryListAdapter adapter = new CategoryListAdapter(getContext(), position);
+            listView.setAdapter(adapter);
+
+            listView.setOnItemClickListener((itemView, itemPosition) -> {
+                adapter.onItemClick(itemView, itemPosition);
+            });
+
+            listView.setOnItemLongClickListener((itemView, itemPosition) -> {
+                if (itemPosition >= 0 && itemPosition < adapter.categoryItems.size()) {
+                    if (!isMultiSelectMode) {
+                        enterMultiSelectMode();
                     }
+                    HistoryItem item = adapter.categoryItems.get(itemPosition);
+                    HistoryCell cell = (HistoryCell) itemView;
+                    toggleItemSelection(item, cell);
+                    return true;
                 }
-
-                if (listView != null) {
-                    listView.setAdapter(null);
-
-                    CategoryListAdapter adapter = new CategoryListAdapter(getContext(), position);
-                    listView.setAdapter(adapter);
-
-                    listView.setOnItemClickListener((itemView, itemPosition) -> {
-                        adapter.onItemClick(itemView, itemPosition);
-                    });
-                    
-                    listView.setOnItemLongClickListener((itemView, itemPosition) -> {
-                        if (itemPosition >= 0 && itemPosition < adapter.categoryItems.size()) {
-                            if (!isMultiSelectMode) {
-                                enterMultiSelectMode();
-                            }
-                            HistoryItem item = adapter.categoryItems.get(itemPosition);
-                            HistoryCell cell = (HistoryCell) itemView;
-                            toggleItemSelection(item, cell);
-                            return true;
-                        }
-                        return false;
-                    });
-                }
-            }
+                return false;
+            });
         }
     }
 
@@ -949,7 +854,7 @@ public class ChatHistoryActivity extends BaseFragment {
             }
 
             for (HistoryItem item : sourceItems) {
-                if (shouldIncludeItem(item, category)) {
+                if (ChatHistoryUtils.shouldIncludeInCategory(item, category.id)) {
                     categoryItems.add(item);
                 }
             }
@@ -981,6 +886,7 @@ public class ChatHistoryActivity extends BaseFragment {
             if (viewType == 1) {
                 if (holder.itemView instanceof EmptyStateCell) {
                     EmptyStateCell emptyStateCell = (EmptyStateCell) holder.itemView;
+                    emptyStateCell.applyThemeColors();
 
                     if (isSearchMode) {
                         emptyStateCell.setText("", getSearchEmptyText());
@@ -1094,7 +1000,7 @@ public class ChatHistoryActivity extends BaseFragment {
         LinkedList<Long> recentDialogIds = BackButtonMenuRecent.getRecentDialogs(account);
         
         for (Long dialogId : recentDialogIds) {
-            if (isOfficialDialog(dialogId, account)) {
+            if (ChatHistoryUtils.isOfficialDialog(dialogId, account)) {
                 continue;
             }
             HistoryItem item = createHistoryItem(dialogId, account);
@@ -1170,7 +1076,7 @@ public class ChatHistoryActivity extends BaseFragment {
         ActionBarPopupWindow popupWindow = new ActionBarPopupWindow(popupLayout, LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
 
         ActionBarMenuSubItem openItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_openin, getString(R.string.Open), false, getResourceProvider());
-        openItem.setVisibility(finalCanOpen);
+        openItem.setVisibility(finalCanOpen ? View.VISIBLE : View.GONE);
         if (!finalCanOpen) {
             openItem.setColors(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         }
@@ -1182,7 +1088,7 @@ public class ChatHistoryActivity extends BaseFragment {
         });
 
         ActionBarMenuSubItem shareItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_share, getString(R.string.ShareFile), false, getResourceProvider());
-        shareItem.setVisibility(finalHasPublicUsername);
+        shareItem.setVisibility(finalHasPublicUsername ? View.VISIBLE : View.GONE);
         if (!finalHasPublicUsername) {
             shareItem.setColors(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         }
@@ -1194,7 +1100,7 @@ public class ChatHistoryActivity extends BaseFragment {
         });
 
         ActionBarMenuSubItem copyItem = ActionBarMenuItem.addItem(popupLayout, R.drawable.msg_copy, getString(R.string.Copy), false, getResourceProvider());
-        copyItem.setVisibility(finalHasPublicUsername);
+        copyItem.setVisibility(finalHasPublicUsername ? View.VISIBLE : View.GONE);
         if (!finalHasPublicUsername) {
             copyItem.setColors(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3), Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3));
         }
@@ -1254,7 +1160,7 @@ public class ChatHistoryActivity extends BaseFragment {
             });
             showDialog(shareAlert);
         } catch (Exception e) {
-            e.printStackTrace();
+            if (BuildVars.LOGS_ENABLED) Log.e(TAG, "Failed to share chat", e);
         }
     }
 
@@ -1267,7 +1173,7 @@ public class ChatHistoryActivity extends BaseFragment {
             BulletinFactory.of(this).createSimpleBulletin(R.raw.copy,
                 getString(R.string.TextCopied)).show();
         } catch (Exception e) {
-            e.printStackTrace();
+            if (BuildVars.LOGS_ENABLED) Log.e(TAG, "Failed to copy username", e);
         }
     }
 
@@ -1338,7 +1244,6 @@ public class ChatHistoryActivity extends BaseFragment {
         private TextView usernameTextView;
         private AvatarDrawable avatarDrawable;
         private ActionBarMenuItem optionsButton;
-        private CheckBox checkBox;
         private CheckBox2 checkBox2;
         private HistoryItem currentItem;
         private boolean isSelected = false;
@@ -1351,12 +1256,7 @@ public class ChatHistoryActivity extends BaseFragment {
             avatarImageView.setRoundRadius(AndroidUtilities.dp(25));
             addView(avatarImageView, LayoutHelper.createFrame(50, 50, Gravity.LEFT | Gravity.CENTER_VERTICAL, 16, 0, 0, 0));
 
-            checkBox = new CheckBox(context);
-            checkBox.setVisibility(GONE);
-            checkBox.setClickable(false);
-            checkBox.setFocusable(false);
-            addView(checkBox, LayoutHelper.createFrame(24, 24, Gravity.LEFT | Gravity.CENTER_VERTICAL, 60, 0, 0, 0));
-
+            // CheckBox2 for multi-select (shown on avatar corner)
             checkBox2 = new CheckBox2(context, 21, null) {
                 @Override
                 public void invalidate() {
@@ -1404,7 +1304,7 @@ public class ChatHistoryActivity extends BaseFragment {
             });
             addView(optionsButton, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
 
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            applyThemeColors();
         }
 
         @Override
@@ -1482,8 +1382,21 @@ public class ChatHistoryActivity extends BaseFragment {
             return isSelected;
         }
 
+        public void applyThemeColors() {
+            int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+            int titleColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+            int secondaryColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3);
+            setBackgroundColor(backgroundColor);
+            nameTextView.setTextColor(titleColor);
+            usernameTextView.setTextColor(secondaryColor);
+            optionsButton.setIconColor(secondaryColor);
+            optionsButton.setBackgroundDrawable(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1));
+            checkBox2.setColor(-1, Theme.key_windowBackgroundWhite, Theme.key_checkboxCheck);
+        }
+
         public void setDialog(HistoryItem item) {
             this.currentItem = item;
+            applyThemeColors();
             
             isSelected = false;
 
@@ -1542,7 +1455,7 @@ public class ChatHistoryActivity extends BaseFragment {
             descriptionTextView.setGravity(Gravity.CENTER);
             addView(descriptionTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 32, 80, 32, 48));
 
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            applyThemeColors();
         }
 
         @Override
@@ -1554,6 +1467,7 @@ public class ChatHistoryActivity extends BaseFragment {
         }
 
         public void setText(String title, String description) {
+            applyThemeColors();
             if (TextUtils.isEmpty(title)) {
                 titleTextView.setVisibility(GONE);
             } else {
@@ -1568,20 +1482,27 @@ public class ChatHistoryActivity extends BaseFragment {
                 descriptionTextView.setVisibility(VISIBLE);
             }
         }
+
+        public void applyThemeColors() {
+            int backgroundColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+            int textColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3);
+            setBackgroundColor(backgroundColor);
+            titleTextView.setTextColor(textColor);
+            descriptionTextView.setTextColor(textColor);
+        }
     }
 
     private void enterMultiSelectMode() {
         savedSearchMode = isSearchMode;
         savedSearchQuery = searchQuery;
-        
+
+        // Close search field to avoid ActionBar conflicts, but preserve search state
         if (isSearchMode && actionBar != null && actionBar.isSearchFieldVisible()) {
-            isRestoringSearchState = true;
+            isSearchMode = false; // temporarily clear to prevent exitSearchMode side effects
             actionBar.closeSearchField();
-            AndroidUtilities.runOnUIThread(() -> {
-                isRestoringSearchState = false;
-            }, 100);
+            isSearchMode = savedSearchMode; // restore
         }
-        
+
         isMultiSelectMode = true;
         selectedItems.clear();
         updateActionBarForMultiSelect();
@@ -1591,34 +1512,24 @@ public class ChatHistoryActivity extends BaseFragment {
     private void exitMultiSelectMode() {
         isMultiSelectMode = false;
         selectedItems.clear();
-        
+
         boolean shouldRestoreSearch = savedSearchMode && !TextUtils.isEmpty(savedSearchQuery);
-        
+
         updateActionBarForNormalMode();
         updateAllCellsMultiSelectMode();
-        
+
         if (shouldRestoreSearch) {
             AndroidUtilities.runOnUIThread(() -> {
                 if (searchItem != null && actionBar != null) {
-                    isRestoringSearchState = true;
-                    
                     isSearchMode = true;
                     searchQuery = savedSearchQuery;
-                    
                     actionBar.openSearchField(savedSearchQuery, false);
-                    
                     if (searchItem.getSearchField() != null) {
                         searchItem.getSearchField().setText(savedSearchQuery);
                         searchItem.getSearchField().setSelection(savedSearchQuery.length());
                     }
-                    
                     updateTitle();
-                    
                     performSearch(savedSearchQuery);
-                    
-                    AndroidUtilities.runOnUIThread(() -> {
-                        isRestoringSearchState = false;
-                    }, 100);
                 }
             }, 200);
         }
@@ -1697,25 +1608,19 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void updateAllCellsMultiSelectMode() {
-        if (viewPager != null) {
-            for (int i = 0; i < viewPager.getChildCount(); i++) {
-                View child = viewPager.getChildAt(i);
-                if (child instanceof FrameLayout) {
-                    FrameLayout container = (FrameLayout) child;
-                    for (int j = 0; j < container.getChildCount(); j++) {
-                        View containerChild = container.getChildAt(j);
-                        if (containerChild instanceof RecyclerListView) {
-                            RecyclerListView recyclerView = (RecyclerListView) containerChild;
-                            for (int k = 0; k < recyclerView.getChildCount(); k++) {
-                                View itemView = recyclerView.getChildAt(k);
-                                if (itemView instanceof HistoryCell) {
-                                    HistoryCell cell = (HistoryCell) itemView;
-                                    cell.setMultiSelectMode(isMultiSelectMode);
-                                    if (!isMultiSelectMode) {
-                                        cell.setSelected(false);
-                                    }
-                                }
-                            }
+        if (viewPager == null) return;
+        for (int i = 0; i < viewPager.getChildCount(); i++) {
+            View child = viewPager.getChildAt(i);
+            Object tag = child != null ? child.getTag() : null;
+            if (tag instanceof RecyclerListView) {
+                RecyclerListView recyclerView = (RecyclerListView) tag;
+                for (int k = 0; k < recyclerView.getChildCount(); k++) {
+                    View itemView = recyclerView.getChildAt(k);
+                    if (itemView instanceof HistoryCell) {
+                        HistoryCell cell = (HistoryCell) itemView;
+                        cell.setMultiSelectMode(isMultiSelectMode);
+                        if (!isMultiSelectMode) {
+                            cell.setSelected(false);
                         }
                     }
                 }
@@ -1730,7 +1635,7 @@ public class ChatHistoryActivity extends BaseFragment {
         
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(getString(R.string.ChatHistoryDeleteChats));
-        builder.setMessage(getString(R.string.ChatHistoryDeleteConfirmation) + selectedItems.size() + getString(R.string.ChatHistorySelected));
+        builder.setMessage(LocaleController.formatString(R.string.ChatHistoryDeleteConfirmation) + " " + selectedItems.size() + " " + getString(R.string.ChatHistorySelected) + "?");
         builder.setPositiveButton(getString(R.string.ChatHistoryDeleteChats), (dialog, which) -> {
             deleteSelectedChats();
         });
@@ -1758,9 +1663,7 @@ public class ChatHistoryActivity extends BaseFragment {
                 fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             }
             updateTabsStyle();
-            if (viewPager != null) {
-                viewPager.setAdapter(new CategoryPagerAdapter());
-            }
+            refreshAllPages();
         };
 
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();

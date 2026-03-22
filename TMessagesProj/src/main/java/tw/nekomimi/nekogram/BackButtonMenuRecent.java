@@ -16,14 +16,18 @@ public class BackButtonMenuRecent {
 
     private static final int MAX_RECENT_DIALOGS = 1000;
 
-    private static final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekorecentdialogs", Context.MODE_PRIVATE);
+    private static final Object lock = new Object();
     private static final SparseArray<LinkedList<Long>> recentDialogs = new SparseArray<>();
 
-    public static LinkedList<Long> getRecentDialogs(int currentAccount) {
+    private static SharedPreferences getPreferences() {
+        return ApplicationLoader.applicationContext.getSharedPreferences("nekorecentdialogs", Context.MODE_PRIVATE);
+    }
+
+    private static LinkedList<Long> getOrLoadRecentDialogsLocked(int currentAccount) {
         LinkedList<Long> recentDialog = recentDialogs.get(currentAccount);
         if (recentDialog == null) {
             recentDialog = new LinkedList<>();
-            String list = preferences.getString("recents_" + currentAccount, null);
+            String list = getPreferences().getString("recents_" + currentAccount, null);
             if (!TextUtils.isEmpty(list)) {
                 byte[] bytes = Base64.decode(list, Base64.NO_WRAP | Base64.NO_PADDING);
                 SerializedData data = new SerializedData(bytes);
@@ -38,36 +42,56 @@ public class BackButtonMenuRecent {
         return recentDialog;
     }
 
-    public static void addToRecentDialogs(int currentAccount, long dialogId) {
-        LinkedList<Long> recentDialog = getRecentDialogs(currentAccount);
-        for (int i = 0; i < recentDialog.size(); i++) {
-            if (recentDialog.get(i) == dialogId) {
-                recentDialog.remove(i);
-                break;
-            }
+    public static LinkedList<Long> getRecentDialogs(int currentAccount) {
+        synchronized (lock) {
+            return new LinkedList<>(getOrLoadRecentDialogsLocked(currentAccount));
         }
+    }
 
-        if (recentDialog.size() >= MAX_RECENT_DIALOGS) {
-            recentDialog.removeLast();
+    public static void addToRecentDialogs(int currentAccount, long dialogId) {
+        synchronized (lock) {
+            LinkedList<Long> recentDialog = getOrLoadRecentDialogsLocked(currentAccount);
+            for (int i = 0; i < recentDialog.size(); i++) {
+                if (recentDialog.get(i) == dialogId) {
+                    recentDialog.remove(i);
+                    break;
+                }
+            }
+            if (recentDialog.size() >= MAX_RECENT_DIALOGS) {
+                recentDialog.removeLast();
+            }
+            recentDialog.addFirst(dialogId);
+            LinkedList<Long> snapshot = new LinkedList<>(recentDialog);
+            Utilities.globalQueue.postRunnable(() -> persistRecentDialogs(currentAccount, snapshot));
         }
-        recentDialog.addFirst(dialogId);
-        LinkedList<Long> finalRecentDialog = new LinkedList<>(recentDialog);
-        Utilities.globalQueue.postRunnable(() -> saveRecentDialogs(currentAccount, finalRecentDialog));
     }
 
     public static void saveRecentDialogs(int currentAccount, LinkedList<Long> recentDialog) {
+        synchronized (lock) {
+            recentDialogs.put(currentAccount, new LinkedList<>(recentDialog));
+            LinkedList<Long> snapshot = new LinkedList<>(recentDialog);
+            Utilities.globalQueue.postRunnable(() -> persistRecentDialogs(currentAccount, snapshot));
+        }
+    }
+
+    private static void persistRecentDialogs(int currentAccount, LinkedList<Long> snapshot) {
         SerializedData serializedData = new SerializedData();
-        int count = recentDialog.size();
+        int count = snapshot.size();
         serializedData.writeInt32(count);
-        for (Long dialog : recentDialog) {
+        for (Long dialog : snapshot) {
             serializedData.writeInt64(dialog);
         }
-        preferences.edit().putString("recents_" + currentAccount, Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP | Base64.NO_PADDING)).apply();
+        getPreferences().edit().putString("recents_" + currentAccount, Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP | Base64.NO_PADDING)).apply();
         serializedData.cleanup();
     }
 
     public static void clearRecentDialogs(int currentAccount) {
-        getRecentDialogs(currentAccount).clear();
-        preferences.edit().putString("recents_" + currentAccount, "").apply();
+        synchronized (lock) {
+            LinkedList<Long> list = recentDialogs.get(currentAccount);
+            if (list != null) {
+                list.clear();
+            }
+        }
+        getPreferences().edit().remove("recents_" + currentAccount).apply();
     }
 }
