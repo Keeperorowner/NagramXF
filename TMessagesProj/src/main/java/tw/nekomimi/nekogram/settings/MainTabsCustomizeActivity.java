@@ -5,6 +5,7 @@ import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.ClipData;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Build;
@@ -12,40 +13,57 @@ import android.text.TextUtils;
 import android.view.DragEvent;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
+
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.UItem;
-import org.telegram.ui.Components.UniversalAdapter;
-import org.telegram.ui.Components.UniversalFragment;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.glass.GlassTabView;
 import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsConfigManager;
 
 import java.util.ArrayList;
 
+import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import xyz.nextalone.nagram.NaConfig;
 
-public class MainTabsCustomizeActivity extends UniversalFragment {
-    private static final int BUTTON_SHOW_TAB_TITLES = 1;
-    private static final int BUTTON_HIDE_BOTTOM_BAR = 2;
+public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
 
-    private MainTabsPreviewCell previewCell;
+    private static final int VIEW_TYPE_PREVIEW = 100;
+
+    private int headerRow;
+    private int previewRow;
+    private int previewInfoRow;
+    private int showTabTitlesRow;
+    private int hideBottomBarRow;
+    private int shadowRow;
+
     private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
-
-    @Override
-    protected CharSequence getTitle() {
-        return getString(R.string.MainTabsCustomize);
-    }
+    private MainTabsPreviewCell previewCell;
 
     @Override
     public boolean onFragmentCreate() {
         tabs = MainTabsConfigManager.copyTabs(MainTabsConfigManager.getAllTabs());
         return super.onFragmentCreate();
+    }
+
+    @Override
+    protected void updateRows() {
+        super.updateRows();
+        headerRow = addRow();
+        previewRow = addRow();
+        previewInfoRow = addRow();
+        showTabTitlesRow = addRow();
+        hideBottomBarRow = addRow();
+        shadowRow = addRow();
     }
 
     @Override
@@ -61,54 +79,33 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
     }
 
     @Override
-    protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asHeader(getString(R.string.MainTabsCustomize)));
-
-        int previewHeight = 68;
-        int previewRowHeight = 76;
-        int previewSideMargin = 10;
-        int previewTopBottomMargin = 2;
-
-        PreviewContainer container = new PreviewContainer(getContext());
-        previewCell = new MainTabsPreviewCell(getContext());
-        previewCell.setTabs(tabs, getContext(), getResourceProvider(), currentAccount);
-        previewCell.setOnTabsChangedListener(updatedTabs -> {
-            tabs = updatedTabs;
-            saveAndNotify();
-        });
-        container.addView(previewCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, previewHeight, Gravity.CENTER, dp(previewSideMargin), dp(previewTopBottomMargin), dp(previewSideMargin), dp(previewTopBottomMargin)));
-
-        items.add(UItem.asCustom(container, previewRowHeight));
-        items.add(UItem.asShadow(getString(R.string.MainTabsCustomizeDesc)));
-        items.add(UItem.asCheck(BUTTON_SHOW_TAB_TITLES, getString(R.string.MainTabsShowTitles)).setChecked(!NaConfig.INSTANCE.getMainTabsHideTitles().Bool()));
-        items.add(UItem.asCheck(BUTTON_HIDE_BOTTOM_BAR, getString(R.string.MainTabsHideBottomBar)).setChecked(NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool()));
-    }
-
-    @Override
-    protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == BUTTON_SHOW_TAB_TITLES) {
+    protected void onItemClick(View view, int position, float x, float y) {
+        if (position == showTabTitlesRow) {
             boolean checked = !NaConfig.INSTANCE.getMainTabsHideTitles().toggleConfigBool();
-            ((TextCheckCell) view).setChecked(checked);
+            if (view instanceof TextCheckCell textCheckCell) {
+                textCheckCell.setChecked(checked);
+            }
             if (previewCell != null) {
                 previewCell.refreshTabs(getContext());
             }
-            if (listView != null && listView.adapter != null) {
-                listView.adapter.update(true);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
+        } else if (position == hideBottomBarRow) {
+            boolean checked = NaConfig.INSTANCE.getMainTabsHideBottomBar().toggleConfigBool();
+            if (view instanceof TextCheckCell textCheckCell) {
+                textCheckCell.setChecked(checked);
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
-            return;
-        }
-        if (item.id == BUTTON_HIDE_BOTTOM_BAR) {
-            boolean checked = NaConfig.INSTANCE.getMainTabsHideBottomBar().toggleConfigBool();
-            ((TextCheckCell) view).setChecked(checked);
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
-            return;
         }
     }
 
     @Override
-    protected boolean onLongClick(UItem item, View view, int position, float x, float y) {
-        return false;
+    protected BaseListAdapter createAdapter(Context context) {
+        return new ListAdapter(context);
+    }
+
+    @Override
+    protected String getActionBarTitle() {
+        return getString(R.string.MainTabsCustomize);
     }
 
     private void saveAndNotify() {
@@ -120,31 +117,130 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
         }
     }
 
+    private class ListAdapter extends BaseListAdapter {
+
+        public ListAdapter(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean partial) {
+            switch (holder.getItemViewType()) {
+                case TYPE_HEADER: {
+                    HeaderCell cell = (HeaderCell) holder.itemView;
+                    cell.setText(getString(R.string.MainTabsCustomize));
+                    break;
+                }
+                case VIEW_TYPE_PREVIEW: {
+                    PreviewRowCell cell = (PreviewRowCell) holder.itemView;
+                    cell.bind();
+                    break;
+                }
+                case TYPE_INFO_PRIVACY: {
+                    TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                    cell.setText(getString(R.string.MainTabsCustomizeDesc));
+                    cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    break;
+                }
+                case TYPE_CHECK: {
+                    TextCheckCell cell = (TextCheckCell) holder.itemView;
+                    if (position == showTabTitlesRow) {
+                        cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
+                    } else if (position == hideBottomBarRow) {
+                        cell.setTextAndCheck(getString(R.string.MainTabsHideBottomBar), NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool(), false);
+                    }
+                    break;
+                }
+                case TYPE_SHADOW:
+                    holder.itemView.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    break;
+            }
+        }
+
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            if (viewType == VIEW_TYPE_PREVIEW) {
+                View view = new PreviewRowCell(mContext);
+                view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
+                return new RecyclerListView.Holder(view);
+            }
+            return super.onCreateViewHolder(parent, viewType);
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (position == headerRow) {
+                return TYPE_HEADER;
+            } else if (position == previewRow) {
+                return VIEW_TYPE_PREVIEW;
+            } else if (position == previewInfoRow) {
+                return TYPE_INFO_PRIVACY;
+            } else if (position == shadowRow) {
+                return TYPE_SHADOW;
+            }
+            return TYPE_CHECK;
+        }
+    }
+
+    private class PreviewRowCell extends FrameLayout {
+
+        private final MainTabsPreviewCell tabsPreviewCell;
+
+        public PreviewRowCell(Context context) {
+            super(context);
+            setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+
+            PreviewContainer container = new PreviewContainer(context);
+            addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            tabsPreviewCell = new MainTabsPreviewCell(context);
+            previewCell = tabsPreviewCell;
+            container.setPreviewCell(tabsPreviewCell);
+            container.addView(tabsPreviewCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 68, Gravity.CENTER, dp(10), dp(2), dp(10), dp(2)));
+            setPadding(0, 0, 0, dp(12));
+        }
+
+        public void bind() {
+            tabsPreviewCell.setTabs(tabs, getContext(), getResourceProvider(), currentAccount);
+            tabsPreviewCell.setOnTabsChangedListener(updatedTabs -> {
+                tabs = updatedTabs;
+                saveAndNotify();
+            });
+        }
+    }
+
     private class PreviewContainer extends FrameLayout {
+
         private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF rect = new RectF();
+        private MainTabsPreviewCell previewCell;
 
         public PreviewContainer(Context context) {
             super(context);
             setWillNotDraw(false);
-            int base = Theme.getColor(Theme.key_switchTrack, resourceProvider);
+            int base = Theme.getColor(Theme.key_switchTrack, getResourceProvider());
             bgPaint.setColor(Theme.multAlpha(base, 0.12f));
             strokePaint.setStyle(Paint.Style.STROKE);
             strokePaint.setStrokeWidth(Math.max(2, dp(1)));
             strokePaint.setColor(Theme.multAlpha(base, 0.25f));
         }
 
+        public void setPreviewCell(MainTabsPreviewCell previewCell) {
+            this.previewCell = previewCell;
+        }
+
         @Override
-        protected void onDraw(android.graphics.Canvas canvas) {
+        protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             float stroke = strokePaint.getStrokeWidth() / 2f;
             if (previewCell != null && previewCell.getMeasuredWidth() > 0 && previewCell.getMeasuredHeight() > 0) {
                 rect.set(
-                    previewCell.getLeft() + stroke,
-                    previewCell.getTop() + stroke,
-                    previewCell.getRight() - stroke,
-                    previewCell.getBottom() - stroke
+                        previewCell.getLeft() + stroke,
+                        previewCell.getTop() + stroke,
+                        previewCell.getRight() - stroke,
+                        previewCell.getBottom() - stroke
                 );
             } else {
                 rect.set(dp(6) + stroke, dp(2) + stroke, getMeasuredWidth() - dp(6) - stroke, getMeasuredHeight() - dp(2) - stroke);
@@ -156,6 +252,7 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
     }
 
     private static class MainTabsPreviewCell extends org.telegram.ui.MainTabsLayout {
+
         private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
         private Theme.ResourcesProvider resourceProvider;
         private int currentAccount;
@@ -177,12 +274,7 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
             onTabsChangedListener = listener;
         }
 
-        public void setTabs(
-            ArrayList<MainTabsConfigManager.TabState> tabs,
-            Context context,
-            Theme.ResourcesProvider resourceProvider,
-            int currentAccount
-        ) {
+        public void setTabs(ArrayList<MainTabsConfigManager.TabState> tabs, Context context, Theme.ResourcesProvider resourceProvider, int currentAccount) {
             this.tabs = MainTabsConfigManager.copyTabs(tabs);
             this.resourceProvider = resourceProvider;
             this.currentAccount = currentAccount;
@@ -247,8 +339,7 @@ public class MainTabsCustomizeActivity extends UniversalFragment {
             float scale = org.telegram.messenger.AndroidUtilities.lerp(0.7f, 1f, factor);
             float enabledAlpha = 1f;
             Object tag = view.getTag();
-            if (tag instanceof MainTabsConfigManager.TabState) {
-                MainTabsConfigManager.TabState state = (MainTabsConfigManager.TabState) tag;
+            if (tag instanceof MainTabsConfigManager.TabState state) {
                 enabledAlpha = (state.type == MainTabsConfigManager.TabType.CHATS || state.enabled) ? 1f : 0.4f;
             }
             view.setAlpha(factor * enabledAlpha);
