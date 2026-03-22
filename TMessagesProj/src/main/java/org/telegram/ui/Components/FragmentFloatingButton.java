@@ -7,9 +7,12 @@ import static org.telegram.messenger.AndroidUtilities.lerp;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Outline;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewOutlineProvider;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
@@ -29,6 +32,7 @@ import java.util.ArrayList;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import xyz.nextalone.nagram.NaConfig;
 
 @SuppressLint("ViewConstructor")
 public class FragmentFloatingButton extends FrameLayout implements FactorAnimator.Target {
@@ -47,6 +51,38 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     private final Theme.ResourcesProvider resourcesProvider;
     private ArrayList<View> additionalContentViews;
     private final boolean isSubButton;
+
+    private static boolean useSquareFab() {
+        return NaConfig.INSTANCE.getSquareFloatingButton().Bool();
+    }
+
+    private static int getSquareFabRadiusPx(int sizePx) {
+        return (int) Math.ceil(sizePx * 16f / 56f);
+    }
+
+    public static Drawable createFabBackground(int sizeDp, int backgroundColor, int pressedColor) {
+        return createFabBackgroundPx(dp(sizeDp), backgroundColor, pressedColor);
+    }
+
+    public static Drawable createFabBackgroundPx(int sizePx, int backgroundColor, int pressedColor) {
+        if (useSquareFab()) {
+            return Theme.createSimpleSelectorRoundRectDrawable(getSquareFabRadiusPx(sizePx), backgroundColor, pressedColor);
+        }
+        return Theme.createSimpleSelectorCircleDrawable(sizePx, backgroundColor, pressedColor);
+    }
+
+    public static ViewOutlineProvider createFabOutlineProvider() {
+        if (!useSquareFab()) {
+            return ViewOutlineProviderImpl.BOUNDS_OVAL;
+        }
+        return new ViewOutlineProvider() {
+            @Override
+            public void getOutline(View view, Outline outline) {
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(),
+                    getSquareFabRadiusPx(Math.min(view.getWidth(), view.getHeight())));
+            }
+        };
+    }
 
     public FragmentFloatingButton(@NonNull Context context, Theme.ResourcesProvider resourcesProvider) {
         this(context, resourcesProvider, false);
@@ -70,7 +106,7 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
         ScaleStateListAnimator.apply(this);
         if (!isSubButton) {
-            setOutlineProvider(ViewOutlineProviderImpl.BOUNDS_OVAL);
+            setOutlineProvider(createFabOutlineProvider());
             setTranslationZ(dpf2(0.5f));
         }
 
@@ -95,7 +131,6 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
             iBlur3Background = iBlur3SourceColor.createDrawable();
             iBlur3Background.setColorProvider(iBlur3ColorProviderTabs);
             iBlur3Background.setStrokeWidth(dpf2(0.4f), dpf2(0.4f));
-            iBlur3Background.setRadius(dp(18));
             iBlur3Background.setPadding(dp(5.66f));
         }
 
@@ -154,16 +189,19 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
 
             iBlur3SourceColor.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             iBlur3ColorProviderTabs.updateColors();
+            int radius = useSquareFab() ? getSquareFabRadiusPx(dp(SIZE)) : dp(18);
+            iBlur3Background.setRadius(radius);
             iBlur3Background.updateColors();
             invalidate();
 
-            int rad = dp(18);
             int pressedColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-            setBackground(Theme.createInsetRoundRectDrawable(pressedColor, rad, dp(6)));
+            setBackground(Theme.createInsetRoundRectDrawable(pressedColor, radius, dp(6)));
         } else {
             imageView.setColorFilter(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider), PorterDuff.Mode.SRC_IN);
             progressView.setProgressColor(Theme.getColor(Theme.key_chats_actionIcon, resourcesProvider));
-            setBackground(Theme.createSimpleSelectorCircleDrawable(dp(48),
+            int size = Math.max(Math.min(getMeasuredWidth(), getMeasuredHeight()), dp(SIZE));
+            setOutlineProvider(createFabOutlineProvider());
+            setBackground(createFabBackgroundPx(size,
                 Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider),
                 Theme.getColor(Theme.key_featuredStickers_addButtonPressed, resourcesProvider)
             ));
@@ -209,6 +247,9 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
         super.onSizeChanged(w, h, oldw, oldh);
         if (iBlur3Background != null) {
             iBlur3Background.setBounds(0, 0, w, h);
+        }
+        if (!isSubButton && (w != oldw || h != oldh)) {
+            updateColors();
         }
     }
 

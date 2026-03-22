@@ -355,6 +355,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val squareFloatingButton =
+        addConfig(
+            "SquareFloatingButton",
+            ConfigItem.configTypeBool,
+            false
+        )
     val hideHomeSearchField =
         addConfig(
             "HideHomeSearchField",
