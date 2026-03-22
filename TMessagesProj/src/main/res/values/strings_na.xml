@@ -108,6 +108,8 @@
     <string name="DisableBotOpenButton">Disable Bot Open Button</string>
     <string name="CustomTitleUserName">Use User Nickname as Title</string>
     <string name="EnhancedVideoBitrate">Enhanced Shared Video Bitrate</string>
+    <string name="UseSystemAiService">Use System Ai Service</string>
+    <string name="UseSystemAiServiceDesc">Only support HyperOS and ColorOS</string>
     <string name="ActionBarButtons">Action Bar Buttons</string>
     <string name="VideoPlayerDecoder">Video Decoder</string>
     <string name="VideoPlayerDecoderPreferSW">Prefer SW</string>

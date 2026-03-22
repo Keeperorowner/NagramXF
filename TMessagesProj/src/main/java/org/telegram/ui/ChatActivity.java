@@ -396,6 +396,7 @@ import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.ToggleResult;
 import xyz.nextalone.nagram.helper.BookmarksHelper;
 import xyz.nextalone.nagram.helper.DoubleTap;
+import xyz.nextalone.nagram.helper.SystemAiServiceHelper;
 
 @SuppressWarnings("unchecked")
 public class ChatActivity extends BaseFragment implements
@@ -34230,6 +34231,27 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case OPTION_SHARE: {
+                if (SystemAiServiceHelper.INSTANCE.isSystemAiAvailable(getContext()) && selectedObject != null && selectedObject.isPhoto()) {
+                    String imagePath = selectedObject.messageOwner.attachPath;
+                    if (imagePath != null && imagePath.length() > 0) {
+                        File temp = new File(imagePath);
+                        if (!temp.exists()) {
+                            imagePath = null;
+                        }
+                    }
+                    if (imagePath == null || imagePath.length() == 0) {
+                        imagePath = getFileLoader().getPathToMessage(selectedObject.messageOwner).toString();
+                    }
+                    if (imagePath != null && imagePath.length() > 0) {
+                        try {
+                            Uri uri = FileProvider.getUriForFile(getParentActivity(), ApplicationLoader.getApplicationId() + ".provider", new File(imagePath));
+                            if (SystemAiServiceHelper.INSTANCE.startSystemAiService(getContext(), uri)) {
+                                break;
+                            }
+                        } catch (Exception ignore) {
+                        }
+                    }
+                }
                 String path = selectedObject.messageOwner.attachPath;
                 if (path != null && path.length() > 0) {
                     File temp = new File(path);

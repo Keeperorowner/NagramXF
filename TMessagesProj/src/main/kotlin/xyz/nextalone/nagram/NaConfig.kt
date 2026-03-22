@@ -511,6 +511,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val useSystemAiService =
+        addConfig(
+            "UseSystemAiService",
+            ConfigItem.configTypeBool,
+            true
+        )
     val ActionBarButtonReply =
         addConfig(
             "Reply",
