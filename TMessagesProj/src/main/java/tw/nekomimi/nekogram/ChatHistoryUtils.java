@@ -17,6 +17,8 @@ import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.Cells.UserCell;
 
+import java.util.List;
+
 public final class ChatHistoryUtils {
 
     private ChatHistoryUtils() {
@@ -179,5 +181,25 @@ public final class ChatHistoryUtils {
             return LocaleController.getString(CATEGORY_STRING_IDS[categoryIndex]);
         }
         return LocaleController.getString(R.string.ChatCategoryAll);
+    }
+
+    public static int getCategoryCount(List<ChatHistoryActivity.HistoryItem> items, int categoryIndex) {
+        if (items == null || items.isEmpty()) {
+            return 0;
+        }
+        if (categoryIndex == 0) {
+            return items.size();
+        }
+        int count = 0;
+        for (ChatHistoryActivity.HistoryItem item : items) {
+            if (shouldIncludeInCategory(item, categoryIndex)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public static String getCategoryTabTitle(List<ChatHistoryActivity.HistoryItem> items, int categoryIndex) {
+        return getCategoryDisplayName(categoryIndex) + " (" + getCategoryCount(items, categoryIndex) + ")";
     }
 }

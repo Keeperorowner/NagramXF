@@ -53,12 +53,18 @@ import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.FilterTabsView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ShareAlert;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.ViewPagerFixed;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
+import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
+import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.ui.SearchTabsAndFiltersLayout;
 import org.telegram.ui.ChatActivity;
 import org.telegram.messenger.browser.Browser;
 
@@ -74,6 +80,7 @@ public class ChatHistoryActivity extends BaseFragment {
 
     private static final String TAG = "ChatHistoryActivity";
     private static final long SEARCH_DEBOUNCE_MS = 250L;
+    private static final int TABS_CONTAINER_HEIGHT_DP = 50;
 
     private static final long TELEGRAM_SERVICE_USER_ID = 777000L;
     private static final long REPLIES_BOT_USER_ID = 708513L;
@@ -98,6 +105,10 @@ public class ChatHistoryActivity extends BaseFragment {
 
     private ViewPagerFixed viewPager;
     private ViewPagerFixed.TabsView tabsView;
+    private SearchTabsAndFiltersLayout tabsContainer;
+    private BlurredBackgroundDrawable tabsContainerBackground;
+    private final BlurredBackgroundSourceColor tabsBackgroundSourceColor = new BlurredBackgroundSourceColor();
+    private final BlurredBackgroundDrawableViewFactory tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceColor);
 
     private ArrayList<HistoryItem> allHistoryItems = new ArrayList<>();
     private ArrayList<HistoryItem> filteredHistoryItems = new ArrayList<>();
@@ -218,7 +229,7 @@ public class ChatHistoryActivity extends BaseFragment {
         updateActionBarForNormalMode();
 
         fragmentView = new SizeNotifierFrameLayout(context);
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
         createViewPager(context, (SizeNotifierFrameLayout) fragmentView);
 
@@ -247,31 +258,66 @@ public class ChatHistoryActivity extends BaseFragment {
         };
         viewPager.setAdapter(new CategoryPagerAdapter());
 
-        tabsView = viewPager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
-        tabsView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        tabsContainer = new SearchTabsAndFiltersLayout(context);
+        tabsContainer.setPadding(0, AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7));
 
-        fragmentView.addView(tabsView,
-            LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP));
+        tabsView = viewPager.createTabsView(true, ViewPagerFixed.SELECTOR_TYPE_BUBBLE_STYLE);
+        tabsView.setIndicatorAnimation(320, CubicBezierInterpolator.EASE_OUT_QUINT);
+        tabsView.tabMarginDp = (int) (FilterTabsView.TAB_PADDING_WIDTH / 2f);
+        int tabsListPadding = Math.max(0, AndroidUtilities.dp(23.5f - FilterTabsView.TAB_PADDING_WIDTH / 2f));
+        tabsView.listView.setPadding(tabsListPadding, 0, tabsListPadding, 0);
+        tabsContainer.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+        fragmentView.addView(tabsContainer,
+            LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, TABS_CONTAINER_HEIGHT_DP, Gravity.TOP, 4, 0, 4, 0));
         fragmentView.addView(viewPager,
-            LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 48, 0, 0));
+            LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, TABS_CONTAINER_HEIGHT_DP, 0, 0));
 
         updateTabs();
+        updateTabsStyle();
     }
 
     private void updateTabs() {
         if (tabsView != null) {
+            int currentTab = viewPager != null ? viewPager.getCurrentPosition() : 0;
             tabsView.removeTabs();
             for (int i = 0; i < ChatCategory.values().length; i++) {
                 ChatCategory category = ChatCategory.values()[i];
                 tabsView.addTab(i, getTabTitle(category));
             }
             tabsView.finishAddingTabs();
+            tabsView.selectTabWithId(currentTab, 1.0f);
         }
     }
 
     private String getTabTitle(ChatCategory category) {
-        String baseTitle = getCategoryDisplayName(category);
-        return baseTitle;
+        return ChatHistoryUtils.getCategoryTabTitle(allHistoryItems, category.id);
+    }
+
+    private void updateTabsStyle() {
+        if (tabsView == null) {
+            return;
+        }
+        tabsBackgroundSourceColor.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourceProvider));
+        tabsView.setColors(
+            Theme.key_profile_tabSelectedLine,
+            Theme.key_profile_tabSelectedText,
+            Theme.key_profile_tabText,
+            Theme.key_profile_tabSelector,
+            Theme.key_actionBarDefault
+        );
+        tabsView.updateColors();
+        tabsView.setBackground(null);
+        if (tabsContainer != null) {
+            if (tabsContainerBackground == null) {
+                tabsContainerBackground = tabsBackgroundDrawableFactory.create(tabsContainer, BlurredBackgroundProviderImpl.topPanel(resourceProvider));
+                tabsContainerBackground.setRadius(AndroidUtilities.dp(18));
+                tabsContainerBackground.setPadding(AndroidUtilities.dp(6.666f));
+                tabsContainer.setBlurredBackground(tabsContainerBackground);
+            } else {
+                tabsContainer.updateColors();
+            }
+        }
     }
 
     private int getCategoryCount(ChatCategory category) {
@@ -1709,11 +1755,9 @@ public class ChatHistoryActivity extends BaseFragment {
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = () -> {
             if (fragmentView != null) {
-                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             }
-            if (tabsView != null) {
-                tabsView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            }
+            updateTabsStyle();
             if (viewPager != null) {
                 viewPager.setAdapter(new CategoryPagerAdapter());
             }
@@ -1721,10 +1765,10 @@ public class ChatHistoryActivity extends BaseFragment {
 
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
 
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_windowBackgroundGray));
+        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
 
-        if (tabsView != null) {
-            themeDescriptions.add(new ThemeDescription(tabsView, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
+        if (tabsContainer != null) {
+            themeDescriptions.add(new ThemeDescription(tabsContainer, ThemeDescription.FLAG_BACKGROUND, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
         }
 
         themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_actionBarDefault));
