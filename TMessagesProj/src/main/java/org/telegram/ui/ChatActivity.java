@@ -45463,7 +45463,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     interface NagramCopyMesage {
-        void run(boolean isCopy);
+        void run(int action);
     }
 
     public void didLongPressLink(ChatMessageCell cell, MessageObject messageObject, CharacterStyle span, String str) {
@@ -45506,7 +45506,11 @@ public class ChatActivity extends BaseFragment implements
             });
         }
 
-        NagramCopyMesage run1 = (boolean isCopy) -> {
+        final int ACTION_SHARE = 0;
+        final int ACTION_COPY = 1;
+        final int ACTION_FORWARD = 2;
+
+        NagramCopyMesage run1 = (int action) -> {
             String urlFinal = str;
             if (str.startsWith("video?") && messageObject != null && !messageObject.scheduled) {
                 MessageObject messageObject1 = messageObject;
@@ -45552,7 +45556,7 @@ public class ChatActivity extends BaseFragment implements
             } else {
                 // AndroidUtilities.addToClipboard(str);
             }
-            if (isCopy) {
+            if (action == ACTION_COPY) {
                 if (isMail) {
                     urlFinal = urlFinal.substring("mailto:".length());
                 }
@@ -45573,13 +45577,16 @@ public class ChatActivity extends BaseFragment implements
                 Intent shareIntent = new Intent(Intent.ACTION_SEND);
                 shareIntent.setType("text/plain");
                 shareIntent.putExtra(Intent.EXTRA_TEXT, urlFinal);
+                if (action == ACTION_FORWARD) {
+                    shareIntent.setPackage(ApplicationLoader.applicationContext.getPackageName());
+                }
                 Intent chooserIntent = Intent.createChooser(shareIntent, LocaleController.getString(R.string.ShareFile));
                 chooserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 ApplicationLoader.applicationContext.startActivity(chooserIntent);
             }
         };
         options.add(R.drawable.msg_copy, getString(isHashtag ? R.string.CopyHashtag : isMail ? R.string.CopyMail : R.string.CopyLink), () -> {
-            run1.run(true);
+            run1.run(ACTION_COPY);
         });
         options.add(R.drawable.msg_qrcode, getString(R.string.ShareQRCode), () -> {
             // QRCode
@@ -45587,7 +45594,10 @@ public class ChatActivity extends BaseFragment implements
         });
         options.add(R.drawable.msg_shareout, getString(R.string.ShareMessages), () -> {
             // ShareMessage
-            run1.run(false);
+            run1.run(ACTION_SHARE);
+        });
+        options.add(R.drawable.msg_forward_noquote, getString(R.string.Forward), () -> {
+            run1.run(ACTION_FORWARD);
         });
 
         dialog.setItemOptions(options);
