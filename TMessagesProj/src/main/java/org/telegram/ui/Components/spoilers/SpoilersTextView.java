@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Stack;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.filters.AyuFilter;
 
 public class SpoilersTextView extends TextView implements TextSelectionHelper.SimpleSelectabeleView {
     private SpoilersClickDetector clickDetector;
@@ -186,7 +187,7 @@ public class SpoilersTextView extends TextView implements TextSelectionHelper.Si
 
     @Override
     public void setText(CharSequence text, BufferType type) {
-        isSpoilersRevealed = NekoConfig.showSpoilersDirectly.Bool();
+        isSpoilersRevealed = NekoConfig.showSpoilersDirectly.Bool() && !AyuFilter.hasMaskedFilterSpan(text);
         super.setText(text, type);
     }
 

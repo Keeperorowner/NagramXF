@@ -246,6 +246,7 @@ import me.vkryl.core.BitwiseUtils;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
+import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.helpers.TimeStringHelper;
 import tw.nekomimi.nekogram.helpers.TranscribeHelper;
@@ -403,7 +404,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     public boolean hasSpoilers() {
-        if (NekoConfig.showSpoilersDirectly.Bool()) return false;
+        if (NekoConfig.showSpoilersDirectly.Bool() && !hasMaskedSpoilers(captionLayout != null ? captionLayout.textLayoutBlocks : null) && !hasMaskedSpoilers(getMessageObject() != null ? getMessageObject().textLayoutBlocks : null)) {
+            return false;
+        }
 
         if (captionLayout != null && captionLayout.textLayoutBlocks != null) {
             for (MessageObject.TextLayoutBlock bl : captionLayout.textLayoutBlocks) {
@@ -417,6 +420,19 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (!bl.spoilers.isEmpty()) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    private boolean hasMaskedSpoilers(ArrayList<MessageObject.TextLayoutBlock> textLayoutBlocks) {
+        if (textLayoutBlocks == null) {
+            return false;
+        }
+        for (int i = 0; i < textLayoutBlocks.size(); i++) {
+            MessageObject.TextLayoutBlock block = textLayoutBlocks.get(i);
+            if (block != null && block.textLayout != null && AyuFilter.hasMaskedFilterSpan(block.textLayout.getText())) {
+                return true;
             }
         }
         return false;
@@ -6139,6 +6155,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public MultiLayoutTypingAnimator botDraftTypingAnimator;
 
     private void setMessageContent(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
+        AyuFilter.syncMaskedSpoilerRevealState(messageObject, groupedMessages);
+        if (messageObject != null && messageObject.replyMessageObject != null) {
+            AyuFilter.syncMaskedSpoilerRevealState(messageObject.replyMessageObject, null);
+        }
         if (messageObject.checkLayout() || currentPosition != null && lastHeight != AndroidUtilities.displaySize.y) {
             currentMessageObject = null;
         }
@@ -18646,7 +18666,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                         stringFinalText = TextUtils.ellipsize(stringFinalText, textPaint, maxWidth, TextUtils.TruncateAt.END);
                         if (stringFinalText instanceof Spannable && messageObject.replyMessageObject.messageOwner != null) {
-                            MediaDataController.addTextStyleRuns(messageObject.replyMessageObject.messageOwner.entities, messageObject.replyMessageObject.caption, (Spannable) stringFinalText);
+                            MediaDataController.addTextStyleRuns(messageObject.replyMessageObject, messageObject.replyMessageObject.caption, (Spannable) stringFinalText, -1);
                             stringFinalText = TextUtils.ellipsize(stringFinalText, textPaint, maxWidth, TextUtils.TruncateAt.END);
                         }
                     } else if (messageObject.replyMessageObject != null && messageObject.replyMessageObject.messageText != null && messageObject.replyMessageObject.messageText.length() > 0) {

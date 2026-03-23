@@ -83,6 +83,7 @@
     <string name="RegexFiltersSubMenuDescription">您可以選擇為此聊天排除全域過濾器。</string>
     <string name="RegexFiltersChatHeader">聊天過濾器</string>
     <string name="RegexFiltersEnableInChats">在私聊中啟用訊息過濾</string>
+    <string name="RegexFiltersMaskMessages">將過濾或被封鎖的訊息遮罩而不是隱藏</string>
     <string name="RegexFiltersCaseInsensitive">不區分大小寫</string>
     <string name="RegexFiltersAdd">新增過濾器</string>
     <string name="RegexFiltersEdit">編輯過濾器</string>

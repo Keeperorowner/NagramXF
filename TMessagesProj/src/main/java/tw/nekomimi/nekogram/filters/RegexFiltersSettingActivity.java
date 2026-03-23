@@ -49,6 +49,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
     private int filtersOptionHeaderRow;
     private int regexFiltersEnabledRow;
     private int regexFiltersEnableInChatsRow;
+    private int regexFiltersMaskMessagesRow;
     private int ignoreBlockedRow;
     private int filtersOptionDividerRow;
     private int filtersHeaderRow;
@@ -70,6 +71,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         filtersOptionHeaderRow = -1;
         regexFiltersEnabledRow = -1;
         regexFiltersEnableInChatsRow = -1;
+        regexFiltersMaskMessagesRow = -1;
         ignoreBlockedRow = -1;
         filtersOptionDividerRow = -1;
         filtersHeaderRow = -1;
@@ -84,6 +86,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         filtersOptionHeaderRow = rowCount++;
         regexFiltersEnabledRow = rowCount++;
         regexFiltersEnableInChatsRow = rowCount++;
+        regexFiltersMaskMessagesRow = rowCount++;
         ignoreBlockedRow = rowCount++;
         filtersOptionDividerRow = rowCount++;
 
@@ -365,11 +368,24 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
             cell.setChecked(enabled);
             NaConfig.INSTANCE.getRegexFiltersEnableInChats().setConfigBool(enabled);
             AyuFilter.invalidateFilteredCache();
+        } else if (position == regexFiltersMaskMessagesRow) {
+            TextCheckCell cell = (TextCheckCell) view;
+            boolean enabled = !cell.isChecked();
+            cell.setChecked(enabled);
+            NaConfig.INSTANCE.getRegexFiltersMaskMessages().setConfigBool(enabled);
+            AyuFilter.invalidateFilteredCache();
         } else if (position == ignoreBlockedRow) {
             TextCheckCell cell = (TextCheckCell) view;
             boolean enabled = !cell.isChecked();
             cell.setChecked(enabled);
             NekoConfig.ignoreBlocked.setConfigBool(enabled);
+            if (enabled && !NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()) {
+                NaConfig.INSTANCE.getRegexFiltersEnabled().setConfigBool(true);
+                if (listAdapter != null) {
+                    listAdapter.notifyDataSetChanged();
+                }
+            }
+            AyuFilter.invalidateFilteredCache();
         } else if (position == sharedFiltersPageRow) {
             presentFragment(new RegexSharedFiltersListActivity());
         } else if (position == userFiltersPageRow) {
@@ -485,6 +501,8 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
                         textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersEnabled), NaConfig.INSTANCE.getRegexFiltersEnabled().Bool(), true);
                     } else if (position == regexFiltersEnableInChatsRow) {
                         textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersEnableInChats), NaConfig.INSTANCE.getRegexFiltersEnableInChats().Bool(), true);
+                    } else if (position == regexFiltersMaskMessagesRow) {
+                        textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersMaskMessages), NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool(), true);
                     } else if (position == ignoreBlockedRow) {
                         textCheckCell.setTextAndCheck(getString(R.string.IgnoreBlocked), NekoConfig.ignoreBlocked.Bool(), true);
                     }

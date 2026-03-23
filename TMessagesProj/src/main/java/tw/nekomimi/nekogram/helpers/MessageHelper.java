@@ -194,10 +194,10 @@ public class MessageHelper extends BaseController {
         SQLiteCursor cursor = null;
         NativeByteBuffer data = null;
         try {
-            boolean ignoreBlocked = NekoConfig.ignoreBlocked.Bool();
+            boolean hideBlocked = AyuFilter.shouldHideIgnoredBlockedMessages();
             long currentUserId = UserConfig.getInstance(currentAccount).clientUserId;
-            HashMap<Long, HashMap<Long, TLRPC.Message>> replyMessageCache = ignoreBlocked ? new HashMap<>() : null;
-            String query = ignoreBlocked
+            HashMap<Long, HashMap<Long, TLRPC.Message>> replyMessageCache = hideBlocked ? new HashMap<>() : null;
+            String query = hideBlocked
                 ? String.format(Locale.US, "SELECT data,send_state,mid,date,replydata FROM messages_v2 WHERE uid = %d ORDER BY date DESC LIMIT %d,%d", dialogId, 0, 20)
                 : String.format(Locale.US, "SELECT data,send_state,mid,date FROM messages_v2 WHERE uid = %d ORDER BY date DESC LIMIT %d,%d", dialogId, 0, 20);
             cursor = getMessagesStorage().getDatabase().queryFinalized(query);
@@ -220,7 +220,7 @@ public class MessageHelper extends BaseController {
                 data.reuse();
                 data = null;
 
-                if (ignoreBlocked) {
+                if (hideBlocked) {
                     long fromId = MessageObject.getFromChatId(message);
                     if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
                         continue;
@@ -260,7 +260,7 @@ public class MessageHelper extends BaseController {
                 }
 
                 MessageObject obj = new MessageObject(currentAccount, message, false, false);
-                if (AyuFilter.isFiltered(obj, null)) {
+                if (AyuFilter.shouldHideFilteredMessage(obj, null)) {
                     continue;
                 }
                 if (getMessagesController().getUser(obj.getSenderId()) == null) {
@@ -1045,9 +1045,12 @@ public class MessageHelper extends BaseController {
         if (message == null) {
             return false;
         }
+        if (!AyuFilter.shouldHideFilteredMessages() && !AyuFilter.shouldHideIgnoredBlockedMessages()) {
+            return false;
+        }
         long fromId = MessageObject.getFromChatId(message);
-        boolean blocked =  isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId);
-        return blocked || AyuFilter.isFiltered(new MessageObject(currentAccount, message, false, false), null);
+        boolean blocked = AyuFilter.shouldHideIgnoredBlockedMessages() && (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId));
+        return blocked || AyuFilter.shouldHideFilteredMessage(new MessageObject(currentAccount, message, false, false), null);
     }
 
     public static void copyVideoFrameToClipboard(File videoFile, long positionMs, View bulletinContainer, Theme.ResourcesProvider resourcesProvider, Runnable fallbackAction) {
