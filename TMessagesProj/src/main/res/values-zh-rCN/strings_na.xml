@@ -86,6 +86,7 @@
     <string name="RegexFiltersChatHeader">聊天过滤器</string>
     <string name="RegexFiltersEnabled">启用消息过滤</string>
     <string name="RegexFiltersEnableInChats">在私聊中启用消息过滤</string>
+    <string name="RegexFiltersMaskMessages">将过滤或被屏蔽的消息遮罩而不是隐藏</string>
     <string name="RegexFiltersCaseInsensitive">不区分大小写</string>
     <string name="RegexFiltersAdd">添加过滤器</string>
     <string name="RegexFiltersEdit">编辑过滤器</string>

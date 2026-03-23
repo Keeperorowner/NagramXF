@@ -119,9 +119,10 @@ import me.vkryl.core.BitwiseUtils;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
+import tw.nekomimi.nekogram.filters.AyuFilter;
+import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.parts.MessageTransKt;
 import xyz.nextalone.nagram.NaConfig;
-import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.syntaxhighlight.SyntaxHighlight;
 
 public class MessageObject {
@@ -628,8 +629,11 @@ public class MessageObject {
     }
 
     public boolean hasMediaSpoilers() {
-        if (NekoConfig.showSpoilersDirectly.Bool()) return false;
-        return !isRepostPreview && (messageOwner.media != null && messageOwner.media.spoiler || needDrawBluredPreview()) || isHiddenSensitive();
+        boolean maskMessage = AyuFilter.shouldMaskMessage(this, null);
+        boolean hasMaskableMedia = maskMessage && (messageOwner.media != null || needDrawBluredPreview() || isHiddenSensitive());
+        boolean hasNativeMediaSpoilers = (!isRepostPreview && ((messageOwner.media != null && messageOwner.media.spoiler) || needDrawBluredPreview())) || isHiddenSensitive();
+        if (NekoConfig.showSpoilersDirectly.Bool() && !hasMaskableMedia) return false;
+        return hasMaskableMedia || hasNativeMediaSpoilers;
     }
 
     public Boolean isSensitiveCached;
@@ -769,7 +773,7 @@ public class MessageObject {
         if (messageOwner.media != null && old.messageOwner.media != null) {
             messageOwner.media.storyItem = old.messageOwner.media.storyItem;
         }
-        if (isSpoilersRevealed && textLayoutBlocks != null) {
+        if (isSpoilersRevealed && !AyuFilter.shouldMaskMessage(this, null) && textLayoutBlocks != null) {
             for (TextLayoutBlock block : textLayoutBlocks) {
                 block.spoilers.clear();
             }
@@ -7375,16 +7379,23 @@ public class MessageObject {
         if (text == null) {
             return false;
         }
+        boolean added;
         if (isRestrictedMessage || getMedia(messageOwner) instanceof TLRPC.TL_messageMediaUnsupported) {
             ArrayList<TLRPC.MessageEntity> entities = new ArrayList<>();
             TLRPC.TL_messageEntityItalic entityItalic = new TLRPC.TL_messageEntityItalic();
             entityItalic.offset = 0;
             entityItalic.length = text.length();
             entities.add(entityItalic);
-            return addEntitiesToText(text, entities, isOutOwner(), true, photoViewer, useManualParse);
+            added = addEntitiesToText(text, entities, isOutOwner(), true, photoViewer, useManualParse);
         } else {
-            return addEntitiesToText(text, MessageHelper.getEntitiesForText(this, text, summarized), isOutOwner(), true, photoViewer, useManualParse);
+            ArrayList<TLRPC.MessageEntity> entities = MessageHelper.getEntitiesForText(this, text, summarized);
+            entities = AyuFilter.addSpoilerEntities(this, entities, text);
+            added = addEntitiesToText(text, entities, isOutOwner(), true, photoViewer, useManualParse);
         }
+        if (text instanceof Spannable spannable) {
+            AyuFilter.syncMaskMarkerSpan(spannable, this, null);
+        }
+        return added;
     }
 
     public void replaceEmojiToLottieFrame(CharSequence text, int[] emojiOnly) {
@@ -8474,7 +8485,7 @@ public class MessageObject {
             linesOffset += currentBlockLinesCount;
 
             block.spoilers.clear();
-            if (!isSpoilersRevealed && !spoiledLoginCode) {
+            if ((!isSpoilersRevealed || AyuFilter.shouldMaskMessage(this, null)) && !spoiledLoginCode) {
                 int right = linesMaxWidthWithLeft;
                 if (block.quote) {
                     right -= AndroidUtilities.dp(32);
@@ -8921,7 +8932,7 @@ public class MessageObject {
                 }
 
                 linesOffset += currentBlockLinesCount;
-                if (messageObject != null && !messageObject.isSpoilersRevealed && !messageObject.spoiledLoginCode) {
+                if (messageObject != null && (!messageObject.isSpoilersRevealed || AyuFilter.shouldMaskMessage(messageObject, null)) && !messageObject.spoiledLoginCode) {
                     int right = linesMaxWidthWithLeft;
                     if (block.quote) {
                         right -= AndroidUtilities.dp(32);

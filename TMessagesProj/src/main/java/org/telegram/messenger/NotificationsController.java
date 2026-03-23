@@ -1074,10 +1074,10 @@ public class NotificationsController extends BaseController {
                     }
                     continue;
                 }
-                if (NekoConfig.ignoreBlocked.Bool() && (getMessagesController().blockePeers.indexOfKey(messageObject.getFromChatId()) >= 0 || AyuFilter.isCustomFilteredPeer(messageObject.getFromChatId()))) {
+                if (AyuFilter.shouldHideIgnoredBlockedMessages() && (getMessagesController().blockePeers.indexOfKey(messageObject.getFromChatId()) >= 0 || AyuFilter.isCustomFilteredPeer(messageObject.getFromChatId()))) {
                     continue;
                 }
-                if (AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
+                if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
                     continue;
                 }
                 if (messageObject.isStoryPush) {
@@ -2453,21 +2453,33 @@ public class NotificationsController extends BaseController {
         if (messageObject == null || messageObject.messageOwner == null) {
             return null;
         }
-        String text = messageObject.messageOwner.message;
-        if (text == null || messageObject.messageOwner.entities == null) {
+        return replaceSpoilers(messageObject.messageOwner.message, messageObject);
+    }
+
+    private String replaceSpoilers(String text, MessageObject messageObject) {
+        if (text == null) {
             return null;
         }
         StringBuilder stringBuilder = new StringBuilder(text);
-        if (NekoConfig.showSpoilersDirectly.Bool())
-            return stringBuilder.toString();
-        if (messageObject != null && messageObject.didSpoilLoginCode()) {
+        if (NekoConfig.showSpoilersDirectly.Bool() && !AyuFilter.shouldMaskMessage(messageObject, null)) {
             return stringBuilder.toString();
         }
-        for (int i = 0; i < messageObject.messageOwner.entities.size(); i++) {
-            if (messageObject.messageOwner.entities.get(i) instanceof TLRPC.TL_messageEntitySpoiler) {
-                TLRPC.TL_messageEntitySpoiler spoiler = (TLRPC.TL_messageEntitySpoiler) messageObject.messageOwner.entities.get(i);
-                for (int j = 0; j < spoiler.length; j++) {
-                    stringBuilder.setCharAt(spoiler.offset + j, spoilerChars[j % spoilerChars.length]);
+        if (messageObject.didSpoilLoginCode()) {
+            return stringBuilder.toString();
+        }
+        ArrayList<TLRPC.MessageEntity> entities = AyuFilter.addSpoilerEntities(messageObject, messageObject.messageOwner.entities, text);
+        if (entities == null) {
+            return stringBuilder.toString();
+        }
+        for (int i = 0; i < entities.size(); i++) {
+            if (entities.get(i) instanceof TLRPC.TL_messageEntitySpoiler) {
+                TLRPC.TL_messageEntitySpoiler spoiler = (TLRPC.TL_messageEntitySpoiler) entities.get(i);
+                if (spoiler.offset < 0 || spoiler.offset >= stringBuilder.length()) {
+                    continue;
+                }
+                int end = Math.min(stringBuilder.length(), spoiler.offset + spoiler.length);
+                for (int j = spoiler.offset; j < end; j++) {
+                    stringBuilder.setCharAt(j, spoilerChars[(j - spoiler.offset) % spoilerChars.length]);
                 }
             }
         }
@@ -5226,10 +5238,10 @@ public class NotificationsController extends BaseController {
                         FileLog.d("showExtraNotifications: ["+dialogId+"] continue; topic id is not equal: topicId=" + topicId + " messageTopicId=" + messageTopicId + "; selfId=" + getUserConfig().getClientUserId());
                         continue;
                     }
-                    if (NekoConfig.ignoreBlocked.Bool() && (getMessagesController().blockePeers.indexOfKey(messageObject.getFromChatId()) >= 0 || AyuFilter.isCustomFilteredPeer(messageObject.getFromChatId()))) {
+                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && (getMessagesController().blockePeers.indexOfKey(messageObject.getFromChatId()) >= 0 || AyuFilter.isCustomFilteredPeer(messageObject.getFromChatId()))) {
                         continue;
                     }
-                    if (AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
+                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
                         continue;
                     }
                     String message = getShortStringForMessage(messageObject, senderName, preview);
@@ -5415,7 +5427,8 @@ public class NotificationsController extends BaseController {
                                     }, 20_000);
 
                                     if (!TextUtils.isEmpty(messageObject.caption)) {
-                                        messagingStyle.addMessage(messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);
+                                        String captionText = replaceSpoilers(messageObject.caption.toString(), messageObject);
+                                        messagingStyle.addMessage(captionText != null ? captionText : messageObject.caption, ((long) messageObject.messageOwner.date) * 1000, person);
                                     }
                                     setPhoto = true;
                                 }

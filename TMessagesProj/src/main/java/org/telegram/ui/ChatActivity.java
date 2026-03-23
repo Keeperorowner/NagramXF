@@ -15984,7 +15984,7 @@ public class ChatActivity extends BaseFragment implements
                         }
                         mess = Emoji.replaceEmoji(mess, replyObjectTextView.getPaint().getFontMetricsInt(), false);
                         if (mess instanceof Spannable) {
-                            MediaDataController.addTextStyleRuns(messageObject.messageOwner.entities, messageObject.messageText, (Spannable) mess);
+                            MediaDataController.addTextStyleRuns(messageObject, messageObject.messageText, (Spannable) mess, -1);
                             if (messageObject.messageOwner != null) {
                                 mess = MessageObject.replaceAnimatedEmoji(mess, messageObject.messageOwner.entities, replyObjectTextView.getPaint().getFontMetricsInt());
                             }
@@ -38643,7 +38643,7 @@ public class ChatActivity extends BaseFragment implements
                 if (msg == null || msg.messageOwner != null && msg.messageOwner.hide) {
                     return -1000;
                 }
-                if (NekoConfig.ignoreBlocked.Bool() && ChatObject.isMegagroup(currentChat)) {
+                if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
                     long fromId = msg.getFromChatId();
                     if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
                         return -1000;
@@ -38655,7 +38655,7 @@ public class ChatActivity extends BaseFragment implements
                         }
                     }
                 }
-                if (AyuFilter.isFiltered(msg, getGroup(msg.getGroupId()))) {
+                if (AyuFilter.shouldHideFilteredMessage(msg, getGroup(msg.getGroupId()))) {
                     return -1000;
                 }
                 if (msg.contentType == 2) { // ChatUnreadCell
@@ -38667,7 +38667,7 @@ public class ChatActivity extends BaseFragment implements
                         if (m.messageOwner != null && m.messageOwner.hide) {
                             continue;
                         }
-                        if (NekoConfig.ignoreBlocked.Bool() && ChatObject.isMegagroup(currentChat)) {
+                        if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
                             long fromId = m.getFromChatId();
                             if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
                                 continue;
@@ -38680,7 +38680,7 @@ public class ChatActivity extends BaseFragment implements
                             }
                         }
                         var g = getGroup(m.getGroupId());
-                        if (AyuFilter.isFiltered(m, g)) {
+                        if (AyuFilter.shouldHideFilteredMessage(m, g)) {
                             continue;
                         }
                         hasVisibleAfter = true;
@@ -44755,10 +44755,10 @@ public class ChatActivity extends BaseFragment implements
             for (int i = 0; i < messages.size(); i++) {
                 int msgId = messages.get(i).getId();
                 long fromId = messages.get(i).getFromChatId();
-                if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
+                if (AyuFilter.shouldHideIgnoredBlockedMessages() && (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId))) {
                     continue;
                 }
-                if (AyuFilter.isFiltered(messages.get(i), null)) {
+                if (AyuFilter.shouldHideFilteredMessage(messages.get(i), null)) {
                     continue;
                 }
                 if (msgId > begin && msgId < end && selectedMessagesIds[0].indexOfKey(msgId) < 0) {

@@ -1792,8 +1792,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                             if (message != null) {
                                                 message.spoilLoginCode();
                                             }
-                                            if (!NekoConfig.showSpoilersDirectly.Bool())
-                                                MediaDataController.addTextStyleRuns(message.messageOwner.entities, message.caption, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
+                                            if (!NekoConfig.showSpoilersDirectly.Bool() || AyuFilter.shouldMaskMessage(message, null))
+                                                MediaDataController.addTextStyleRuns(message, message.caption, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
                                             MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, msgBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
                                         }
                                         messageString = new SpannableStringBuilder(emoji).append(msgBuilder);
@@ -1883,7 +1883,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                             if (message != null) {
                                                 message.spoilLoginCode();
                                             }
-                                            if (!NekoConfig.showSpoilersDirectly.Bool())
+                                            if (!NekoConfig.showSpoilersDirectly.Bool() || AyuFilter.shouldMaskMessage(message, null))
                                                 MediaDataController.addTextStyleRuns(message, stringBuilder, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
                                             if (message != null && message.messageOwner != null) {
                                                 MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, stringBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
@@ -2638,7 +2638,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             spoilersPool.addAll(spoilers);
             spoilers.clear();
-            if (!NekoConfig.showSpoilersDirectly.Bool())
+            if (!NekoConfig.showSpoilersDirectly.Bool() || AyuFilter.hasMaskedFilterSpan(messageLayout.getText()))
                 SpoilerEffect.addSpoilers(this, messageLayout, -2, -2, spoilersPool, spoilers);
         } catch (Exception e) {
             messageLayout = null;
@@ -3118,7 +3118,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             boolean blocked = false;
                             boolean replyBlocked = false;
                             boolean needsReplyTargetCheck = false;
-                            if (NekoConfig.ignoreBlocked.Bool() && ChatObject.isMegagroup(MessagesController.getInstance(currentAccount).getChat(-dialog.id))) {
+                            if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(MessagesController.getInstance(currentAccount).getChat(-dialog.id))) {
                                 blocked = MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(message.getFromChatId()) >= 0;
                                 blocked = blocked || AyuFilter.isCustomFilteredPeer(message.getFromChatId());
                                 blocked = blocked || AyuFilter.isBlockedChannel(message.getFromChatId());
@@ -3132,7 +3132,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     needsReplyTargetCheck = true;
                                 }
                             }
-                            boolean hardFiltered = blocked || replyBlocked || AyuFilter.isFiltered(message, null);
+                            boolean filteredByRegex = AyuFilter.isFiltered(message, null);
+                            boolean hardFiltered = blocked || replyBlocked || AyuFilter.shouldHideFilteredMessages() && filteredByRegex;
                             boolean softReplyCheckPending = needsReplyTargetCheck && !hardFiltered;
                             boolean inNullRetryCooldown = lastFilteredNullMessageId == currentMessageId && System.currentTimeMillis() - lastFilteredNullTime < FILTERED_NULL_RETRY_COOLDOWN_MS;
                             if (hardFiltered || softReplyCheckPending) {
@@ -5892,8 +5893,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if (message != null) {
                     message.spoilLoginCode();
                 }
-                if (!NekoConfig.showSpoilersDirectly.Bool())
-                    MediaDataController.addTextStyleRuns(message.messageOwner.entities, mess, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
+                if (!NekoConfig.showSpoilersDirectly.Bool() || AyuFilter.shouldMaskMessage(message, null))
+                    MediaDataController.addTextStyleRuns(message, mess, msgBuilder, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
                 if (message != null && message.messageOwner != null) {
                     MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, msgBuilder, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());
                 }
@@ -5995,7 +5996,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (message != null) {
                 message.spoilLoginCode();
             }
-            if (!NekoConfig.showSpoilersDirectly.Bool())
+            if (!NekoConfig.showSpoilersDirectly.Bool() || AyuFilter.hasMaskedFilterSpan(mess))
                 MediaDataController.addTextStyleRuns(message, (Spannable) mess, TextStyleSpan.FLAG_STYLE_SPOILER | TextStyleSpan.FLAG_STYLE_STRIKE);
             if (message != null && message.messageOwner != null) {
                 MediaDataController.addAnimatedEmojiSpans(message.messageOwner.entities, mess, currentMessagePaint == null ? null : currentMessagePaint.getFontMetricsInt());

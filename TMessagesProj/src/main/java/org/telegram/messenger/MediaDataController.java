@@ -105,7 +105,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.helpers.EntitiesHelper;
+import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.NaConfig;
 
 @SuppressWarnings("unchecked")
@@ -6946,7 +6948,7 @@ public class MediaDataController extends BaseController {
     }
 
     public static void addTextStyleRuns(MessageObject msg, Spannable text) {
-        addTextStyleRuns(msg.messageOwner.entities, msg.messageText, text, -1);
+        addTextStyleRuns(msg, msg.messageText, text, -1);
     }
 
     public static void addTextStyleRuns(TLRPC.DraftMessage msg, Spannable text, int allowedFlags) {
@@ -6954,7 +6956,17 @@ public class MediaDataController extends BaseController {
     }
 
     public static void addTextStyleRuns(MessageObject msg, Spannable text, int allowedFlags) {
-        addTextStyleRuns(msg.messageOwner.entities, msg.messageText, text, allowedFlags);
+        addTextStyleRuns(msg, msg.messageText, text, allowedFlags);
+    }
+
+    public static void addTextStyleRuns(MessageObject msg, CharSequence messageText, Spannable text, int allowedFlags) {
+        ArrayList<TLRPC.MessageEntity> entities = null;
+        if (msg != null) {
+            entities = MessageHelper.getEntitiesForText(msg, messageText, msg.summarized);
+            entities = AyuFilter.addSpoilerEntities(msg, entities, messageText);
+        }
+        addTextStyleRuns(entities, messageText, text, allowedFlags);
+        AyuFilter.syncMaskMarkerSpan(text, msg, null);
     }
 
     public static void addTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence messageText, Spannable text) {

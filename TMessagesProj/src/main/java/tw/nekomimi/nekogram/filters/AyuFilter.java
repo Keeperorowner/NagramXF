@@ -1,5 +1,7 @@
 package tw.nekomimi.nekogram.filters;
 
+import android.text.Spannable;
+import android.text.Spanned;
 import android.text.TextUtils;
 
 import androidx.collection.LruCache;
@@ -181,18 +183,6 @@ public class AyuFilter {
             return false;
         }
 
-        var text = getMessageText(msg, group);
-        if (TextUtils.isEmpty(text)) {
-            return false;
-        }
-
-        if (filterModels == null) {
-            getRegexFilters();
-        }
-        if (chatFilterEntries == null) {
-            getChatFilterEntries();
-        }
-
         long dialogId = msg.getDialogId();
         if (isDialogExcluded(dialogId)) {
             return false;
@@ -209,6 +199,18 @@ public class AyuFilter {
             return result;
         }
 
+        var text = getMessageText(msg, group);
+        if (TextUtils.isEmpty(text)) {
+            return false;
+        }
+
+        if (filterModels == null) {
+            getRegexFilters();
+        }
+        if (chatFilterEntries == null) {
+            getChatFilterEntries();
+        }
+
         result = isFilteredInternal(text, dialogId);
 
         synchronized (dialogCache) {
@@ -221,6 +223,105 @@ public class AyuFilter {
         }
 
         return result;
+    }
+
+    public static boolean shouldMaskFilteredMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool() && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldHideFilteredMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool() && !NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldMaskIgnoredBlockedMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()
+            && NekoConfig.ignoreBlocked.Bool()
+            && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldHideIgnoredBlockedMessages() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()
+            && NekoConfig.ignoreBlocked.Bool()
+            && !NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
+    }
+
+    public static boolean shouldHideFilteredMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        return shouldHideFilteredMessages() && isFiltered(msg, group);
+    }
+
+    public static boolean shouldMaskFilteredMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        return shouldMaskFilteredMessages() && isFiltered(msg, group);
+    }
+
+    public static boolean shouldMaskMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        return shouldMaskFilteredMessage(msg, group) || (shouldMaskIgnoredBlockedMessages() && isIgnoredBlockedMessage(msg));
+    }
+
+    public static ArrayList<TLRPC.MessageEntity> addSpoilerEntities(MessageObject msg, ArrayList<TLRPC.MessageEntity> original, CharSequence text) {
+        if (msg == null || TextUtils.isEmpty(text) || !shouldMaskMessage(msg, null)) {
+            return original;
+        }
+
+        ArrayList<TLRPC.MessageEntity> result = original != null ? new ArrayList<>(original) : new ArrayList<>();
+        for (int i = 0, size = result.size(); i < size; i++) {
+            TLRPC.MessageEntity entity = result.get(i);
+            if (entity instanceof TLRPC.TL_messageEntitySpoiler && entity.offset == 0 && entity.length >= text.length()) {
+                return result;
+            }
+        }
+        TLRPC.TL_messageEntitySpoiler spoiler = new TLRPC.TL_messageEntitySpoiler();
+        spoiler.offset = 0;
+        spoiler.length = text.length();
+        result.add(spoiler);
+        return result;
+    }
+
+    public static void syncMaskedSpoilerRevealState(MessageObject msg, MessageObject.GroupedMessages group) {
+        if (msg != null && shouldMaskMessage(msg, group)) {
+            msg.isSpoilersRevealed = false;
+        }
+    }
+
+    public static void syncMaskMarkerSpan(Spannable text, MessageObject msg, MessageObject.GroupedMessages group) {
+        if (text == null) {
+            return;
+        }
+        FilterMaskSpan[] spans = text.getSpans(0, text.length(), FilterMaskSpan.class);
+        for (int i = 0; i < spans.length; i++) {
+            text.removeSpan(spans[i]);
+        }
+        if (shouldMaskMessage(msg, group) && text.length() > 0) {
+            text.setSpan(new FilterMaskSpan(), 0, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    public static boolean hasMaskedFilterSpan(CharSequence text) {
+        if (!(text instanceof Spanned spanned) || spanned.length() == 0) {
+            return false;
+        }
+        return spanned.getSpans(0, spanned.length(), FilterMaskSpan.class).length > 0;
+    }
+
+    public static boolean isIgnoredBlockedMessage(MessageObject msg) {
+        if (msg == null || msg.isOutOwner() || !NekoConfig.ignoreBlocked.Bool()) {
+            return false;
+        }
+        if (isBlockedPeer(msg.currentAccount, msg.getFromChatId())) {
+            return true;
+        }
+        return msg.replyMessageObject != null && isBlockedPeer(msg.currentAccount, msg.replyMessageObject.getFromChatId());
+    }
+
+    private static boolean isBlockedPeer(int currentAccount, long peerId) {
+        if (peerId == 0L) {
+            return false;
+        }
+        return MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(peerId) >= 0
+            || isCustomFilteredPeer(peerId)
+            || isBlockedChannel(peerId);
+    }
+
+    private static class FilterMaskSpan {
     }
 
     public static ArrayList<ChatFilterEntry> getChatFilterEntries() {
