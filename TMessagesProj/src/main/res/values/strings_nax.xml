@@ -394,5 +394,7 @@
     <string name="AvatarCorners">Avatar corners</string>
     <string name="AvatarCornersLeft">Sharp</string>
     <string name="AvatarCornersRight">Round</string>
-    <string name="SingleCornerRadius">Use same corner radius for forum avatars</string>
+    <string name="SingleCornerRadius">Unified corner radius</string>
+    <string name="BlurOptions">Blur Options</string>
+    <string name="AyuMoments">AyuMoments</string>
 </resources>

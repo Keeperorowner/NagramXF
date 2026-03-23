@@ -238,6 +238,10 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
     protected void addDefaultLongClickOptions(ItemOptions options, String prefix, int position) {
         String key = getRowKey(position);
         String value = getRowValue(position);
+        addDefaultLongClickOptions(options, prefix, key, value);
+    }
+
+    protected void addDefaultLongClickOptions(ItemOptions options, String prefix, String key, String value) {
         options.add(R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
             AndroidUtilities.addToClipboard(String.format(Locale.getDefault(), "https://%s/nasettings/%s?r=%s", getMessagesController().linkPrefix, prefix, key));
             BulletinFactory.of(this).createCopyLinkBulletin().show();

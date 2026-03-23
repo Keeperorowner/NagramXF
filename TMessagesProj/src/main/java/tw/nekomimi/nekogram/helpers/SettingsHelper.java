@@ -17,6 +17,8 @@ import java.util.Map;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.settings.BaseNekoXSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoAboutActivity;
+import tw.nekomimi.nekogram.settings.NekoAppearanceSettingsActivity;
+import tw.nekomimi.nekogram.settings.NekoAyuMomentsSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoChatSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoEmojiSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity;
@@ -53,6 +55,15 @@ public class SettingsHelper {
                 case "chats":
                 case "c":
                     fragment = nekox_fragment = new NekoChatSettingsActivity();
+                    break;
+                case "appearance":
+                case "a":
+                    fragment = nekox_fragment = new NekoAppearanceSettingsActivity();
+                    break;
+                case "ayumoments":
+                case "ayugrammoment":
+                case "m":
+                    fragment = nekox_fragment = new NekoAyuMomentsSettingsActivity();
                     break;
                 case "experimental":
                 case "e":
@@ -112,6 +123,8 @@ public class SettingsHelper {
         ArrayList<SettingsSearchResult> items = new ArrayList<>();
         ArrayList<BaseNekoXSettingsActivity> fragments = new ArrayList<>();
         fragments.add(new NekoGeneralSettingsActivity());
+        fragments.add(new NekoAppearanceSettingsActivity());
+        fragments.add(new NekoAyuMomentsSettingsActivity());
         fragments.add(new NekoChatSettingsActivity());
         fragments.add(new NekoExperimentalSettingsActivity());
         fragments.add(new NekoTranslatorSettingsActivity());

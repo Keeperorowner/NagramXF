@@ -90,7 +90,6 @@ public class AvatarCornersPreviewCell extends FrameLayout {
                 rect.set(strokeWidth, strokeWidth, width - strokeWidth, height - strokeWidth);
                 canvas.drawRoundRect(rect, round, round, outlinePaint);
 
-                float avatarCenterX = AndroidUtilities.dp(48.0f);
                 float onlineCenterX = AndroidUtilities.dp(68.0f);
                 float onlineCenterY = AndroidUtilities.dpf2(20.5f) + centerY;
 
@@ -138,7 +137,15 @@ public class AvatarCornersPreviewCell extends FrameLayout {
             }
         };
         preview.setWillNotDraw(false);
-        addView(preview, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 21, 112, 21, 21));
+        addView(preview, LayoutHelper.createFrame(
+                LayoutHelper.MATCH_PARENT,
+                LayoutHelper.MATCH_PARENT,
+                Gravity.CENTER_HORIZONTAL | Gravity.TOP,
+                21,
+                112,
+                21,
+                21
+        ));
     }
 
     @Override

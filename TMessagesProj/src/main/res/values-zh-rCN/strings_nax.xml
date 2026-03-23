@@ -381,5 +381,7 @@
     <string name="AvatarCorners">头像圆角</string>
     <string name="AvatarCornersLeft">更方</string>
     <string name="AvatarCornersRight">更圆</string>
-    <string name="SingleCornerRadius">论坛头像使用与普通头像相同的圆角</string>
+    <string name="SingleCornerRadius">统一圆角半径</string>
+    <string name="BlurOptions">模糊选项</string>
+    <string name="AyuMoments">AyuMoments</string>
 </resources>

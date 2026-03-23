@@ -321,4 +321,7 @@
     <string name="MainTabsHideContacts">隱藏聯絡人標籤頁</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">顯示訊息預覽</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">在密碼鎖定狀態下仍顯示通知內容。</string>
+    <string name="BlurOptions">模糊選項</string>
+    <string name="SingleCornerRadius">統一圓角半徑</string>
+    <string name="AyuMoments">AyuMoments</string>
 </resources>
