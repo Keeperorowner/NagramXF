@@ -128,6 +128,7 @@
     <string name="SpringAnimationCrossfade">Animated Action Bar</string>
     <string name="Other">Other</string>
     <string name="RestartApp">Restart App</string>
+    <string name="AppWillRestartInSeconds">App will restart in %1$d seconds.</string>
     <string name="ResetSettings">Reset Settings</string>
     <string name="ResetSettingsAlert">Are you sure you want to reset all N-Settings?</string>
     <string name="DontAutoPlayNextVoice">Don\'t Auto Play Next Voice Message</string>
@@ -397,4 +398,28 @@
     <string name="SingleCornerRadius">Unified corner radius</string>
     <string name="BlurOptions">Blur Options</string>
     <string name="AyuMoments">AyuMoments</string>
+    <string name="SaveAttachmentsCardTitle">Save Attachments</string>
+    <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>
+    <string name="AttachmentFolder">Attachment Folder</string>
+    <string name="AttachmentFolderSizeLimit">Folder Size Limit</string>
+    <string name="AttachmentFolderSizeLimitInfo">If the folder size exceeds this limit, the oldest attachments will be removed from the device.</string>
+    <string name="AttachmentFolderSizeLimitUnlimited">Unlimited</string>
+    <string name="AttachmentFolderUpdated">Attachment folder updated.</string>
+    <string name="AttachmentFolderSelectionFailed">Failed to select attachment folder.</string>
+    <string name="ExportMessageDatabase">Export Database</string>
+    <string name="ImportMessageDatabase">Import Database</string>
+    <string name="ExportMessageDatabaseDescription">Export the local Ayu database to the current client download folder.</string>
+    <string name="ExportMessageDatabaseNotification">Database exported.</string>
+    <string name="ImportMessageDatabaseNotification">Database imported.</string>
+    <string name="ExportMessageDatabaseFailed">Failed to export database</string>
+    <string name="ImportMessageDatabaseFailed">Failed to import database</string>
+    <string name="ImportMessageDatabaseNotFound">No database backup was found in the current client download folder.</string>
+    <string name="ImportMessageDatabaseConfirm">Importing will overwrite the current local Ayu database. Continue?</string>
+    <string name="ClearSavedMessageData">Clear</string>
+    <string name="ClearSavedMessageDataDescription">Choose what you want to clear.</string>
+    <string name="ClearSavedMessageDataConfirm">This will delete the local Ayu database and all saved attachments.</string>
+    <string name="ClearSavedMessageDataNotification">Saved message data cleared.</string>
+    <string name="AyuAttachments">Ayu Attachments</string>
+    <string name="AyuDatabase">Ayu Database</string>
+    <string name="TelegramLocalDatabase">Telegram Local Database</string>
 </resources>

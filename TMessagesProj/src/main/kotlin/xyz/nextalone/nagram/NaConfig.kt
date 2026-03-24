@@ -627,6 +627,18 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val attachmentFolderSizeLimitPreset =
+        addConfig(
+            "AttachmentFolderSizeLimitPreset",
+            ConfigItem.configTypeInt,
+            3
+        )
+    val attachmentFolderPath =
+        addConfig(
+            "AttachmentFolderPath",
+            ConfigItem.configTypeString,
+            ""
+        )
     val saveDeletedMessageForBot =
         addConfig(
             "SaveDeletedMessageForBot", // save in bot chats

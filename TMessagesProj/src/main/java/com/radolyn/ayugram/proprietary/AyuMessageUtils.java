@@ -613,7 +613,12 @@ public abstract class AyuMessageUtils {
             if (!success && BuildVars.LOGS_ENABLED) {
                 Log.e(TAG, "Failed to move/copy media file from " + source.getAbsolutePath() + " to " + target.getAbsolutePath());
             }
-            return success ? new File(target.getAbsolutePath()) : new File("/");
+            if (success) {
+                target.setLastModified(System.currentTimeMillis());
+                AyuMessagesController.trimAttachmentsFolderToLimit(target);
+                return new File(target.getAbsolutePath());
+            }
+            return new File("/");
         }
 
         File directory = FileLoader.getDirectory(4);
@@ -631,12 +636,17 @@ public abstract class AyuMessageUtils {
                     while ((read = inputStream.read(buffer)) != -1) {
                         outputStream.write(buffer, 0, read);
                     }
+                    target.setLastModified(System.currentTimeMillis());
+                    AyuMessagesController.trimAttachmentsFolderToLimit(target);
                     if (BuildVars.LOGS_ENABLED) {
                         Log.d(TAG, "Successfully decrypted and saved media to " + target.getAbsolutePath());
                     }
                     return target;
                 } catch (Exception e) {
                     FileLog.e("encrypted media copy failed", e);
+                    if (target.exists() && !target.delete()) {
+                        target.deleteOnExit();
+                    }
                     return new File("/");
                 }
             }
@@ -782,6 +792,8 @@ public abstract class AyuMessageUtils {
             while ((bytesRead = inputStream.read(readBuffer)) != -1) {
                 outputStream.write(readBuffer, 0, bytesRead);
             }
+            outputFile.setLastModified(System.currentTimeMillis());
+            AyuMessagesController.trimAttachmentsFolderToLimit(outputFile);
             if (BuildVars.LOGS_ENABLED) {
                 Log.d(TAG, "Successfully decrypted and saved media to: " + outputFile.getAbsolutePath());
             }

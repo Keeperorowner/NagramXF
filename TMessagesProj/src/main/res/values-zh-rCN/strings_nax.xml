@@ -115,6 +115,7 @@
     <string name="SpringAnimationCrossfade">动态操作栏</string>
     <string name="Other">其他</string>
     <string name="RestartApp">重启应用</string>
+    <string name="AppWillRestartInSeconds">应用将在 %1$d 秒后重启。</string>
     <string name="ResetSettings">重置设置</string>
     <string name="ResetSettingsAlert">您确定要重置所有 N-设置 吗？</string>
     <string name="DontAutoPlayNextVoice">禁用自动播放下一条语音消息</string>
@@ -384,4 +385,28 @@
     <string name="SingleCornerRadius">统一圆角半径</string>
     <string name="BlurOptions">模糊选项</string>
     <string name="AyuMoments">AyuMoments</string>
+    <string name="SaveAttachmentsCardTitle">保存附件</string>
+    <string name="SaveAttachmentsCardSubtitle">配置聊天和限制</string>
+    <string name="AttachmentFolder">附件文件夹</string>
+    <string name="AttachmentFolderSizeLimit">文件夹大小上限</string>
+    <string name="AttachmentFolderSizeLimitInfo">如果文件夹大小超过此限制，最早的附件将从设备中删除。</string>
+    <string name="AttachmentFolderSizeLimitUnlimited">无限制</string>
+    <string name="ExportMessageDatabase">导出数据库</string>
+    <string name="ImportMessageDatabase">导入数据库</string>
+    <string name="ExportMessageDatabaseDescription">将本地 Ayu 数据库导出到当前客户端下载目录。</string>
+    <string name="ExportMessageDatabaseNotification">数据库已导出。</string>
+    <string name="ImportMessageDatabaseNotification">数据库已导入。</string>
+    <string name="ExportMessageDatabaseFailed">导出数据库失败</string>
+    <string name="ImportMessageDatabaseFailed">导入数据库失败</string>
+    <string name="ImportMessageDatabaseNotFound">当前客户端下载目录中未找到数据库备份。</string>
+    <string name="ImportMessageDatabaseConfirm">导入将覆盖当前本地 Ayu 数据库，是否继续？</string>
+    <string name="ClearSavedMessageData">清空</string>
+    <string name="ClearSavedMessageDataDescription">选择要清理的数据。</string>
+    <string name="ClearSavedMessageDataConfirm">这将删除本地 Ayu 数据库和所有已保存附件。</string>
+    <string name="ClearSavedMessageDataNotification">已清空保存的数据。</string>
+    <string name="AttachmentFolderUpdated">附件文件夹已更新。</string>
+    <string name="AttachmentFolderSelectionFailed">选择附件文件夹失败。</string>
+    <string name="AyuAttachments">Ayu 附件</string>
+    <string name="AyuDatabase">Ayu 数据库</string>
+    <string name="TelegramLocalDatabase">Telegram 本地数据库</string>
 </resources>
