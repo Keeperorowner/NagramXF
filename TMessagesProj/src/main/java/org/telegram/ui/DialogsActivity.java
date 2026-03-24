@@ -277,6 +277,7 @@ import tw.nekomimi.nekogram.ChatHistoryActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
+import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.ui.folders.FoldersHelper;
 
@@ -13531,6 +13532,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
                 presentFragment(new ChatActivity(args));
             });
+            if (mainTabsActivityController != null
+                    && NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool()
+                    && NaConfig.INSTANCE.getShowAddToBookmark().Bool()) {
+                io.add(R.drawable.msg_fave, getString(R.string.BookmarksManager), () -> {
+                    presentFragment(new BookmarkManagerActivity());
+                });
+            }
             final boolean addedHiddenMainTabsShortcuts = addHiddenMainTabsShortcuts(io);
             if (ApplicationLoader.applicationLoaderInstance != null) {
                 ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
