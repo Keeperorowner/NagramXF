@@ -381,6 +381,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         return rowMapReverse;
     }
 
+    protected void styleTextInfoPrivacyCell(TextInfoPrivacyCell cell) {
+    }
+
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
@@ -489,6 +492,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
             View view = onCreateCustomViewHolder(parent, viewType);
             if (view == null) {
                 view = createDefaultViewByType(viewType);
+            }
+            if (viewType == CellGroup.ITEM_TYPE_TEXT && view instanceof TextInfoPrivacyCell textInfoPrivacyCell) {
+                styleTextInfoPrivacyCell(textInfoPrivacyCell);
             }
             // noinspection ConstantConditions
             view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));

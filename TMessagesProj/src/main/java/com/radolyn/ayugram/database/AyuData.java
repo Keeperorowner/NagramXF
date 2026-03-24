@@ -24,9 +24,20 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 import tw.nekomimi.nekogram.utils.AndroidUtil;
+import tw.nekomimi.nekogram.utils.FileUtil;
 
 public class AyuData {
     public static long dbSize, attachmentsSize, totalSize;
@@ -34,6 +45,7 @@ public class AyuData {
     private static EditedMessageDao editedMessageDao;
     private static DeletedMessageDao deletedMessageDao;
     private static LastSeenDao lastSeenDao;
+    private static final int IO_BUFFER_SIZE = 16 * 1024;
 
     private static final Migration MIGRATION_21_22 = new Migration(21, 22) {
         @Override
@@ -94,16 +106,30 @@ public class AyuData {
         create();
     }
 
-    public static synchronized void create() {
-        database = Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
+    private static AyuDatabase buildDatabase(boolean allowDestructiveMigrationOnDowngrade) {
+        if (allowDestructiveMigrationOnDowngrade) {
+            return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
+                    .allowMainThreadQueries()
+                    .fallbackToDestructiveMigrationOnDowngrade()
+                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
+                    .build();
+        }
+        return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                 .allowMainThreadQueries()
-                .fallbackToDestructiveMigrationOnDowngrade()
                 .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
                 .build();
+    }
+
+    public static synchronized void create() {
+        if (database != null) {
+            return;
+        }
+        database = buildDatabase(true);
 
         editedMessageDao = database.editedMessageDao();
         deletedMessageDao = database.deletedMessageDao();
         lastSeenDao = database.lastSeenDao();
+        AyuMessagesController.refreshAfterDatabaseChange();
     }
 
     public static AyuDatabase getDatabase() {
@@ -122,8 +148,25 @@ public class AyuData {
         return lastSeenDao;
     }
 
-    public static synchronized void clean() {
+    private static File getDatabaseFile() {
+        return ApplicationLoader.applicationContext.getDatabasePath(AyuConstants.AYU_DATABASE);
+    }
+
+    private static File getWalFile(File dbFile) {
+        return new File(dbFile.getAbsolutePath() + "-wal");
+    }
+
+    private static File getShmFile(File dbFile) {
+        return new File(dbFile.getAbsolutePath() + "-shm");
+    }
+
+    private static void closeDatabase() {
         if (database != null) {
+            try {
+                database.getOpenHelper().getWritableDatabase().execSQL("PRAGMA wal_checkpoint(TRUNCATE)");
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
             try {
                 database.close();
             } catch (Exception e) {
@@ -135,14 +178,238 @@ public class AyuData {
         editedMessageDao = null;
         deletedMessageDao = null;
         lastSeenDao = null;
+    }
+
+    public static synchronized void clean() {
+        closeDatabase();
 
         ApplicationLoader.applicationContext.deleteDatabase(AyuConstants.AYU_DATABASE);
+    }
+
+    public static synchronized void exportDatabase(OutputStream outputStream) throws IOException {
+        if (outputStream == null) {
+            throw new IOException("Database export stream is null");
+        }
+
+        closeDatabase();
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(outputStream))) {
+            File dbFile = getDatabaseFile();
+            addFileToZip(zipOutputStream, dbFile);
+            addFileToZip(zipOutputStream, getWalFile(dbFile));
+            addFileToZip(zipOutputStream, getShmFile(dbFile));
+        } finally {
+            create();
+        }
+    }
+
+    public static synchronized void importDatabase(InputStream inputStream) throws IOException {
+        if (inputStream == null) {
+            throw new IOException("Database import stream is null");
+        }
+
+        File cacheDir = AndroidUtilities.getCacheDir();
+        File importDir = new File(cacheDir, "ayu_database_import");
+        File backupDir = new File(cacheDir, "ayu_database_backup");
+        if (importDir.exists()) {
+            FileUtil.deleteDirectory(importDir);
+        }
+        if (backupDir.exists()) {
+            FileUtil.deleteDirectory(backupDir);
+        }
+        if (!importDir.exists() && !importDir.mkdirs()) {
+            throw new IOException("Unable to create temporary import directory");
+        }
+        if (!backupDir.exists() && !backupDir.mkdirs()) {
+            throw new IOException("Unable to create temporary backup directory");
+        }
+
+        File dbFile = getDatabaseFile();
+        File importDbFile = new File(importDir, dbFile.getName());
+        File importWalFile = new File(importDir, dbFile.getName() + "-wal");
+        File importShmFile = new File(importDir, dbFile.getName() + "-shm");
+
+        try {
+            BufferedInputStream bufferedInputStream = inputStream instanceof BufferedInputStream
+                    ? (BufferedInputStream) inputStream
+                    : new BufferedInputStream(inputStream);
+            if (isZipStream(bufferedInputStream)) {
+                extractDatabaseBackup(bufferedInputStream, importDir, dbFile.getName());
+            } else {
+                copyStreamToFile(bufferedInputStream, importDbFile);
+            }
+
+            if (!importDbFile.exists() || importDbFile.length() == 0L) {
+                throw new IOException("Imported backup does not contain a valid database file");
+            }
+
+            closeDatabase();
+            backupCurrentDatabaseFiles(backupDir, dbFile);
+            try {
+                replaceCurrentDatabaseFiles(importDbFile, importWalFile, importShmFile, dbFile);
+                validateImportedDatabaseFiles();
+            } catch (IOException e) {
+                restoreCurrentDatabaseFiles(backupDir, dbFile);
+                throw e;
+            }
+        } finally {
+            create();
+            if (importDir.exists()) {
+                FileUtil.deleteDirectory(importDir);
+            }
+            if (backupDir.exists()) {
+                FileUtil.deleteDirectory(backupDir);
+            }
+        }
+    }
+
+    private static void addFileToZip(ZipOutputStream zipOutputStream, File sourceFile) throws IOException {
+        if (sourceFile == null || !sourceFile.exists() || !sourceFile.isFile()) {
+            return;
+        }
+        zipOutputStream.putNextEntry(new ZipEntry(sourceFile.getName()));
+        try (FileInputStream fileInputStream = new FileInputStream(sourceFile)) {
+            copyStream(fileInputStream, zipOutputStream);
+        }
+        zipOutputStream.closeEntry();
+    }
+
+    private static boolean isZipStream(BufferedInputStream inputStream) throws IOException {
+        inputStream.mark(4);
+        int first = inputStream.read();
+        int second = inputStream.read();
+        int third = inputStream.read();
+        int fourth = inputStream.read();
+        inputStream.reset();
+        return first == 0x50 && second == 0x4b && third == 0x03 && fourth == 0x04;
+    }
+
+    private static void extractDatabaseBackup(InputStream inputStream, File targetDir, String databaseName) throws IOException {
+        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String entryName = new File(entry.getName()).getName();
+                if (!databaseName.equals(entryName)
+                        && !(databaseName + "-wal").equals(entryName)
+                        && !(databaseName + "-shm").equals(entryName)) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                File outFile = new File(targetDir, entryName);
+                copyStreamToFile(zipInputStream, outFile);
+                zipInputStream.closeEntry();
+            }
+        }
+    }
+
+    private static void backupCurrentDatabaseFiles(File backupDir, File dbFile) throws IOException {
+        backupIfExists(dbFile, new File(backupDir, dbFile.getName()));
+        backupIfExists(getWalFile(dbFile), new File(backupDir, dbFile.getName() + "-wal"));
+        backupIfExists(getShmFile(dbFile), new File(backupDir, dbFile.getName() + "-shm"));
+    }
+
+    private static void backupIfExists(File sourceFile, File backupFile) throws IOException {
+        if (sourceFile.exists()) {
+            copyFile(sourceFile, backupFile);
+        }
+    }
+
+    private static void replaceCurrentDatabaseFiles(File importDbFile, File importWalFile, File importShmFile, File dbFile) throws IOException {
+        deleteIfExists(dbFile);
+        deleteIfExists(getWalFile(dbFile));
+        deleteIfExists(getShmFile(dbFile));
+
+        copyFile(importDbFile, dbFile);
+        if (importWalFile.exists()) {
+            copyFile(importWalFile, getWalFile(dbFile));
+        }
+        if (importShmFile.exists()) {
+            copyFile(importShmFile, getShmFile(dbFile));
+        }
+    }
+
+    private static void restoreCurrentDatabaseFiles(File backupDir, File dbFile) {
+        try {
+            deleteIfExists(dbFile);
+            deleteIfExists(getWalFile(dbFile));
+            deleteIfExists(getShmFile(dbFile));
+
+            File backupDbFile = new File(backupDir, dbFile.getName());
+            File backupWalFile = new File(backupDir, dbFile.getName() + "-wal");
+            File backupShmFile = new File(backupDir, dbFile.getName() + "-shm");
+
+            if (backupDbFile.exists()) {
+                copyFile(backupDbFile, dbFile);
+            }
+            if (backupWalFile.exists()) {
+                copyFile(backupWalFile, getWalFile(dbFile));
+            }
+            if (backupShmFile.exists()) {
+                copyFile(backupShmFile, getShmFile(dbFile));
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static void validateImportedDatabaseFiles() throws IOException {
+        AyuDatabase validationDatabase = null;
+        try {
+            validationDatabase = buildDatabase(false);
+            validationDatabase.getOpenHelper().getWritableDatabase().query("SELECT name FROM sqlite_master LIMIT 1").close();
+        } catch (Exception e) {
+            throw new IOException("Imported backup is not a compatible Ayu database", e);
+        } finally {
+            if (validationDatabase != null) {
+                try {
+                    validationDatabase.close();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+            }
+        }
+    }
+
+    private static void copyStreamToFile(InputStream inputStream, File targetFile) throws IOException {
+        File parent = targetFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("Unable to create directory " + parent.getAbsolutePath());
+        }
+        try (BufferedOutputStream fileOutputStream = new BufferedOutputStream(new FileOutputStream(targetFile))) {
+            copyStream(inputStream, fileOutputStream);
+        }
+    }
+
+    private static void copyFile(File sourceFile, File targetFile) throws IOException {
+        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(sourceFile))) {
+            copyStreamToFile(inputStream, targetFile);
+        }
+    }
+
+    private static void copyStream(InputStream inputStream, OutputStream outputStream) throws IOException {
+        byte[] buffer = new byte[IO_BUFFER_SIZE];
+        int read;
+        while ((read = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, read);
+        }
+        outputStream.flush();
+    }
+
+    private static void deleteIfExists(File file) throws IOException {
+        if (file.exists() && !file.delete()) {
+            throw new IOException("Unable to delete " + file.getAbsolutePath());
+        }
     }
 
     public static long getDatabaseSize() {
         long size = 0;
         try {
-            File dbFile = ApplicationLoader.applicationContext.getDatabasePath(AyuConstants.AYU_DATABASE);
+            File dbFile = getDatabaseFile();
             File shmCacheFile = new File(dbFile.getAbsolutePath() + "-shm");
             File walCacheFile = new File(dbFile.getAbsolutePath() + "-wal");
             if (dbFile.exists()) {
@@ -160,9 +427,14 @@ public class AyuData {
         return size;
     }
 
+    public static long getAyuDatabaseSize() {
+        return getDatabaseSize();
+    }
+
     public static long getAttachmentsDirSize() {
         long size = 0;
         try {
+            AyuMessagesController.syncAttachmentsPathWithConfig();
             if (AyuMessagesController.attachmentsPath.exists()) {
                 size = AndroidUtil.getDirectorySize(AyuMessagesController.attachmentsPath);
             }

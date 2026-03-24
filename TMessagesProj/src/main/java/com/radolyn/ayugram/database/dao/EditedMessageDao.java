@@ -42,6 +42,9 @@ public interface EditedMessageDao {
     @Query("SELECT mediaPath FROM editedmessage WHERE fakeId = :fakeId LIMIT 1")
     String getMediaPathByFakeId(long fakeId);
 
+    @Query("UPDATE editedmessage SET mediaPath = NULL WHERE mediaPath = :mediaPath")
+    void clearMediaPath(String mediaPath);
+
     @Insert
     void insert(EditedMessage revision);
 }

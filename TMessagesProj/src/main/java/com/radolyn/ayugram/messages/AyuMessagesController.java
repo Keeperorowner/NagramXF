@@ -31,14 +31,25 @@ import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
 
 import tw.nekomimi.nekogram.utils.FileUtil;
+import xyz.nextalone.nagram.NaConfig;
 
 public class AyuMessagesController {
     public static final String attachmentsSubfolder = "Saved Attachments";
-    public static final File attachmentsPath = new File(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), AyuConstants.APP_NAME), attachmentsSubfolder);
+    public static File attachmentsPath = getDefaultAttachmentsPath();
+    public static final long[] ATTACHMENT_SIZE_LIMIT_PRESETS = new long[]{
+            300L * 1024L * 1024L,
+            1024L * 1024L * 1024L,
+            2L * 1024L * 1024L * 1024L,
+            5L * 1024L * 1024L * 1024L,
+            16L * 1024L * 1024L * 1024L,
+            Long.MAX_VALUE
+    };
     private static AyuMessagesController instance;
     private EditedMessageDao editedMessageDao;
     private DeletedMessageDao deletedMessageDao;
@@ -48,6 +59,58 @@ public class AyuMessagesController {
         AyuSavePreferences.loadAllExclusions();
 
         refreshDaos();
+    }
+
+    private static File getDefaultAttachmentsPath() {
+        return new File(new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), AyuConstants.APP_NAME), attachmentsSubfolder);
+    }
+
+    private static File resolveConfiguredAttachmentsPath() {
+        String configuredPath = NaConfig.INSTANCE.getAttachmentFolderPath().String();
+        if (TextUtils.isEmpty(configuredPath)) {
+            return getDefaultAttachmentsPath();
+        }
+        return new File(configuredPath);
+    }
+
+    public static synchronized void syncAttachmentsPathWithConfig() {
+        attachmentsPath = resolveConfiguredAttachmentsPath();
+    }
+
+    public static synchronized void setAttachmentFolderPath(File path) {
+        String newPath = path == null ? "" : path.getAbsolutePath();
+        NaConfig.INSTANCE.getAttachmentFolderPath().setConfigString(newPath);
+        syncAttachmentsPathWithConfig();
+        initializeAttachmentsFolder();
+        AyuData.loadSizes(null);
+    }
+
+    public static boolean isManagedAttachmentPath(String path) {
+        if (TextUtils.isEmpty(path)) {
+            return false;
+        }
+        syncAttachmentsPathWithConfig();
+        try {
+            String folderPath = attachmentsPath.getCanonicalPath();
+            String filePath = new File(path).getCanonicalPath();
+            return filePath.equals(folderPath) || filePath.startsWith(folderPath + File.separator);
+        } catch (Exception e) {
+            FileLog.e("isManagedAttachmentPath", e);
+            String folderPath = attachmentsPath.getAbsolutePath();
+            return path.equals(folderPath) || path.startsWith(folderPath + File.separator);
+        }
+    }
+
+    private static void clearAttachmentPathReferences(String mediaPath) {
+        if (TextUtils.isEmpty(mediaPath)) {
+            return;
+        }
+        try {
+            AyuData.getDeletedMessageDao().clearMediaPath(mediaPath);
+            AyuData.getEditedMessageDao().clearMediaPath(mediaPath);
+        } catch (Exception e) {
+            FileLog.e("clearAttachmentPathReferences", e);
+        }
     }
 
     private void refreshDaos() {
@@ -74,6 +137,7 @@ public class AyuMessagesController {
 
     private static void initializeAttachmentsFolder() {
         try {
+            syncAttachmentsPathWithConfig();
             File nomediaFile = new File(attachmentsPath, ".nomedia");
             if (attachmentsPath.exists() || attachmentsPath.mkdirs()) {
                 AndroidUtilities.createEmptyFile(nomediaFile);
@@ -97,11 +161,88 @@ public class AyuMessagesController {
         }
     }
 
-    public static AyuMessagesController getInstance() {
+    public static synchronized AyuMessagesController getInstance() {
         if (instance == null) {
             instance = new AyuMessagesController();
         }
         return instance;
+    }
+
+    public static int clampAttachmentSizeLimitPreset(int preset) {
+        return Math.max(0, Math.min(preset, ATTACHMENT_SIZE_LIMIT_PRESETS.length - 1));
+    }
+
+    public static long getConfiguredAttachmentSizeLimit() {
+        int preset = clampAttachmentSizeLimitPreset(NaConfig.INSTANCE.getAttachmentFolderSizeLimitPreset().Int());
+        if (preset != NaConfig.INSTANCE.getAttachmentFolderSizeLimitPreset().Int()) {
+            NaConfig.INSTANCE.getAttachmentFolderSizeLimitPreset().setConfigInt(preset);
+        }
+        return ATTACHMENT_SIZE_LIMIT_PRESETS[preset];
+    }
+
+    public static void refreshAfterDatabaseChange() {
+        if (instance != null) {
+            instance.refreshDaos();
+        }
+    }
+
+    public static long trimAttachmentsFolderToLimit() {
+        return trimAttachmentsFolderToLimit(null);
+    }
+
+    public static synchronized long trimAttachmentsFolderToLimit(File keepFile) {
+        try {
+            initializeAttachmentsFolder();
+            long limit = getConfiguredAttachmentSizeLimit();
+            if (limit == Long.MAX_VALUE) {
+                return 0L;
+            }
+
+            File[] attachmentFiles = attachmentsPath.listFiles(file ->
+                    file != null && file.isFile() && !".nomedia".equals(file.getName()));
+            if (attachmentFiles == null || attachmentFiles.length == 0) {
+                return 0L;
+            }
+
+            Arrays.sort(attachmentFiles, Comparator.comparingLong(File::lastModified));
+
+            long currentSize = 0L;
+            for (File file : attachmentFiles) {
+                currentSize += Math.max(0L, file.length());
+            }
+
+            String keepPath = keepFile == null ? null : keepFile.getAbsolutePath();
+            long deletedSize = 0L;
+            for (File file : attachmentFiles) {
+                if (currentSize <= limit) {
+                    break;
+                }
+                if (keepPath != null && keepPath.equals(file.getAbsolutePath())) {
+                    continue;
+                }
+
+                long fileLength = Math.max(0L, file.length());
+                if (!file.exists()) {
+                    currentSize -= fileLength;
+                    continue;
+                }
+                if (file.delete()) {
+                    currentSize -= fileLength;
+                    deletedSize += fileLength;
+                    clearAttachmentPathReferences(file.getAbsolutePath());
+                } else {
+                    FileLog.e("Failed to delete old attachment " + file.getAbsolutePath());
+                }
+            }
+
+            if (deletedSize > 0L) {
+                AyuData.loadSizes(null);
+            }
+            return deletedSize;
+        } catch (Exception e) {
+            FileLog.e("trimAttachmentsFolderToLimit", e);
+            return 0L;
+        }
     }
 
     public void onMessageEdited(AyuSavePreferences prefs, TLRPC.Message newMessage) {
@@ -143,7 +284,7 @@ public class AyuMessagesController {
                     () -> editedMessageDao.getLastRevision(prefs.getUserId(), prefs.getDialogId(), prefs.getMessageId())
             );
 
-            if (lastRevision != null && !TextUtils.equals(revision.mediaPath, lastRevision.mediaPath) && lastRevision.mediaPath != null && !lastRevision.mediaPath.contains(attachmentsSubfolder)) {
+            if (lastRevision != null && !TextUtils.equals(revision.mediaPath, lastRevision.mediaPath) && lastRevision.mediaPath != null && !isManagedAttachmentPath(lastRevision.mediaPath)) {
                 // update previous revisions to reflect media change
                 // like, there's no previous file, so replace it with one we copied before...
                 withDaoRetry(
@@ -442,19 +583,25 @@ public class AyuMessagesController {
     }
 
     public void clean() {
-        AyuData.clean();
-        AyuData.create();
-
-        refreshDaos();
-
-        cleanAttachmentsFolder();
-
-        // force to recreate a database to avoid crash
+        clearDatabase();
+        clearAttachments();
         instance = null;
     }
 
-    private void cleanAttachmentsFolder() {
+    public static synchronized void clearDatabase() {
+        AyuData.clean();
+        AyuData.create();
+        refreshAfterDatabaseChange();
+    }
+
+    public static synchronized void clearAttachments() {
+        syncAttachmentsPathWithConfig();
         FileUtil.deleteDirectory(attachmentsPath);
         initializeAttachmentsFolder();
+        AyuData.loadSizes(null);
+    }
+
+    private void cleanAttachmentsFolder() {
+        clearAttachments();
     }
 }

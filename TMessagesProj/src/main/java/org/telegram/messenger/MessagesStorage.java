@@ -1412,6 +1412,10 @@ public class MessagesStorage extends BaseController {
     }
 
     public void clearLocalDatabase(boolean restart) {
+        clearLocalDatabase(restart, null);
+    }
+
+    public void clearLocalDatabase(boolean restart, Runnable onComplete) {
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             SQLitePreparedStatement state5 = null;
@@ -1544,10 +1548,17 @@ public class MessagesStorage extends BaseController {
                     cursor.dispose();
                 }
                 reset();
-                // NagramX
-                if (restart) {
+                if (restart || onComplete != null) {
                     AndroidUtilities.runOnUIThread(() -> {
-                        AppRestartHelper.triggerRebirth(ApplicationLoader.applicationContext, new Intent(ApplicationLoader.applicationContext, LaunchActivity.class));
+                        try {
+                            if (onComplete != null) {
+                                onComplete.run();
+                            }
+                        } finally {
+                            if (restart) {
+                                AppRestartHelper.triggerRebirth(ApplicationLoader.applicationContext, new Intent(ApplicationLoader.applicationContext, LaunchActivity.class));
+                            }
+                        }
                     });
                 }
             }
