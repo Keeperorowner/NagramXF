@@ -29,6 +29,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.RecyclerListView;
@@ -50,6 +51,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
     private int regexFiltersEnabledRow;
     private int regexFiltersEnableInChatsRow;
     private int regexFiltersMaskMessagesRow;
+    private int regexFiltersMaskMessagesInfoRow;
     private int ignoreBlockedRow;
     private int filtersOptionDividerRow;
     private int filtersHeaderRow;
@@ -72,6 +74,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         regexFiltersEnabledRow = -1;
         regexFiltersEnableInChatsRow = -1;
         regexFiltersMaskMessagesRow = -1;
+        regexFiltersMaskMessagesInfoRow = -1;
         ignoreBlockedRow = -1;
         filtersOptionDividerRow = -1;
         filtersHeaderRow = -1;
@@ -86,9 +89,10 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         filtersOptionHeaderRow = rowCount++;
         regexFiltersEnabledRow = rowCount++;
         regexFiltersEnableInChatsRow = rowCount++;
-        regexFiltersMaskMessagesRow = rowCount++;
         ignoreBlockedRow = rowCount++;
         filtersOptionDividerRow = rowCount++;
+        regexFiltersMaskMessagesRow = rowCount++;
+        regexFiltersMaskMessagesInfoRow = rowCount++;
 
         filtersHeaderRow = rowCount++;
         sharedFiltersPageRow = rowCount++;
@@ -502,9 +506,16 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
                     } else if (position == regexFiltersEnableInChatsRow) {
                         textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersEnableInChats), NaConfig.INSTANCE.getRegexFiltersEnableInChats().Bool(), true);
                     } else if (position == regexFiltersMaskMessagesRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersMaskMessages), NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool(), true);
+                        textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersMaskMessagesShort), NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool(), false);
                     } else if (position == ignoreBlockedRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.IgnoreBlocked), NekoConfig.ignoreBlocked.Bool(), true);
+                        textCheckCell.setTextAndCheck(getString(R.string.IgnoreBlocked), NekoConfig.ignoreBlocked.Bool(), false);
+                    }
+                    break;
+                case TYPE_INFO_PRIVACY:
+                    TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
+                    infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                    if (position == regexFiltersMaskMessagesInfoRow) {
+                        infoCell.setText(getString(R.string.RegexFiltersMaskMessagesAbout));
                     }
                     break;
                 case TYPE_TEXT:
@@ -550,6 +561,8 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == filtersOptionDividerRow || position == dividerRow) {
                 return TYPE_SHADOW;
+            } else if (position == regexFiltersMaskMessagesInfoRow) {
+                return TYPE_INFO_PRIVACY;
             } else if (position == filtersHeaderRow || position == filtersOptionHeaderRow || position == chatFiltersHeaderRow) {
                 return TYPE_HEADER;
             } else if (position == sharedFiltersPageRow || position == userFiltersPageRow) {
