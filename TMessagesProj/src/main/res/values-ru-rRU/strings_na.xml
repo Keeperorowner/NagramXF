@@ -105,4 +105,8 @@
     <string name="VideoPlayerDecoderPreferSW">Предпочтение SW</string>
     <string name="VideoPlayerDecoderHardware">Только HW</string>
     <string name="VideoPlayerDecoderPreferHW">Предпочтение HW</string>
+    <string name="SquareFloatingButton">Квадратная плавающая кнопка</string>
+    <string name="RegexFiltersEnabled">Включить фильтры сообщений</string>
+    <string name="UseSystemAiService">Использовать системный ИИ-сервис</string>
+    <string name="UseSystemAiServiceDesc">Поддерживаются только HyperOS и ColorOS</string>
 </resources>
