@@ -39,6 +39,13 @@
     <string name="LlmTestResultDuration">Продолжительность</string>
     <string name="LlmTestResultResponse">Ответ</string>
     <string name="AITranslatorSettings">ИИ-переводчик</string>
+    <string name="NowPlaying">Сейчас играет</string>
+    <string name="NowPlayingService">Сервис</string>
+    <string name="NowPlayingLocalOnlyInfo">Это локальная интеграция, она отображается только на этом устройстве.</string>
+    <string name="NowPlayingLastFmUsername">Имя пользователя Last.fm</string>
+    <string name="NowPlayingLastFmApiKey">API-ключ Last.fm</string>
+    <string name="NowPlayingLastFmApiKeyInfo">Для локального режима нужен ваш собственный **API-ключ Last.fm**.</string>
+    <string name="NowPlayingNothingPlaying">Сейчас ничего не играет</string>
     <string name="TranslucentDeletedMessages">Полупрозрачные удалённые сообщения</string>
     <string name="ArticleTranslationProvider">Сервис перевода статей</string>
     <string name="EnableSeparateArticleTranslator">Использовать другой сервис для статей</string>

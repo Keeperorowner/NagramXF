@@ -237,6 +237,24 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val nowPlayingServiceType =
+        addConfig(
+            "NowPlayingServiceType",
+            ConfigItem.configTypeInt,
+            0
+        )
+    val nowPlayingLastFmUsername =
+        addConfig(
+            "NowPlayingLastFmUsername",
+            ConfigItem.configTypeString,
+            ""
+        )
+    val nowPlayingLastFmApiKey =
+        addConfig(
+            "NowPlayingLastFmApiKey",
+            ConfigItem.configTypeString,
+            ""
+        )
     val replaceBlockedMyInfo =
         addConfig(
             "ReplaceBlockedMyInfo",

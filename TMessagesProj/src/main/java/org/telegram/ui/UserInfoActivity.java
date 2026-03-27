@@ -64,6 +64,7 @@ import java.util.Calendar;
 import java.util.Collections;
 
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
+import xyz.nextalone.nagram.nowplaying.LocalNowPlayingController;
 
 public class UserInfoActivity extends UniversalFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -176,6 +177,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     private static final int INFO_BIRTHDAY = 8;
     private static final int BUTTON_ADD_ACCOUNT = 9;
     private static final int BUTTON_LOGOUT = 10;
+    private static final int BUTTON_NOW_PLAYING = 11;
 
     private final ArrayList<Integer> accountNumbers = new ArrayList<>();
     private void updateAccounts() {
@@ -205,6 +207,8 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     @Keep
     public int bioRow;
     @Keep
+    public int nowPlayingRow;
+    @Keep
     public int birthdayRow;
     @Keep
     public int numberRow;
@@ -221,6 +225,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         addAccountRow = -1;
         numberRow = -1;
+        nowPlayingRow = -1;
         updateAccounts();
 
         final TLRPC.User user = getUserConfig().getCurrentUser();
@@ -273,9 +278,12 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         bioRow = items.size();
         items.add(UItem.asCustom(bioEdit));
         items.add(UItem.asShadow(bioInfo));
+        items.add(UItem.asHeader(getString(R.string.NowPlaying)));
+        nowPlayingRow = items.size();
+        items.add(UItem.asButton(BUTTON_NOW_PLAYING, getString(R.string.NowPlayingService), getNowPlayingSummary()));
+        items.add(UItem.asShadow(getString(R.string.NowPlayingLocalOnlyInfo)));
 //        items.add(UItem.asHeader(getString(R.string.EditProfileChannel)));
 //        items.add(UItem.asButton(BUTTON_CHANNEL, getString(R.string.EditProfileChannelTitle), channel == null ? getString(R.string.EditProfileChannelAdd) : channel.title));
-        items.add(UItem.asShadow(-2, null));
         channelRow = items.size();
         if (channel == null) {
             items.add(InfoCell.Factory.of(BUTTON_CHANNEL, R.drawable.msg_channel_create, getString(R.string.EditProfileChannelTitleAdd), null, 0).accent());
@@ -422,6 +430,8 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
             presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANGE_PHONE_NUMBER));
         } else if (item.id == INFO_USERNAME) {
             presentFragment(new ChangeUsernameActivity());
+        } else if (item.id == BUTTON_NOW_PLAYING) {
+            presentFragment(new SetupNowPlayingActivity());
         } else if (item.id == BUTTON_LOGOUT) {
             presentFragment(new LogoutActivity());
         }
@@ -461,6 +471,17 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         if (listView != null) {
             listView.adapter.update(true);
         }
+    }
+
+    private CharSequence getNowPlayingSummary() {
+        if (LocalNowPlayingController.getServiceType() == LocalNowPlayingController.SERVICE_LAST_FM) {
+            String username = LocalNowPlayingController.getLastFmUsername();
+            if (!TextUtils.isEmpty(username)) {
+                return "Last.fm - " + username;
+            }
+            return "Last.fm";
+        }
+        return getString(R.string.None);
     }
 
     private String currentFirstName;

@@ -54,6 +54,13 @@
     <string name="LlmTestResultDuration">Duration</string>
     <string name="LlmTestResultResponse">Response</string>
     <string name="AITranslatorSettings">AI Translator</string>
+    <string name="NowPlaying">Now Playing</string>
+    <string name="NowPlayingService">Service</string>
+    <string name="NowPlayingLocalOnlyInfo">This is a local-only integration and is only shown on this device.</string>
+    <string name="NowPlayingLastFmUsername">Last.fm username</string>
+    <string name="NowPlayingLastFmApiKey">Last.fm API key</string>
+    <string name="NowPlayingLastFmApiKeyInfo">Local mode needs your own **Last.fm API key**.</string>
+    <string name="NowPlayingNothingPlaying">Nothing playing</string>
     <string name="TranslucentDeletedMessages">Translucent Deleted Messages</string>
     <string name="ArticleTranslationProvider">Article Translation Provider</string>
     <string name="EnableSeparateArticleTranslator">Use a Different Provider for Article</string>
