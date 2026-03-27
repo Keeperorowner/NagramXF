@@ -383,6 +383,7 @@
     <string name="AvatarCornersLeft">更方</string>
     <string name="AvatarCornersRight">更圆</string>
     <string name="SingleCornerRadius">统一圆角半径</string>
+    <string name="SingleCornerRadiusInfo">话题群组会采用与聊天消息相同的头像形状。</string>
     <string name="BlurOptions">模糊选项</string>
     <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>

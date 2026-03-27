@@ -324,5 +324,6 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">在密碼鎖定狀態下仍顯示通知內容。</string>
     <string name="BlurOptions">模糊選項</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>
+    <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
     <string name="AyuMoments">AyuMoments</string>
 </resources>
