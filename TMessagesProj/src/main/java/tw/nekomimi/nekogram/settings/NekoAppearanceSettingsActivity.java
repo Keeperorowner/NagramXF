@@ -27,6 +27,7 @@ import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
@@ -115,7 +116,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     }, null));
     private final AbstractConfigCell dividerAppearance = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell avatarCornersRow = cellGroup.appendCell(new ConfigCellCustom("AvatarCorners", ConfigCellCustom.CUSTOM_ITEM_AvatarCorners, false));
-    private final AbstractConfigCell dividerAvatarCorners = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell avatarCornersInfoRow = cellGroup.appendCell(new ConfigCellCustom("SingleCornerRadiusInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell headerDialogs = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.DialogsSettings)));
     private final AbstractConfigCell sortByUnreadRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSortByUnread()));
     private final AbstractConfigCell disableDialogsFloatingButtonRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDisableDialogsFloatingButton()));
@@ -167,14 +168,19 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         return "appearance";
     }
 
+    @Override
+    protected void styleTextInfoPrivacyCell(TextInfoPrivacyCell cell) {
+        cell.setBackground(Theme.getThemedDrawable(cell.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+    }
+
     public NekoAppearanceSettingsActivity() {
         if (!NaConfig.INSTANCE.getCenterActionBarTitle().Bool()) {
             NaConfig.INSTANCE.getCenterActionBarTitleType().setConfigInt(0);
         }
         cellGroup.rows.remove(avatarCornersRow);
-        cellGroup.rows.remove(dividerAvatarCorners);
+        cellGroup.rows.remove(avatarCornersInfoRow);
         cellGroup.rows.add(0, avatarCornersRow);
-        cellGroup.rows.add(1, dividerAvatarCorners);
+        cellGroup.rows.add(1, avatarCornersInfoRow);
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
@@ -348,6 +354,15 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
 
         public ListAdapter(Context context) {
             super(context);
+        }
+
+        @Override
+        protected void onBindCustomViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            AbstractConfigCell row = cellGroup.rows.get(position);
+            if (row == avatarCornersInfoRow) {
+                TextInfoPrivacyCell textInfoPrivacyCell = (TextInfoPrivacyCell) holder.itemView;
+                textInfoPrivacyCell.setText(getString(R.string.SingleCornerRadiusInfo));
+            }
         }
 
         @Override

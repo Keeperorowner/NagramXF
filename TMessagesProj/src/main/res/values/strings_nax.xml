@@ -396,6 +396,7 @@
     <string name="AvatarCornersLeft">Sharp</string>
     <string name="AvatarCornersRight">Round</string>
     <string name="SingleCornerRadius">Unified corner radius</string>
+    <string name="SingleCornerRadiusInfo">Topic groups will use the same avatar shape as chat messages.</string>
     <string name="BlurOptions">Blur Options</string>
     <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>

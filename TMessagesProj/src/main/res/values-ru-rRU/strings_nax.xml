@@ -334,6 +334,7 @@
     <string name="AvatarCornersLeft">Квадратный</string>
     <string name="AvatarCornersRight">Круглый</string>
     <string name="SingleCornerRadius">Единый радиус скругления</string>
+    <string name="SingleCornerRadiusInfo">Группы тем будут использовать ту же форму аватара, что и сообщения в чате.</string>
     <string name="AyuMoments">Приватность</string>
     <string name="SaveAttachmentsCardTitle">Сохранять вложения</string>
     <string name="SaveAttachmentsCardSubtitle">Настройка чатов и лимитов</string>
