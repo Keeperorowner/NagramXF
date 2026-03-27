@@ -5,6 +5,7 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.ImageLoader;
@@ -103,6 +104,20 @@ public class ForceForward {
         return chat.noforwards;
     }
 
+    public static boolean isPeerNoForwards(MessageObject messageObject) {
+        if (messageObject == null || messageObject.currentAccount < 0) {
+            return false;
+        }
+        long dialogId = messageObject.getDialogId();
+        if (dialogId == 0 || DialogObject.isEncryptedDialog(dialogId)) {
+            return false;
+        }
+        if (dialogId > 0) {
+            return MessagesController.getInstance(messageObject.currentAccount).isUserNoForwards(dialogId);
+        }
+        return isChatNoForwards(messageObject);
+    }
+
     public static boolean isUnforwardable(MessageObject messageObject) {
         if (messageObject == null || messageObject.messageOwner == null) {
             return false;
@@ -127,7 +142,7 @@ public class ForceForward {
     }
 
     public static boolean isForceForwardNeeded(MessageObject messageObject) {
-        return isChatNoForwards(messageObject) || isUnforwardable(messageObject);
+        return isPeerNoForwards(messageObject) || isUnforwardable(messageObject);
     }
 
     private void clearRunState() {
