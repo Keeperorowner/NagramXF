@@ -41,6 +41,13 @@
     <string name="LlmTestResultDuration">用时</string>
     <string name="LlmTestResultResponse">响应</string>
     <string name="AITranslatorSettings">AI 翻译</string>
+    <string name="NowPlaying">正在播放</string>
+    <string name="NowPlayingService">服务</string>
+    <string name="NowPlayingLocalOnlyInfo">仅在本地显示，只会在当前设备上显示。</string>
+    <string name="NowPlayingLastFmUsername">Last.fm 用户名</string>
+    <string name="NowPlayingLastFmApiKey">Last.fm API Key</string>
+    <string name="NowPlayingLastFmApiKeyInfo">本地模式需要填写你自己的 **Last.fm API Key**。</string>
+    <string name="NowPlayingNothingPlaying">当前没有播放内容</string>
     <string name="TranslucentDeletedMessages">使已删除的消息半透明</string>
     <string name="ArticleTranslationProvider">文章翻译源</string>
     <string name="EnableSeparateArticleTranslator">单独设置文章翻译源</string>

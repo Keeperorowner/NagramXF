@@ -371,12 +371,16 @@ import tw.nekomimi.nekogram.utils.AndroidUtil;
 import tw.nekomimi.nekogram.utils.FileUtil;
 import tw.nekomimi.nekogram.utils.ShareUtil;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.nowplaying.LocalNowPlayingController;
 
 public class ProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, SharedMediaLayout.SharedMediaPreloaderDelegate, ImageUpdater.ImageUpdaterDelegate, SharedMediaLayout.Delegate, MainTabsActivity.TabFragmentDelegate {
     private final static int PHONE_OPTION_CALL = 0,
             PHONE_OPTION_COPY = 1,
             PHONE_OPTION_TELEGRAM_CALL = 2,
             PHONE_OPTION_TELEGRAM_VIDEO_CALL = 3;
+    private static final int MUSIC_VIEW_MODE_NONE = 0;
+    private static final int MUSIC_VIEW_MODE_SAVED_MUSIC = 1;
+    private static final int MUSIC_VIEW_MODE_LAST_FM = 2;
 
     private RecyclerListView listView;
     private RecyclerListView searchListView;
@@ -421,6 +425,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ProfileActionsView actionsView;
     private MessagesController.SavedMusicList savedMusicList;
     private ProfileMusicView musicView;
+    private LocalNowPlayingController.Track currentNowPlayingTrack;
+    private boolean loadingNowPlayingTrack;
+    private boolean nowPlayingPollingActive;
+    private int nowPlayingRequestId;
+    private int musicViewMode;
+    private final Runnable nowPlayingPollRunnable = this::pollNowPlayingTrack;
     private AnimatedStatusView animatedStatusView;
     private AvatarImageView avatarImage;
     private View avatarOverlay;
@@ -3901,40 +3911,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 avatarsBlurView.setMusicView(musicView);
             }
             musicView.setColor(peerColor);
-            if (userInfo != null && userInfo.saved_music != null) {
-                musicView.setMusicDocument(userInfo.saved_music);
-            }
-            musicView.setOnClickListener(v -> {
-                if (savedMusicList == null) {
-                    if (
-                        MediaController.getInstance().currentSavedMusicList != null &&
-                        MediaController.getInstance().currentSavedMusicList.currentAccount == currentAccount &&
-                        MediaController.getInstance().currentSavedMusicList.dialogId == getDialogId()) {
-                        savedMusicList = MediaController.getInstance().currentSavedMusicList;
-                    } else {
-                        savedMusicList = new MessagesController.SavedMusicList(currentAccount, getDialogId());
-                        if (userInfo != null && userInfo.saved_music != null) {
-                            savedMusicList.setup(userInfo.saved_music);
-                        }
-                    }
-                }
-                if (!savedMusicList.list.isEmpty()) {
-                    boolean sameList = false;
-                    if (
-                        MediaController.getInstance().currentSavedMusicList != savedMusicList ||
-                        !MediaController.getInstance().isPlayingMessage(savedMusicList.list.get(0))
-                    ) {
-                        MediaController.getInstance().cleanup();
-                    } else {
-                        sameList = true;
-                    }
-                    MediaController.getInstance().currentSavedMusicList = savedMusicList;
-                    MediaController.getInstance().getPlaylist().clear();
-                    MediaController.getInstance().getPlaylist().addAll(savedMusicList.list);
-                    if (!sameList) MediaController.getInstance().playMessage(savedMusicList.list.get(0));
-                    showDialog(new AudioPlayerAlert(getContext(), getResourceProvider()));
-                }
-            });
+            musicView.setOnClickListener(v -> onMusicViewClicked());
+            updateMusicViewState();
 
             actionsView = new ProfileActionsView(context, dp(74)) {
                 @Override
@@ -9739,13 +9717,146 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    private boolean shouldShowLocalNowPlaying() {
+        return getDialogId() == getUserConfig().getClientUserId()
+            && (imageUpdater == null || myProfile)
+            && LocalNowPlayingController.isEnabled();
+    }
+
+    private void cancelNowPlayingPolling() {
+        AndroidUtilities.cancelRunOnUIThread(nowPlayingPollRunnable);
+    }
+
+    private void scheduleNowPlayingPolling() {
+        cancelNowPlayingPolling();
+        if (nowPlayingPollingActive && shouldShowLocalNowPlaying()) {
+            AndroidUtilities.runOnUIThread(nowPlayingPollRunnable, 30000);
+        }
+    }
+
+    private void pollNowPlayingTrack() {
+        cancelNowPlayingPolling();
+        if (!nowPlayingPollingActive || !shouldShowLocalNowPlaying()) {
+            nowPlayingRequestId++;
+            loadingNowPlayingTrack = false;
+            currentNowPlayingTrack = null;
+            updateMusicViewState();
+            return;
+        }
+        final int requestId = ++nowPlayingRequestId;
+        loadingNowPlayingTrack = true;
+        updateMusicViewState();
+        LocalNowPlayingController.getCurrentTrack(track -> {
+            if (requestId != nowPlayingRequestId) {
+                return;
+            }
+            loadingNowPlayingTrack = false;
+            currentNowPlayingTrack = track;
+            updateMusicViewState();
+            scheduleNowPlayingPolling();
+        });
+    }
+
+    private void onMusicViewClicked() {
+        if (musicViewMode == MUSIC_VIEW_MODE_LAST_FM) {
+            String url = currentNowPlayingTrack != null && !TextUtils.isEmpty(currentNowPlayingTrack.url)
+                ? currentNowPlayingTrack.url
+                : LocalNowPlayingController.getProfileUrl();
+            if (getParentActivity() != null) {
+                Browser.openUrl(getParentActivity(), url);
+            }
+        } else if (musicViewMode == MUSIC_VIEW_MODE_SAVED_MUSIC) {
+            openSavedMusic();
+        }
+    }
+
+    private void openSavedMusic() {
+        if (savedMusicList == null) {
+            if (
+                MediaController.getInstance().currentSavedMusicList != null &&
+                MediaController.getInstance().currentSavedMusicList.currentAccount == currentAccount &&
+                MediaController.getInstance().currentSavedMusicList.dialogId == getDialogId()) {
+                savedMusicList = MediaController.getInstance().currentSavedMusicList;
+            } else {
+                savedMusicList = new MessagesController.SavedMusicList(currentAccount, getDialogId());
+                if (userInfo != null && userInfo.saved_music != null) {
+                    savedMusicList.setup(userInfo.saved_music);
+                }
+            }
+        }
+        if (savedMusicList == null || savedMusicList.list.isEmpty()) {
+            return;
+        }
+        boolean sameList = false;
+        if (
+            MediaController.getInstance().currentSavedMusicList != savedMusicList ||
+            !MediaController.getInstance().isPlayingMessage(savedMusicList.list.get(0))
+        ) {
+            MediaController.getInstance().cleanup();
+        } else {
+            sameList = true;
+        }
+        MediaController.getInstance().currentSavedMusicList = savedMusicList;
+        MediaController.getInstance().getPlaylist().clear();
+        MediaController.getInstance().getPlaylist().addAll(savedMusicList.list);
+        if (!sameList) {
+            MediaController.getInstance().playMessage(savedMusicList.list.get(0));
+        }
+        showDialog(new AudioPlayerAlert(getContext(), getResourceProvider()));
+    }
+
+    private void updateMusicViewState() {
+        if (musicView == null) {
+            return;
+        }
+
+        boolean hasSavedMusic = userInfo != null && userInfo.saved_music != null;
+        if (!hasMusic) {
+            musicViewMode = MUSIC_VIEW_MODE_NONE;
+            musicView.setVisibility(View.GONE);
+            return;
+        }
+
+        if (shouldShowLocalNowPlaying()) {
+            musicViewMode = MUSIC_VIEW_MODE_LAST_FM;
+            if (loadingNowPlayingTrack) {
+                musicView.setText("Last.fm", " - " + getString(R.string.Loading));
+            } else if (currentNowPlayingTrack != null) {
+                String artist = TextUtils.isEmpty(currentNowPlayingTrack.artist) ? getString(R.string.AudioUnknownArtist) : currentNowPlayingTrack.artist;
+                String title = TextUtils.isEmpty(currentNowPlayingTrack.title) ? getString(R.string.AudioUnknownTitle) : currentNowPlayingTrack.title;
+                musicView.setText(artist, " - " + title);
+            } else if (hasSavedMusic) {
+                musicViewMode = MUSIC_VIEW_MODE_SAVED_MUSIC;
+                musicView.setMusicDocument(userInfo.saved_music);
+            } else {
+                musicView.setText("Last.fm", " - " + getString(R.string.NowPlayingNothingPlaying));
+            }
+            musicView.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        if (hasSavedMusic) {
+            musicViewMode = MUSIC_VIEW_MODE_SAVED_MUSIC;
+            musicView.setMusicDocument(userInfo.saved_music);
+            musicView.setVisibility(View.VISIBLE);
+        } else {
+            musicViewMode = MUSIC_VIEW_MODE_NONE;
+            musicView.setVisibility(View.GONE);
+        }
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        nowPlayingPollingActive = true;
+        if (shouldShowLocalNowPlaying()) {
+            loadingNowPlayingTrack = true;
+        }
         if (sharedMediaLayout != null) {
             sharedMediaLayout.onResume();
         }
         invalidateIsInLandscapeMode();
+        updateRowsIds();
         if (listAdapter != null) {
             // saveScrollPosition();
             firstLayout = true;
@@ -9762,6 +9873,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         updateProfileData(true);
+        pollNowPlayingTrack();
         fixLayout();
         if (nameTextView[1] != null) {
             setParentActivityTitle(nameTextView[1].getText());
@@ -9791,6 +9903,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onPause() {
         super.onPause();
+        nowPlayingPollingActive = false;
+        cancelNowPlayingPolling();
+        nowPlayingRequestId++;
         if (undoView != null) {
             undoView.hide(true, 0);
         }
@@ -10773,7 +10888,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         if (userId != 0) {
             TLRPC.User user = getMessagesController().getUser(userId);
-            if (userInfo != null && userInfo.saved_music != null && (imageUpdater == null || myProfile)) {
+            if (shouldShowLocalNowPlaying() || userInfo != null && userInfo.saved_music != null && (imageUpdater == null || myProfile)) {
                 hasMusic = true;
             }
 
@@ -11242,10 +11357,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             actionsView.set(ProfileActionsView.KEY_JOIN, hasJoinRow);
         }
         if (musicView != null) {
-            if (userInfo != null) {
-                musicView.setMusicDocument(userInfo.saved_music);
-            }
-            musicView.setVisibility(hasMusic ? View.VISIBLE : View.GONE);
+            updateMusicViewState();
         }
     }
 
