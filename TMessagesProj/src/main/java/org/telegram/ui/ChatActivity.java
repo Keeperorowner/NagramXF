@@ -15096,7 +15096,7 @@ public class ChatActivity extends BaseFragment implements
         if (messageObject.messageOwner.action != null || !messageObject.isSent() || messageObject.isEditing()) {
             return false;
         }
-        return isOfficialChatNoForwards(currentChat) || ForceForward.isChatNoForwards(messageObject) || messageObject.messageOwner.noforwards;
+        return isOfficialChatNoForwards(currentChat) || ForceForward.isPeerNoForwards(messageObject) || messageObject.messageOwner.noforwards;
     }
 
     private void forwardMessagesByChunks(ArrayList<MessageObject> messages, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
