@@ -13501,7 +13501,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                             themeInfo = Theme.getTheme(dayThemeName);
                         }
                         switchTheme(themeInfo, toDark);
-                        Theme.turnOffAutoNight(BulletinFactory.of(this), () -> {
+                        BaseFragment bulletinFragment = this;
+                        if (hasMainTabs && getParentLayout() != null && getParentLayout().getLastFragment() != null) {
+                            bulletinFragment = getParentLayout().getLastFragment();
+                        }
+                        Theme.turnOffAutoNight(BulletinFactory.of(bulletinFragment), () -> {
                             presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
                         });
                     });
