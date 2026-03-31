@@ -579,6 +579,7 @@ public class ChatActivity extends BaseFragment implements
     private SuggestEmojiView suggestEmojiPanel;
     private ActionBarMenuItem.Item muteItem;
     private ActionBarMenuItem.Item muteItemGap;
+    private ActionBarMenuItem.Item muteItemTopGap;
     private ActionBarMenuItem.Item feeItemGap;
     private ActionBarMenuItem.Item feeItemText;
     private ChatNotificationsPopupWrapper chatNotificationsPopupWrapper;
@@ -4803,7 +4804,7 @@ public class ChatActivity extends BaseFragment implements
                         muteItem.openSwipeBack();
                     }
                 });
-                headerItem.lazilyAddColoredGap();
+                muteItemTopGap = headerItem.lazilyAddColoredGap();
                 createAyuGramMenuItem();
                 muteItemGap = headerItem.lazilyAddColoredGap();
             }
@@ -28670,9 +28671,15 @@ public class ChatActivity extends BaseFragment implements
             if (muteItem != null) {
                 if (currentChat != null && ChatObject.isNotInChat(currentChat)) {
                     muteItem.setVisibility(View.GONE);
+                    if (muteItemTopGap != null) {
+                        muteItemTopGap.setVisibility(View.GONE);
+                    }
                     muteItemGap.setVisibility(View.GONE);
                 } else {
                     muteItem.setVisibility(View.VISIBLE);
+                    if (muteItemTopGap != null) {
+                        muteItemTopGap.setVisibility(View.VISIBLE);
+                    }
                     muteItemGap.setVisibility(View.VISIBLE);
                 }
             }
