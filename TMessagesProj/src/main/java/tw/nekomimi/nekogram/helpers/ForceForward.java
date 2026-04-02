@@ -72,6 +72,7 @@ public class ForceForward {
         int activeDownloadCount;
         long downloadedBytes;
         boolean cancelledByUser;
+        boolean hasUndownloadedAyuDeletedMedia;
     }
     
     public ForceForward(ChatActivity fragment, int account) {
@@ -118,14 +119,38 @@ public class ForceForward {
         return isChatNoForwards(messageObject);
     }
 
+    private static boolean hasLocalForwardCopy(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return false;
+        }
+        messageObject.checkMediaExistance();
+        if (messageObject.attachPathExists || messageObject.mediaExists()) {
+            return true;
+        }
+        return !TextUtils.isEmpty(messageObject.messageOwner.attachPath) && new File(messageObject.messageOwner.attachPath).exists();
+    }
+
+    public static boolean canForwardAyuDeletedMessage(MessageObject messageObject) {
+        if (messageObject == null || !messageObject.isAyuDeleted() || messageObject.messageOwner == null) {
+            return false;
+        }
+        if (messageObject.isQuickReply() || messageObject.needDrawBluredPreview() || messageObject.isLiveLocation() || messageObject.type == MessageObject.TYPE_PHONE_CALL || messageObject.isSponsored()) {
+            return false;
+        }
+        if (messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji()) {
+            return !TextUtils.isEmpty(messageObject.messageOwner.message);
+        }
+        if (messageObject.isPhoto() || messageObject.isVideo() || messageObject.isGif() || messageObject.getDocument() != null) {
+            return hasLocalForwardCopy(messageObject);
+        }
+        return false;
+    }
+
     public static boolean isUnforwardable(MessageObject messageObject) {
         if (messageObject == null || messageObject.messageOwner == null) {
             return false;
         }
         TLRPC.Message message = messageObject.messageOwner;
-        if (messageObject.isAyuDeleted()) {
-            return true;
-        }
         if (message.noforwards) {
             return true;
         }
@@ -142,7 +167,7 @@ public class ForceForward {
     }
 
     public static boolean isForceForwardNeeded(MessageObject messageObject) {
-        return isPeerNoForwards(messageObject) || isUnforwardable(messageObject);
+        return canForwardAyuDeletedMessage(messageObject) || isPeerNoForwards(messageObject) || isUnforwardable(messageObject);
     }
 
     private void clearRunState() {
@@ -362,6 +387,7 @@ public class ForceForward {
         
         String path = resolvePath(mo);
         if (!TextUtils.isEmpty(path) && new File(path).exists()) return true;
+        if (mo.isAyuDeleted()) return false;
 
         if (mo.getDocument() != null) {
             String fileName = FileLoader.getAttachFileName(mo.getDocument());
@@ -438,8 +464,14 @@ public class ForceForward {
         if (mo == null || mo.messageOwner == null) {
             return false;
         }
+        if (mo.type == MessageObject.TYPE_TEXT || mo.isAnimatedEmoji()) {
+            return false;
+        }
         if (mo.isPhoto() || mo.isVideo() || mo.isGif()) {
             return true;
+        }
+        if (mo.isAyuDeleted()) {
+            return mo.getDocument() != null;
         }
         return mo.getDocument() != null && !mo.isSticker() && !mo.isAnimatedSticker();
     }
@@ -453,6 +485,10 @@ public class ForceForward {
             }
             if (messageObject.loadingCancelled) {
                 result.cancelledByUser = true;
+                return result;
+            }
+            if (messageObject.isAyuDeleted() && !hasLocalForwardCopy(messageObject)) {
+                result.hasUndownloadedAyuDeletedMedia = true;
                 return result;
             }
             if (!ensureDownloaded(messageObject)) {
@@ -844,6 +880,10 @@ public class ForceForward {
         }
 
         MediaPreparationResult mediaState = prepareMedia(messagesToSend);
+        if (mediaState.hasUndownloadedAyuDeletedMedia) {
+            failRun(taskId, LocaleController.getString(R.string.PleaseDownload), onComplete);
+            return;
+        }
         int missingMediaCount = mediaState.missingMediaCount;
         updateLoadingState(missingMediaCount);
         if (!isTaskActive(taskId)) {
