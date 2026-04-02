@@ -6813,7 +6813,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         final ActionBarMenu actionMode = actionBar.createActionMode(false, tag);
-        final boolean showActionModeCloseView = hasMainTabs || mainTabsActivityController != null;
+        final boolean showActionModeCloseView = useStandaloneActionModeCloseView();
         // actionMode.setBackgroundColor(Color.TRANSPARENT);
         // actionMode.drawBlur = false;
 
@@ -13951,8 +13951,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factor1 = 1f - animatorSearchVisible.getFloatValue();
         final float factor2 = 1f - getRightSlidingProgress();
         final float factor3 = 1f - animatorDoneButtonVisible.getFloatValue();
-        final float factor = Math.max(progressToActionMode, factor1 * factor2 * factor3);
+        final float baseFactor = factor1 * factor2 * factor3;
+        final float factor = useStandaloneActionModeCloseView()
+                ? baseFactor * (1f - progressToActionMode)
+                : Math.max(progressToActionMode, baseFactor);
         FragmentFloatingButton.setAnimatedVisibility(actionBar.getBackButton(), factor);
+    }
+
+    private boolean useStandaloneActionModeCloseView() {
+        return hasMainTabs || mainTabsActivityController != null;
     }
 
     private void checkUi_itemOptionsVisibility() {
