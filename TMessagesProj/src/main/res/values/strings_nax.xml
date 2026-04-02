@@ -222,6 +222,8 @@
     <string name="LeftBottomButtonAction">Left Button Action</string>
     <string name="MainTabsCustomize">Customize Bottom Tabs</string>
     <string name="MainTabsCustomizeDesc">Tap a tab to show or hide it. Long-press and drag to reorder.</string>
+    <string name="MainTabsCustomizeDrawerLocked">When Home Drawer is enabled, Chats is pinned to the far left.</string>
+    <string name="HomeDrawer">Home Drawer</string>
     <string name="MainTabsShowTitles">Show Tab Titles</string>
     <string name="MainTabsHideBottomBar">Hide Bottom Bar</string>
     <string name="FoldersAtBottom">Move Folders to Bottom</string>
@@ -341,6 +343,7 @@
     <string name="SetLocalName">Set Local Name</string>
     <string name="DeleteChatForBothSides">Use \"Also delete for\" by Default</string>
     <string name="BackAnimationStyle">Navigation Animation</string>
+    <string name="AppNavigation">App Navigation</string>
     <string name="BackAnimationClassic">Classic</string>
     <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">Predictive</string>

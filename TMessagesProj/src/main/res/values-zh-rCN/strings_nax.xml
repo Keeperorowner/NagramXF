@@ -208,6 +208,8 @@
     <string name="LeftBottomButtonAction">左侧按钮操作</string>
     <string name="MainTabsCustomize">自定义底边栏</string>
     <string name="MainTabsCustomizeDesc">点按标签可显示或隐藏。长按并拖动可调整顺序。</string>
+    <string name="MainTabsCustomizeDrawerLocked">开启主页侧边栏后，聊天会固定在最左侧。</string>
+    <string name="HomeDrawer">主页侧边栏</string>
     <string name="MainTabsShowTitles">显示标签名称</string>
     <string name="MainTabsHideBottomBar">隐藏底栏</string>
     <string name="FoldersAtBottom">将文件夹栏移动到底部</string>
@@ -326,6 +328,7 @@
     <string name="SetLocalName">设置备注</string>
     <string name="DeleteChatForBothSides">默认使用“同时为对方删除”</string>
     <string name="BackAnimationStyle">导航动画</string>
+    <string name="AppNavigation">应用导航</string>
     <string name="BackAnimationClassic">经典</string>
     <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">预测</string>

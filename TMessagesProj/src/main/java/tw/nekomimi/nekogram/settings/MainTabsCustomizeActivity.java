@@ -33,6 +33,7 @@ import org.telegram.ui.MainTabsConfigManager;
 import java.util.ArrayList;
 
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
+import tw.nekomimi.nekogram.NekoConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
@@ -138,7 +139,11 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    cell.setText(getString(R.string.MainTabsCustomizeDesc));
+                    StringBuilder desc = new StringBuilder(getString(R.string.MainTabsCustomizeDesc));
+                    if (NekoConfig.navigationDrawerEnabled.Bool()) {
+                        desc.append("\n\n").append(getString(R.string.MainTabsCustomizeDrawerLocked));
+                    }
+                    cell.setText(desc);
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     break;
                 }
@@ -310,7 +315,13 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                     applyEnabledVisual((GlassTabView) v, clicked);
                     dispatchTabsChanged();
                 });
-                tabView.setOnLongClickListener(v -> startDrag(index, v));
+                tabView.setOnLongClickListener(v -> {
+                    MainTabsConfigManager.TabState clicked = tabs.get(index);
+                    if (NekoConfig.navigationDrawerEnabled.Bool() && clicked.type == MainTabsConfigManager.TabType.CHATS) {
+                        return false;
+                    }
+                    return startDrag(index, v);
+                });
 
                 addView(tabView);
                 setViewVisible(tabView, true, false);
@@ -402,6 +413,13 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
         private void moveTab(int fromIndex, int toIndex) {
             if (fromIndex < 0 || fromIndex >= tabs.size() || toIndex < 0 || toIndex >= tabs.size() || fromIndex == toIndex) {
                 return;
+            }
+            if (NekoConfig.navigationDrawerEnabled.Bool()) {
+                MainTabsConfigManager.TabState movingTab = tabs.get(fromIndex);
+                if (movingTab.type == MainTabsConfigManager.TabType.CHATS) {
+                    return;
+                }
+                toIndex = Math.max(toIndex, 1);
             }
             MainTabsConfigManager.TabState moving = tabs.remove(fromIndex);
             tabs.add(toIndex, moving);

@@ -144,6 +144,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.TabTitleTypeIcon),
             getString(R.string.TabTitleTypeMix)
     }, null));
+    private final AbstractConfigCell dividerNavigationTop = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell headerNavigation = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AppNavigation)));
+    private final AbstractConfigCell navigationDrawerRow = cellGroup.appendCell(
+            new ConfigCellTextCheck(NekoConfig.navigationDrawerEnabled, null, getString(R.string.HomeDrawer))
+    );
     private final AbstractConfigCell mainTabsCustomizeRow = cellGroup.appendCell(
             new ConfigCellText("MainTabsCustomize", () -> presentFragment(new MainTabsCustomizeActivity()))
     );
@@ -210,7 +215,8 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NaConfig.INSTANCE.getFoldersAtBottom().getKey())
                     || key.equals(NaConfig.INSTANCE.getIgnoreUnreadCount().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableDialogsFloatingButton().getKey())
-                    || key.equals(NaConfig.INSTANCE.getDisableBotOpenButton().getKey())) {
+                    || key.equals(NaConfig.INSTANCE.getDisableBotOpenButton().getKey())
+                    || key.equals(NekoConfig.navigationDrawerEnabled.getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NekoConfig.forceBlurInChat.getKey())) {
                 boolean enabled = (Boolean) newValue;

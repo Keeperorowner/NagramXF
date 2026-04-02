@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import tw.nekomimi.nekogram.NekoConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsConfigManager {
@@ -80,6 +81,7 @@ public class MainTabsConfigManager {
         }
 
         ensureChatsEnabled(result);
+        ensureChatsPinnedForDrawer(result);
         ensureAtLeastOneEnabled(result);
         return result;
     }
@@ -111,6 +113,7 @@ public class MainTabsConfigManager {
     public static void saveTabs(List<TabState> tabs) {
         ArrayList<TabState> copy = copyTabs(tabs);
         ensureChatsEnabled(copy);
+        ensureChatsPinnedForDrawer(copy);
         ensureAtLeastOneEnabled(copy);
 
         StringBuilder order = new StringBuilder();
@@ -259,5 +262,25 @@ public class MainTabsConfigManager {
             }
         }
         tabs.add(0, new TabState(TabType.CHATS, true));
+    }
+
+    private static void ensureChatsPinnedForDrawer(List<TabState> tabs) {
+        if (!NekoConfig.navigationDrawerEnabled.Bool()) {
+            return;
+        }
+        TabState chats = null;
+        for (int i = 0; i < tabs.size(); i++) {
+            TabState state = tabs.get(i);
+            if (state.type == TabType.CHATS) {
+                chats = state;
+                tabs.remove(i);
+                break;
+            }
+        }
+        if (chats == null) {
+            chats = new TabState(TabType.CHATS, true);
+        }
+        chats.enabled = true;
+        tabs.add(0, chats);
     }
 }
