@@ -1762,6 +1762,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (id == 2) {
             presentFragment(new GroupCreateActivity(new Bundle()));
             drawerLayoutContainer.closeDrawer(false);
+        } else if (id == 4) {
+            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+            if (!BuildVars.DEBUG_VERSION && preferences.getBoolean("channel_intro", false)) {
+                Bundle args = new Bundle();
+                args.putInt("step", 0);
+                presentFragment(new ChannelCreateActivity(args));
+            } else {
+                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANNEL_CREATE));
+                preferences.edit().putBoolean("channel_intro", true).apply();
+            }
+            drawerLayoutContainer.closeDrawer(false);
         } else if (id == 6) {
             Bundle args = new Bundle();
             args.putBoolean("needFinishFragment", false);
