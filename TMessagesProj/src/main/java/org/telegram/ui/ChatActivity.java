@@ -12905,7 +12905,7 @@ public class ChatActivity extends BaseFragment implements
 
     public void openForward(boolean fromActionBar) {
         boolean hasSelectedAyuDeletedMessage = hasSelectedAyuDeletedMessage();
-        if (hasSelectedAyuDeletedMessage) {
+        if (hasSelectedAyuDeletedMessage && canForwardMessagesCount == 0) {
             // We should update text if user changed locale without re-opening chat activity
             String str;
             if (isPeerNoForwards()) {
@@ -15068,7 +15068,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean canUseForwardAction(MessageObject messageObject) {
-        if (chatMode == MODE_SCHEDULED || messageObject == null || messageObject.isAyuDeleted()) {
+        if (chatMode == MODE_SCHEDULED || messageObject == null) {
             return false;
         }
         return messageObject.canForwardMessage() || shouldUseForceForward(messageObject);
@@ -15178,6 +15178,10 @@ public class ChatActivity extends BaseFragment implements
         }
         final long targetDid = did == 0 ? dialog_id : did;
         forwardMessagesByChunks(arrayList, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, null, false);
+    }
+
+    public void forwardMessagesExternally(ArrayList<MessageObject> arrayList, long did, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate) {
+        forwardMessages(arrayList, fromMyName, hideCaption, notify, scheduleDate, did, 0);
     }
 
     public boolean shouldShowImport() {
@@ -19946,7 +19950,7 @@ public class ChatActivity extends BaseFragment implements
                 }
 
                 boolean hasSelectedAyuDeletedMessage = hasSelectedAyuDeletedMessage();
-                boolean noforwards = hasSelectedAyuDeletedMessage;
+                boolean noforwards = hasSelectedAyuDeletedMessage && canForwardMessagesCount == 0;
                 boolean canForward = chatMode != MODE_SCHEDULED && cantForwardMessagesCount == 0 && !noforwards;
                 boolean showForward = NaConfig.INSTANCE.getActionBarButtonForward().Bool();
                 boolean canSendMessage = ChatObject.canSendMessages(currentChat);
@@ -20097,7 +20101,7 @@ public class ChatActivity extends BaseFragment implements
                         newVisibility = View.VISIBLE;
                         for (int b = 0, N = selectedMessagesIds[0].size(); b < N; b++) {
                             MessageObject message = selectedMessagesIds[0].valueAt(b);
-                            if ((ChatObject.isForum(currentChat) && !canSendMessageToTopic(message)) || (NaConfig.INSTANCE.getLeftBottomButton().Int() != ChatsHelper.LEFT_BUTTON_REPLY && !message.canForwardMessage())) {
+                            if ((ChatObject.isForum(currentChat) && !canSendMessageToTopic(message)) || (NaConfig.INSTANCE.getLeftBottomButton().Int() != ChatsHelper.LEFT_BUTTON_REPLY && !canUseForwardAction(message))) {
                                 newVisibility = View.GONE;
                                 break;
                             }
@@ -20109,7 +20113,7 @@ public class ChatActivity extends BaseFragment implements
                             for (int b = 0, N = selectedMessagesIds[a].size(); b < N; b++) {
                                 MessageObject message = selectedMessagesIds[a].valueAt(b);
                                 long groupId = message.getGroupId();
-                                if ((groupId == 0 || lastGroupId != 0 && lastGroupId != groupId || (ChatObject.isForum(currentChat) && !canSendMessageToTopic(message))) && (NaConfig.INSTANCE.getLeftBottomButton().Int() == ChatsHelper.LEFT_BUTTON_REPLY || noforwards || !message.canForwardMessage())) {
+                                if ((groupId == 0 || lastGroupId != 0 && lastGroupId != groupId || (ChatObject.isForum(currentChat) && !canSendMessageToTopic(message))) && (NaConfig.INSTANCE.getLeftBottomButton().Int() == ChatsHelper.LEFT_BUTTON_REPLY || noforwards || !canUseForwardAction(message))) {
                                     newVisibility = View.GONE;
                                     break;
                                 }

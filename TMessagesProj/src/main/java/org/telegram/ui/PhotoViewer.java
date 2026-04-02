@@ -336,6 +336,7 @@ import kotlin.Unit;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
+import tw.nekomimi.nekogram.helpers.ForceForward;
 import tw.nekomimi.nekogram.llm.LlmConfig;
 import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
@@ -5373,7 +5374,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                     if (message != null) {
                                         SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, null, false));
                                     }
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, id == gallery_menu_send_noquote, false, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
+                                    forwardMessagesFromViewer(fmessages, did, id == gallery_menu_send_noquote, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0);
                                 }
                                 fragment1.finishFragment();
                                 if (parentChatActivityFinal != null) {
@@ -8627,6 +8628,37 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         }
     }
 
+    private boolean canUseViewerForward(MessageObject messageObject, boolean noforwards) {
+        if (messageObject == null || noforwards) {
+            return false;
+        }
+        if (messageObject.canForwardMessage()) {
+            return true;
+        }
+        return parentChatActivity != null && ForceForward.canForwardAyuDeletedMessage(messageObject);
+    }
+
+    private boolean hasAyuDeletedMessages(ArrayList<MessageObject> messages) {
+        if (messages == null) {
+            return false;
+        }
+        for (int i = 0; i < messages.size(); i++) {
+            MessageObject messageObject = messages.get(i);
+            if (messageObject != null && messageObject.isAyuDeleted()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void forwardMessagesFromViewer(ArrayList<MessageObject> messages, long did, boolean noQuote, boolean notify, int scheduleDate) {
+        if (parentChatActivity != null && hasAyuDeletedMessages(messages)) {
+            parentChatActivity.forwardMessagesExternally(messages, did, noQuote, false, notify, scheduleDate);
+        } else {
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(messages, did, noQuote, false, notify, scheduleDate, 0);
+        }
+    }
+
     private void showForward(ArrayList<MessageObject> fmessages, boolean noQuote) {
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);
@@ -8640,7 +8672,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     if (message != null) {
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(message.toString(), did, null, null, null, true, null, null, null, notify, scheduleDate, 0, null, false);
                     }
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, noQuote, false, notify, scheduleDate, 0);
+                    forwardMessagesFromViewer(fmessages, did, noQuote, notify, scheduleDate);
                 }
                 fragment1.finishFragment();
                 if (parentChatActivityFinal != null) {
@@ -14393,7 +14425,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     needSearchImageInArr = false;
                 } else if (currentAnimation != null) {
                     needSearchImageInArr = false;
-                    if (messageObject.canForwardMessage() && !noforwards) {
+                    if (canUseViewerForward(messageObject, noforwards)) {
                         setItemVisible(sendItem, !centerTitle, false);
                     }
                 } else if (!messageObject.scheduled && !messageObject.isQuickReply() && !messageObject.isSponsored() && !(MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaInvoice) && !(MessageObject.getMedia(messageObject.messageOwner) instanceof TLRPC.TL_messageMediaWebPage) && (messageObject.messageOwner.action == null || messageObject.messageOwner.action instanceof TLRPC.TL_messageActionEmpty)) {
@@ -14414,7 +14446,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         }
                         menuItem.showSubItem(gallery_menu_showall);
                     }
-                    setItemVisible(sendItem, !noforwards && !centerTitle, false);
+                    setItemVisible(sendItem, canUseViewerForward(messageObject, noforwards) && !centerTitle, false);
                 } else if (isEmbedVideo && messageObject.eventId == 0) {
                     setItemVisible(sendItem, !centerTitle, false);
                 }
@@ -14502,7 +14534,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 } else {
                     menuItem.hideSubItem(gallery_menu_reply);
                 }
-                if (openingObject.canForwardMessage() && !noforwards) {
+                if (canUseViewerForward(openingObject, noforwards)) {
                     setItemVisible(sendItem, !centerTitle, false);
                 }
                 if (openingObject.canPreviewDocument()) {
@@ -15065,8 +15097,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 galleryGap.setVisibility(View.VISIBLE);
                 menuItem.showSubItem(gallery_menu_share);
                 menuItem.showSubItem(gallery_menu_scan);
-                menuItem.setSubItemVisibility(gallery_menu_send_forward, !noforwards && centerTitle);
-                menuItem.setSubItemVisibility(gallery_menu_send_noquote, !noforwards);
+                boolean canForwardFromViewer = canUseViewerForward(currentMessageObject, noforwards);
+                menuItem.setSubItemVisibility(gallery_menu_send_forward, canForwardFromViewer && centerTitle);
+                menuItem.setSubItemVisibility(gallery_menu_send_noquote, canForwardFromViewer);
             }
             groupedPhotosListView.fillList();
         } else if (!secureDocuments.isEmpty()) {
