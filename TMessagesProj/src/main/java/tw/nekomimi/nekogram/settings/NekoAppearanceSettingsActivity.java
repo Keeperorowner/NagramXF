@@ -42,8 +42,8 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellSelectBox;
-import tw.nekomimi.nekogram.config.cell.ConfigCellText;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
+import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
 import tw.nekomimi.nekogram.ui.cells.AvatarCornersPreviewCell;
 import xyz.nextalone.nagram.NaConfig;
 
@@ -150,7 +150,8 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             new ConfigCellTextCheck(NekoConfig.navigationDrawerEnabled, null, getString(R.string.HomeDrawer))
     );
     private final AbstractConfigCell mainTabsCustomizeRow = cellGroup.appendCell(
-            new ConfigCellText("MainTabsCustomize", () -> presentFragment(new MainTabsCustomizeActivity()))
+            new ConfigCellTextCheckIcon(null, "MainTabsCustomize", getString(R.string.MainTabsCustomize), R.drawable.tabs_reorder, false, () ->
+                    presentFragment(new MainTabsCustomizeActivity()))
     );
     private final AbstractConfigCell dividerFolder = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerBlurOptions = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.BlurOptions)));
