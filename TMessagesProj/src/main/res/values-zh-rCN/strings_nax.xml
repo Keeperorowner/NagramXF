@@ -210,6 +210,7 @@
     <string name="MainTabsCustomizeDesc">点按标签可显示或隐藏。长按并拖动可调整顺序。</string>
     <string name="MainTabsCustomizeDrawerLocked">开启主页侧边栏后，聊天会固定在最左侧。</string>
     <string name="HomeDrawer">主页侧边栏</string>
+    <string name="DrawerElements">侧边栏菜单</string>
     <string name="MainTabsShowTitles">显示标签名称</string>
     <string name="MainTabsHideBottomBar">隐藏底栏</string>
     <string name="FoldersAtBottom">将文件夹栏移动到底部</string>
