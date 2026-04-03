@@ -238,7 +238,7 @@ object LLMTranslator : Translator {
         }
 
         return response.data()
-            ?.trim()
+            ?.let { LlmModelUtil.sanitizeResponse(model, it) }
             ?.takeIf { it.isNotEmpty() }
             ?: throw IOException("LLM API returned empty content")
     }
