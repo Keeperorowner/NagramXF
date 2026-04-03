@@ -11,6 +11,11 @@
     <string name="ClearMessageDatabaseNotification">消息数据库已清除</string>
     <string name="AyuGramMenu">AyuGram</string>
     <string name="CustomDeletedMark">自定义已删除消息标记</string>
+    <string name="DeletedMarkText">已删除标识</string>
+    <string name="DeletedMarkNothing">无</string>
+    <string name="DeletedMarkTrashBin">垃圾桶</string>
+    <string name="DeletedMarkCross">叉</string>
+    <string name="DeletedMarkEyeCrossed">划掉的眼睛</string>
     <string name="HidePremiumSection">在设置中隐藏 Telegram Premium</string>
     <string name="HideHelpSection">在设置中隐藏帮助</string>
     <string name="ProviderLLMTranslator">AI 翻译</string>
@@ -49,6 +54,7 @@
     <string name="NowPlayingLastFmApiKeyInfo">本地模式需要填写你自己的 **Last.fm API Key**。</string>
     <string name="NowPlayingNothingPlaying">当前没有播放内容</string>
     <string name="TranslucentDeletedMessages">使已删除的消息半透明</string>
+    <string name="SemiTransparentDeletedMessages">半透明已删除的消息</string>
     <string name="ArticleTranslationProvider">文章翻译源</string>
     <string name="EnableSeparateArticleTranslator">单独设置文章翻译源</string>
     <string name="DisableCrashlyticsCollection">禁用 Firebase Crashlytics 崩溃报告</string>

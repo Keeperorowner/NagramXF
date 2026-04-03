@@ -675,6 +675,18 @@ object NaConfig {
             ConfigItem.configTypeString,
             ""
         )
+    val deletedIconStyle =
+        addConfig(
+            "DeletedIconStyle",
+            ConfigItem.configTypeInt,
+            -1
+        )
+    val deletedIconColor =
+        addConfig(
+            "DeletedIconColor",
+            ConfigItem.configTypeInt,
+            0
+        )
     val hidePremiumSection =
         addConfig(
             "HidePremiumSection",
