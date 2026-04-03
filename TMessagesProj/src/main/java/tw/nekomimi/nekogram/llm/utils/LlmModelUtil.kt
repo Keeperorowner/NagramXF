@@ -5,6 +5,11 @@ import tw.nekomimi.nekogram.llm.preset.LlmPresetRegistry
 
 object LlmModelUtil {
 
+    private val gemma4ThoughtTagRegex = Regex(
+        "<thought>.*?</thought>",
+        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+    )
+
     @JvmStatic
     fun getBaseModelName(model: String?): String {
         if (model.isNullOrBlank()) {
@@ -191,5 +196,17 @@ object LlmModelUtil {
             return false
         }
         return modelId.trim().endsWith(":free", ignoreCase = true)
+    }
+
+    @JvmStatic
+    fun sanitizeResponse(model: String?, content: String?): String {
+        if (content.isNullOrBlank()) {
+            return ""
+        }
+        var sanitized = content.trim()
+        if (isGemma4(model)) {
+            sanitized = gemma4ThoughtTagRegex.replace(sanitized, "").trim()
+        }
+        return sanitized
     }
 }
