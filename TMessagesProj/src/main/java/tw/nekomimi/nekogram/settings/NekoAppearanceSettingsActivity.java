@@ -26,9 +26,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarView;
@@ -52,7 +50,7 @@ import xyz.nextalone.nagram.NaConfig;
 public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
 
     private ListAdapter listAdapter;
-    private AvatarCornersCardCell avatarCornersCell;
+    private AvatarCornersPreviewCell avatarCornersPreviewCell;
     private ChatBlurAlphaSeekBar chatBlurAlphaSeekbar;
     private Parcelable recyclerViewState = null;
 
@@ -115,7 +113,14 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.ChatsOnly)
     }, null));
     private final AbstractConfigCell dividerAppearance = cellGroup.appendCell(new ConfigCellDivider());
-    private final AbstractConfigCell avatarCornersRow = cellGroup.appendCell(new ConfigCellCustom("AvatarCorners", ConfigCellCustom.CUSTOM_ITEM_AvatarCorners, false));
+    private final AbstractConfigCell avatarCornersPreviewRow = cellGroup.appendCell(new ConfigCellCustom("AvatarCorners", ConfigCellCustom.CUSTOM_ITEM_AvatarCorners, false));
+    private final AbstractConfigCell singleCornerRadiusRow = cellGroup.appendCell(
+            new ConfigCellTextCheck(
+                    NaConfig.INSTANCE.getSingleCornerRadius(),
+                    null,
+                    getString(R.string.SingleCornerRadius)
+            )
+    );
     private final AbstractConfigCell avatarCornersInfoRow = cellGroup.appendCell(new ConfigCellCustom("SingleCornerRadiusInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell headerDialogs = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.DialogsSettings)));
     private final AbstractConfigCell sortByUnreadRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSortByUnread()));
@@ -201,10 +206,12 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         if (!NaConfig.INSTANCE.getCenterActionBarTitle().Bool()) {
             NaConfig.INSTANCE.getCenterActionBarTitleType().setConfigInt(0);
         }
-        cellGroup.rows.remove(avatarCornersRow);
+        cellGroup.rows.remove(avatarCornersPreviewRow);
+        cellGroup.rows.remove(singleCornerRadiusRow);
         cellGroup.rows.remove(avatarCornersInfoRow);
-        cellGroup.rows.add(0, avatarCornersRow);
-        cellGroup.rows.add(1, avatarCornersInfoRow);
+        cellGroup.rows.add(0, avatarCornersPreviewRow);
+        cellGroup.rows.add(1, singleCornerRadiusRow);
+        cellGroup.rows.add(2, avatarCornersInfoRow);
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
@@ -286,21 +293,9 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         return getString(R.string.Appearance);
     }
 
-    private boolean showSingleCornerRadiusLongClickOptions(View view) {
-        ItemOptions options = makeLongClickOptions(view);
-        addDefaultLongClickOptions(
-                options,
-                getSettingsPrefix(),
-                NaConfig.INSTANCE.getSingleCornerRadius().getKey(),
-                NaConfig.INSTANCE.getSingleCornerRadius().String()
-        );
-        showLongClickOptions(view, options);
-        return true;
-    }
-
     private void reloadAvatarCorners() {
-        if (avatarCornersCell != null) {
-            avatarCornersCell.invalidate();
+        if (avatarCornersPreviewCell != null) {
+            avatarCornersPreviewCell.invalidate();
         }
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
         getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
@@ -393,12 +388,10 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         @Override
         protected View onCreateCustomViewHolder(@NonNull ViewGroup parent, int viewType) {
             return switch (viewType) {
-                case ConfigCellCustom.CUSTOM_ITEM_AvatarCorners ->
-                        avatarCornersCell = new AvatarCornersCardCell(
-                                mContext,
-                                NekoAppearanceSettingsActivity.this::reloadAvatarCorners,
-                                NekoAppearanceSettingsActivity.this::showSingleCornerRadiusLongClickOptions
-                        );
+                case ConfigCellCustom.CUSTOM_ITEM_AvatarCorners -> avatarCornersPreviewCell = new AvatarCornersPreviewCell(
+                        mContext,
+                        NekoAppearanceSettingsActivity.this::reloadAvatarCorners
+                );
                 case ConfigCellCustom.CUSTOM_ITEM_CharBlurAlpha -> {
                     chatBlurAlphaSeekbar = new ChatBlurAlphaSeekBar(mContext);
                     chatBlurAlphaSeekbar.setEnabled(NekoConfig.forceBlurInChat.Bool());
@@ -406,48 +399,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 }
                 default -> null;
             };
-        }
-    }
-
-    private static class AvatarCornersCardCell extends FrameLayout {
-
-        private final AvatarCornersPreviewCell previewCell;
-        private final TextCheckCell switchCell;
-
-        public AvatarCornersCardCell(Context context, Runnable onValueChanged, View.OnLongClickListener onSwitchLongClickListener) {
-            super(context);
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-
-            LinearLayout content = new LinearLayout(context);
-            content.setOrientation(LinearLayout.VERTICAL);
-            addView(content, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-            previewCell = new AvatarCornersPreviewCell(context, onValueChanged);
-            content.addView(previewCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-            switchCell = new TextCheckCell(context);
-            switchCell.setBackground(Theme.getSelectorDrawable(false));
-            switchCell.setTextAndCheck(getString(R.string.SingleCornerRadius), NaConfig.INSTANCE.getSingleCornerRadius().Bool(), false, true);
-            switchCell.setOnClickListener(v -> {
-                boolean checked = NaConfig.INSTANCE.getSingleCornerRadius().toggleConfigBool();
-                switchCell.setChecked(checked);
-                if (onValueChanged != null) {
-                    onValueChanged.run();
-                }
-            });
-            switchCell.setOnLongClickListener(onSwitchLongClickListener);
-            content.addView(switchCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        }
-
-        @Override
-        public void invalidate() {
-            super.invalidate();
-            if (previewCell != null) {
-                previewCell.invalidate();
-            }
-            if (switchCell != null) {
-                switchCell.setChecked(NaConfig.INSTANCE.getSingleCornerRadius().Bool());
-            }
         }
     }
 

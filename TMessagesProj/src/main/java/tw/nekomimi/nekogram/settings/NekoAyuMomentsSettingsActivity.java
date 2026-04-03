@@ -7,6 +7,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.StatFs;
@@ -17,6 +20,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -32,6 +36,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
@@ -40,6 +45,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -47,6 +53,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SlideChooseView;
@@ -59,6 +66,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import tw.nekomimi.nekogram.config.CellGroup;
+import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
@@ -68,6 +76,9 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
+import tw.nekomimi.nekogram.helpers.TimeStringHelper;
+import tw.nekomimi.nekogram.ui.cells.DeletedMessagesColorPickerCell;
+import tw.nekomimi.nekogram.ui.cells.DeletedMessagesPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import xyz.nextalone.nagram.NaConfig;
 
@@ -84,6 +95,8 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
     private ListAdapter listAdapter;
     private long totalDeviceSize = -1L;
     private int[] attachmentLimitPresetIndices = new int[0];
+    private DeletedMessagesPreviewCell deletedMessagesPreviewCell;
+    private DeletedMessagesColorPickerCell deletedMessagesColorPickerCell;
 
     private final CellGroup cellGroup = new CellGroup(this);
 
@@ -95,8 +108,10 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell enableSaveEditsHistoryRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveEditsHistory()));
     private final AbstractConfigCell saveDeletedMessageForBotsUserRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser()));
     private final AbstractConfigCell saveDeletedMessageInBotChatRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBot()));
+    private final AbstractConfigCell deletedMessagesPreviewRow = cellGroup.appendCell(new ConfigCellCustom("DeletedMessagesAppearancePreviewRow", ConfigCellCustom.CUSTOM_ITEM_DeletedMessagesAppearanceCard, false));
     private final AbstractConfigCell translucentDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getTranslucentDeletedMessages()));
-    private final AbstractConfigCell useDeletedIconRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getUseDeletedIcon()));
+    private final AbstractConfigCell deletedMarkRow = cellGroup.appendCell(new ConfigCellCustom(NaConfig.INSTANCE.getDeletedIconStyle().getKey(), CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell deletedMarkColorRow = cellGroup.appendCell(new ConfigCellCustom(NaConfig.INSTANCE.getDeletedIconColor().getKey(), ConfigCellCustom.CUSTOM_ITEM_DeletedMessagesColorPicker, false));
     private final AbstractConfigCell customDeletedMarkRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getCustomDeletedMark(), "", null));
     private final AbstractConfigCell dividerAttachmentsSection = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell saveAttachmentsRow = cellGroup.appendCell(new ConfigCellCustom("SaveAttachmentsRow", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
@@ -126,13 +141,10 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
     }
 
     public NekoAyuMomentsSettingsActivity() {
-        if (NaConfig.INSTANCE.getUseDeletedIcon().Bool()) {
-            cellGroup.rows.remove(customDeletedMarkRow);
-        }
         if (!NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().Bool()) {
             cellGroup.rows.remove(saveDeletedMessageInBotChatRow);
         }
-        checkUseDeletedIconRows();
+        checkDeletedMarkDetailRows();
         checkSaveBotMsgRows();
         addRowsToMap(cellGroup);
     }
@@ -172,10 +184,26 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
         setupDefaultListeners();
 
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
-            if (key.equals(NaConfig.INSTANCE.getUseDeletedIcon().getKey())) {
-                checkUseDeletedIconRows();
-            } else if (key.equals(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().getKey())) {
+            if (key.equals(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().getKey())) {
                 checkSaveBotMsgRows();
+            } else if (key.equals(NaConfig.INSTANCE.getTranslucentDeletedMessages().getKey())) {
+                notifyRowChanged(deletedMessagesPreviewRow);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+            } else if (key.equals(NaConfig.INSTANCE.getDeletedIconStyle().getKey())) {
+                checkDeletedMarkDetailRows();
+                notifyRowChanged(deletedMessagesPreviewRow);
+                notifyRowChanged(deletedMarkRow);
+                notifyRowChanged(deletedMarkColorRow);
+                notifyRowChanged(customDeletedMarkRow);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+            } else if (key.equals(NaConfig.INSTANCE.getDeletedIconColor().getKey())) {
+                notifyRowChanged(deletedMessagesPreviewRow);
+                notifyRowChanged(deletedMarkRow);
+                notifyRowChanged(deletedMarkColorRow);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+            } else if (key.equals(NaConfig.INSTANCE.getCustomDeletedMark().getKey())) {
+                notifyRowChanged(deletedMessagesPreviewRow);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
             }
         };
 
@@ -209,7 +237,38 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
             showClearSavedDataDialog();
             return;
         }
+        if (position == cellGroup.rows.indexOf(deletedMarkRow)) {
+            showDeletedMarkDialog();
+            return;
+        }
         super.onCustomCellClick(view, position, x, y);
+    }
+
+    @Override
+    protected boolean onItemLongClick(View view, int position, float x, float y) {
+        if (position == cellGroup.rows.indexOf(deletedMarkRow)) {
+            ItemOptions options = makeLongClickOptions(view);
+            addDefaultLongClickOptions(
+                    options,
+                    getSettingsPrefix(),
+                    NaConfig.INSTANCE.getDeletedIconStyle().getKey(),
+                    NaConfig.INSTANCE.getDeletedIconStyle().String()
+            );
+            showLongClickOptions(view, options);
+            return true;
+        }
+        if (position == cellGroup.rows.indexOf(deletedMarkColorRow)) {
+            ItemOptions options = makeLongClickOptions(view);
+            addDefaultLongClickOptions(
+                    options,
+                    getSettingsPrefix(),
+                    NaConfig.INSTANCE.getDeletedIconColor().getKey(),
+                    NaConfig.INSTANCE.getDeletedIconColor().String()
+            );
+            showLongClickOptions(view, options);
+            return true;
+        }
+        return super.onItemLongClick(view, position, x, y);
     }
 
     @Override
@@ -260,6 +319,163 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
 
     public void refreshAyuDataSize() {
         notifyRowChanged(clearDataRow);
+    }
+
+    @Override
+    public void importToRow(String key, String value, Runnable unknown) {
+        ConfigItem config = getDeletedMessagesAppearanceConfigItem(key);
+        if (config == null) {
+            super.importToRow(key, value, unknown);
+            return;
+        }
+
+        Context context = getParentActivity();
+        if (context != null && value != null) {
+            Object newValue = config.checkConfigFromString(value);
+            if (newValue == null) {
+                scrollToRow(key, unknown);
+                return;
+            }
+            new AlertDialog.Builder(context)
+                    .setTitle(getString(R.string.ImportSettings))
+                    .setMessage(getString(R.string.ImportSettingsAlert))
+                    .setNegativeButton(getString(R.string.Cancel), (dialogInter, i) -> scrollToRow(key, unknown))
+                    .setPositiveButton(getString(R.string.Import), (dialogInter, i) -> {
+                        config.changed(newValue);
+                        config.saveConfig();
+                        TimeStringHelper.invalidateDeletedStyle();
+                        cellGroup.runCallback(key, newValue);
+                        updateRows();
+                        scrollToRow(key, unknown);
+                    })
+                    .show();
+            return;
+        }
+
+        scrollToRow(key, unknown);
+    }
+
+    @Override
+    public void scrollToRow(String key, Runnable unknown) {
+        if (NaConfig.INSTANCE.getDeletedIconColor().getKey().equals(key) && !cellGroup.rows.contains(deletedMarkColorRow)) {
+            String rowKey = getRowKey(deletedMarkRow);
+            super.scrollToRow(rowKey != null ? rowKey : key, unknown);
+            return;
+        }
+        if (NaConfig.INSTANCE.getCustomDeletedMark().getKey().equals(key) && !cellGroup.rows.contains(customDeletedMarkRow)) {
+            String rowKey = getRowKey(deletedMarkRow);
+            super.scrollToRow(rowKey != null ? rowKey : key, unknown);
+            return;
+        }
+        super.scrollToRow(key, unknown);
+    }
+
+    private ConfigItem getDeletedMessagesAppearanceConfigItem(String key) {
+        if (NaConfig.INSTANCE.getDeletedIconStyle().getKey().equals(key)) {
+            return NaConfig.INSTANCE.getDeletedIconStyle();
+        }
+        if (NaConfig.INSTANCE.getDeletedIconColor().getKey().equals(key)) {
+            return NaConfig.INSTANCE.getDeletedIconColor();
+        }
+        if (NaConfig.INSTANCE.getCustomDeletedMark().getKey().equals(key)) {
+            return NaConfig.INSTANCE.getCustomDeletedMark();
+        }
+        return null;
+    }
+
+    private void checkDeletedMarkDetailRows() {
+        boolean showColorRow = TimeStringHelper.getDeletedIconStyle() != 0;
+        AbstractConfigCell rowToShow = showColorRow ? deletedMarkColorRow : customDeletedMarkRow;
+        AbstractConfigCell rowToHide = showColorRow ? customDeletedMarkRow : deletedMarkColorRow;
+        if (listAdapter == null) {
+            cellGroup.rows.remove(rowToHide);
+            if (!cellGroup.rows.contains(rowToShow)) {
+                int index = cellGroup.rows.indexOf(deletedMarkRow);
+                if (index >= 0) {
+                    cellGroup.rows.add(index + 1, rowToShow);
+                }
+            }
+            return;
+        }
+        int hiddenIndex = cellGroup.rows.indexOf(rowToHide);
+        if (hiddenIndex != -1) {
+            cellGroup.rows.remove(hiddenIndex);
+            listAdapter.notifyItemRemoved(hiddenIndex);
+        }
+        int index = cellGroup.rows.indexOf(deletedMarkRow);
+        if (index >= 0 && !cellGroup.rows.contains(rowToShow)) {
+            cellGroup.rows.add(index + 1, rowToShow);
+            listAdapter.notifyItemInserted(index + 1);
+        }
+        addRowsToMap(cellGroup);
+    }
+
+    private void bindDeletedMarkRow(TextSettingsCell cell) {
+        cell.setTextAndValue(getString(R.string.DeletedMarkText), null, cellGroup.needSetDivider(deletedMarkRow));
+
+        ImageView valueImageView = cell.getValueImageView();
+        Drawable drawable = TimeStringHelper.getDeletedPreviewDrawable();
+        int style = TimeStringHelper.getDeletedIconStyle();
+
+        if (style == 0 || drawable == null) {
+            valueImageView.setImageDrawable(null);
+            valueImageView.setVisibility(View.INVISIBLE);
+            valueImageView.setTranslationX(0f);
+            return;
+        }
+
+        valueImageView.setImageDrawable(drawable);
+        valueImageView.setVisibility(View.VISIBLE);
+        valueImageView.setTranslationX(style == 3 ? -AndroidUtilities.dp(1) : 0f);
+        valueImageView.setColorFilter(new PorterDuffColorFilter(
+                Theme.getColor(Theme.key_chat_inTimeText, getResourceProvider()),
+                PorterDuff.Mode.SRC_IN
+        ));
+    }
+
+    private void showDeletedMarkDialog() {
+        Context context = getParentActivity();
+        if (context == null) {
+            return;
+        }
+
+        CharSequence[] entries = new CharSequence[]{
+                getString(R.string.DeletedMarkNothing),
+                getString(R.string.DeletedMarkTrashBin),
+                getString(R.string.DeletedMarkCross),
+                getString(R.string.DeletedMarkEyeCrossed)
+        };
+        int checkedIndex = TimeStringHelper.getDeletedIconStyle();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, getResourceProvider());
+        builder.setTitle(getString(R.string.DeletedMarkText));
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        builder.setView(linearLayout);
+
+        for (int i = 0; i < entries.length; i++) {
+            RadioColorCell cell = new RadioColorCell(context, getResourceProvider());
+            cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+            cell.setTag(i);
+            cell.setCheckColor(
+                    Theme.getColor(Theme.key_radioBackground, getResourceProvider()),
+                    Theme.getColor(Theme.key_dialogRadioBackgroundChecked, getResourceProvider())
+            );
+            cell.setTextAndValue(entries[i], checkedIndex == i);
+            cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, getResourceProvider()), 2));
+            linearLayout.addView(cell);
+            cell.setOnClickListener(v -> {
+                Integer index = (Integer) v.getTag();
+                NaConfig.INSTANCE.getDeletedIconStyle().setConfigInt(index);
+                TimeStringHelper.invalidateDeletedStyle();
+                cellGroup.runCallback(NaConfig.INSTANCE.getDeletedIconStyle().getKey(), index);
+                builder.getDismissRunnable().run();
+            });
+        }
+
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     private boolean isSwitchTap(View view, float x) {
@@ -813,30 +1029,6 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
         addRowsToMap(cellGroup);
     }
 
-    private void checkUseDeletedIconRows() {
-        boolean enabled = NaConfig.INSTANCE.getUseDeletedIcon().Bool();
-        if (listAdapter == null) {
-            if (enabled) {
-                cellGroup.rows.remove(customDeletedMarkRow);
-            }
-            return;
-        }
-        if (!enabled) {
-            int index = cellGroup.rows.indexOf(useDeletedIconRow);
-            if (index >= 0 && !cellGroup.rows.contains(customDeletedMarkRow)) {
-                cellGroup.rows.add(index + 1, customDeletedMarkRow);
-                listAdapter.notifyItemInserted(index + 1);
-            }
-        } else {
-            int index = cellGroup.rows.indexOf(customDeletedMarkRow);
-            if (index != -1) {
-                cellGroup.rows.remove(customDeletedMarkRow);
-                listAdapter.notifyItemRemoved(index);
-            }
-        }
-        addRowsToMap(cellGroup);
-    }
-
     private class ListAdapter extends BaseListAdapter {
 
         public ListAdapter(Context context) {
@@ -851,6 +1043,16 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
                 return new TextSettingsCell(mContext);
             } else if (viewType == CellGroup.ITEM_TYPE_HEADER) {
                 return new HeaderCell(mContext);
+            } else if (viewType == ConfigCellCustom.CUSTOM_ITEM_DeletedMessagesAppearanceCard) {
+                return deletedMessagesPreviewCell = new DeletedMessagesPreviewCell(mContext);
+            } else if (viewType == ConfigCellCustom.CUSTOM_ITEM_DeletedMessagesColorPicker) {
+                deletedMessagesColorPickerCell = new DeletedMessagesColorPickerCell(mContext, getResourceProvider());
+                deletedMessagesColorPickerCell.setOnColorSelected(colorId -> {
+                    NaConfig.INSTANCE.getDeletedIconColor().setConfigInt(colorId);
+                    TimeStringHelper.invalidateDeletedStyle();
+                    cellGroup.runCallback(NaConfig.INSTANCE.getDeletedIconColor().getKey(), colorId);
+                });
+                return deletedMessagesColorPickerCell;
             } else if (viewType == ConfigCellCustom.CUSTOM_ITEM_AttachmentSizeLimit) {
                 SlideChooseView slideChooseView = new SlideChooseView(mContext);
                 slideChooseView.setCallback(index -> {
@@ -882,6 +1084,14 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
                         true,
                         true
                 );
+            } else if (row == deletedMessagesPreviewRow) {
+                DeletedMessagesPreviewCell previewCell = (DeletedMessagesPreviewCell) holder.itemView;
+                previewCell.refresh();
+            } else if (row == deletedMarkRow) {
+                bindDeletedMarkRow((TextSettingsCell) holder.itemView);
+            } else if (row == deletedMarkColorRow) {
+                DeletedMessagesColorPickerCell colorPickerCell = (DeletedMessagesColorPickerCell) holder.itemView;
+                colorPickerCell.setSelectedColorId(NaConfig.INSTANCE.getDeletedIconColor().Int(), false);
             } else if (row == attachmentFolderRow) {
                 TextSettingsCell textSettingsCell = (TextSettingsCell) holder.itemView;
                 textSettingsCell.setCanDisable(true);

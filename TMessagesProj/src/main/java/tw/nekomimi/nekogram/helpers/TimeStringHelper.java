@@ -8,6 +8,7 @@ import android.text.TextUtils;
 
 import androidx.core.content.ContextCompat;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -16,6 +17,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ChatActivity;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.ColoredImageSpan;
 
 import java.util.Locale;
@@ -25,6 +27,15 @@ import tw.nekomimi.nekogram.ui.icons.IconsResources;
 import xyz.nextalone.nagram.NaConfig;
 
 public class TimeStringHelper {
+    public static final int[] DELETED_COLORS = {
+            0xFFFF0000,
+            0xFFDC2626,
+            0xFFDB2777,
+            0xFFC026D3,
+            0xFF9333EA,
+            0xFF4F46E5,
+            0xFF2563EB
+    };
     public static SpannableStringBuilder deletedSpan;
     public static Drawable deletedDrawable;
     public static SpannableStringBuilder editedSpan;
@@ -39,6 +50,100 @@ public class TimeStringHelper {
     public static SpannableStringBuilder forwardsSpan;
     public static Drawable forwardsDrawable;
     public ChatActivity.ThemeDelegate themeDelegate;
+    private static int cachedDeletedStyle = Integer.MIN_VALUE;
+    private static int cachedDeletedColor = Integer.MIN_VALUE;
+
+    public static int getDeletedIconStyle() {
+        int style = NaConfig.INSTANCE.getDeletedIconStyle().Int();
+        if (style >= 0) {
+            return style;
+        }
+        return NaConfig.INSTANCE.getUseDeletedIcon().Bool() ? 1 : 0;
+    }
+
+    public static boolean isDeletedIconEnabled() {
+        return getDeletedIconStyle() != 0;
+    }
+
+    public static String getDeletedStringLabel() {
+        String deletedStr = NaConfig.INSTANCE.getCustomDeletedMark().String();
+        return deletedStr.isEmpty() ? getString(R.string.DeletedMessage) : deletedStr;
+    }
+
+    public static void invalidateDeletedStyle() {
+        deletedDrawable = null;
+        deletedSpan = null;
+        cachedDeletedStyle = Integer.MIN_VALUE;
+        cachedDeletedColor = Integer.MIN_VALUE;
+    }
+
+    public static Drawable getDeletedPreviewDrawable() {
+        Drawable drawable = createDeletedDrawable(true);
+        if (drawable != null) {
+            drawable.mutate();
+        }
+        return drawable;
+    }
+
+    private static int getDeletedColorValue(int colorId) {
+        if (colorId <= 0 || colorId > DELETED_COLORS.length) {
+            return 0;
+        }
+        return DELETED_COLORS[colorId - 1];
+    }
+
+    private static int getDeletedDrawableTint(boolean preview, int colorId) {
+        int tintColor = getDeletedColorValue(colorId);
+        if (tintColor != 0) {
+            return tintColor;
+        }
+        return preview ? Theme.getColor(Theme.key_chat_inTimeText) : 0;
+    }
+
+    private static int getDeletedDrawableResId(boolean preview) {
+        return switch (getDeletedIconStyle()) {
+            case 1 -> preview ? R.drawable.ayu_trash_bin_preview : R.drawable.ayu_trash_bin;
+            case 2 -> preview ? R.drawable.ayu_cross_preview : R.drawable.ayu_cross;
+            case 3 -> preview ? R.drawable.ayu_eye_crossed_preview : R.drawable.ayu_eye_crossed;
+            default -> 0;
+        };
+    }
+
+    private static Drawable createDeletedDrawable(boolean preview) {
+        int resId = getDeletedDrawableResId(preview);
+        if (resId == 0) {
+            return null;
+        }
+        Drawable drawable = Objects.requireNonNull(ContextCompat.getDrawable(ApplicationLoader.applicationContext, resId)).mutate();
+        int tintColor = getDeletedDrawableTint(preview, NaConfig.INSTANCE.getDeletedIconColor().Int());
+        if (tintColor != 0) {
+            drawable.setTint(tintColor);
+        }
+        return drawable;
+    }
+
+    private static void ensureDeletedSpan() {
+        int style = getDeletedIconStyle();
+        int colorId = NaConfig.INSTANCE.getDeletedIconColor().Int();
+        if (deletedSpan != null && deletedDrawable != null && cachedDeletedStyle == style && cachedDeletedColor == colorId) {
+            return;
+        }
+        cachedDeletedStyle = style;
+        cachedDeletedColor = colorId;
+        deletedDrawable = createDeletedDrawable(false);
+        deletedSpan = null;
+        if (deletedDrawable != null) {
+            deletedSpan = new SpannableStringBuilder("\u200B");
+            ColoredImageSpan span = new ColoredImageSpan(deletedDrawable, true);
+            if (colorId > 0) {
+                span.recolorDrawable = false;
+            }
+            if (style == 3) {
+                span.setTranslateX(AndroidUtilities.dp(-1));
+            }
+            deletedSpan.setSpan(span, 0, 1, 0);
+        }
+    }
 
     public static CharSequence createBookmarkedString(MessageObject messageObject, int senderNameColor) {
         createSpan();
@@ -58,15 +163,14 @@ public class TimeStringHelper {
     public static CharSequence createDeletedString(MessageObject messageObject, boolean isEdited, boolean isTranslated, boolean isBookmarked, int senderNameColor) {
         String editedStr = NaConfig.INSTANCE.getCustomEditedMessage().String();
         String editedStrFin = editedStr.isEmpty() ? getString(R.string.EditedMessage) : editedStr;
-        String deletedStr = NaConfig.INSTANCE.getCustomDeletedMark().String();
-        String deletedStrFin = deletedStr.isEmpty() ? getString(R.string.DeletedMessage) : deletedStr;
+        String deletedStrFin = getDeletedStringLabel();
 
         createSpan();
         SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
 
         spannableStringBuilder
                 .append(messageObject.messageOwner.post_author != null ? " " : "")
-                .append(NaConfig.INSTANCE.getUseDeletedIcon().Bool() ? deletedSpan : deletedStrFin)
+                .append(isDeletedIconEnabled() && deletedSpan != null ? deletedSpan : deletedStrFin)
                 .append("  ")
                 .append(isEdited ? (NaConfig.INSTANCE.getUseEditedIcon().Bool() ? editedSpan : editedStrFin) : "")
                 .append(isEdited ? "  " : "")
@@ -164,13 +268,7 @@ public class TimeStringHelper {
             editedSpan.setSpan(new ColoredImageSpan(editedDrawable, true), 0, 1, 0);
         }
 
-        if (deletedDrawable == null) {
-            deletedDrawable = Objects.requireNonNull(ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.msg_delete_solar)).mutate();
-        }
-        if (deletedSpan == null) {
-            deletedSpan = new SpannableStringBuilder("\u200B");
-            deletedSpan.setSpan(new ColoredImageSpan(deletedDrawable, true), 0, 1, 0);
-        }
+        ensureDeletedSpan();
 
         if (translatedDrawable == null) {
             if (NaConfig.INSTANCE.getIconReplacements().Int() == IconsResources.ICON_REPLACE_SOLAR) {

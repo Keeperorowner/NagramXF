@@ -17799,7 +17799,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (edited && NaConfig.INSTANCE.getUseEditedIcon().Bool() && TimeStringHelper.editedDrawable != null) {
                 timeTextWidth = timeWidth += TimeStringHelper.editedDrawable.getIntrinsicWidth();
             }
-            if (ayuDeleted && NaConfig.INSTANCE.getUseDeletedIcon().Bool() && TimeStringHelper.deletedDrawable != null) {
+            if (ayuDeleted && TimeStringHelper.isDeletedIconEnabled() && TimeStringHelper.deletedDrawable != null) {
                 timeTextWidth = timeWidth += TimeStringHelper.deletedDrawable.getIntrinsicWidth();
             }
             if (translated && TimeStringHelper.translatedDrawable != null) {
@@ -27214,8 +27214,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if ((((edited || ayuDeleted) && !lastDrawingEdited) || (currentMessageObject.translated && !lastTranslated)) && timeLayout != null) {
                 String customStr = NaConfig.INSTANCE.getCustomEditedMessage().String();
                 String customStrFin = customStr.equals("") ? getString(R.string.EditedMessage) : customStr;
-                String deletedStr = NaConfig.INSTANCE.getCustomDeletedMark().String();
-                String deletedStrFin = deletedStr.equals("") ? getString(R.string.DeletedMessage) : deletedStr;
+                String deletedStrFin = TimeStringHelper.getDeletedStringLabel();
                 String editedStr;
                 if (edited && !ayuDeleted){
                     editedStr = customStrFin;

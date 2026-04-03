@@ -12,6 +12,8 @@ public class ConfigCellCustom extends AbstractConfigCell implements WithKey {
     public static final int CUSTOM_ITEM_MediaStorageCard = 992;
     public static final int CUSTOM_ITEM_DatabaseActionsCard = 991;
     public static final int CUSTOM_ITEM_ClearDataCard = 990;
+    public static final int CUSTOM_ITEM_DeletedMessagesAppearanceCard = 989;
+    public static final int CUSTOM_ITEM_DeletedMessagesColorPicker = 988;
 
     public final int type;
     public boolean enabled;
