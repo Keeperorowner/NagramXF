@@ -127,6 +127,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import com.radolyn.ayugram.utils.PeekOnlineHelper;
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -509,6 +510,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean userBlocked;
     private boolean channelBlocked;
     private boolean reportSpam;
+    private boolean peekOnlineInProgress;
     private long mergeDialogId;
     private boolean expandPhoto;
     private boolean needSendMessage;
@@ -565,6 +567,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private float nameY;
     private float onlineX;
     private float onlineY;
+    private String onlineOverride;
     private float expandProgress;
     private float listViewVelocityY;
     private ValueAnimator expandAnimator;
@@ -649,6 +652,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int add_to_folder = 105;
     private final static int block_channel = 106;
     private final static int shadow_ban = 107;
+    private final static int peek_online = 108;
 
     private Rect rect = new Rect();
 
@@ -2620,6 +2624,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     onBlockChannelClicked();
                 } else if (id == shadow_ban) {
                     onShadowBanClicked();
+                } else if (id == peek_online) {
+                    onPeekOnlineClicked();
                 } else if (id == add_contact) {
                     TLRPC.User user = getMessagesController().getUser(userId);
                     Bundle args = new Bundle();
@@ -11567,7 +11573,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         } else if (currentConnectionState == ConnectionsManager.ConnectionStateConnectingToProxy) {
             onlineTextOverride = LocaleController.getString(R.string.ConnectingToProxy);
         } else {
-            onlineTextOverride = null;
+            onlineTextOverride = onlineOverride;
         }
 
         BaseFragment prevFragment = null;
@@ -11729,7 +11735,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     nameTextView[a].setText(newString);
                 }
-                if (a == 0 && onlineTextOverride != null) {
+                if (onlineTextOverride != null) {
                     onlineTextView[a].setText(onlineTextOverride);
                 } else if (a == 0 && copyFromChatActivity) {
                     ChatActivity chatActivity = (ChatActivity) prevFragment;
@@ -12143,7 +12149,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else {
                     nameTextView[a].setLeftDrawable(null);
                 }
-                if (a == 0 && onlineTextOverride != null) {
+                if (onlineTextOverride != null) {
                     onlineTextView[a].setText(onlineTextOverride);
                 } else {
                     if (copyFromChatActivity || (currentChat.megagroup && chatInfo != null && onlineCount > 0) || isTopic) {
@@ -12513,6 +12519,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (!isBot && getContactsController().contactsDict.get(userId) != null) {
                     otherItem.addSubItem(add_shortcut, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
                 }
+                addPeekOnlineSubItem(user);
             }
         } else if (chatId != 0) {
             TLRPC.Chat chat = getMessagesController().getChat(chatId);
@@ -17598,6 +17605,88 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             BulletinFactory.of(this).createSimpleBulletin(drawable, text).show();
         }
         createActionBarMenu(true);
+    }
+
+    private boolean canPeekOnline(TLRPC.User user) {
+        return user != null
+            && !user.bot
+            && !UserObject.isDeleted(user)
+            && !UserObject.isUserSelf(user)
+            && !MessagesController.isSupportUser(user)
+            && user.id != UserObject.VERIFY;
+    }
+
+    private void addPeekOnlineSubItem(TLRPC.User user) {
+        if (otherItem != null && canPeekOnline(user)) {
+            otherItem.addSubItem(peek_online, R.drawable.msg_stories_stealth_solar, getString(R.string.PeekOnlineMenuText));
+        }
+    }
+
+    private void onPeekOnlineClicked() {
+        if (peekOnlineInProgress) {
+            if (BulletinFactory.canShowBulletin(this)) {
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.info, getString(R.string.Loading)).show();
+            }
+            return;
+        }
+
+        TLRPC.User user = getMessagesController().getUser(userId);
+        if (!canPeekOnline(user)) {
+            return;
+        }
+
+        onlineOverride = null;
+        peekOnlineInProgress = true;
+        PeekOnlineHelper.peekOnline(currentAccount, user, new PeekOnlineHelper.Callback() {
+            @Override
+            public void onSuccess(TLRPC.User user, String formattedStatus, int sourceAccount) {
+                peekOnlineInProgress = false;
+                onlineOverride = formattedStatus;
+                if (fragmentView != null) {
+                    updateProfileData(false);
+                }
+                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                    BulletinFactory.of(ProfileActivity.this)
+                        .createSimpleBulletin(R.raw.info, getString(R.string.PeekOnlineSuccess) + " " + ContactsController.formatName(UserConfig.getInstance(sourceAccount).getCurrentUser()))
+                        .show();
+                }
+            }
+
+            @Override
+            public void onError(TLRPC.TL_error error) {
+                peekOnlineInProgress = false;
+                onlineOverride = null;
+                if (!BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                    return;
+                }
+                if (error != null) {
+                    BulletinFactory.of(ProfileActivity.this).showForError(error);
+                } else {
+                    BulletinFactory.of(ProfileActivity.this).createSimpleBulletin(R.raw.error, getString(R.string.UnknownError)).show();
+                }
+            }
+
+            @Override
+            public void onExactStatusUnavailable() {
+                peekOnlineInProgress = false;
+                onlineOverride = null;
+                if (fragmentView != null) {
+                    updateProfileData(false);
+                }
+                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                    BulletinFactory.of(ProfileActivity.this).createSimpleBulletin(R.raw.info, getString(R.string.PeekOnlineUnavailable)).show();
+                }
+            }
+
+            @Override
+            public void onRestoreFailed(TLRPC.TL_error error, int account) {
+                peekOnlineInProgress = false;
+                onlineOverride = null;
+                if (BulletinFactory.canShowBulletin(ProfileActivity.this)) {
+                    BulletinFactory.of(ProfileActivity.this).createSimpleBulletin(R.raw.error, getString(R.string.PeekOnlineRestoreFailed)).show();
+                }
+            }
+        });
     }
 
     private void showAddCurrentChatToFolderSheet() {
