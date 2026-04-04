@@ -713,7 +713,11 @@ public class TranslateController extends BaseController {
                     });
                 }
             } else if (finalMessageObject.messageOwner.summarizedOpen) {
-                if (finalMessageObject.messageOwner.translatedSummaryText == null || !language.equals(finalMessageObject.messageOwner.translatedSummaryLanguage)) {
+                if (
+                    finalMessageObject.messageOwner.translatedSummaryText == null ||
+                    MessageHelper.isLegacyTranslatedSummary(finalMessageObject.messageOwner.summaryText, finalMessageObject.messageOwner.translatedSummaryText) ||
+                    !language.equals(finalMessageObject.messageOwner.translatedSummaryLanguage)
+                ) {
                     pushToSummarize(finalMessageObject, language, text -> {
                         finalMessageObject.messageOwner.translatedSummaryLanguage = text != null ? language : null;
                         finalMessageObject.messageOwner.translatedSummaryText = text;
