@@ -122,9 +122,10 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell headerTranslation = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Translate)));
     private final AbstractConfigCell translationProviderRow = cellGroup.appendCell(new ConfigCellCustom(NekoConfig.translationProvider.getKey(), CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell translatorModeRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getTranslatorMode(), new String[]{
-            getString(R.string.TranslatorModeAppend),
-            getString(R.string.TranslatorModeInline),
-    }, this::showTranslatorModeSelectDialog));
+            getString(R.string.TranslatorWithOriginalTextOff),
+            getString(R.string.TranslatorWithOriginalTextManualOnly),
+            getString(R.string.TranslatorWithOriginalTextOn),
+    }, null));
     private final AbstractConfigCell translateToLangRow = cellGroup.appendCell(new ConfigCellCustom("TranslateTo", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell doNotTranslateRow = cellGroup.appendCell(new ConfigCellCustom("DoNotTranslate", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell preferredTranslateTargetLangRow = cellGroup.appendCell(
@@ -317,22 +318,6 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
             if (cellGroup.thisFragment != null)
                 cellGroup.thisFragment.getParentLayout().rebuildAllFragmentViews(false, false);
             cellGroup.runCallback(NaConfig.INSTANCE.getLlmProviderPreset().getKey(), i);
-        });
-    }
-
-    private void showTranslatorModeSelectDialog() {
-        Context context = getParentActivity();
-        if (context == null) return;
-
-        String[] modeNames = new String[]{
-                getString(R.string.TranslatorModeAppend),
-                getString(R.string.TranslatorModeInline),
-        };
-        showSingleChoiceDialog(context, R.string.TranslatorMode, modeNames, NaConfig.INSTANCE.getTranslatorMode().Int(), getResourceProvider(), i -> {
-            NaConfig.INSTANCE.getTranslatorMode().setConfigInt(i);
-            if (cellGroup.listAdapter != null)
-                cellGroup.listAdapter.notifyItemChanged(cellGroup.rows.indexOf(translatorModeRow));
-            cellGroup.runCallback(NaConfig.INSTANCE.getTranslatorMode().getKey(), i);
         });
     }
 

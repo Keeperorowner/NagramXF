@@ -997,7 +997,13 @@ object NaConfig {
         addConfig(
             "TranslatorMode",
             ConfigItem.configTypeInt,
-            1 // 0: append; 1: replace
+            0 // 0: off; 1: manual only; 2: all
+        )
+    val translatorModeWithOriginalMigrated =
+        addConfig(
+            "TranslatorModeWithOriginalMigrated",
+            ConfigItem.configTypeBool,
+            false
         )
     val centerActionBarTitleType =
         addConfig(
@@ -1744,8 +1750,20 @@ object NaConfig {
         if (ApplicationLoader.applicationContext == null) {
             return
         }
-        if (translatorMode.Int() > 1) {
-            translatorMode.setConfigInt(1)
+        if (!translatorModeWithOriginalMigrated.Bool()) {
+            if (getPreferences().contains(translatorMode.key)) {
+                translatorMode.setConfigInt(
+                    when (translatorMode.Int()) {
+                        0 -> 1
+                        1 -> 0
+                        else -> 0
+                    }
+                )
+            }
+            translatorModeWithOriginalMigrated.setConfigBool(true)
+        }
+        if (translatorMode.Int() !in 0..2) {
+            translatorMode.setConfigInt(0)
         }
         if (!getPreferences().contains(idDcType.key) && !getPreferences().getBoolean(
                 "ShowIdAndDc", true

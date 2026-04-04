@@ -87,6 +87,7 @@ import java.util.regex.Pattern;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
+import tw.nekomimi.nekogram.parts.MessageTransKt;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MessageHelper extends BaseController {
@@ -1117,8 +1118,12 @@ public class MessageHelper extends BaseController {
         }
         final TLRPC.Message messageOwner = messageObject.messageOwner;
         if (summarized) {
-            if (messageOwner.translated && messageOwner.translatedSummaryText != null) {
-                return messageOwner.translatedSummaryText.entities;
+            if (messageObject.translated && messageOwner.translatedSummaryText != null) {
+                return mergeAppendTranslatedEntities(
+                    messageOwner.summaryText != null ? messageOwner.summaryText.entities : null,
+                    messageOwner.translatedSummaryText,
+                    text
+                );
             } else if (messageOwner.summaryText != null) {
                 return messageOwner.summaryText.entities;
             }
@@ -1128,7 +1133,7 @@ public class MessageHelper extends BaseController {
             if (messageOwner.voiceTranscriptionOpen) {
                 return messageOwner.translatedVoiceTranscription != null ? messageOwner.translatedVoiceTranscription.entities : null;
             } else {
-                return messageOwner.translatedText != null ? reparseMessageEntities(messageOwner.translatedText.entities) : null;
+                return messageOwner.translatedText != null ? mergeAppendTranslatedEntities(messageOwner.entities, messageOwner.translatedText, text) : null;
             }
         }
         if (messageOwner.translated && messageOwner.translatedText != null) {
@@ -1205,5 +1210,38 @@ public class MessageHelper extends BaseController {
             }
         }
         return null;
+    }
+
+    public static boolean shouldKeepOriginalForManualTranslation(int translatorMode) {
+        return translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_MANUAL_ONLY
+            || translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_ALL;
+    }
+
+    public static boolean shouldKeepOriginalForDisplay(int translatorMode, boolean manualTranslated, boolean autoTranslated) {
+        if (translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_ALL) {
+            return manualTranslated || autoTranslated;
+        }
+        return translatorMode == MessageTransKt.TRANSLATE_MODE_WITH_ORIGINAL_MANUAL_ONLY && manualTranslated;
+    }
+
+    public static String buildTranslatedDisplayText(CharSequence originalText, TLRPC.TL_textWithEntities translatedText, boolean keepOriginal) {
+        return buildTranslatedDisplayText(originalText, translatedText != null ? translatedText.text : null, keepOriginal);
+    }
+
+    public static String buildTranslatedDisplayText(CharSequence originalText, String translatedText, boolean keepOriginal) {
+        if (TextUtils.isEmpty(translatedText)) {
+            return originalText == null ? "" : originalText.toString();
+        }
+        if (!keepOriginal || TextUtils.isEmpty(originalText)) {
+            return translatedText;
+        }
+        return originalText + MessageTransKt.TRANSLATION_SEPARATOR + translatedText;
+    }
+
+    public static boolean isLegacyTranslatedSummary(TLRPC.TL_textWithEntities summaryText, TLRPC.TL_textWithEntities translatedSummaryText) {
+        if (summaryText == null || translatedSummaryText == null || TextUtils.isEmpty(summaryText.text) || TextUtils.isEmpty(translatedSummaryText.text)) {
+            return false;
+        }
+        return translatedSummaryText.text.startsWith(summaryText.text + MessageTransKt.TRANSLATION_SEPARATOR);
     }
 }
