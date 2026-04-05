@@ -3833,7 +3833,7 @@ public class ChatActivity extends BaseFragment implements
                     selectedView.getMessageObject().richLayout == null &&
                     !chatActivity.textSelectionHelper.isDescription
                 ) &&
-                !chatActivity.getMessagesController().getTranslateController().isTranslatingDialog(chatActivity.dialog_id) &&
+                (!chatActivity.getMessagesController().getTranslateController().isTranslatingDialog(chatActivity.dialog_id) || (selectedView != null && selectedView.getMessageObject() != null && selectedView.getMessageObject().isOutOwner())) &&
                 !UserObject.isService(chatActivity.dialog_id) &&
                 (!noforwards || (chatActivity.getCurrentChat() == null || ChatObject.canWriteToChat(chatActivity.getCurrentChat())))
             );
