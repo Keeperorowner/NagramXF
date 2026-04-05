@@ -1776,8 +1776,12 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             layoutParams.leftMargin = insets.getSystemWindowInsetLeft();
             layoutParams.rightMargin = insets.getSystemWindowInsetRight();
 
-            windowView.requestLayout();
-            containerView.requestLayout();
+            if (windowView != null) {
+                windowView.requestLayout();
+            }
+            if (containerView != null) {
+                containerView.requestLayout();
+            }
 
             return WindowInsetsCompat.CONSUMED;
         });
@@ -1832,9 +1836,6 @@ public class StoryViewer implements NotificationCenter.NotificationCenterDelegat
             AndroidUtilities.hideKeyboard(fragment.getFragmentView());
         }
     }
-
-    static int J = 0;
-    int j = J++;
 
     private void showKeyboard() {
         PeerStoriesView currentPeerView = storiesViewPager.getCurrentPeerView();

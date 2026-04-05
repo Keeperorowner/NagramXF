@@ -54,11 +54,14 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.utils.CopyUtilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.AlertDialogDecor;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.LaunchActivity;
 
 import java.util.List;
 import java.util.Locale;
@@ -74,6 +77,7 @@ public class EditTextCaption extends EditTextBoldCursor {
 
     private String caption;
     private StaticLayout captionLayout;
+    private Text rightText;
     private int userNameLength;
     private int xOffset;
     private int yOffset;
@@ -546,6 +550,32 @@ public class EditTextCaption extends EditTextBoldCursor {
         }, () -> {}, resourcesProvider);
     }
 
+    public void translateSelected() {
+        int start, end;
+        if (selectionStart >= 0 && selectionEnd >= 0) {
+            start = selectionStart;
+            end = selectionEnd;
+            selectionStart = selectionEnd = -1;
+        } else {
+            start = getSelectionStart();
+            end = getSelectionEnd();
+        }
+
+        final CharSequence text = getText().subSequence(start, end);
+
+        final BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
+
+        new TranslateAlert3(getContext(), lastFragment != null ? lastFragment.getResourceProvider() : null)
+            .setText(text)
+            .setOnUse(translatedText -> {
+                getText().replace(start, end, translatedText);
+                setSelection(start, start + translatedText.length());
+            })
+            .show();
+
+        setSelection(start, end);
+    }
+
     public void makeSelectedUrl() {
         AlertDialog.Builder builder;
         if (adaptiveCreateLinkDialog) {
@@ -912,6 +942,9 @@ public class EditTextCaption extends EditTextBoldCursor {
         } else if (itemId == R.id.menu_date) {
             makeSelectedDate();
             return true;
+        } else if (itemId == R.id.menu_translate) {
+            translateSelected();
+            return true;
         }
         return false;
     }
@@ -1006,7 +1039,18 @@ public class EditTextCaption extends EditTextBoldCursor {
         } catch (Exception e) {
             FileLog.e(e);
         }
+        if (rightText != null && length() != 0) {
+            final Layout layout = getLayout();
+            if (layout != null && layout.getLineCount() > 0) {
+                final float right = layout.getLineRight(0);
+                rightText.draw(canvas, right, getHeight() / 2f + dp(1), hintColor, 1.0f);
+            }
+        }
         canvas.restore();
+    }
+
+    public void setRightText(CharSequence text) {
+        this.rightText = new Text(text, 16, getTypeface());
     }
 
     @Override

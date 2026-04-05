@@ -283,7 +283,7 @@ public class TranslateController extends BaseController {
         return lang;
     }
 
-    private String currentLanguage() {
+    public static String currentLanguage() {
         String lang = currentPluralLanguage();
         if (lang != null) {
             lang = lang.split("_")[0];

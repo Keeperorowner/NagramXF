@@ -40,12 +40,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.graphics.Xfermode;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -151,6 +155,7 @@ import org.telegram.messenger.utils.CustomHtml;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_stars;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -774,6 +779,7 @@ public class AndroidUtilities {
                     @Override
                     public void updateDrawState(@NonNull TextPaint ds) {
                         ds.setUnderlineText(false);
+                        ds.setTypeface(AndroidUtilities.bold());
                         ds.setColor(color);
                     }
                 }, index, index + len, 0);
@@ -6924,6 +6930,16 @@ public class AndroidUtilities {
         return true;
     }
 
+    public static Bitmap applyColorMatrix(Bitmap bitmap, ColorMatrix matrix) {
+        final Paint paint = new Paint();
+        paint.setColorFilter(new ColorMatrixColorFilter(matrix));
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+
+        final Bitmap result = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        final Canvas canvas = new Canvas(result);
+        canvas.drawBitmap(bitmap, 0, 0, paint);
+        return result;
+    }
 
     public static int applyColorMatrix(int argb, ColorMatrix matrix) {
         float[] m = matrix.getArray();
@@ -6987,5 +7003,17 @@ public class AndroidUtilities {
         } catch (Throwable e) {
             FileLog.e(e);
         }
+    }
+
+    public static <A, B> B find(ArrayList<A> array, Class<B> clazz) {
+        if (array == null) {
+            return null;
+        }
+        for (A obj : array) {
+            if (clazz.isInstance(obj)) {
+                return clazz.cast(obj);
+            }
+        }
+        return null;
     }
 }

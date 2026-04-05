@@ -96,6 +96,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private boolean dropCallsFragmentAfterPageScroll;
 
     private UpdateLayoutWrapper updateLayoutWrapper;
+    private FrameLayout tabsViewWrapper;
     private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
     private View fadeView;
@@ -281,7 +282,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         fadeView.setBackground(fadeDrawable);
 
         contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
-        contentView.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, MainTabsHelper.getMainTabsHeightWithMargins(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+
+        tabsViewWrapper = new FrameLayout(context);
+        tabsViewWrapper.setOnClickListener(v -> {});
+        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(328 + DialogsActivity.MAIN_TABS_MARGIN * 2, DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        tabsViewWrapper.setClipToPadding(false);
+        contentView.addView(tabsViewWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
         updateLayoutWrapper = new UpdateLayoutWrapper(context);
         contentView.addView(updateLayoutWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
@@ -290,9 +296,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (updateLayout != null) {
             updateLayout.updateAppUpdateViews(currentAccount, false);
         }
-
-        //AndroidUtilities.cancelRunOnUIThread(justForTestR);
-        //AndroidUtilities.runOnUIThread(justForTestR, 2000);
 
         checkUnreadCount(false);
         return contentView;
@@ -391,8 +394,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
 
-        // o.addGap();
-        // o.add(R.drawable.msg_leave, getString(R.string.LogOut), true, () -> presentFragment(new LogoutActivity()));
         setupPopupMenuStyle(o);
         o.show();
 
@@ -834,6 +835,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
 
+        tabsViewWrapper.setPadding(0, 0, 0, navigationBarHeight);
+
         final WindowInsetsCompat consumed = isUpdateLayoutVisible ?
             insets.inset(0, 0, 0, navigationBarHeight) : insets;
 
@@ -891,19 +894,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             checkContactsTabBadge();
         }
     }
-
-    /* Just For Test */
-
-    //private final Runnable justForTestR = this::justForTest;
-
-    //private void justForTest() {
-    //    getUserConfig().setShowCallsTab(!getUserConfig().showCallsTab);
-    //    NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.callTabsVisibleToggled);
-    //    AndroidUtilities.cancelRunOnUIThread(justForTestR);
-    //    AndroidUtilities.runOnUIThread(justForTestR, 3000);
-    //}
-
-
 
     @Override
     public boolean onFragmentCreate() {
@@ -977,6 +967,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private void checkUi_tabsPosition() {
         if (tabsView == null) return;
         if (isBottomBarHidden()) {
+            if (tabsViewWrapper != null) {
+                tabsViewWrapper.setVisibility(View.GONE);
+            }
             tabsView.setClickable(false);
             tabsView.setEnabled(false);
             tabsView.setAlpha(0f);
@@ -985,13 +978,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
-        final int normalY = -(navigationBarHeight + updateLayoutHeight);
+        final int normalY = -(updateLayoutHeight);
         final int hiddenY = normalY + dp(40);
 
         final float factor = animatorTabsVisible.getFloatValue();
         final float scale = lerp(0.85f, 1f, factor);
 
-        tabsView.setTranslationY(lerp(hiddenY, normalY, factor));
+        tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
+        tabsViewWrapper.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
         tabsView.setScaleX(scale);
         tabsView.setScaleY(scale);
         tabsView.setClickable(factor > 1);
@@ -1009,7 +1003,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         ArrayList<ThemeDescription> themeDescriptions = super.getThemeDescriptions();
 
         ThemeDescription.ThemeDescriptionDelegate cellDelegate = this::blur3_updateColors;
-        themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_windowBackgroundWhite));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, cellDelegate, Theme.key_dialogBackground));
 
