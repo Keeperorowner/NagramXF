@@ -1824,7 +1824,7 @@ public class ChatActivity extends BaseFragment implements
                         return;
                     }
                     if (messageObject.contentType == 0) {
-                        if (selected && selectedMessagesIds[0].size() + selectedMessagesIds[1].size() >= 100) {
+                        if (selected && selectedMessagesIds[0].size() + selectedMessagesIds[1].size() >= 1000) {
                             limitReached = true;
                         } else {
                             limitReached = false;
@@ -19875,7 +19875,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
             } else {
-                if (selectedMessagesIds[0].size() + selectedMessagesIds[1].size() >= 100) {
+                if (selectedMessagesIds[0].size() + selectedMessagesIds[1].size() >= 1000) {
                     AndroidUtilities.shakeView(selectedMessagesCountTextView);
                     Vibrator vibrator = (Vibrator) ApplicationLoader.applicationContext.getSystemService(Context.VIBRATOR_SERVICE);
                     if (vibrator != null) {
@@ -44780,7 +44780,7 @@ public class ChatActivity extends BaseFragment implements
                         continue;
                     }
 
-                    if (selectedMessagesIds[0].size() + selectedMessagesIds[1].size() >= 100) {
+                    if (selectedMessagesIds[0].size() + selectedMessagesIds[1].size() >= 1000) {
                         if (message.getId() != begin) {
                             for (int x = 0; x < messages.size(); x++) {
                                 MessageObject msg = messages.get(x);
