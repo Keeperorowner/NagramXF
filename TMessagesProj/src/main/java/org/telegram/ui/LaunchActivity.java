@@ -1298,9 +1298,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     private DialogsActivity getHomeDrawerDialogsActivity() {
         BaseFragment fragment = null;
-        if (actionBarLayout != null && !actionBarLayout.getFragmentStack().isEmpty()) {
+        if (actionBarLayout != null && actionBarLayout.getFragmentStack() != null && !actionBarLayout.getFragmentStack().isEmpty()) {
             fragment = actionBarLayout.getFragmentStack().get(0);
-        } else if (layersActionBarLayout != null && !layersActionBarLayout.getFragmentStack().isEmpty()) {
+        } else if (layersActionBarLayout != null && layersActionBarLayout.getFragmentStack() != null && !layersActionBarLayout.getFragmentStack().isEmpty()) {
             fragment = layersActionBarLayout.getFragmentStack().get(0);
         }
         if (fragment instanceof MainTabsActivity mainTabsActivity) {

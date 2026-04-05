@@ -13,6 +13,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.RectF;
 import android.graphics.drawable.AnimatedVectorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
@@ -119,6 +120,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
     private @Nullable ImageView actionModeCloseView;
     private NumberTextView selectedMessagesCountTextView;
     private boolean isActionModeShowed;
+    private Drawable savedBackButtonDrawable;
     private HashMap<FilteredSearchView.MessageHashId, MessageObject> selectedFiles = new HashMap<>();
 
     private ArrayList<FiltersView.MediaFilterData> currentSearchFilters = new ArrayList<>();
@@ -831,6 +833,29 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         this.filteredSearchViewDelegate = filteredSearchViewDelegate;
     }
 
+    private void updateActionModeCloseView(boolean needCloseView) {
+        if (actionMode == null) {
+            return;
+        }
+        if (!needCloseView) {
+            if (actionModeCloseView != null) {
+                actionModeCloseView.setVisibility(View.GONE);
+            }
+            return;
+        }
+        if (actionModeCloseView == null || actionModeCloseView.getParent() != actionMode) {
+            actionModeCloseView = new ImageView(getContext());
+            actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
+            actionModeCloseView.setImageDrawable(new BackDrawable(true));
+            actionModeCloseView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
+            actionModeCloseView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector)));
+            actionModeCloseView.setOnClickListener(v -> hideActionMode());
+            actionMode.addView(actionModeCloseView, 0, LayoutHelper.createLinear(54, 54, 0f, Gravity.CENTER_VERTICAL));
+        } else {
+            actionModeCloseView.setVisibility(View.VISIBLE);
+        }
+    }
+
     private void showActionMode(boolean show) {
         if (isActionModeShowed == show) {
             return;
@@ -838,26 +863,19 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         if (show && parent.getActionBar().isActionModeShowed()) {
             return;
         }
+        boolean hasMenuDrawable = parent.getActionBar().getBackButton() != null && parent.getActionBar().getBackButton().getDrawable() instanceof MenuDrawable;
+        boolean needCloseView = parent.hasMainTabs || hasMenuDrawable;
         if (show && !parent.getActionBar().actionModeIsExist(actionModeTag)) {
             actionMode = parent.getActionBar().createActionMode(true, actionModeTag);
+            actionModeCloseView = null;
             // actionMode.setBackgroundColor(Color.TRANSPARENT);
             // actionMode.drawBlur = false;
-
-            if (parent.hasMainTabs) {
-                actionModeCloseView = new ImageView(getContext());
-                actionModeCloseView.setScaleType(ImageView.ScaleType.CENTER);
-                actionModeCloseView.setImageDrawable(new BackDrawable(true));
-                actionModeCloseView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon), PorterDuff.Mode.MULTIPLY));
-                actionModeCloseView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector)));
-                actionModeCloseView.setOnClickListener(v -> hideActionMode());
-                actionMode.addView(actionModeCloseView, LayoutHelper.createLinear(54, 54, 0f, Gravity.CENTER_VERTICAL));
-            }
 
             selectedMessagesCountTextView = new NumberTextView(actionMode.getContext());
             selectedMessagesCountTextView.setTextSize(18);
             selectedMessagesCountTextView.setTypeface(AndroidUtilities.bold());
             selectedMessagesCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
-            actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, parent.hasMainTabs ? 18 : 72, 0, 0, 0));
+            actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, needCloseView ? 18 : 72, 0, 0, 0));
             selectedMessagesCountTextView.setOnTouchListener((v, event) -> true);
 
             saveItem = actionMode.addItemWithWidth(saveItemId, R.drawable.msg_download, AndroidUtilities.dp(54), getString(R.string.SaveToDownloads));
@@ -868,12 +886,14 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             forwardItem = actionMode.addItemWithWidth(forwardItemId, R.drawable.msg_forward_noquote, AndroidUtilities.dp(54), getString(R.string.Forward));
             deleteItem = actionMode.addItemWithWidth(deleteItemId, R.drawable.msg_delete, AndroidUtilities.dp(54), getString(R.string.Delete));
         }
+        updateActionModeCloseView(needCloseView);
         if (selectedMessagesCountTextView != null) {
             boolean isForumSearch = dialogsSearchAdapter != null && dialogsSearchAdapter.delegate != null && dialogsSearchAdapter.delegate.getSearchForumDialogId() != 0;
-            ((MarginLayoutParams) selectedMessagesCountTextView.getLayoutParams()).leftMargin = AndroidUtilities.dp((parent.hasMainTabs ? 18 : 72) + (isForumSearch ? 56 : 0));
+            ((MarginLayoutParams) selectedMessagesCountTextView.getLayoutParams()).leftMargin = AndroidUtilities.dp((needCloseView ? 18 : 72) + (isForumSearch ? 56 : 0));
             selectedMessagesCountTextView.setLayoutParams(selectedMessagesCountTextView.getLayoutParams());
         }
-        if (parent.getActionBar().getBackButton() != null && parent.getActionBar().getBackButton().getDrawable() instanceof MenuDrawable) {
+        if (hasMenuDrawable) {
+            savedBackButtonDrawable = parent.getActionBar().getBackButton().getDrawable();
             BackDrawable backDrawable = new BackDrawable(false);
             parent.getActionBar().setBackButtonDrawable(backDrawable);
             backDrawable.setColorFilter(null);
@@ -889,6 +909,10 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
             deleteItem.setVisibility(View.VISIBLE);
         } else {
             parent.getActionBar().hideActionMode();
+            if (savedBackButtonDrawable != null) {
+                parent.getActionBar().setBackButtonDrawable(savedBackButtonDrawable);
+                savedBackButtonDrawable = null;
+            }
             selectedFiles.clear();
             for (int i = 0; i < getChildCount(); i++) {
                 if (getChildAt(i) instanceof FilteredSearchView) {
