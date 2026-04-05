@@ -349,6 +349,7 @@
     <string name="PrivateChatMessage">无法打开私聊：%1$s\n\n该聊天为私有聊天，只能在原账号中访问。</string>
     <string name="DeleteChatTitle">删除聊天</string>
     <string name="DeleteChatMessage">你确定要从最近聊天中移除 %1$s 吗？</string>
+    <string name="ShowRecentChatsSidebar">显示最近聊天侧边栏</string>
     <string name="ChatRemovedFromRecent">已从最近聊天中移除</string>
     <string name="ChatHistory_ResultCount">%1$d 条结果</string>
     <string name="ChatCategoryAll">全部</string>

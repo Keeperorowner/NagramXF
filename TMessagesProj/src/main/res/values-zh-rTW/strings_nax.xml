@@ -330,4 +330,5 @@
     <string name="PeekOnlineSuccess">在線狀態已更新</string>
     <string name="PeekOnlineUnavailable">無法取得精確在線狀態。</string>
     <string name="PeekOnlineRestoreFailed">無法還原「最後上線」隱私設定。</string>
+    <string name="ShowRecentChatsSidebar">顯示最近聊天側邊欄</string>
 </resources>
