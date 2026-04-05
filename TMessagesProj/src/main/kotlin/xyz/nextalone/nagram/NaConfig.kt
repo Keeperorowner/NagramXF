@@ -397,6 +397,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val showRecentChatsSidebar =
+        addConfig(
+            "ShowRecentChatsSidebar",
+            ConfigItem.configTypeBool,
+            true
+        )
     val pushServiceType =
         addConfig(
             "PushServiceType",
