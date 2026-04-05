@@ -9098,6 +9098,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (backDrawable != null) {
             backDrawable.setRotation(0, true);
         }
+        if (useHomeDrawer() && actionBar.getBackButton() != null && actionBar.getBackButton().getDrawable() instanceof BackDrawable) {
+            actionBar.setBackButtonDrawable(menuDrawable = new MenuDrawable());
+            menuDrawable.setRotateToBack(false);
+            menuDrawable.setRotation(0f, false);
+        }
         if (filterTabsView != null) {
             filterTabsView.animateColorsTo(Theme.key_actionBarTabLine, Theme.key_actionBarTabActiveText, Theme.key_actionBarTabUnactiveText, Theme.key_actionBarTabSelector, Theme.key_windowBackgroundWhite);
         }
