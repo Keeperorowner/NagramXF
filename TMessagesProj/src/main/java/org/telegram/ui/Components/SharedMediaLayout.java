@@ -2393,7 +2393,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     if (messageObject == null) return false;
                     final int loadIndex = messageObject.getDialogId() == dialog_id ? 0 : 1;
                     if (selectedFiles[loadIndex].indexOfKey(messageObject.getId()) < 0) {
-                        if (selectedFiles[0].size() + selectedFiles[1].size() >= 100) {
+                        if (selectedFiles[0].size() + selectedFiles[1].size() >= 1000) {
                             return false;
                         }
                         selectedFiles[loadIndex].put(messageObject.getId(), messageObject);
@@ -7548,7 +7548,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     cantDeleteMessagesCount--;
                 }
             } else {
-                if (selectedFiles[0].size() + selectedFiles[1].size() >= 100) {
+                if (selectedFiles[0].size() + selectedFiles[1].size() >= 1000) {
                     return;
                 }
                 selectedFiles[loadIndex].put(message.getId(), message);

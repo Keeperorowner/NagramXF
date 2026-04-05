@@ -1078,7 +1078,7 @@ public class SearchViewPager extends ViewPagerFixed implements FilteredSearchVie
         if (selectedFiles.containsKey(hashId)) {
             selectedFiles.remove(hashId);
         } else {
-            if (selectedFiles.size() >= 100) {
+            if (selectedFiles.size() >= 1000) {
                 return;
             }
             selectedFiles.put(hashId, message);
