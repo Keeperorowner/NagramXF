@@ -1554,7 +1554,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.debugViewMetrics ? "disable debug view metrics" : "enable debug view metrics") : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.shadowsInSections ? "disable shadows in settings" : "enable shadows in settings") : null,
                 BuildVars.DEBUG_PRIVATE_VERSION ? (SharedConfig.debugViewMetrics ? "disable debug view metrics" : "enable debug view metrics") : null,
-                BuildVars.DEBUG_VERSION ? (SharedConfig.useEightPatch ? "use nine patch" : "use eight patch") : null,
         };
 
         builder.setItems(items, (dialog, which) -> {
@@ -1866,9 +1865,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             } else if (which == 41) {
                 final SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
                 prefs.edit().putBoolean("debugViewMetrics", SharedConfig.debugViewMetrics = !SharedConfig.debugViewMetrics).apply();
-            } else if (which == 42) {
-                final SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("mainconfig", Activity.MODE_PRIVATE);
-                prefs.edit().putBoolean("useEightPatch", SharedConfig.useEightPatch = !SharedConfig.useEightPatch).apply();
             }
         });
         builder.setNegativeButton(getString(R.string.Cancel), null);
