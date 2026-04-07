@@ -6470,6 +6470,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 MessagesController.getGlobalMainSettings().getInt("aihintshown", 0) < 3
             ) {
                 final HintView2 thisHint = aiHint = new HintView2(getContext(), HintView2.DIRECTION_BOTTOM);
+                aiHint.setMultilineText(true);
                 aiHint.setText(getString(R.string.AIEditorHint));
                 aiHint.setJointPx(1f, -aiButton.getWidth() / 2f + dp(4));
                 addView(aiHint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 200, Gravity.TOP, 0, -200 + 4, 0, 0));
