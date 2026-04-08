@@ -90,6 +90,7 @@ public class NekoConfig {
     public static ConfigItem mapPreviewProvider = addConfig("MapPreviewProvider", configTypeInt, 0);
     public static ConfigItem forceBlurInChat = addConfig("forceBlurInChat", configTypeBool, false);
     public static ConfigItem chatBlueAlphaValue = addConfig("forceBlurInChatAlphaValue", configTypeInt, 127);
+    public static ConfigItem hideProxySponsorChannel = addConfig("HideProxySponsorChannel", configTypeBool, false);
     public static ConfigItem showAddToSavedMessages = addConfig("showAddToSavedMessages", configTypeBool, true);
     public static ConfigItem showReport = addConfig("showReport", configTypeBool, false);
     public static ConfigItem showViewHistory = addConfig("showViewHistory", configTypeBool, true);
@@ -158,6 +159,7 @@ public class NekoConfig {
     public static ConfigItem disableSwipeToNext = addConfig("disableSwipeToNextChannel", configTypeBool, false);
     public static ConfigItem disableChoosingSticker = addConfig("disableChoosingSticker", configTypeBool, false);
     public static ConfigItem hideGroupSticker = addConfig("hideGroupSticker", configTypeBool, false);
+    public static ConfigItem hideSponsoredMessage = addConfig("hideSponsoredMessage", configTypeBool, false);
     public static ConfigItem rememberAllBackMessages = addConfig("rememberAllBackMessages", configTypeBool, false);
     public static ConfigItem hideSendAsChannel = addConfig("hideSendAsChannel", configTypeBool, false);
     public static ConfigItem showSpoilersDirectly = addConfig("showSpoilersDirectly", configTypeBool, false);
