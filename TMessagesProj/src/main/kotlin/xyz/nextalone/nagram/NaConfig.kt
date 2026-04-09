@@ -1341,6 +1341,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val mainTabsHideOnScroll =
+        addConfig(
+            "MainTabsHideOnScroll",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showTextMonoCode =
         addConfig(
             "TextMonoCode",

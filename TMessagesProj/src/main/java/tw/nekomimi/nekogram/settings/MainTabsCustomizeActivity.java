@@ -45,6 +45,7 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
     private int previewInfoRow;
     private int showTabTitlesRow;
     private int hideBottomBarRow;
+    private int hideOnScrollRow;
     private int shadowRow;
 
     private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
@@ -64,6 +65,7 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
         previewInfoRow = addRow();
         showTabTitlesRow = addRow();
         hideBottomBarRow = addRow();
+        hideOnScrollRow = addRow();
         shadowRow = addRow();
     }
 
@@ -96,6 +98,11 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                 textCheckCell.setChecked(checked);
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
+        } else if (position == hideOnScrollRow) {
+            boolean checked = NaConfig.INSTANCE.getMainTabsHideOnScroll().toggleConfigBool();
+            if (view instanceof TextCheckCell textCheckCell) {
+                textCheckCell.setChecked(checked);
+            }
         }
     }
 
@@ -152,7 +159,9 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                     if (position == showTabTitlesRow) {
                         cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
                     } else if (position == hideBottomBarRow) {
-                        cell.setTextAndCheck(getString(R.string.MainTabsHideBottomBar), NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool(), false);
+                        cell.setTextAndCheck(getString(R.string.MainTabsHideBottomBar), NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool(), true);
+                    } else if (position == hideOnScrollRow) {
+                        cell.setTextAndCheck(getString(R.string.MainTabsHideOnScroll), NaConfig.INSTANCE.getMainTabsHideOnScroll().Bool(), false);
                     }
                     break;
                 }

@@ -219,6 +219,7 @@
     <string name="DrawerElements">侧边栏菜单</string>
     <string name="MainTabsShowTitles">显示标签名称</string>
     <string name="MainTabsHideBottomBar">隐藏底栏</string>
+    <string name="MainTabsHideOnScroll">上滑隐藏底栏</string>
     <string name="FoldersAtBottom">将文件夹栏移动到底部</string>
     <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">配置 OpenAI 兼容的 API。您可以参考此 **文档**。\n</string>

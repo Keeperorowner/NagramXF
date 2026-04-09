@@ -233,6 +233,7 @@
     <string name="DrawerElements">Drawer Elements</string>
     <string name="MainTabsShowTitles">Show Tab Titles</string>
     <string name="MainTabsHideBottomBar">Hide Bottom Bar</string>
+    <string name="MainTabsHideOnScroll">Hide on Scroll</string>
     <string name="FoldersAtBottom">Move Folders to Bottom</string>
     <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">Configure OpenAI-compatible API. You can refer to this **documentation**.\n</string>
