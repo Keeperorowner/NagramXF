@@ -90,8 +90,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private static final int DEFAULT_PAGER_POSITION = 0;
 
     private static final int ANIMATOR_ID_TABS_VISIBLE = 0;
+    private static final int ANIMATOR_ID_TABS_SCROLL_HIDE = 1;
     private final BoolAnimator animatorTabsVisible = new BoolAnimator(ANIMATOR_ID_TABS_VISIBLE,
         this, CubicBezierInterpolator.EASE_OUT_QUINT, 380, true);
+    private final BoolAnimator animatorTabsScrollHide = new BoolAnimator(ANIMATOR_ID_TABS_SCROLL_HIDE,
+        this, CubicBezierInterpolator.EASE_OUT_QUINT, 300, false);
 
 
     private IUpdateLayout updateLayout;
@@ -942,7 +945,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     @Override
     public void onFactorChanged(int id, float factor, float fraction, FactorAnimator callee) {
-        if (id == ANIMATOR_ID_TABS_VISIBLE) {
+        if (id == ANIMATOR_ID_TABS_VISIBLE || id == ANIMATOR_ID_TABS_SCROLL_HIDE) {
             checkUi_tabsPosition();
             checkUi_fadeView();
         }
@@ -964,7 +967,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             ? 1f - MathUtils.clamp(Math.abs(profilePosition - animatedPosition), 0, 1)
             : 0f;
         final float hide = 1f - AndroidUtilities.getNavigationBarThirdButtonsFactor(0, 1f, navigationBarHeight);
-        final float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue();
+        final float scrollHideFactor = animatorTabsScrollHide.getFloatValue();
+        final float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue() * (1f - scrollHideFactor);
 
         fadeView.setAlpha(alpha);
         fadeView.setTranslationY(isProfile * dp(48));
@@ -988,17 +992,20 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final int normalY = -(updateLayoutHeight);
         final int hiddenY = normalY + dp(40);
 
-        final float factor = animatorTabsVisible.getFloatValue();
-        final float scale = lerp(0.85f, 1f, factor);
+        final float visibleFactor = animatorTabsVisible.getFloatValue();
+        final float scrollHideFactor = animatorTabsScrollHide.getFloatValue();
+        final float combinedFactor = visibleFactor * (1f - scrollHideFactor);
+        final float scale = lerp(0.85f, 1f, combinedFactor);
+        final int scrollHideOffset = dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin() * 2);
 
-        tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
-        tabsViewWrapper.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+        tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, visibleFactor) + scrollHideOffset * scrollHideFactor);
+        tabsViewWrapper.setVisibility(combinedFactor > 0 ? View.VISIBLE : View.GONE);
         tabsView.setScaleX(scale);
         tabsView.setScaleY(scale);
-        tabsView.setClickable(factor > 1);
-        tabsView.setEnabled(factor > 1);
-        tabsView.setAlpha(factor);
-        tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+        tabsView.setClickable(combinedFactor > 0.5f);
+        tabsView.setEnabled(combinedFactor > 0.5f);
+        tabsView.setAlpha(combinedFactor);
+        tabsView.setVisibility(combinedFactor > 0 ? View.VISIBLE : View.GONE);
     }
 
     private void checkUi_callTabVisible(boolean callTabsVisible, boolean animated) {
@@ -1022,6 +1029,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         @Override
         public void setTabsVisible(boolean visible) {
             animatorTabsVisible.setValue(visible, true);
+        }
+
+        @Override
+        public void setTabsScrollHide(boolean hide) {
+            if (!NaConfig.INSTANCE.getMainTabsHideOnScroll().Bool()) return;
+            animatorTabsScrollHide.setValue(hide, true);
         }
     }
 
