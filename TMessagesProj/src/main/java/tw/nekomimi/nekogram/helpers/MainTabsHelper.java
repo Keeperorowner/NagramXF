@@ -9,7 +9,7 @@ import xyz.nextalone.nagram.NaConfig;
 
 public final class MainTabsHelper {
     public static final int MAIN_TABS_HEIGHT = 56;
-    public static final int MAIN_TABS_MARGIN = 8;
+    public static final int MAIN_TABS_MARGIN = 16;
     public static final int MAIN_TABS_MARGIN_COMPACT = 4;
     public static final int FILTER_TABS_HEIGHT = 36;
     public static final int TAB_WIDTH = 80;
