@@ -141,7 +141,7 @@ import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 import com.radolyn.ayugram.proprietary.AyuHistoryHook;
-import com.radolyn.ayugram.proprietary.AyuMessageUtils;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 import com.radolyn.ayugram.ui.AyuMessageHistory;
 import com.radolyn.ayugram.ui.AyuViewDeleted;
 import com.radolyn.ayugram.ui.DummyView;
@@ -373,7 +373,7 @@ import tw.nekomimi.nekogram.filters.RegexChatFiltersListActivity;
 import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 import tw.nekomimi.nekogram.filters.RegexFilterEditActivity;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
-import tw.nekomimi.nekogram.helpers.ForceForward;
+import com.radolyn.ayugram.AyuForward;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
@@ -905,7 +905,7 @@ public class ChatActivity extends BaseFragment implements
     private CharSequence formwardingNameText;
     public MessageObject forwardingMessage;
     public MessageObject.GroupedMessages forwardingMessageGroup;
-    private ForceForward forceForwardHandler;
+    private AyuForward ayuForwardHandler;
     private MessageObject.GroupedMessages replyingQuoteGroup;
     public MessageObject replyingTopMessage;
     private ReplyQuote replyingQuote;
@@ -3551,9 +3551,13 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        if (forceForwardHandler != null) {
-            forceForwardHandler.dispose();
-            forceForwardHandler = null;
+        if (ayuForwardHandler != null) {
+            if (ayuForwardHandler.isForwarding()) {
+                ayuForwardHandler.detachFromFragment();
+            } else {
+                ayuForwardHandler.dispose();
+            }
+            ayuForwardHandler = null;
         }
         if (messageMetricsView != null) {
             messageMetricsView.finish();
@@ -15306,22 +15310,22 @@ public class ChatActivity extends BaseFragment implements
         getConnectionsManager().bindRequestToGuid(linkSearchRequestId, classGuid);
     }
 
-    private ForceForward getForceForwardHandler() {
-        if (forceForwardHandler == null) {
-            forceForwardHandler = new ForceForward(this, currentAccount);
+    private AyuForward getAyuForwardHandler() {
+        if (ayuForwardHandler == null) {
+            ayuForwardHandler = new AyuForward(this, currentAccount);
         }
-        return forceForwardHandler;
+        return ayuForwardHandler;
     }
 
-    private boolean shouldUseForceForward(MessageObject messageObject) {
-        return ForceForward.isForceForwardNeeded(messageObject);
+    private boolean shouldUseAyuForward(MessageObject messageObject) {
+        return AyuForward.isAyuForwardNeeded(messageObject);
     }
 
     private boolean canUseForwardAction(MessageObject messageObject) {
         if (chatMode == MODE_SCHEDULED || messageObject == null) {
             return false;
         }
-        return messageObject.canForwardMessage() || shouldUseForceForward(messageObject);
+        return messageObject.canForwardMessage() || shouldUseAyuForward(messageObject);
     }
 
     private boolean isOfficialChatNoForwards(TLRPC.Chat chat) {
@@ -15347,40 +15351,40 @@ public class ChatActivity extends BaseFragment implements
         if (messageObject.messageOwner.action != null || !messageObject.isSent() || messageObject.isEditing()) {
             return false;
         }
-        return isOfficialChatNoForwards(currentChat) || ForceForward.isPeerNoForwards(messageObject) || messageObject.messageOwner.noforwards;
+        return isOfficialChatNoForwards(currentChat) || AyuForward.isPeerNoForwards(messageObject) || messageObject.messageOwner.noforwards;
     }
 
     private void forwardMessagesByChunks(ArrayList<MessageObject> messages, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
         ArrayList<ArrayList<MessageObject>> chunks = new ArrayList<>();
-        ArrayList<Boolean> forceForwardModes = new ArrayList<>();
+        ArrayList<Boolean> ayuForwardModes = new ArrayList<>();
         ArrayList<MessageObject> currentChunk = null;
-        boolean currentChunkForceForward = false;
+        boolean currentChunkAyuForward = false;
         for (int i = 0; i < messages.size(); i++) {
             MessageObject messageObject = messages.get(i);
-            boolean useForceForward = shouldUseForceForward(messageObject);
-            if (currentChunk == null || currentChunkForceForward != useForceForward) {
+            boolean useAyuForward = shouldUseAyuForward(messageObject);
+            if (currentChunk == null || currentChunkAyuForward != useAyuForward) {
                 currentChunk = new ArrayList<>();
                 chunks.add(currentChunk);
-                forceForwardModes.add(useForceForward);
-                currentChunkForceForward = useForceForward;
+                ayuForwardModes.add(useAyuForward);
+                currentChunkAyuForward = useAyuForward;
             }
             currentChunk.add(messageObject);
         }
-        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED) && forceForwardModes.contains(Boolean.FALSE)) {
+        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED) && ayuForwardModes.contains(Boolean.FALSE)) {
             waitingForSendingMessageLoad = true;
         }
-        forwardMessagesByChunks(chunks, forceForwardModes, 0, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
+        forwardMessagesByChunks(chunks, ayuForwardModes, 0, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
     }
 
-    private void forwardMessagesByChunks(ArrayList<ArrayList<MessageObject>> chunks, ArrayList<Boolean> forceForwardModes, int index, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
+    private void forwardMessagesByChunks(ArrayList<ArrayList<MessageObject>> chunks, ArrayList<Boolean> ayuForwardModes, int index, long targetDid, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars, Theme.ResourcesProvider resourcesProvider, boolean clearWaitingOnError) {
         if (index >= chunks.size()) {
             return;
         }
         ArrayList<MessageObject> chunk = chunks.get(index);
-        if (forceForwardModes.get(index)) {
-            getForceForwardHandler().runForceForward(chunk, targetDid, false, hideCaption, notify, scheduleDate, payStars, shouldContinue -> {
+        if (ayuForwardModes.get(index)) {
+            getAyuForwardHandler().forwardMessages(chunk, targetDid, false, hideCaption, notify, scheduleDate, payStars, shouldContinue -> {
                 if (!shouldContinue) {
-                    String failureReason = getForceForwardHandler().consumeLastFailureReason();
+                    String failureReason = getAyuForwardHandler().consumeLastFailureReason();
                     if (!TextUtils.isEmpty(failureReason) && BulletinFactory.canShowBulletin(ChatActivity.this)) {
                         BulletinFactory.of(ChatActivity.this).createErrorBulletin(failureReason, resourcesProvider != null ? resourcesProvider : themeDelegate).show();
                     }
@@ -15392,7 +15396,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                     return;
                 }
-                forwardMessagesByChunks(chunks, forceForwardModes, index + 1, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
+                forwardMessagesByChunks(chunks, ayuForwardModes, index + 1, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
             });
             return;
         }
@@ -15405,11 +15409,23 @@ public class ChatActivity extends BaseFragment implements
             });
             return;
         }
-        forwardMessagesByChunks(chunks, forceForwardModes, index + 1, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
+        forwardMessagesByChunks(chunks, ayuForwardModes, index + 1, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, resourcesProvider, clearWaitingOnError);
     }
 
-    public void refreshForceForwardStatus() {
+    public void refreshAyuForwardStatus() {
         updateSecretStatus();
+    }
+
+    private boolean hasRegularForwardChunk(ArrayList<MessageObject> messages) {
+        if (messages == null) {
+            return false;
+        }
+        for (int i = 0; i < messages.size(); i++) {
+            if (!shouldUseAyuForward(messages.get(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void forwardMessages(ArrayList<MessageObject> arrayList, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long payStars) {
@@ -15419,7 +15435,25 @@ public class ChatActivity extends BaseFragment implements
         if (!checkSlowModeAlert()) {
             return;
         }
-        forwardMessagesByChunks(arrayList, dialog_id, fromMyName, hideCaption, notify, scheduleDate, payStars, themeDelegate, true);
+        if ((scheduleDate != 0) == (chatMode == MODE_SCHEDULED) && hasRegularForwardChunk(arrayList)) {
+            waitingForSendingMessageLoad = true;
+        }
+        int result = getSendMessagesHelper().sendMessage(arrayList, dialog_id, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams(), (sendError, failureReason) -> {
+            if (sendError != 0) {
+                AlertsCreator.showSendMediaAlert(sendError, ChatActivity.this, themeDelegate);
+            } else if (!TextUtils.isEmpty(failureReason) && BulletinFactory.canShowBulletin(ChatActivity.this)) {
+                BulletinFactory.of(ChatActivity.this).createErrorBulletin(failureReason, themeDelegate).show();
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                waitingForSendingMessageLoad = false;
+                hideFieldPanel(true);
+            });
+        });
+        AlertsCreator.showSendMediaAlert(result, this, themeDelegate);
+        if (result != 0) {
+            waitingForSendingMessageLoad = false;
+            hideFieldPanel(true);
+        }
     }
 
     private void forwardMessages(ArrayList<MessageObject> arrayList, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate, long did, long payStars) {
@@ -15427,7 +15461,7 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         final long targetDid = did == 0 ? dialog_id : did;
-        forwardMessagesByChunks(arrayList, targetDid, fromMyName, hideCaption, notify, scheduleDate, payStars, null, false);
+        getSendMessagesHelper().sendMessage(arrayList, targetDid, fromMyName, hideCaption, notify, scheduleDate, 0, getThreadMessage(), -1, payStars, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
     }
 
     public void forwardMessagesExternally(ArrayList<MessageObject> arrayList, long did, boolean fromMyName, boolean hideCaption, boolean notify, int scheduleDate) {
@@ -19711,13 +19745,17 @@ public class ChatActivity extends BaseFragment implements
         boolean hideKeyboard = false;
         bottomOverlayText.setBackground(null);
         bottomOverlayText.setOnClickListener(null);
-        if (forceForwardHandler != null && forceForwardHandler.isForwarding()) {
-            String forceForwardStatus = forceForwardHandler.getForwardingStatus();
+        if (AyuForward.isForwardingToDialog(dialog_id)) {
+            String forceForwardStatus = AyuForward.getStatusForDialog(dialog_id);
             if (!TextUtils.isEmpty(forceForwardStatus)) {
                 bottomOverlayText.setText(forceForwardStatus + " - " + LocaleController.getString(R.string.CancelForwarding));
                 bottomOverlayText.setBackground(Theme.createSelectorWithBackgroundDrawable(0, Theme.getColor(Theme.key_listSelector)));
-                bottomOverlayText.setOnClickListener(v -> forceForwardHandler.stopCurrentRun());
+                bottomOverlayText.setOnClickListener(v -> AyuForward.stopForDialog(dialog_id));
                 bottomOverlay.setVisibility(inPreviewMode ? View.INVISIBLE : View.VISIBLE);
+                if (chatActivityEnterView != null) {
+                    chatActivityEnterView.setVisibility(View.INVISIBLE);
+                    chatActivityEnterView.hidePopup(false);
+                }
                 if (mentionListAnimation != null) {
                     mentionListAnimation.cancel();
                     mentionListAnimation = null;
@@ -19725,6 +19763,9 @@ public class ChatActivity extends BaseFragment implements
                 mentionContainer.setVisibility(View.GONE);
                 mentionContainer.setTag(null);
                 updateMessageListAccessibilityVisibility();
+                if (suggestEmojiPanel != null) {
+                    suggestEmojiPanel.forceClose();
+                }
                 return;
             }
         }
@@ -19785,6 +19826,13 @@ public class ChatActivity extends BaseFragment implements
             createEmptyView(false);
             if (currentEncryptedChat == null || bigEmptyView == null) {
                 bottomOverlay.setVisibility(View.INVISIBLE);
+                if (chatActivityEnterView != null
+                        && !inPreviewMode
+                        && !isInsideContainer
+                        && chatMode != MODE_SAVED
+                        && (bottomChannelButtonsLayout == null || bottomChannelButtonsLayout.getVisibility() != View.VISIBLE)) {
+                    chatActivityEnterView.setVisibility(View.VISIBLE);
+                }
                 if (suggestEmojiPanel != null && chatActivityEnterView != null && chatActivityEnterView.hasText()) {
                     suggestEmojiPanel.fireUpdate();
                 }
@@ -23059,6 +23107,7 @@ public class ChatActivity extends BaseFragment implements
             if (headerItem != null) {
                 headerItem.setSubItemShown(open_direct, ChatObject.isChannel(currentChat) && !ChatObject.isMonoForum(currentChat) && currentChat.linked_monoforum_id != 0 && (NaConfig.INSTANCE.getDisableChannelMuteButton().Bool() || ChatObject.canManageMonoForum(currentAccount, -currentChat.linked_monoforum_id)));
             }
+            updateSecretStatus();
         } else if (id == NotificationCenter.didReceiveNewMessages) {
             FileLog.d("ChatActivity didReceiveNewMessages start");
             long did = (Long) args[0];

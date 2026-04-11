@@ -383,6 +383,8 @@
     <string name="ForceForwardMediaStalled">媒体下载已停滞。</string>
     <string name="ForceForwardMediaDidNotStart">媒体下载未开始。</string>
     <string name="ForceForwardStatusPreparingMedia">准备媒体中</string>
+    <string name="ForceForwardStatusSentCount">%1$d / %2$d</string>
+    <string name="ForceForwardStatusChunkCount">%2$d 中的第 %1$d 块</string>
     <string name="ForceForwardStatusWaitingDownloads">等待媒体下载</string>
     <string name="ForceForwardStatusMediaReady">媒体已就绪</string>
     <string name="ForceForwardStatusForwarding">正在转发</string>
@@ -401,6 +403,7 @@
     <string name="ForceForwardStatusMediaGroup">正在转发媒体组</string>
     <string name="ForceForwardStatusDocumentGroupFallback">正在以文件组回退发送</string>
     <string name="ForceForwardStatusMediaGroupFallback">正在以媒体组回退发送</string>
+    <string name="ForceForwardSomeSkipped">%1$d 条消息无法转发</string>
     <string name="AvatarCorners">头像圆角</string>
     <string name="AvatarCornersLeft">更方</string>
     <string name="AvatarCornersRight">更圆</string>
