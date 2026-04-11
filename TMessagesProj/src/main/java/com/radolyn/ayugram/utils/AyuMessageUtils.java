@@ -1,4 +1,4 @@
-package com.radolyn.ayugram.proprietary;
+package com.radolyn.ayugram.utils;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -10,10 +10,10 @@ import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.database.entities.AyuMessageBase;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
-import com.radolyn.ayugram.utils.AyuFileLocation;
 
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
@@ -37,6 +37,246 @@ import xyz.nextalone.nagram.NaConfig;
 
 public abstract class AyuMessageUtils {
     private static final String TAG = "AyuMessageUtils";
+
+    public static final class PseudoReplyResult {
+        public final String text;
+        public final String caption;
+
+        public PseudoReplyResult(String text, String caption) {
+            this.text = text;
+            this.caption = caption;
+        }
+    }
+
+    public static boolean isChatNoForwards(MessageObject messageObject) {
+        if (messageObject == null || messageObject.currentAccount < 0) {
+            return false;
+        }
+        long chatId = messageObject.getChatId();
+        if (chatId < 0) {
+            chatId = -chatId;
+        }
+        if (chatId == 0) {
+            return false;
+        }
+        MessagesController controller = MessagesController.getInstance(messageObject.currentAccount);
+        TLRPC.Chat chat = controller.getChat(chatId);
+        if (chat == null) {
+            return false;
+        }
+        if (chat instanceof TLRPC.TL_channelForbidden || chat instanceof TLRPC.TL_chatForbidden) {
+            return true;
+        }
+        if (chat.banned_rights != null && chat.banned_rights.view_messages) {
+            return true;
+        }
+        if (chat.noforwards) {
+            return true;
+        }
+        if (chat.migrated_to != null) {
+            TLRPC.Chat migratedTo = controller.getChat(chat.migrated_to.channel_id);
+            if (migratedTo != null) {
+                if (migratedTo instanceof TLRPC.TL_channelForbidden || migratedTo instanceof TLRPC.TL_chatForbidden) {
+                    return true;
+                }
+                if (migratedTo.banned_rights != null && migratedTo.banned_rights.view_messages) {
+                    return true;
+                }
+                return migratedTo.noforwards;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isPeerNoForwards(MessageObject messageObject) {
+        if (messageObject == null || messageObject.currentAccount < 0) {
+            return false;
+        }
+        long dialogId = messageObject.getDialogId();
+        if (dialogId == 0 || DialogObject.isEncryptedDialog(dialogId)) {
+            return false;
+        }
+        if (dialogId > 0) {
+            MessagesController controller = MessagesController.getInstance(messageObject.currentAccount);
+            if (controller.isUserNoForwards(dialogId)) {
+                return true;
+            }
+            TLRPC.UserFull userFull = controller.getUserFull(dialogId);
+            return userFull != null && (userFull.noforwards_peer_enabled || userFull.noforwards_my_enabled);
+        }
+        return isChatNoForwards(messageObject);
+    }
+
+    public static boolean canForwardAyuDeletedMessage(MessageObject messageObject) {
+        if (messageObject == null || !messageObject.isAyuDeleted() || messageObject.messageOwner == null) {
+            return false;
+        }
+        if (messageObject.isQuickReply() || messageObject.needDrawBluredPreview() || messageObject.isLiveLocation() || messageObject.type == MessageObject.TYPE_PHONE_CALL || messageObject.isSponsored()) {
+            return false;
+        }
+        if (messageObject.type == MessageObject.TYPE_TEXT || messageObject.isAnimatedEmoji()) {
+            return !TextUtils.isEmpty(messageObject.messageOwner.message);
+        }
+        if (messageObject.isPhoto() || messageObject.isVideo() || messageObject.isGif() || messageObject.getDocument() != null) {
+            return hasLocalForwardCopy(messageObject);
+        }
+        return false;
+    }
+
+    public static boolean isUnforwardable(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return false;
+        }
+        TLRPC.Message message = messageObject.messageOwner;
+        if (message.noforwards) {
+            return true;
+        }
+        if (message instanceof TLRPC.TL_message_secret || message instanceof TLRPC.TL_message_secret_layer72 || messageObject.isSecretMedia()) {
+            return true;
+        }
+        if (message.ttl != 0) {
+            return true;
+        }
+        if (message.media != null && message.media.ttl_seconds != 0) {
+            return true;
+        }
+        return messageObject.type == MessageObject.TYPE_PAID_MEDIA || message.media instanceof TLRPC.TL_messageMediaPaidMedia;
+    }
+
+    public static boolean isAyuForwardNeeded(MessageObject messageObject) {
+        return canForwardAyuDeletedMessage(messageObject) || isPeerNoForwards(messageObject) || isUnforwardable(messageObject);
+    }
+
+    public static boolean isUnrepliable(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return false;
+        }
+        if (messageObject.isAyuDeleted() || messageObject.messageOwner.noforwards) {
+            return true;
+        }
+        return isPeerNoForwards(messageObject);
+    }
+
+    public static boolean hasLocalForwardCopy(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return false;
+        }
+        messageObject.checkMediaExistance();
+        if (messageObject.attachPathExists || messageObject.mediaExists()) {
+            return true;
+        }
+        return !TextUtils.isEmpty(messageObject.messageOwner.attachPath) && new File(messageObject.messageOwner.attachPath).exists();
+    }
+
+    public static PseudoReplyResult prependPseudoReply(String text, String caption, boolean photoMarker, MessageObject messageObject, ArrayList<TLRPC.MessageEntity> entities, int currentAccount, long targetDialogId) {
+        if ((TextUtils.isEmpty(text) && TextUtils.isEmpty(caption) && !photoMarker) || messageObject == null) {
+            return new PseudoReplyResult(text, caption);
+        }
+        if (!shouldPrependPseudoReply(messageObject, targetDialogId)) {
+            return new PseudoReplyResult(text, caption);
+        }
+
+        CharSequence messageText = messageObject.messageText;
+        if (TextUtils.isEmpty(messageText) || "null".contentEquals(messageText)) {
+            try {
+                messageObject.updateMessageText();
+                messageText = messageObject.messageText;
+            } catch (Exception ignored) {
+            }
+            if (TextUtils.isEmpty(messageText) || "null".contentEquals(messageText)) {
+                return new PseudoReplyResult(text, caption);
+            }
+        }
+
+        String senderName = "";
+        boolean isSelfChat = DialogObject.isUserDialog(targetDialogId)
+                && Math.abs(messageObject.getDialogId()) == Math.abs(targetDialogId);
+        if (!isSelfChat) {
+            senderName = getSenderName(messageObject);
+            if (!TextUtils.isEmpty(senderName)) {
+                senderName = senderName + "\n";
+            }
+        }
+
+        long senderId = messageObject.getSenderId();
+        String summary = senderName + shortifyText(messageText, 100);
+        int shift;
+        if (!TextUtils.isEmpty(text)) {
+            text = summary + "\n" + text;
+            shift = summary.length() + 1;
+        } else if (!TextUtils.isEmpty(caption)) {
+            caption = summary + "\n" + caption;
+            shift = summary.length() + 1;
+        } else if (photoMarker) {
+            caption = summary;
+            shift = summary.length();
+        } else {
+            return new PseudoReplyResult(text, caption);
+        }
+
+        shiftEntities(entities, shift);
+
+        if (!TextUtils.isEmpty(senderName)) {
+            TLRPC.TL_messageEntityBold bold = new TLRPC.TL_messageEntityBold();
+            bold.offset = 0;
+            bold.length = senderName.length();
+            entities.add(bold);
+
+            TLRPC.InputUser inputUser = MessagesController.getInstance(currentAccount).getInputUser(senderId);
+            if (inputUser != null) {
+                TLRPC.TL_inputMessageEntityMentionName mention = new TLRPC.TL_inputMessageEntityMentionName();
+                mention.user_id = inputUser;
+                mention.offset = 0;
+                mention.length = senderName.length();
+                entities.add(mention);
+            }
+        }
+
+        TLRPC.TL_messageEntityBlockquote blockquote = new TLRPC.TL_messageEntityBlockquote();
+        blockquote.offset = 0;
+        blockquote.length = summary.length();
+        entities.add(blockquote);
+
+        return new PseudoReplyResult(text, caption);
+    }
+
+    private static boolean shouldPrependPseudoReply(MessageObject messageObject, long targetDialogId) {
+        if (messageObject == null || messageObject.messageOwner == null || !isUnrepliable(messageObject)) {
+            return false;
+        }
+        if (messageObject.isAyuDeleted()) {
+            return true;
+        }
+        return Math.abs(messageObject.getDialogId()) != Math.abs(targetDialogId);
+    }
+
+    private static void shiftEntities(ArrayList<TLRPC.MessageEntity> entities, int offset) {
+        if (entities == null || entities.isEmpty() || offset == 0) {
+            return;
+        }
+        for (int i = 0; i < entities.size(); i++) {
+            entities.get(i).offset += offset;
+        }
+    }
+
+    private static String shortifyText(CharSequence text, int maxLen) {
+        if (TextUtils.isEmpty(text) || text.length() <= maxLen) {
+            return text != null ? text.toString() : "";
+        }
+        return text.subSequence(0, maxLen - 1) + "...";
+    }
+
+    private static String getSenderName(MessageObject messageObject) {
+        TLObject fromPeer = messageObject.getFromPeerObject();
+        if (fromPeer instanceof TLRPC.Chat) {
+            return ((TLRPC.Chat) fromPeer).title;
+        }
+        if (fromPeer instanceof TLRPC.User) {
+            TLRPC.User user = (TLRPC.User) fromPeer;
+            return ContactsController.formatName(user.first_name, user.last_name);
+        }
+        return "";
+    }
 
     public static <T extends TLObject> ArrayList<T> deserializeMultiple(byte[] serializedData, Function<NativeByteBuffer, T> deserializer) {
         ArrayList<T> deserializedList = new ArrayList<>();

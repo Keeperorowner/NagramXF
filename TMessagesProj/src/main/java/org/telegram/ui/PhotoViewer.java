@@ -342,7 +342,7 @@ import kotlin.Unit;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
-import tw.nekomimi.nekogram.helpers.ForceForward;
+import com.radolyn.ayugram.AyuForward;
 import tw.nekomimi.nekogram.llm.LlmConfig;
 import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
@@ -8809,7 +8809,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (messageObject.canForwardMessage()) {
             return true;
         }
-        return parentChatActivity != null && ForceForward.canForwardAyuDeletedMessage(messageObject);
+        return parentChatActivity != null && AyuForward.canForwardAyuDeletedMessage(messageObject);
     }
 
     private boolean hasAyuDeletedMessages(ArrayList<MessageObject> messages) {

@@ -400,6 +400,8 @@
     <string name="ForceForwardMediaStalled">Media download stalled.</string>
     <string name="ForceForwardMediaDidNotStart">Media download did not start.</string>
     <string name="ForceForwardStatusPreparingMedia">Preparing media</string>
+    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
+    <string name="ForceForwardStatusChunkCount">chunk %1$d of %2$d</string>
     <string name="ForceForwardStatusWaitingDownloads">Waiting for media downloads</string>
     <string name="ForceForwardStatusMediaReady">Media ready</string>
     <string name="ForceForwardStatusForwarding">Forwarding</string>
@@ -418,6 +420,7 @@
     <string name="ForceForwardStatusMediaGroup">Forwarding media group</string>
     <string name="ForceForwardStatusDocumentGroupFallback">Forwarding document group fallback</string>
     <string name="ForceForwardStatusMediaGroupFallback">Forwarding media group fallback</string>
+    <string name="ForceForwardSomeSkipped">%1$d message(s) could not be forwarded</string>
     <string name="AvatarCorners">Avatar corners</string>
     <string name="AvatarCornersLeft">Sharp</string>
     <string name="AvatarCornersRight">Round</string>
