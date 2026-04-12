@@ -47529,6 +47529,10 @@ public class ChatActivity extends BaseFragment implements
         boolean isStaticSticker = type == MESSAGE_TYPE_STICKER_PACK_NOT_INSTALLED && !selectedObject.isAnimatedSticker() && !selectedObject.isVideoSticker();
         boolean hasCaption = !TextUtils.isEmpty(getMessageCaption(selectedObject, selectedObjectGroup));
         boolean canDeleteMessage = selectedObject.canDeleteMessage(chatMode == MODE_SCHEDULED, currentChat);
+        TLRPC.Peer selectedFromPeer = selectedObject.messageOwner != null ? selectedObject.messageOwner.from_id : null;
+        TLRPC.Peer selectedDialogPeer = selectedObject.messageOwner != null ? selectedObject.messageOwner.peer_id : null;
+        long selectedFromUserId = selectedFromPeer != null ? selectedFromPeer.user_id : 0;
+        long selectedDialogUserId = selectedDialogPeer != null ? selectedDialogPeer.user_id : 0;
 
         if (allowEdit && groupedMessages != null) {
             int captionsCount = 0;
@@ -47750,7 +47754,7 @@ public class ChatActivity extends BaseFragment implements
                         icons.add(R.drawable.menu_reply);
                     }
                 }
-                if (!noforwardsOrPaidMedia && !selectedObject.isSponsored() && selectedObject.contentType == 0 && chatMode == MODE_DEFAULT && !isInsideContainer && currentChat != null && currentUser == null && selectedObject.messageOwner.peer_id.user_id == 0 && selectedObject.messageOwner.from_id.user_id > 0 && selectedObject.messageOwner.from_id.user_id != getUserConfig().getClientUserId() && !isAyuDeleted) {
+                if (!noforwardsOrPaidMedia && !selectedObject.isSponsored() && selectedObject.contentType == 0 && chatMode == MODE_DEFAULT && !isInsideContainer && currentChat != null && currentUser == null && selectedDialogUserId == 0 && selectedFromUserId > 0 && selectedFromUserId != getUserConfig().getClientUserId() && !isAyuDeleted) {
                     allowReplyPm = true;
                     if (NaConfig.INSTANCE.getShowReplyInPrivate().Bool()) {
                         items.add(LocaleController.getString(R.string.ReplyInPrivate));
@@ -48171,7 +48175,7 @@ public class ChatActivity extends BaseFragment implements
                     final MessageObject msg = getMessageForTranslate();
                     boolean showTranslate = NekoConfig.showTranslate.Bool() || (NaConfig.INSTANCE.getShowTranslateMessageLLM().Bool() && LlmConfig.llmIsDefaultProvider());
                     boolean showTranslateLLM = NaConfig.INSTANCE.getShowTranslateMessageLLM().Bool() && LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider();
-                    boolean isTranslatableMessage = msg != null && !msg.isAnimatedEmoji() && !msg.isDice();
+                    boolean isTranslatableMessage = msg != null && !msg.isSponsored() && !msg.isAnimatedEmoji() && !msg.isDice();
                     if ((showTranslate || showTranslateLLM) && isTranslatableMessage) {
                         String fromLang = msg.messageOwner.originalLanguage;
                         // check if language is restricted but don't detect language here to avoid extra delay
@@ -48399,7 +48403,7 @@ public class ChatActivity extends BaseFragment implements
                 final MessageObject msg = getMessageForTranslate();
                 boolean showTranslate = NekoConfig.showTranslate.Bool() || (NaConfig.INSTANCE.getShowTranslateMessageLLM().Bool() && LlmConfig.llmIsDefaultProvider());
                 boolean showTranslateLLM = NaConfig.INSTANCE.getShowTranslateMessageLLM().Bool() && LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider();
-                boolean isTranslatableMessage = msg != null && !msg.isAnimatedEmoji() && !msg.isDice();
+                boolean isTranslatableMessage = msg != null && !msg.isSponsored() && !msg.isAnimatedEmoji() && !msg.isDice();
                 if ((showTranslate || showTranslateLLM) && isTranslatableMessage) {
                     String fromLang = msg.messageOwner.originalLanguage;
                     if (fromLang != null && RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(fromLang)) {
@@ -48429,43 +48433,45 @@ public class ChatActivity extends BaseFragment implements
             }
             if (chatInfo != null && chatInfo.participants != null && chatInfo.participants.participants != null) {
                 selectedParticipant = null;
-                long user_id = selectedObject.messageOwner.from_id.user_id;
-                for (int a = 0; a < chatInfo.participants.participants.size(); a++) {
-                    TLRPC.ChatParticipant participant = chatInfo.participants.participants.get(a);
-                    if (participant.user_id != user_id || participant.user_id == getUserConfig().getCurrentUser().id) {
-                        continue;
-                    }
-
-                    boolean canEditAdmin;
-                    boolean canRestrict;
-                    boolean editingAdmin;
-                    final TLRPC.ChannelParticipant channelParticipant;
-
-                    if (ChatObject.isChannel(currentChat)) {
-                        channelParticipant = ((TLRPC.TL_chatChannelParticipant) participant).channelParticipant;
-                        canEditAdmin = ChatObject.canAddAdmins(currentChat);
-                        if (canEditAdmin && (channelParticipant instanceof TLRPC.TL_channelParticipantCreator || channelParticipant instanceof TLRPC.TL_channelParticipantAdmin && !channelParticipant.can_edit)) {
-                            canEditAdmin = false;
+                if (selectedFromUserId != 0) {
+                    long user_id = selectedFromUserId;
+                    for (int a = 0; a < chatInfo.participants.participants.size(); a++) {
+                        TLRPC.ChatParticipant participant = chatInfo.participants.participants.get(a);
+                        if (participant.user_id != user_id || participant.user_id == getUserConfig().getCurrentUser().id) {
+                            continue;
                         }
-                        canRestrict = ChatObject.canBlockUsers(currentChat) && (!(channelParticipant instanceof TLRPC.TL_channelParticipantAdmin || channelParticipant instanceof TLRPC.TL_channelParticipantCreator) || channelParticipant.can_edit);
-                        editingAdmin = channelParticipant instanceof TLRPC.TL_channelParticipantAdmin;
-                    } else {
-                        canEditAdmin = currentChat.creator;
-                        canRestrict = currentChat.creator;
-                        editingAdmin = participant instanceof TLRPC.TL_chatParticipantAdmin;
-                    }
 
-                    if (canEditAdmin && NekoConfig.showAdminActions.Bool()) {
-                        items.add(editingAdmin ? LocaleController.getString(R.string.EditAdminRights) : LocaleController.getString(R.string.SetAsAdmin));
-                        icons.add(R.drawable.profile_admin);
-                        options.add(nkbtn_editAdmin);
-                        selectedParticipant = participant;
-                    }
-                    if (canRestrict && NekoConfig.showChangePermissions.Bool()) {
-                        items.add(LocaleController.getString(R.string.ChangePermissions));
-                        icons.add(R.drawable.msg_permissions);
-                        options.add(nkbtn_editPermission);
-                        selectedParticipant = participant;
+                        boolean canEditAdmin;
+                        boolean canRestrict;
+                        boolean editingAdmin;
+                        final TLRPC.ChannelParticipant channelParticipant;
+
+                        if (ChatObject.isChannel(currentChat)) {
+                            channelParticipant = ((TLRPC.TL_chatChannelParticipant) participant).channelParticipant;
+                            canEditAdmin = ChatObject.canAddAdmins(currentChat);
+                            if (canEditAdmin && (channelParticipant instanceof TLRPC.TL_channelParticipantCreator || channelParticipant instanceof TLRPC.TL_channelParticipantAdmin && !channelParticipant.can_edit)) {
+                                canEditAdmin = false;
+                            }
+                            canRestrict = ChatObject.canBlockUsers(currentChat) && (!(channelParticipant instanceof TLRPC.TL_channelParticipantAdmin || channelParticipant instanceof TLRPC.TL_channelParticipantCreator) || channelParticipant.can_edit);
+                            editingAdmin = channelParticipant instanceof TLRPC.TL_channelParticipantAdmin;
+                        } else {
+                            canEditAdmin = currentChat.creator;
+                            canRestrict = currentChat.creator;
+                            editingAdmin = participant instanceof TLRPC.TL_chatParticipantAdmin;
+                        }
+
+                        if (canEditAdmin && NekoConfig.showAdminActions.Bool()) {
+                            items.add(editingAdmin ? LocaleController.getString(R.string.EditAdminRights) : LocaleController.getString(R.string.SetAsAdmin));
+                            icons.add(R.drawable.profile_admin);
+                            options.add(nkbtn_editAdmin);
+                            selectedParticipant = participant;
+                        }
+                        if (canRestrict && NekoConfig.showChangePermissions.Bool()) {
+                            items.add(LocaleController.getString(R.string.ChangePermissions));
+                            icons.add(R.drawable.msg_permissions);
+                            options.add(nkbtn_editPermission);
+                            selectedParticipant = participant;
+                        }
                     }
                 }
             }
