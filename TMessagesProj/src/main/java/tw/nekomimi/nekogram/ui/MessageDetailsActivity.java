@@ -136,13 +136,15 @@ public class MessageDetailsActivity extends BaseFragment implements Notification
     public MessageDetailsActivity(MessageObject messageObject, MessageObject.GroupedMessages messageGroup) {
         this.messageObject = messageObject;
         this.messageGroup = messageGroup;
-        if (messageObject.messageOwner.peer_id != null && messageObject.messageOwner.peer_id.channel_id != 0) {
-            fromChat = getMessagesController().getChat(messageObject.messageOwner.peer_id.channel_id);
-        } else if (messageObject.messageOwner.peer_id != null && messageObject.messageOwner.peer_id.chat_id != 0) {
-            fromChat = getMessagesController().getChat(messageObject.messageOwner.peer_id.chat_id);
+        TLRPC.Peer dialogPeer = messageObject.messageOwner.peer_id;
+        TLRPC.Peer fromPeer = messageObject.messageOwner.from_id;
+        if (dialogPeer != null && dialogPeer.channel_id != 0) {
+            fromChat = getMessagesController().getChat(dialogPeer.channel_id);
+        } else if (dialogPeer != null && dialogPeer.chat_id != 0) {
+            fromChat = getMessagesController().getChat(dialogPeer.chat_id);
         }
-        if (messageObject.messageOwner.from_id.user_id != 0) {
-            fromUser = getMessagesController().getUser(messageObject.messageOwner.from_id.user_id);
+        if (fromPeer != null && fromPeer.user_id != 0) {
+            fromUser = getMessagesController().getUser(fromPeer.user_id);
         }
         var media = MessageObject.getMedia(messageObject.messageOwner);
         if (media != null) {
