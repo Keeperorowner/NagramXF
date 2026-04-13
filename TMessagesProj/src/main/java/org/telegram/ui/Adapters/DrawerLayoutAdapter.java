@@ -315,7 +315,9 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         if (NaConfig.INSTANCE.getDrawerItemCalls().Bool()) {
             items.add(new Item(10, LocaleController.getString(R.string.Calls), callsIcon));
         }
-        items.add(new Item(nkbtnRecentChats, LocaleController.getString(R.string.RecentChats), recentChatsIcon));
+        if (NaConfig.INSTANCE.getDrawerItemRecentChats().Bool()) {
+            items.add(new Item(nkbtnRecentChats, LocaleController.getString(R.string.RecentChats), recentChatsIcon));
+        }
         if (NaConfig.INSTANCE.getDrawerItemSaved().Bool()) {
             items.add(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon));
         }

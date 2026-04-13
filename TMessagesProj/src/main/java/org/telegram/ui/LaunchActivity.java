@@ -610,6 +610,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         actionBarLayout.setFragmentStack(mainFragmentsStack);
         actionBarLayout.setFragmentStackChangedListener(() -> {
             bindHomeDrawerToDialogs();
+            BaseFragment lastFragment = getLastFragment();
+            if (lastFragment instanceof MainTabsActivity || lastFragment instanceof DialogsActivity dialogsActivity && dialogsActivity.isMainDialogList()) {
+                DialogsActivity homeDrawerDialogsActivity = getHomeDrawerDialogsActivity();
+                if (homeDrawerDialogsActivity != null) {
+                    homeDrawerDialogsActivity.postUpdateHomeDrawerAvailability();
+                }
+            }
             checkSystemBarColors(true, false);
             if (getLastFragment() != null && getLastFragment().getLastStoryViewer() != null) {
                 getLastFragment().getLastStoryViewer().updatePlayingMode();

@@ -969,6 +969,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val drawerItemRecentChats =
+        addConfig(
+            "DrawerItemRecentChats",
+            ConfigItem.configTypeBool,
+            true
+        )
     val drawerItemSaved =
         addConfig(
             "DrawerItemSaved",
