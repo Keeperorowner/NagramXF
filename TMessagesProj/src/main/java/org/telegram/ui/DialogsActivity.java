@@ -14093,6 +14093,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         drawerLayoutContainer.setAllowOpenDrawerBySwipe(canSwipeOpenHomeDrawer());
     }
 
+    public void postUpdateHomeDrawerAvailability() {
+        if (fragmentView != null) {
+            fragmentView.post(this::updateHomeDrawerAvailability);
+        } else {
+            updateHomeDrawerAvailability();
+        }
+    }
+
     private void checkUi_itemPasscodeVisibility() {
         final float factor0 = SharedConfig.passcodeHash.isEmpty() ? 0 : 1;
         final float factor1 = 1f - animatorSearchVisible.getFloatValue();
