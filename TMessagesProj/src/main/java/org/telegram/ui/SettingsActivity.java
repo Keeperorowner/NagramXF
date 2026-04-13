@@ -2173,6 +2173,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     }
 
     @Override
+    public void onSearchButtonClicked() {
+        if (searchItem != null) {
+            searchItem.openSearch(true);
+        }
+    }
+
+    @Override
+    public boolean hasSearch() {
+        return true;
+    }
+
+    @Override
     public boolean isSwipeBackEnabled(MotionEvent event) {
         return !animatorSearchPageVisible.getValue();
     }

@@ -1353,6 +1353,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val mainTabsShowSearchButton =
+        addConfig(
+            "MainTabsShowSearchButton",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showTextMonoCode =
         addConfig(
             "TextMonoCode",
