@@ -335,6 +335,21 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                 addView(tabView);
                 setViewVisible(tabView, true, false);
             }
+
+            GlassTabView searchTab = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.Search);
+            searchTab.setIcon(R.drawable.outline_header_search);
+            searchTab.setTitleVisible(!NaConfig.INSTANCE.getMainTabsHideTitles().Bool());
+            boolean searchEnabled = NaConfig.INSTANCE.getMainTabsShowSearchButton().Bool();
+            applySearchButtonVisual(searchTab, searchEnabled);
+            searchTab.setSelected(false, false);
+            searchTab.setOnClickListener(v -> {
+                boolean checked = NaConfig.INSTANCE.getMainTabsShowSearchButton().toggleConfigBool();
+                applySearchButtonVisual(searchTab, checked);
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
+            });
+            addView(searchTab);
+            setViewVisible(searchTab, true, false);
+
             requestLayout();
         }
 
@@ -354,6 +369,11 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
             tabView.setTag(state);
         }
 
+        private void applySearchButtonVisual(GlassTabView tabView, boolean enabled) {
+            tabView.setAlpha(enabled ? 1f : 0.4f);
+            tabView.setTag(Boolean.valueOf(enabled));
+        }
+
         @Override
         protected void setChildVisibilityFactor(View view, float factor) {
             float scale = org.telegram.messenger.AndroidUtilities.lerp(0.7f, 1f, factor);
@@ -361,6 +381,8 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
             Object tag = view.getTag();
             if (tag instanceof MainTabsConfigManager.TabState state) {
                 enabledAlpha = (state.type == MainTabsConfigManager.TabType.CHATS || state.enabled) ? 1f : 0.4f;
+            } else if (tag instanceof Boolean) {
+                enabledAlpha = (Boolean) tag ? 1f : 0.4f;
             }
             view.setAlpha(factor * enabledAlpha);
             view.setScaleX(scale);

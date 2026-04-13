@@ -1730,4 +1730,18 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
 //        animatorSearchFieldHeight.animateTo(dp(DialogsActivity.SEARCH_FIELD_HEIGHT));
         animatorSearchFieldVisible.setValue(true, true);
     }
+
+    @Override
+    public void onSearchButtonClicked() {
+        listView.smoothScrollToPosition(0);
+        AndroidUtilities.doOnPreDraw(searchField.editText, () -> {
+            searchField.editText.requestFocus();
+            AndroidUtilities.showKeyboard(searchField.editText);
+        });
+    }
+
+    @Override
+    public boolean hasSearch() {
+        return true;
+    }
 }
