@@ -1101,6 +1101,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val removeMessageTail =
+        addConfig(
+            "RemoveMessageTail",
+            ConfigItem.configTypeBool,
+            false
+        )
     val chatMenuItemBoostGroup =
         addConfig(
             "ChatMenuItemBoostGroup",

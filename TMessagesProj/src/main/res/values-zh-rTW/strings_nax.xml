@@ -116,6 +116,7 @@
     <string name="DontAutoPlayNextVoice">停用自動播放下一條語音訊息</string>
     <string name="SaveToChatSubfolder">按聊天名稱儲存附件</string>
     <string name="MessageColoredBackground">多彩訊息背景</string>
+    <string name="RemoveMessageTail">移除訊息氣泡尾巴</string>
     <string name="ColoredBackgroundNotice">回覆，引用，連結預覽的背景色和 Emoji。</string>
     <string name="ChatMenu">聊天選單</string>
     <string name="MediaViewerMenu">媒體檢視器選單</string>

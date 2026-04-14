@@ -95,6 +95,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell showTimeHintRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowTimeHint()));
     private final AbstractConfigCell hideTimeForStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideTimeForSticker));
     private final AbstractConfigCell disableReplyBackgroundRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getMessageColoredBackground()));
+    private final AbstractConfigCell removeMessageTailRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRemoveMessageTail()));
     private final AbstractConfigCell dividerStickerSize = cellGroup.appendCell(new ConfigCellDivider());
 
     // Chats
@@ -537,6 +538,12 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             } else if (key.equals(NaConfig.INSTANCE.getMessageColoredBackground().getKey())) {
                 stickerSizeCell.invalidate();
             } else if (key.equals(NekoConfig.hideTimeForSticker.getKey())) {
+                stickerSizeCell.invalidate();
+            } else if (key.equals(NaConfig.INSTANCE.getRemoveMessageTail().getKey())) {
+                if (getParentActivity() != null) {
+                    Theme.chat_msgInDrawable = null;
+                    Theme.createChatResources(getParentActivity(), false);
+                }
                 stickerSizeCell.invalidate();
             } else if (key.equals("PremiumElements" + "_check")) {
                 stickerSizeCell.invalidate();
