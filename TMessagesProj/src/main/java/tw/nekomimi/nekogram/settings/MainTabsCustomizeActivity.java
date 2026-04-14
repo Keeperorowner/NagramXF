@@ -21,19 +21,22 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.glass.GlassTabView;
-import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.MainTabsConfigManager;
 
 import java.util.ArrayList;
 
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
@@ -44,8 +47,7 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
     private int previewRow;
     private int previewInfoRow;
     private int showTabTitlesRow;
-    private int hideBottomBarRow;
-    private int hideOnScrollRow;
+    private int bottomBarDisplayModeRow;
     private int shadowRow;
 
     private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
@@ -64,8 +66,7 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
         previewRow = addRow();
         previewInfoRow = addRow();
         showTabTitlesRow = addRow();
-        hideBottomBarRow = addRow();
-        hideOnScrollRow = addRow();
+        bottomBarDisplayModeRow = addRow("MainTabsDisplayMode");
         shadowRow = addRow();
     }
 
@@ -92,17 +93,8 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                 previewCell.refreshTabs(getContext());
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
-        } else if (position == hideBottomBarRow) {
-            boolean checked = NaConfig.INSTANCE.getMainTabsHideBottomBar().toggleConfigBool();
-            if (view instanceof TextCheckCell textCheckCell) {
-                textCheckCell.setChecked(checked);
-            }
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
-        } else if (position == hideOnScrollRow) {
-            boolean checked = NaConfig.INSTANCE.getMainTabsHideOnScroll().toggleConfigBool();
-            if (view instanceof TextCheckCell textCheckCell) {
-                textCheckCell.setChecked(checked);
-            }
+        } else if (position == bottomBarDisplayModeRow) {
+            showBottomBarDisplayModeDialog();
         }
     }
 
@@ -114,6 +106,68 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
     @Override
     protected String getActionBarTitle() {
         return getString(R.string.MainTabsCustomize);
+    }
+
+    private String getBottomBarDisplayModeTitle() {
+        return getBottomBarDisplayModeName(MainTabsHelper.getBottomBarDisplayMode());
+    }
+
+    private void showBottomBarDisplayModeDialog() {
+        if (getParentActivity() == null) {
+            return;
+        }
+
+        final int[] modes = new int[]{
+                MainTabsHelper.BOTTOM_BAR_MODE_SHOW,
+                MainTabsHelper.BOTTOM_BAR_MODE_HIDE,
+                MainTabsHelper.BOTTOM_BAR_MODE_FLOATING
+        };
+        final AlertDialog[] dialog = new AlertDialog[1];
+
+        FrameLayout container = new FrameLayout(getParentActivity());
+        container.setPadding(0, dp(8), 0, 0);
+
+        android.widget.LinearLayout linearLayout = new android.widget.LinearLayout(getParentActivity());
+        linearLayout.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        for (int i = 0; i < modes.length; i++) {
+            final int mode = modes[i];
+            RadioColorCell cell = new RadioColorCell(getParentActivity(), getResourceProvider());
+            cell.setPadding(dp(4), 0, dp(4), 0);
+            cell.setCheckColor(Theme.getColor(Theme.key_dialogRadioBackground, getResourceProvider()), Theme.getColor(Theme.key_dialogRadioBackgroundChecked, getResourceProvider()));
+            cell.setTextAndValue(getBottomBarDisplayModeName(mode), MainTabsHelper.getBottomBarDisplayMode() == mode);
+            cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, getResourceProvider()), Theme.RIPPLE_MASK_ALL));
+            linearLayout.addView(cell);
+            cell.setOnClickListener(v -> {
+                if (MainTabsHelper.getBottomBarDisplayMode() != mode) {
+                    MainTabsHelper.setBottomBarDisplayMode(mode);
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
+                    if (listAdapter != null) {
+                        listAdapter.notifyItemChanged(bottomBarDisplayModeRow);
+                    }
+                }
+                if (dialog[0] != null) {
+                    dialog[0].dismiss();
+                }
+            });
+        }
+
+        dialog[0] = new AlertDialog.Builder(getParentActivity(), getResourceProvider())
+                .setTitle(getString(R.string.MainTabsDisplayMode))
+                .setView(container)
+                .setNegativeButton(getString(R.string.Cancel), null)
+                .create();
+        showDialog(dialog[0]);
+    }
+
+    private String getBottomBarDisplayModeName(int mode) {
+        if (mode == MainTabsHelper.BOTTOM_BAR_MODE_HIDE) {
+            return getString(R.string.MainTabsDisplayModeHide);
+        } else if (mode == MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+            return getString(R.string.MainTabsDisplayModeFloating);
+        }
+        return getString(R.string.MainTabsDisplayModeShow);
     }
 
     private void saveAndNotify() {
@@ -154,14 +208,15 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                     cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                     break;
                 }
+                case TYPE_SETTINGS: {
+                    TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                    cell.setTextAndValue(getString(R.string.MainTabsDisplayMode), getBottomBarDisplayModeTitle(), false);
+                    break;
+                }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
                     if (position == showTabTitlesRow) {
                         cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
-                    } else if (position == hideBottomBarRow) {
-                        cell.setTextAndCheck(getString(R.string.MainTabsHideBottomBar), NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool(), true);
-                    } else if (position == hideOnScrollRow) {
-                        cell.setTextAndCheck(getString(R.string.MainTabsHideOnScroll), NaConfig.INSTANCE.getMainTabsHideOnScroll().Bool(), false);
                     }
                     break;
                 }
@@ -190,6 +245,8 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                 return VIEW_TYPE_PREVIEW;
             } else if (position == previewInfoRow) {
                 return TYPE_INFO_PRIVACY;
+            } else if (position == bottomBarDisplayModeRow) {
+                return TYPE_SETTINGS;
             } else if (position == shadowRow) {
                 return TYPE_SHADOW;
             }
@@ -211,7 +268,7 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
             tabsPreviewCell = new MainTabsPreviewCell(context);
             previewCell = tabsPreviewCell;
             container.setPreviewCell(tabsPreviewCell);
-            container.addView(tabsPreviewCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 68, Gravity.CENTER, dp(10), dp(2), dp(10), dp(2)));
+            container.addView(tabsPreviewCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.CENTER, dp(6), dp(2), dp(6), dp(2)));
             setPadding(0, 0, 0, dp(12));
         }
 
@@ -280,8 +337,7 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
         public MainTabsPreviewCell(Context context) {
             super(context);
             setEqualWidthWhenTitlesVisible(true);
-            setClipChildren(false);
-            setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
+            setPadding(dp(12), dp(6), dp(12), dp(6));
         }
 
         public void setOnTabsChangedListener(OnTabsChangedListener listener) {
@@ -299,9 +355,18 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
             rebuildTabs(context);
         }
 
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            if (View.MeasureSpec.getMode(widthMeasureSpec) == View.MeasureSpec.EXACTLY) {
+                setMeasuredDimension(View.MeasureSpec.getSize(widthMeasureSpec), getMeasuredHeight());
+            }
+        }
+
         private void rebuildTabs(Context context) {
-            int pad = dp(DialogsActivity.MAIN_TABS_MARGIN + 4);
-            setPadding(pad, pad, pad, pad);
+            int horizontalPad = dp(12);
+            int verticalPad = dp(6);
+            setPadding(horizontalPad, verticalPad, horizontalPad, verticalPad);
             removeAllViews();
             for (int i = 0; i < tabs.size(); i++) {
                 final int index = i;
@@ -384,9 +449,24 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
             } else if (tag instanceof Boolean) {
                 enabledAlpha = (Boolean) tag ? 1f : 0.4f;
             }
+            view.setTranslationX(view.getTranslationX() + getCenteredOffset());
+            view.setTranslationY(getVerticalOffset());
             view.setAlpha(factor * enabledAlpha);
             view.setScaleX(scale);
             view.setScaleY(scale);
+        }
+
+        private float getCenteredOffset() {
+            int availableWidth = getMeasuredWidth() - getPaddingLeft() - getPaddingRight();
+            if (availableWidth <= 0) {
+                return 0f;
+            }
+            float contentWidth = Math.min(availableWidth, getMetadata().getTotalWidth());
+            return Math.max(0f, (availableWidth - contentWidth) / 2f);
+        }
+
+        private float getVerticalOffset() {
+            return 0f;
         }
 
         private boolean startDrag(int index, View view) {

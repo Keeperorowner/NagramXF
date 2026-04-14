@@ -335,7 +335,6 @@
     <string name="MainTabsCustomize">Нижняя панель</string>
     <string name="MainTabsCustomizeDesc">Нажмите на вкладку, чтобы отобразить или скрыть её. Удерживайте и перетаскивайте, чтобы изменить порядок.</string>
     <string name="MainTabsShowTitles">Показать заголовки вкладок</string>
-    <string name="MainTabsHideBottomBar">Скрыть нижнюю панель</string>
     <string name="FoldersAtBottom">Переместить папки вниз</string>
     <string name="AvatarCorners">Форма аватара</string>
     <string name="AvatarCornersLeft">Квадратный</string>

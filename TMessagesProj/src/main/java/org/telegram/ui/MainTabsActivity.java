@@ -378,7 +378,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private boolean isBottomBarHidden() {
-        return NaConfig.INSTANCE.getMainTabsHideBottomBar().Bool();
+        return NaConfig.INSTANCE.getMainTabsDisplayMode().Int() == MainTabsHelper.BOTTOM_BAR_MODE_HIDE;
     }
 
     private boolean shouldUseMainTabsPadding() {
@@ -761,6 +761,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         lastBottomBarHidden = bottomBarHidden;
         configuredTabs = newTabs;
 
+        if (NaConfig.INSTANCE.getMainTabsDisplayMode().Int() != MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
+            animatorTabsScrollHide.setValue(false, false);
+        }
+
         int targetPosition = getSafePagerPosition(getPreferredStartPositionFor(selectedType));
 
         if (viewPager != null) {
@@ -1097,7 +1101,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         @Override
         public void setTabsScrollHide(boolean hide) {
-            if (!NaConfig.INSTANCE.getMainTabsHideOnScroll().Bool()) return;
+            if (NaConfig.INSTANCE.getMainTabsDisplayMode().Int() != MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) return;
             animatorTabsScrollHide.setValue(hide, true);
         }
     }
