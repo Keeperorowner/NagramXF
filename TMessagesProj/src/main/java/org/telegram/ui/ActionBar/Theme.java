@@ -249,6 +249,8 @@ public class Theme {
                 {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff},
                 {0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff}
         };
+        private boolean shapeCacheRemoveMessageTail;
+        private boolean shapeCacheRemoveMessageTailSet;
 
         public static final int TYPE_TEXT = 0;
         public static final int TYPE_MEDIA = 1;
@@ -480,11 +482,26 @@ public class Theme {
             return paint;
         }
 
+        private boolean ensureShapeCacheState() {
+            boolean removeMessageTail = NaConfig.INSTANCE.getRemoveMessageTail().Bool();
+            if (!shapeCacheRemoveMessageTailSet || shapeCacheRemoveMessageTail != removeMessageTail) {
+                shapeCacheRemoveMessageTailSet = true;
+                shapeCacheRemoveMessageTail = removeMessageTail;
+                for (int i = 0; i < currentBackgroundDrawableRadius.length; i++) {
+                    Arrays.fill(currentBackgroundDrawableRadius[i], -1);
+                }
+                Arrays.fill(currentShadowDrawableRadius, -1);
+                transitionDrawable = null;
+            }
+            return removeMessageTail;
+        }
+
         public Drawable[] getShadowDrawables() {
             return shadowDrawable;
         }
 
         public Drawable getBackgroundDrawable() {
+            ensureShapeCacheState();
             int newRad;
             if (overrideRoundRadius != 0) {
                 newRad = overrideRoundRadius;
@@ -578,6 +595,7 @@ public class Theme {
         }
 
         public Drawable getTransitionDrawable(int color) {
+            ensureShapeCacheState();
             if (transitionDrawable == null) {
                 Bitmap bitmap = Bitmap.createBitmap(dp(50), dp(40), Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(bitmap);
@@ -608,6 +626,7 @@ public class Theme {
         }
 
         public Drawable getShadowDrawable() {
+            ensureShapeCacheState();
             if (isCrossfadeBackground) {
                 return null;
             }
@@ -770,7 +789,7 @@ public class Theme {
             boolean invalidatePath;
             if (pathDrawCacheParams != null) {
                 path = pathDrawCacheParams.path;
-                invalidatePath = pathDrawCacheParams.invalidatePath(bounds, drawFullBottom, drawFullTop);
+                invalidatePath = pathDrawCacheParams.invalidatePath(bounds, drawFullBottom, drawFullTop, NaConfig.INSTANCE.getRemoveMessageTail().Bool());
             } else {
                 path = this.path;
                 invalidatePath = true;
@@ -823,7 +842,7 @@ public class Theme {
             boolean invalidatePath;
             if (pathDrawCacheParams != null) {
                 path = pathDrawCacheParams.path;
-                invalidatePath = pathDrawCacheParams.invalidatePath(bounds, drawFullBottom, drawFullTop);
+                invalidatePath = pathDrawCacheParams.invalidatePath(bounds, drawFullBottom, drawFullTop, NaConfig.INSTANCE.getRemoveMessageTail().Bool());
             } else {
                 path = this.path;
                 invalidatePath = true;
@@ -840,11 +859,12 @@ public class Theme {
             if (rad > heightHalf) {
                 rad = heightHalf;
             }
+            boolean removeMessageTail = NaConfig.INSTANCE.getRemoveMessageTail().Bool();
             if (isOut) {
                 // LEFT-BOTTOM <- RIGHT-BOTTOM
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
                     int radToUse = botButtonsBottom ? nearRad : rad;
-                    if (currentType == TYPE_MEDIA) {
+                    if (currentType == TYPE_MEDIA || removeMessageTail) {
                         path.moveTo(bounds.right - dp(8) - radToUse, bounds.bottom - padding);
                     } else {
                         path.moveTo(bounds.right - dp(2.6f), bounds.bottom - padding);
@@ -896,9 +916,16 @@ public class Theme {
                     }
                 } else {
                     if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
-                        path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
-                        rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
-                        path.arcTo(rect, 180, -83, false);
+                        if (removeMessageTail) {
+                            int radToUse = isBottomNear ? nearRad : rad;
+                            path.lineTo(bounds.right - dp(8), bounds.bottom - padding - radToUse);
+                            rect.set(bounds.right - dp(8) - radToUse * 2, bounds.bottom - padding - radToUse * 2, bounds.right - dp(8), bounds.bottom - padding);
+                            path.arcTo(rect, 0, 90, false);
+                        } else {
+                            path.lineTo(bounds.right - dp(8), bounds.bottom - padding - smallRad - dp(3));
+                            rect.set(bounds.right - dp(8), bounds.bottom - padding - smallRad * 2 - dp(9), bounds.right - dp(7) + smallRad * 2, bounds.bottom - padding - dp(1));
+                            path.arcTo(rect, 180, -83, false);
+                        }
                     } else {
                         path.lineTo(bounds.right - dp(8), top - topY + currentBackgroundHeight);
                     }
@@ -907,7 +934,7 @@ public class Theme {
                 if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
                     int radToUse = botButtonsBottom ? nearRad : rad;
 
-                    if (currentType == TYPE_MEDIA) {
+                    if (currentType == TYPE_MEDIA || removeMessageTail) {
                         path.moveTo(bounds.left + dp(8) + radToUse, bounds.bottom - padding);
                     } else {
                         path.moveTo(bounds.left + dp(2.6f), bounds.bottom - padding);
@@ -953,9 +980,16 @@ public class Theme {
                     }
                 } else {
                     if (drawFullBubble || currentType == TYPE_PREVIEW || customPaint || drawFullBottom) {
-                        path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
-                        rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
-                        path.arcTo(rect, 0, 83, false);
+                        if (removeMessageTail) {
+                            int radToUse = isBottomNear || botButtonsBottom ? nearRad : rad;
+                            path.lineTo(bounds.left + dp(8), bounds.bottom - padding - radToUse);
+                            rect.set(bounds.left + dp(8), bounds.bottom - padding - radToUse * 2, bounds.left + dp(8) + radToUse * 2, bounds.bottom - padding);
+                            path.arcTo(rect, 180, -90, false);
+                        } else {
+                            path.lineTo(bounds.left + dp(8), bounds.bottom - padding - smallRad - dp(3));
+                            rect.set(bounds.left + dp(7) - smallRad * 2, bounds.bottom - padding - smallRad * 2 - dp(9), bounds.left + dp(8), bounds.bottom - padding - dp(1));
+                            path.arcTo(rect, 0, 83, false);
+                        }
                     } else {
                         path.lineTo(bounds.left + dp(8), top - topY + currentBackgroundHeight);
                     }
@@ -1025,11 +1059,13 @@ public class Theme {
             Rect lastRect = new Rect();
             boolean lastDrawFullTop;
             boolean lastDrawFullBottom;
+            boolean lastRemoveMessageTail;
 
-            public boolean invalidatePath(Rect bounds, boolean drawFullBottom, boolean drawFullTop) {
-                boolean invalidate = lastRect.isEmpty() || lastRect.top != bounds.top || lastRect.bottom != bounds.bottom || lastRect.right != bounds.right || lastRect.left != bounds.left || lastDrawFullTop != drawFullTop || lastDrawFullBottom != drawFullBottom || !drawFullTop || !drawFullBottom;
+            public boolean invalidatePath(Rect bounds, boolean drawFullBottom, boolean drawFullTop, boolean removeMessageTail) {
+                boolean invalidate = lastRect.isEmpty() || lastRect.top != bounds.top || lastRect.bottom != bounds.bottom || lastRect.right != bounds.right || lastRect.left != bounds.left || lastDrawFullTop != drawFullTop || lastDrawFullBottom != drawFullBottom || lastRemoveMessageTail != removeMessageTail || !drawFullTop || !drawFullBottom;
                 lastDrawFullTop = drawFullTop;
                 lastDrawFullBottom = drawFullBottom;
+                lastRemoveMessageTail = removeMessageTail;
                 lastRect.set(bounds);
                 return invalidate;
             }
