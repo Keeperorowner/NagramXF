@@ -1322,6 +1322,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         if (!show) {
             int baseTabsWidth = dp(MainTabsHelper.getTabsViewWidth());
+            int wrapperWidth = tabsViewWrapper.getWidth();
+            if (wrapperWidth > 0) {
+                int containerPadding = tabsBarContainer.getPaddingLeft() + tabsBarContainer.getPaddingRight();
+                int outerInset = dp(Math.min(DialogsActivity.MAIN_TABS_MARGIN, 6));
+                int maxTabsWidth = Math.max(0, wrapperWidth - containerPadding - outerInset * 2);
+                baseTabsWidth = Math.min(baseTabsWidth, maxTabsWidth);
+            }
             if (tabsLp.width != baseTabsWidth) {
                 tabsLp.width = baseTabsWidth;
                 tabsView.setLayoutParams(tabsLp);
@@ -1397,9 +1404,3 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
 }
-
-
-
-
-
-
