@@ -1347,17 +1347,11 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
-    val mainTabsHideBottomBar =
+    val mainTabsDisplayMode =
         addConfig(
-            "MainTabsHideBottomBar",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val mainTabsHideOnScroll =
-        addConfig(
-            "MainTabsHideOnScroll",
-            ConfigItem.configTypeBool,
-            false
+            "MainTabsDisplayMode",
+            ConfigItem.configTypeInt,
+            0
         )
     val mainTabsShowSearchButton =
         addConfig(
@@ -1644,6 +1638,25 @@ object NaConfig {
                 backAnimationStyle.setConfigInt(1) // SPRING
             }
             getPreferences().edit { remove("SpringAnimation") }
+        }
+        if (!getPreferences().contains(mainTabsDisplayMode.key) &&
+            (getPreferences().contains("MainTabsHideBottomBar") || getPreferences().contains("MainTabsHideOnScroll"))
+        ) {
+            val legacyHideBottomBar = getPreferences().getBoolean("MainTabsHideBottomBar", false)
+            val legacyHideOnScroll = getPreferences().getBoolean("MainTabsHideOnScroll", false)
+            mainTabsDisplayMode.setConfigInt(
+                when {
+                    legacyHideBottomBar -> 1
+                    legacyHideOnScroll -> 2
+                    else -> 0
+                }
+            )
+        }
+        if (getPreferences().contains("MainTabsHideBottomBar") || getPreferences().contains("MainTabsHideOnScroll")) {
+            getPreferences().edit {
+                remove("MainTabsHideBottomBar")
+                remove("MainTabsHideOnScroll")
+            }
         }
 
         val currentLlmApiUrl = llmApiUrl.String()

@@ -14,6 +14,9 @@ public final class MainTabsHelper {
     public static final int FILTER_TABS_HEIGHT = 36;
     public static final int TAB_WIDTH = 80;
     public static final int TAB_PADDING = 4;
+    public static final int BOTTOM_BAR_MODE_SHOW = 0;
+    public static final int BOTTOM_BAR_MODE_HIDE = 1;
+    public static final int BOTTOM_BAR_MODE_FLOATING = 2;
 
     private MainTabsHelper() {
     }
@@ -66,6 +69,14 @@ public final class MainTabsHelper {
 
     public static int getTabsViewWidth() {
         return TAB_WIDTH * getFragmentsCount() + (getMainTabsMargin() + TAB_PADDING) * 2;
+    }
+
+    public static int getBottomBarDisplayMode() {
+        return NaConfig.INSTANCE.getMainTabsDisplayMode().Int();
+    }
+
+    public static void setBottomBarDisplayMode(int mode) {
+        NaConfig.INSTANCE.getMainTabsDisplayMode().setConfigInt(mode);
     }
 
     private static int getTabPosition(MainTabsConfigManager.TabType type, int fallback) {
