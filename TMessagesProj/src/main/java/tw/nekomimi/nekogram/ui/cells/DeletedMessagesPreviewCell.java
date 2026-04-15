@@ -57,6 +57,7 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
 
         private final ChatMessageCell cell;
         private final MessageObject messageObject;
+        private final Drawable monetBackgroundDrawable;
         private final Drawable shadowDrawable;
         private BackgroundGradientDrawable.Disposable backgroundGradientDisposable;
 
@@ -67,6 +68,7 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
             setOrientation(VERTICAL);
             setPadding(0, dp(11), 0, dp(11));
 
+            monetBackgroundDrawable = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
             shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.getColor(Theme.key_windowBackgroundGrayShadow));
 
             int currentAccount = UserConfig.selectedAccount;
@@ -143,11 +145,12 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
 
         @Override
         protected void onDraw(@NonNull Canvas canvas) {
-            Drawable drawable = Theme.getCachedWallpaperNonBlocking();
+            boolean isMonetTheme = Theme.getActiveTheme() != null && Theme.getActiveTheme().isMonet();
+            Drawable drawable = isMonetTheme ? monetBackgroundDrawable : Theme.getCachedWallpaperNonBlocking();
             if (drawable == null) {
                 canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray));
             } else {
-                drawable.setAlpha(255);
+                drawable.setAlpha(drawable == monetBackgroundDrawable ? 150 : 255);
                 if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
                     drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
                     if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {

@@ -43,6 +43,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
     private final FrameLayout fragmentView;
     private final ChatMessageCell[] cells = new ChatMessageCell[2];
     private final MessageObject[] messageObjects = new MessageObject[2];
+    private final Drawable monetBackgroundDrawable;
     private final Drawable shadowDrawable;
 
     public StickerSizePreviewMessagesCell(Context context, BaseFragment fragment) {
@@ -55,6 +56,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         setOrientation(LinearLayout.VERTICAL);
         setPadding(0, dp(11), 0, dp(11));
 
+        monetBackgroundDrawable = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.getColor(Theme.key_windowBackgroundGrayShadow, resourcesProvider));
 
         int date = (int) (System.currentTimeMillis() / 1000) - 60 * 60;
@@ -189,39 +191,41 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
 
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
-        Drawable drawable = Theme.getCachedWallpaperNonBlocking();
+        boolean isMonetTheme = Theme.getActiveTheme() != null && Theme.getActiveTheme().isMonet();
+        Drawable drawable = isMonetTheme ? monetBackgroundDrawable : Theme.getCachedWallpaperNonBlocking();
         if (drawable == null) {
-            return;
-        }
-        drawable.setAlpha(255);
-        if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
-            drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-            if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
-                backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
-            } else {
+            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        } else {
+            drawable.setAlpha(drawable == monetBackgroundDrawable ? 150 : 255);
+            if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
+                drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
+                    backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
+                } else {
+                    drawable.draw(canvas);
+                }
+            } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
+                if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
+                    canvas.save();
+                    float scale = 2.0f / AndroidUtilities.density;
+                    canvas.scale(scale, scale);
+                    drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
+                } else {
+                    int viewHeight = getMeasuredHeight();
+                    float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
+                    float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
+                    float scale = Math.max(scaleX, scaleY);
+                    int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
+                    int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
+                    int x = (getMeasuredWidth() - width) / 2;
+                    int y = (viewHeight - height) / 2;
+                    canvas.save();
+                    canvas.clipRect(0, 0, width, getMeasuredHeight());
+                    drawable.setBounds(x, y, x + width, y + height);
+                }
                 drawable.draw(canvas);
+                canvas.restore();
             }
-        } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
-            if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
-                canvas.save();
-                float scale = 2.0f / AndroidUtilities.density;
-                canvas.scale(scale, scale);
-                drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
-            } else {
-                int viewHeight = getMeasuredHeight();
-                float scaleX = (float) getMeasuredWidth() / (float) drawable.getIntrinsicWidth();
-                float scaleY = (float) (viewHeight) / (float) drawable.getIntrinsicHeight();
-                float scale = Math.max(scaleX, scaleY);
-                int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
-                int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
-                int x = (getMeasuredWidth() - width) / 2;
-                int y = (viewHeight - height) / 2;
-                canvas.save();
-                canvas.clipRect(0, 0, width, getMeasuredHeight());
-                drawable.setBounds(x, y, x + width, y + height);
-            }
-            drawable.draw(canvas);
-            canvas.restore();
         }
         shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
         shadowDrawable.draw(canvas);
