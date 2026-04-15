@@ -32222,6 +32222,7 @@ public class ChatActivity extends BaseFragment implements
 
             ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity(), R.drawable.popup_fixed_alert4, themeDelegate, flags);
             popupLayout.setMinimumWidth(AndroidUtilities.dp(200));
+            popupLayout.setCascadeEnabled(GroupedIconsView.useGroupedIcons());
             Rect backgroundPaddings = new Rect();
             Drawable shadowDrawable = getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert4).mutate();
             shadowDrawable.getPadding(backgroundPaddings);
@@ -32927,7 +32928,7 @@ public class ChatActivity extends BaseFragment implements
                 scrimPopupWindowItems = new ActionBarMenuSubItem[items.size()];
                 final boolean hasGroupedIcons = GroupedIconsView.useGroupedIcons();
                 for (int a = 0, N = items.size(); a < N; a++) {
-                    ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), a == 0, a == N - 1 && !hasGroupedIcons, themeDelegate);
+                    ActionBarMenuSubItem cell = new ActionBarMenuSubItem(getParentActivity(), a == 0, a == N - 1, themeDelegate);
                     cell.setMinimumWidth(AndroidUtilities.dp(200));
                     cell.setTextAndIcon(items.get(a), icons.get(a));
                     Integer option = options.get(a);
@@ -33178,13 +33179,6 @@ public class ChatActivity extends BaseFragment implements
                     popupLayout.addView(layout);
                 }
 
-                if (GroupedIconsView.useGroupedIcons()) {
-                    popupLayout.addView(new ActionBarPopupWindow.GapView(contentView.getContext(), themeDelegate), LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
-
-                    var groupedIconsView = new GroupedIconsView(getContext(), ChatActivity.this, selectedObject, this.lastMessageMenuStatus.allowReply, this.lastMessageMenuStatus.allowReplyPm, this.lastMessageMenuStatus.allowEdit, this.lastMessageMenuStatus.allowDelete, this.lastMessageMenuStatus.allowForward, this.lastMessageMenuStatus.allowCopy, this.lastMessageMenuStatus.allowCopyPhoto, this.lastMessageMenuStatus.allowCopyLink, this.lastMessageMenuStatus.allowCopyLinkPm);
-                    popupLayout.addView(groupedIconsView.linearLayout);
-                }
-
             }
 
             ChatScrimPopupContainerLayout scrimPopupContainerLayout = new ChatScrimPopupContainerLayout(contentView.getContext()) {
@@ -33320,22 +33314,57 @@ public class ChatActivity extends BaseFragment implements
                 boolean showDirectForwardHint = shouldShowDirectForwardHint(message);
                 scrimPopupContainerLayout.addView(popupLayout, LayoutHelper.createLinearRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, 0, isReactionsAvailable ? 36 : 0, 0));
                 scrimPopupContainerLayout.setPopupWindowLayout(popupLayout);
-                if (showDirectForwardHint) {
+                if (GroupedIconsView.useGroupedIcons()) {
                     popupLayout.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                    int popupContentWidth = Math.max(0, popupLayout.getMeasuredWidth() - popupLayout.getPaddingLeft() - popupLayout.getPaddingRight());
+                    float outerBubbleSpacing = -8f;
+                    int innerBubbleSpacing = -AndroidUtilities.dp(8);
+                    FrameLayout bottomContainer = new FrameLayout(contentView.getContext());
+                    bottomContainer.setTag(R.id.fit_width_tag, 1);
+                    LinearLayout bottomLayout = new LinearLayout(contentView.getContext());
+                    bottomLayout.setOrientation(LinearLayout.VERTICAL);
+                    bottomContainer.addView(bottomLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
+
+                    ActionBarPopupWindow.ActionBarPopupWindowLayout groupedIconsPopupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(contentView.getContext(), R.drawable.popup_fixed_alert4, themeDelegate, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_DONT_USE_SCROLLVIEW);
+                    GroupedIconsView groupedIconsView = new GroupedIconsView(getContext(), ChatActivity.this, themeDelegate, selectedObject, this.lastMessageMenuStatus.allowReply, this.lastMessageMenuStatus.allowReplyPm, this.lastMessageMenuStatus.allowEdit, this.lastMessageMenuStatus.allowDelete, this.lastMessageMenuStatus.allowForward, this.lastMessageMenuStatus.allowCopy, this.lastMessageMenuStatus.allowCopyPhoto, this.lastMessageMenuStatus.allowCopyLink, this.lastMessageMenuStatus.allowCopyLinkPm);
+                    groupedIconsPopupLayout.addView(groupedIconsView, new LinearLayout.LayoutParams(popupContentWidth, AndroidUtilities.dp(56)));
+                    bottomLayout.addView(groupedIconsPopupLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                    if (showDirectForwardHint) {
+                        TextView tv = new TextView(contentView.getContext());
+                        tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                        tv.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                        tv.setText(LocaleController.getString(R.string.DirectForwardNotAllowed));
+                        tv.setPadding(dp(11), dp(11), dp(11), dp(11));
+                        tv.setMaxWidth(Math.max(0, popupContentWidth - AndroidUtilities.dp(22)));
+
+                        ActionBarPopupWindow.ActionBarPopupWindowLayout hintPopupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(contentView.getContext(), R.drawable.popup_fixed_alert4, themeDelegate, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_DONT_USE_SCROLLVIEW);
+                        hintPopupLayout.addView(tv, new LinearLayout.LayoutParams(popupContentWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+                        LinearLayout.LayoutParams params = LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                        params.width = LayoutHelper.MATCH_PARENT;
+                        params.topMargin = innerBubbleSpacing;
+                        bottomLayout.addView(hintPopupLayout, params);
+                    }
+
+                    scrimPopupContainerLayout.addView(bottomContainer, LayoutHelper.createLinearRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
+                    scrimPopupContainerLayout.applyViewBottom(bottomContainer);
+                } else if (showDirectForwardHint) {
+                    popupLayout.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                    int popupContentWidth = Math.max(0, popupLayout.getMeasuredWidth() - popupLayout.getPaddingLeft() - popupLayout.getPaddingRight());
+                    float outerBubbleSpacing = -8f;
                     TextView tv = new TextView(contentView.getContext());
                     tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                     tv.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
                     tv.setText(LocaleController.getString(R.string.DirectForwardNotAllowed));
-                    tv.setMaxWidth(popupLayout.getMeasuredWidth() - AndroidUtilities.dp(38));
+                    tv.setPadding(dp(11), dp(11), dp(11), dp(11));
+                    tv.setMaxWidth(Math.max(0, popupContentWidth - AndroidUtilities.dp(22)));
 
-                    Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert).mutate();
-                    shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-
-                    FrameLayout fl = new FrameLayout(contentView.getContext());
-                    fl.setBackground(shadowDrawable2);
-                    fl.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
-                    scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, -8, isReactionsAvailable ? 36 : 0, 0));
-                    scrimPopupContainerLayout.applyViewBottom(fl);
+                    ActionBarPopupWindow.ActionBarPopupWindowLayout hintPopupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(contentView.getContext(), R.drawable.popup_fixed_alert4, themeDelegate, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_DONT_USE_SCROLLVIEW);
+                    hintPopupLayout.setTag(R.id.fit_width_tag, 1);
+                    hintPopupLayout.addView(tv, new LinearLayout.LayoutParams(popupContentWidth, ViewGroup.LayoutParams.WRAP_CONTENT));
+                    scrimPopupContainerLayout.addView(hintPopupLayout, LayoutHelper.createLinearRelatively(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
+                    scrimPopupContainerLayout.applyViewBottom(hintPopupLayout);
                 }
 
                 if (message.isSendError() && message.messageOwner != null && message.messageOwner.errorNewPriceStars > 0) {
