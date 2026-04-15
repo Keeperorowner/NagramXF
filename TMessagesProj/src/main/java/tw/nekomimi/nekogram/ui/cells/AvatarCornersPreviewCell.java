@@ -27,6 +27,8 @@ public class AvatarCornersPreviewCell extends FrameLayout {
 
     private final RectF rect = new RectF();
     private final Path onlineCutoutPath = new Path();
+    private final Paint previewBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint previewStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final AltSeekbar seekBar;
     private final FrameLayout preview;
@@ -68,6 +70,8 @@ public class AvatarCornersPreviewCell extends FrameLayout {
         outlinePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_switchTrack), 63));
         outlinePaint.setStrokeWidth(Math.max(2, AndroidUtilities.dp(1.0f)));
 
+        previewStrokePaint.setStyle(Paint.Style.STROKE);
+
         preview = new FrameLayout(context) {
             @SuppressWarnings("deprecation")
             @Override
@@ -80,7 +84,24 @@ public class AvatarCornersPreviewCell extends FrameLayout {
                 float height = getMeasuredHeight();
                 float centerY = height / 2.0f;
                 float round = AndroidUtilities.dp(10.0f);
+                float previewRound = AndroidUtilities.dp(12.0f);
                 float rectRound = width / 2.0f;
+                float previewAlpha = Theme.isCurrentThemeDark() ? 0.05f : 0.035f;
+                float previewStroke = AndroidUtilities.dpf2(0.5f);
+
+                previewBackgroundPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), previewAlpha));
+                previewStrokePaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), previewAlpha + 0.085f));
+                previewStrokePaint.setStrokeWidth(previewStroke);
+
+                rect.set(0.0f, 0.0f, width, height);
+                canvas.drawRoundRect(rect, previewRound, previewRound, previewBackgroundPaint);
+                rect.set(
+                        previewStroke / 2.0f,
+                        previewStroke / 2.0f,
+                        width - previewStroke / 2.0f,
+                        height - previewStroke / 2.0f
+                );
+                canvas.drawRoundRect(rect, previewRound, previewRound, previewStrokePaint);
 
                 rect.set(0.0f, 0.0f, width, height);
                 Theme.dialogs_onlineCirclePaint.setColor(Color.argb(20, red, green, blue));
