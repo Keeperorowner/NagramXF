@@ -51,6 +51,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
 
@@ -134,6 +135,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         protected Drawable backgroundDrawable;
 
         private boolean fitItems;
+        private boolean cascadeEnabled;
         private final Theme.ResourcesProvider resourcesProvider;
         private View topView;
         protected ActionBarPopupWindow window;
@@ -403,17 +405,51 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
         }
 
+        private void maybeAnimateAddedChild(View child) {
+            if (!cascadeEnabled || child == null) {
+                return;
+            }
+            child.setAlpha(0.0f);
+            child.setTranslationY(dp(shownFromBottom ? 12 : -12));
+            if (child instanceof ActionBarMenuSubItem) {
+                int itemCount = 0;
+                for (int i = 0, count = linearLayout.getChildCount(); i < count; i++) {
+                    View item = linearLayout.getChildAt(i);
+                    if (item instanceof ActionBarMenuSubItem && item.getVisibility() == VISIBLE) {
+                        itemCount++;
+                    }
+                }
+                final long startDelay = itemCount * 35L + 10L;
+                child.post(() -> child.animate()
+                        .alpha(child.isEnabled() ? 1.0f : 0.5f)
+                        .translationY(0.0f)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .setStartDelay(startDelay)
+                        .setDuration(400L)
+                        .start());
+            } else {
+                child.setAlpha(child.isEnabled() ? 1.0f : 0.5f);
+                child.setTranslationY(0.0f);
+            }
+        }
+
         public void setAnimationEnabled(boolean value) {
             animationEnabled = value;
+        }
+
+        public void setCascadeEnabled(boolean value) {
+            cascadeEnabled = value;
         }
 
         @Override
         public void addView(View child) {
             linearLayout.addView(child);
+            maybeAnimateAddedChild(child);
         }
 
         public void addView(View child, LinearLayout.LayoutParams layoutParams) {
             linearLayout.addView(child, layoutParams);
+            maybeAnimateAddedChild(child);
         }
 
         public int getViewsCount() {
