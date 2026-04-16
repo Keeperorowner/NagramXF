@@ -700,6 +700,24 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     private TLRPC.ChatFull info;
 
+    private static class PendingCustomEmojiStickerSend {
+        final TLRPC.Document document;
+        final String emoticon;
+        final boolean notify;
+        final int scheduleDate;
+        final int scheduleRepeatPeriod;
+
+        private PendingCustomEmojiStickerSend(TLRPC.Document document, String emoticon, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+            this.document = document;
+            this.emoticon = emoticon;
+            this.notify = notify;
+            this.scheduleDate = scheduleDate;
+            this.scheduleRepeatPeriod = scheduleRepeatPeriod;
+        }
+    }
+
+    private final HashMap<String, ArrayList<PendingCustomEmojiStickerSend>> pendingCustomEmojiStickerSends = new HashMap<>();
+
     private boolean hasRecordVideo;
 
     private int currentPopupContentType = -1;
@@ -2643,6 +2661,8 @@ public class ChatActivityEnterView extends FrameLayout implements
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.audioRecordTooShort);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateBotMenuButton);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didUpdatePremiumGiftFieldIcon);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
+        NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoadFailed);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
 
         parentActivity = context;
@@ -7042,6 +7062,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.audioRecordTooShort);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateBotMenuButton);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didUpdatePremiumGiftFieldIcon);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
+        NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoadFailed);
+        pendingCustomEmojiStickerSends.clear();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (emojiView != null) {
             emojiView.onDestroy();
@@ -7225,6 +7248,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.featuredStickersDidLoad);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messageReceivedByServer2);
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.sendingMessagesChanged);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoaded);
+            NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.fileLoadFailed);
+            pendingCustomEmojiStickerSends.clear();
             currentAccount = account;
             accountInstance = AccountInstance.getInstance(currentAccount);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.recordStarted);
@@ -7241,6 +7267,8 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.featuredStickersDidLoad);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messageReceivedByServer2);
             NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.sendingMessagesChanged);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoaded);
+            NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.fileLoadFailed);
         }
 
         sendPlainEnabled = true;
@@ -12356,7 +12384,35 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 }
             }
 
-    public void onCustomEmojiSelected(long documentId, TLRPC.Document document, String emoticon, boolean isRecent) {
+            @Override
+            public boolean allowNonPremiumCustomEmoji() {
+                return !UserConfig.getInstance(currentAccount).isPremium()
+                    && NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker().Bool()
+                    && dialog_id != UserConfig.getInstance(currentAccount).getClientUserId();
+            }
+
+            @Override
+            public boolean canShowNonPremiumCustomEmoji(TLRPC.Document document) {
+                return allowNonPremiumCustomEmoji()
+                    && document != null
+                    && !ChatActivityEnterView.this.isGroupEmojiDocument(document)
+                    && ChatActivityEnterView.this.isCustomEmojiStickerMime(document);
+            }
+
+            @Override
+            public boolean onNonPremiumCustomEmojiSelected(long documentId, TLRPC.Document document, String emoticon, boolean isRecent) {
+                if (!canShowNonPremiumCustomEmoji(document)) {
+                    return false;
+                }
+                if (!stickersEnabled) {
+                    ChatActivityEnterView.this.showRestrictedHint();
+                    return true;
+                }
+                return ChatActivityEnterView.this.sendCustomEmojiAsUploadedSticker(document, emoticon, true, 0, 0);
+            }
+
+            @Override
+            public void onCustomEmojiSelected(long documentId, TLRPC.Document document, String emoticon, boolean isRecent) {
                 final EditTextBoldCursor messageEditText = mOverrideEditTextView != null ?
                     mOverrideEditTextView : ChatActivityEnterView.this.messageEditText;
                 AndroidUtilities.runOnUIThread(() -> {
@@ -13041,6 +13097,170 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         }
         attachEmojiView();
         checkChannelRights();
+    }
+
+    private boolean isGroupEmojiDocument(TLRPC.Document document) {
+        if (document == null || info == null || info.emojiset == null) {
+            return false;
+        }
+        TLRPC.InputStickerSet inputStickerSet = MessageObject.getInputStickerSet(document);
+        return inputStickerSet instanceof TLRPC.TL_inputStickerSetID && ((TLRPC.TL_inputStickerSetID) inputStickerSet).id == info.emojiset.id;
+    }
+
+    private boolean isCustomEmojiStickerMime(TLRPC.Document document) {
+        if (document == null) {
+            return false;
+        }
+        String mimeType = document.mime_type != null ? document.mime_type : "";
+        return "image/webp".equals(mimeType) || "video/webm".equals(mimeType);
+    }
+
+    private boolean sendCustomEmojiAsUploadedSticker(TLRPC.Document customEmojiDocument, String emoticon, boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+        if (isLiveComment) {
+            return false;
+        }
+        if (replyingQuote != null && parentFragment != null && replyingQuote.outdated) {
+            parentFragment.showQuoteMessageUpdate();
+            return false;
+        }
+        if (customEmojiDocument == null) {
+            return false;
+        }
+
+        final String sourceMime = customEmojiDocument.mime_type != null ? customEmojiDocument.mime_type : "";
+        if (!isCustomEmojiStickerMime(customEmojiDocument)) {
+            return false;
+        }
+
+        if (isInScheduleMode() && scheduleDate == 0) {
+            AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), (n, s, r) -> sendCustomEmojiAsUploadedSticker(customEmojiDocument, emoticon, n, s, r), resourcesProvider);
+            return true;
+        }
+        if (slowModeTimer > 0 && !isInScheduleMode()) {
+            if (delegate != null) {
+                delegate.onUpdateSlowModeButton(slowModeButton, true, slowModeButton.getText());
+            }
+            return true;
+        }
+
+        File file = FileLoader.getInstance(currentAccount).getPathToAttach(customEmojiDocument);
+        if (file == null || !file.exists()) {
+            File cacheFile = FileLoader.getInstance(currentAccount).getPathToAttach(customEmojiDocument, true);
+            if (cacheFile != null && cacheFile.exists()) {
+                file = cacheFile;
+            }
+        }
+        if (file == null || !file.exists()) {
+            String fileName = FileLoader.getAttachFileName(customEmojiDocument);
+            if (TextUtils.isEmpty(fileName)) {
+                return false;
+            }
+            ArrayList<PendingCustomEmojiStickerSend> pendingSends = pendingCustomEmojiStickerSends.get(fileName);
+            boolean shouldLoadFile = pendingSends == null;
+            if (pendingSends == null) {
+                pendingSends = new ArrayList<>();
+                pendingCustomEmojiStickerSends.put(fileName, pendingSends);
+            }
+            pendingSends.add(new PendingCustomEmojiStickerSend(customEmojiDocument, emoticon, notify, scheduleDate, scheduleRepeatPeriod));
+            if (shouldLoadFile) {
+                FileLoader.getInstance(currentAccount).loadFile(customEmojiDocument, null, FileLoader.PRIORITY_NORMAL, 1);
+            }
+            return true;
+        }
+
+        final File fileFinal = file;
+        final String uploadMimeFinal = sourceMime;
+        AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, 1, stars -> {
+            Runnable runnable = () -> {
+                if (delegate != null) {
+                    delegate.beforeMessageSend(null, notify, scheduleDate, stars);
+                }
+                if (searchingType != 0) {
+                    setSearchingTypeInternal(0, true);
+                    emojiView.closeSearch(true);
+                    emojiView.hideSearchKeyboard();
+                }
+                setStickersExpanded(false, true, false);
+                final TL_stories.StoryItem storyItem = delegate != null ? delegate.getReplyToStory() : null;
+
+                TLRPC.TL_document uploadDocument = new TLRPC.TL_document();
+                uploadDocument.id = 0;
+                uploadDocument.date = accountInstance.getConnectionsManager().getCurrentTime();
+                uploadDocument.file_reference = new byte[0];
+                uploadDocument.size = fileFinal.length();
+                uploadDocument.dc_id = 0;
+                uploadDocument.mime_type = uploadMimeFinal;
+
+                TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
+                fileName.file_name = "video/webm".equals(uploadDocument.mime_type) ? "sticker.webm" : "sticker.webp";
+                uploadDocument.attributes.add(fileName);
+
+                boolean hasStickerAttribute = false;
+                boolean hasAnimatedAttribute = false;
+                boolean hasVideoAttribute = false;
+                int videoW = 512;
+                int videoH = 512;
+                for (int i = 0; i < customEmojiDocument.attributes.size(); i++) {
+                    TLRPC.DocumentAttribute attribute = customEmojiDocument.attributes.get(i);
+                    if (attribute instanceof TLRPC.TL_documentAttributeCustomEmoji || attribute instanceof TLRPC.TL_documentAttributeSticker) {
+                        TLRPC.TL_documentAttributeSticker stickerAttribute = new TLRPC.TL_documentAttributeSticker();
+                        stickerAttribute.alt = !TextUtils.isEmpty(emoticon) ? emoticon : attribute.alt;
+                        stickerAttribute.stickerset = new TLRPC.TL_inputStickerSetEmpty();
+                        uploadDocument.attributes.add(stickerAttribute);
+                        hasStickerAttribute = true;
+                    } else {
+                        if (attribute instanceof TLRPC.TL_documentAttributeFilename) {
+                            continue;
+                        }
+                        if (attribute instanceof TLRPC.TL_documentAttributeAnimated) {
+                            hasAnimatedAttribute = true;
+                        } else if (attribute instanceof TLRPC.TL_documentAttributeVideo) {
+                            hasVideoAttribute = true;
+                            videoW = Math.max(1, attribute.w);
+                            videoH = Math.max(1, attribute.h);
+                        }
+                        uploadDocument.attributes.add(attribute);
+                    }
+                }
+                if (!hasStickerAttribute) {
+                    TLRPC.TL_documentAttributeSticker stickerAttribute = new TLRPC.TL_documentAttributeSticker();
+                    stickerAttribute.alt = emoticon != null ? emoticon : "";
+                    stickerAttribute.stickerset = new TLRPC.TL_inputStickerSetEmpty();
+                    uploadDocument.attributes.add(stickerAttribute);
+                }
+
+                if ("video/webm".equals(uploadDocument.mime_type)) {
+                    if (!hasVideoAttribute) {
+                        TLRPC.TL_documentAttributeVideo videoAttribute = new TLRPC.TL_documentAttributeVideo();
+                        videoAttribute.w = videoW;
+                        videoAttribute.h = videoH;
+                        videoAttribute.duration = 0;
+                        uploadDocument.attributes.add(videoAttribute);
+                    }
+                    if (!hasAnimatedAttribute) {
+                        uploadDocument.attributes.add(new TLRPC.TL_documentAttributeAnimated());
+                    }
+                }
+
+                SendMessagesHelper.SendMessageParams sendMessageParams = SendMessagesHelper.SendMessageParams.of(uploadDocument, null, fileFinal.getAbsolutePath(), dialog_id, replyingMessageObject, getThreadMessage(), null, null, null, null, notify, scheduleDate, scheduleRepeatPeriod, 0, null, null, false);
+                sendMessageParams.replyToStoryItem = storyItem;
+                sendMessageParams.replyQuote = replyingQuote;
+                sendMessageParams.quick_reply_shortcut = parentFragment != null ? parentFragment.quickReplyShortcut : null;
+                sendMessageParams.quick_reply_shortcut_id = parentFragment != null ? parentFragment.getQuickReplyId() : 0;
+                sendMessageParams.payStars = stars;
+                sendMessageParams.monoForumPeer = getSendMonoForumPeerId();
+                sendMessageParams.suggestionParams = getSendMessageSuggestionParams();
+                SendMessagesHelper.getInstance(currentAccount).sendMessage(sendMessageParams);
+
+                if (delegate != null) {
+                    delegate.onMessageSend(null, notify, scheduleDate, scheduleRepeatPeriod, stars);
+                }
+            };
+            if (!showConfirmAlert(runnable)) {
+                runnable.run();
+            }
+        });
+        return true;
     }
 
     @Override
@@ -13782,6 +14002,16 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.fileLoaded || id == NotificationCenter.fileLoadFailed) {
+            ArrayList<PendingCustomEmojiStickerSend> pendingSends = args[0] instanceof String ? pendingCustomEmojiStickerSends.remove(args[0]) : null;
+            if (pendingSends != null && id == NotificationCenter.fileLoaded) {
+                for (int i = 0; i < pendingSends.size(); i++) {
+                    PendingCustomEmojiStickerSend pendingSend = pendingSends.get(i);
+                    sendCustomEmojiAsUploadedSticker(pendingSend.document, pendingSend.emoticon, pendingSend.notify, pendingSend.scheduleDate, pendingSend.scheduleRepeatPeriod);
+                }
+            }
+            return;
+        }
         if (id == NotificationCenter.emojiLoaded) {
             if (emojiView != null) {
                 emojiView.invalidateViews();

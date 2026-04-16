@@ -718,27 +718,7 @@ public class StickerSetCell extends FrameLayout {
             cell.premiumButtonView.setOnClickListener(item.clickCallback2);
             if (set != null && set.set != null && set.set.emojis) {
                 boolean installed = MediaDataController.getInstance(adapter.currentAccount).isStickerPackInstalled(set.set.id);
-                boolean unlock = !UserConfig.getInstance(adapter.currentAccount).isPremium();
-                if (unlock) {
-                    boolean premium = false;
-                    for (int i = 0; i < set.documents.size(); ++i) {
-                        if (!MessageObject.isFreeEmoji(set.documents.get(i))) {
-                            premium = true;
-                            break;
-                        }
-                    }
-                    if (!premium) {
-                        unlock = false;
-                    }
-                }
-                cell.updateButtonState(
-                    unlock ? (
-                        installed && !set.set.official ? StickerSetCell.BUTTON_STATE_LOCKED_RESTORE : StickerSetCell.BUTTON_STATE_LOCKED
-                    ) : (
-                        installed ? StickerSetCell.BUTTON_STATE_REMOVE : StickerSetCell.BUTTON_STATE_ADD
-                    ),
-                    false
-                );
+                cell.updateButtonState(installed ? StickerSetCell.BUTTON_STATE_REMOVE : StickerSetCell.BUTTON_STATE_ADD, false);
             }
         }
 
