@@ -280,6 +280,37 @@ public class PrivacyUsersActivity extends BaseFragment implements NotificationCe
             } else if (position == blockUserRow) {
                 if (currentType == TYPE_BLOCKED) {
                     presentFragment(new DialogOrContactPickerActivity());
+                } else if (currentType == TYPE_BLOCKED_CHANNELS) {
+                    Bundle args = new Bundle();
+                    args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_CHANNELS_ONLY);
+                    args.putBoolean("onlySelect", true);
+                    args.putBoolean("canSelectTopics", false);
+                    args.putBoolean("allowSwitchAccount", true);
+                    args.putBoolean("checkCanWrite", false);
+                    DialogsActivity dialogsActivity = new DialogsActivity(args);
+                    dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
+                        if (dids == null || dids.isEmpty()) {
+                            return false;
+                        }
+                        long dialogId = dids.get(0).dialogId;
+                        if (dialogId >= 0) {
+                            return false;
+                        }
+                        AyuFilter.blockPeer(dialogId);
+                        if (uidArray == null) {
+                            uidArray = new ArrayList<>();
+                        }
+                        if (!uidArray.contains(dialogId)) {
+                            uidArray.add(dialogId);
+                        }
+                        updateRows();
+                        if (delegate != null) {
+                            delegate.didUpdateUserList(uidArray, true);
+                        }
+                        fragment.finishFragment();
+                        return true;
+                    });
+                    presentFragment(dialogsActivity);
                 } else {
                     Bundle args = new Bundle();
                     args.putBoolean(isAlwaysShare ? "isAlwaysShare" : "isNeverShare", true);
