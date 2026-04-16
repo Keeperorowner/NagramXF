@@ -345,6 +345,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     public DrawerLayoutContainer drawerLayoutContainer;
     private DrawerLayoutAdapter drawerLayoutAdapter;
     private RecyclerListView sideMenu;
+    private DrawerProfileCell sideMenuHeaderView;
     private SideMenultItemAnimator itemAnimator;
     private FrameLayout sideMenuContainer;
     private PasscodeViewDialog passcodeDialog;
@@ -634,6 +635,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.suggestedLangpack);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.themeAccentListUpdated);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needSetDayNightTheme);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.needCheckSystemBarColors);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeOtherAppActivities);
@@ -1338,13 +1340,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
         boolean accountsShown = drawerLayoutAdapter != null && drawerLayoutAdapter.isAccountsShown();
+        if (sideMenuHeaderView != null) {
+            sideMenuHeaderView.setUser(user, accountsShown);
+            sideMenuHeaderView.updateColors();
+        }
         int childCount = sideMenu.getChildCount();
         for (int i = 0; i < childCount; i++) {
             View child = sideMenu.getChildAt(i);
-            if (child instanceof DrawerProfileCell profileCell) {
-                profileCell.setUser(user, accountsShown);
-                profileCell.updateColors();
-            } else if (child instanceof DrawerUserCell drawerUserCell) {
+            if (child instanceof DrawerUserCell drawerUserCell) {
                 drawerUserCell.setAccount(drawerUserCell.getAccountNumber());
             } else if (child instanceof DrawerActionCell drawerActionCell && drawerLayoutAdapter != null) {
                 int position = sideMenu.getChildAdapterPosition(child);
@@ -1406,8 +1409,35 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         sideMenu.setGlowColor(Theme.getColor(Theme.key_chats_menuBackground));
         sideMenu.setListSelectorColor(Theme.getColor(Theme.key_listSelector));
         sideMenu.setAdapter(drawerLayoutAdapter = new DrawerLayoutAdapter(this, itemAnimator, drawerLayoutContainer));
-        drawerLayoutAdapter.setOnPremiumDrawableClick(v -> showCurrentUserStatusDialog());
         sideMenuContainer.addView(sideMenu, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        sideMenuHeaderView = new DrawerProfileCell(this, drawerLayoutContainer) {
+            @Override
+            protected void onPremiumClick() {
+                showCurrentUserStatusDialog();
+            }
+        };
+        drawerLayoutAdapter.setProfileCell(sideMenuHeaderView);
+        sideMenuHeaderView.setAccountsShown(drawerLayoutAdapter.isAccountsShown(), false);
+        TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
+        if (currentUser != null) {
+            sideMenuHeaderView.setUser(currentUser, drawerLayoutAdapter.isAccountsShown());
+        } else {
+            sideMenuHeaderView.updateColors();
+        }
+        final float[] drawerHeaderTouch = new float[2];
+        sideMenuHeaderView.setOnTouchListener((v, event) -> {
+            drawerHeaderTouch[0] = event.getX();
+            drawerHeaderTouch[1] = event.getY();
+            return false;
+        });
+        sideMenuHeaderView.setOnClickListener(v -> {
+            if (sideMenuHeaderView.isInAvatar(drawerHeaderTouch[0], drawerHeaderTouch[1])) {
+                openSettings(sideMenuHeaderView.hasAvatar());
+            } else if (drawerLayoutAdapter != null) {
+                drawerLayoutAdapter.setAccountsShown(!drawerLayoutAdapter.isAccountsShown(), true);
+            }
+        });
+        sideMenuContainer.addView(sideMenuHeaderView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
         drawerLayoutContainer.setDrawerLayout(sideMenuContainer, sideMenu);
 
         FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) sideMenuContainer.getLayoutParams();
@@ -1421,14 +1451,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         sideMenu.setOnItemClickListener((view, position, x, y) -> {
             if (drawerLayoutAdapter.click(view, position)) {
                 drawerLayoutContainer.closeDrawer(false);
-                return;
-            }
-            if (position == 0 && view instanceof DrawerProfileCell profileCell) {
-                if (profileCell.isInAvatar(x, y)) {
-                    openSettings(profileCell.hasAvatar());
-                } else {
-                    drawerLayoutAdapter.setAccountsShown(!drawerLayoutAdapter.isAccountsShown(), true);
-                }
                 return;
             }
             if (view instanceof DrawerUserCell drawerUserCell) {
@@ -1579,7 +1601,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (fragment == null) {
             return;
         }
-        final View profileCell = sideMenu != null ? sideMenu.getChildAt(0) : null;
+        final View profileCell = sideMenuHeaderView;
         if (profileCell == null) {
             if (fragment instanceof DialogsActivity dialogsActivity) {
                 dialogsActivity.showSelectStatusDialog();
@@ -1667,16 +1689,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 }
                 MessagesController.getInstance(currentAccount).updateEmojiStatus(emojiStatus, gift);
                 TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
+                if (currentUser != null && sideMenuHeaderView != null) {
+                    if (documentId != null) {
+                        sideMenuHeaderView.animateStateChange(documentId);
+                    }
+                    sideMenuHeaderView.setUser(currentUser, drawerLayoutAdapter != null && drawerLayoutAdapter.isAccountsShown());
+                }
                 if (currentUser != null && sideMenu != null) {
                     for (int i = 0; i < sideMenu.getChildCount(); i++) {
                         View child = sideMenu.getChildAt(i);
                         if (child instanceof DrawerUserCell drawerUserCell) {
                             drawerUserCell.setAccount(drawerUserCell.getAccountNumber());
-                        } else if (child instanceof DrawerProfileCell drawerProfileCell) {
-                            if (documentId != null) {
-                                drawerProfileCell.animateStateChange(documentId);
-                            }
-                            drawerProfileCell.setUser(currentUser, drawerLayoutAdapter != null && drawerLayoutAdapter.isAccountsShown());
                         } else if (child instanceof DrawerActionCell drawerActionCell && drawerLayoutAdapter != null) {
                             int position = sideMenu.getChildAdapterPosition(child);
                             if (position != RecyclerView.NO_POSITION && drawerLayoutAdapter.getId(position) == 15) {
@@ -7173,6 +7196,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.suggestedLangpack);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.didSetNewTheme);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.themeAccentListUpdated);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needSetDayNightTheme);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.needCheckSystemBarColors);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeOtherAppActivities);
@@ -7954,7 +7978,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (id == NotificationCenter.didSetNewTheme) {
             Boolean nightTheme = (Boolean) args[0];
             if (!nightTheme) {
-                refreshDrawer(true);
+                if (!DialogsActivity.switchingTheme) {
+                    refreshDrawer(true);
+                } else {
+                    bindHomeDrawerToDialogs();
+                    if (sideMenuContainer != null) {
+                        sideMenuContainer.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+                    }
+                    if (sideMenu != null) {
+                        sideMenu.setBackgroundColor(Theme.getColor(Theme.key_chats_menuBackground));
+                        sideMenu.setGlowColor(Theme.getColor(Theme.key_chats_menuBackground));
+                        sideMenu.setListSelectorColor(Theme.getColor(Theme.key_listSelector));
+                        sideMenu.invalidate();
+                    }
+                }
                 try {
                     setTaskDescription(new ActivityManager.TaskDescription(null, null, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000));
                 } catch (Exception ignore) {
@@ -7967,6 +8004,12 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 checkNavigationBarColor = (boolean) args[1];
             }
             checkSystemBarColors(args.length > 2 && (boolean) args[2], true, checkNavigationBarColor && !isNavigationBarColorFrozen && !actionBarLayout.isTransitionAnimationInProgress());
+        } else if (id == NotificationCenter.themeAccentListUpdated) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!DialogsActivity.switchingTheme) {
+                    refreshDrawer(false);
+                }
+            });
         } else if (id == NotificationCenter.needSetDayNightTheme) {
             boolean instant = false;
             if (args[2] != null) {
@@ -7978,10 +8021,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     boolean toDark = (Boolean) args[4];
                     final RLottieImageView darkThemeView = (RLottieImageView) args[5];
                     final boolean colorNotDark = args.length > 8 ? (boolean) args[8] : false;
+                    final RLottieDrawable originalDrawable = darkThemeView != null ? darkThemeView.getAnimatedDrawable() : null;
+                    final RLottieDrawable overlayDrawable = args.length > 9 && args[9] instanceof RLottieDrawable ? (RLottieDrawable) args[9] : null;
                     int w = drawerLayoutContainer.getMeasuredWidth();
                     int h = drawerLayoutContainer.getMeasuredHeight();
                     if (!toDark && darkThemeView != null) {
+                        darkThemeView.setImageDrawable(null);
                         darkThemeView.setVisibility(View.INVISIBLE);
+                        darkThemeView.invalidate();
                     }
                     rippleAbove = null;
                     if (args.length > 6) {
@@ -7996,7 +8043,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
 
                     Bitmap bitmap = null;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && (toDark || darkThemeView == null)) {
                         bitmap = AndroidUtilities.getBitmapFromWindow(getWindow());
                     }
                     if (bitmap == null) {
@@ -8007,17 +8054,25 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                     frameLayout.removeView(themeSwitchImageView);
                     themeSwitchImageView = new ImageView(this);
-                    final RLottieDrawable drawable = darkThemeView != null ? darkThemeView.getAnimatedDrawable() : null;
-                    themeSwitchSunView.setImageDrawable(drawable);
+                    final RLottieDrawable transitionDrawable = overlayDrawable;
+                    final RLottieDrawable drawable = originalDrawable;
+                    final RLottieDrawable displayDrawable = transitionDrawable != null ? transitionDrawable : (!toDark ? drawable : null);
+                    themeSwitchSunView.setImageDrawable(displayDrawable);
                     if (toDark) {
                         frameLayout.addView(themeSwitchImageView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                         themeSwitchSunView.setVisibility(View.GONE);
                     } else {
+                        if (displayDrawable != null && colorNotDark) {
+                            displayDrawable.setColorFilter(new PorterDuffColorFilter(-1, PorterDuff.Mode.SRC_IN));
+                        }
                         frameLayout.addView(themeSwitchImageView, 1, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
                         themeSwitchSunView.setTranslationX(pos[0] - dp(24));
                         themeSwitchSunView.setTranslationY(pos[1] - dp(24));
                         themeSwitchSunView.setVisibility(View.VISIBLE);
                         themeSwitchSunView.invalidate();
+                        if (transitionDrawable != null) {
+                            transitionDrawable.start();
+                        }
                     }
                     themeSwitchImageView.setImageBitmap(bitmap);
                     themeSwitchImageView.setVisibility(View.VISIBLE);
@@ -8035,9 +8090,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             themeSwitchImageView.invalidate();
                             themeSwitchImageView.setImageDrawable(null);
                             themeSwitchImageView.setVisibility(View.GONE);
+                            if (transitionDrawable != null) {
+                                transitionDrawable.stop();
+                            }
+                            themeSwitchSunView.setImageDrawable(null);
                             themeSwitchSunView.setVisibility(View.GONE);
                             if (darkThemeView != null) {
                                 darkThemeView.setImageDrawable(drawable);
+                                darkThemeView.invalidate();
                             }
                             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.themeAccentListUpdated);
                             if (!toDark && darkThemeView != null) {

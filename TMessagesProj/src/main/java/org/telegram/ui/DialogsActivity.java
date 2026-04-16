@@ -11043,6 +11043,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public static final int DIALOGS_TYPE_FOLDER1 = 7;
     public static final int DIALOGS_TYPE_FOLDER2 = 8;
     public static final int DIALOGS_TYPE_BLOCK = 9;
+    public static final int DIALOGS_TYPE_SHADOW_BAN = 667;
     public static final int DIALOGS_TYPE_WIDGET = 10;
     public static final int DIALOGS_TYPE_IMPORT_HISTORY_GROUPS = 11; // groups only
     public static final int DIALOGS_TYPE_IMPORT_HISTORY_USERS = 12; // users only
@@ -11109,6 +11110,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (dialogsType == DIALOGS_TYPE_BLOCK) {
             return messagesController.dialogsForBlock;
+        } else if (dialogsType == DIALOGS_TYPE_SHADOW_BAN) {
+            ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>(messagesController.dialogsUsersOnly.size() + messagesController.dialogsChannelsOnly.size());
+            dialogs.addAll(messagesController.dialogsUsersOnly);
+            dialogs.addAll(messagesController.dialogsChannelsOnly);
+            messagesController.sortDialogsList(dialogs);
+            return dialogs;
         } else if (dialogsType == DIALOGS_TYPE_BOT_SHARE || dialogsType == DIALOGS_TYPE_BOT_SELECT_VERIFY || dialogsType == DIALOGS_TYPE_START_ATTACH_BOT) {
             if (botShareDialogs != null) {
                 return botShareDialogs;
@@ -11894,8 +11901,23 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
             if (sideMenu != null) {
-                View child = sideMenu.getChildAt(0);
-                if (child instanceof DrawerProfileCell profileCell) {
+                DrawerProfileCell profileCell = null;
+                if (sideMenu.getParent() instanceof ViewGroup parent) {
+                    for (int i = 0; i < parent.getChildCount(); i++) {
+                        View child = parent.getChildAt(i);
+                        if (child instanceof DrawerProfileCell drawerProfileCell) {
+                            profileCell = drawerProfileCell;
+                            break;
+                        }
+                    }
+                }
+                if (profileCell == null) {
+                    View child = sideMenu.getChildAt(0);
+                    if (child instanceof DrawerProfileCell drawerProfileCell) {
+                        profileCell = drawerProfileCell;
+                    }
+                }
+                if (profileCell != null) {
                     profileCell.applyBackground(true);
                     profileCell.updateColors();
                 }

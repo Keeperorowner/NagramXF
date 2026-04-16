@@ -35,7 +35,7 @@ public class DrawerContainer extends FrameLayout {
 
         RecyclerView listView = null;
         LayoutParams lp;
-        int usedHeight = 0;
+        int topInset = 0;
 
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
@@ -43,22 +43,19 @@ public class DrawerContainer extends FrameLayout {
                 listView = (RecyclerView) child;
             } else {
                 lp = (LayoutParams) child.getLayoutParams();
-                lp.bottomMargin = navbarInset;
+                lp.bottomMargin = 0;
 
                 measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                usedHeight += child.getMeasuredHeight();
+                topInset += child.getMeasuredHeight();
             }
         }
 
         if (listView != null) {
-            if (usedHeight == 0) {
-                listView.setPadding(0, 0, 0, navbarInset);
-            } else {
-                listView.setPadding(0, 0, 0, 0);
-
-                lp = (LayoutParams) listView.getLayoutParams();
-                lp.bottomMargin = usedHeight + navbarInset;
+            if (listView.getPaddingTop() != topInset || listView.getPaddingBottom() != navbarInset) {
+                listView.setPadding(listView.getPaddingLeft(), topInset, listView.getPaddingRight(), navbarInset);
             }
+            lp = (LayoutParams) listView.getLayoutParams();
+            lp.bottomMargin = 0;
 
             measureChildWithMargins(listView, widthMeasureSpec, 0, heightMeasureSpec, 0);
         }
