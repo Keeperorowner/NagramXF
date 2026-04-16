@@ -35,11 +35,10 @@ import xyz.nextalone.nagram.NaConfig;
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter implements NotificationCenter.NotificationCenterDelegate {
 
     private final Context mContext;
-    private final DrawerLayoutContainer mDrawerLayoutContainer;
     private final ArrayList<Item> items = new ArrayList<>(11);
     private final ArrayList<Integer> accountNumbers = new ArrayList<>();
     private boolean accountsShown;
-    public DrawerProfileCell profileCell;
+    private DrawerProfileCell profileCell;
     private SideMenultItemAnimator itemAnimator;
 
     public static int nkbtnSettings = 1001;
@@ -53,7 +52,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     public static int nkbtnSessions = 1010;
     public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, DrawerLayoutContainer drawerLayoutContainer) {
         mContext = context;
-        mDrawerLayoutContainer = drawerLayoutContainer;
         itemAnimator = animator;
         accountsShown = MessagesController.getGlobalMainSettings().getBoolean("accountsShown", true);
         Theme.createCommonDialogResources(context);
@@ -98,9 +96,11 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         return accountsShown;
     }
 
-    private View.OnClickListener onPremiumDrawableClick;
-    public void setOnPremiumDrawableClick(View.OnClickListener listener) {
-        onPremiumDrawableClick = listener;
+    public void setProfileCell(DrawerProfileCell profileCell) {
+        this.profileCell = profileCell;
+        if (profileCell != null) {
+            profileCell.setAccountsShown(accountsShown, false);
+        }
     }
 
     @Override
@@ -127,14 +127,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         View view;
         switch (viewType) {
             case 0:
-                view = profileCell = new DrawerProfileCell(mContext, mDrawerLayoutContainer) {
-                    @Override
-                    protected void onPremiumClick() {
-                        if (onPremiumDrawableClick != null) {
-                            onPremiumDrawableClick.onClick(this);
-                        }
-                    }
-                };
+                view = new EmptyCell(mContext, 0);
                 break;
             case 2:
                 view = new EmptyCell(mContext, AndroidUtilities.dp(8));
@@ -160,11 +153,6 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
         switch (holder.getItemViewType()) {
-            case 0: {
-                DrawerProfileCell profileCell = (DrawerProfileCell) holder.itemView;
-                profileCell.setUser(MessagesController.getInstance(UserConfig.selectedAccount).getUser(UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()), accountsShown);
-                break;
-            }
             case 3: {
                 DrawerActionCell drawerActionCell = (DrawerActionCell) holder.itemView;
                 position -= 2;

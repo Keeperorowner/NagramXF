@@ -37,6 +37,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -45,9 +46,10 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FireworksEffect;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
-import org.telegram.ui.Components.SnowflakesEffect;
 import org.telegram.ui.Components.RLottieDrawable;
 import org.telegram.ui.Components.RLottieImageView;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.SnowflakesEffect;
 import org.telegram.ui.Components.Reactions.HwEmojis;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
@@ -60,8 +62,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     private final TextView phoneTextView;
     private final ImageView shadowView;
     protected final ImageView arrowView;
+    private final FrameLayout darkThemeBackgroundView;
     private final RLottieImageView darkThemeView;
-    private static RLottieDrawable sunDrawable;
+    private final RLottieDrawable sunDrawable;
     private final DrawerLayoutContainer drawerLayoutContainer;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable status;
     private final AnimatedStatusView animatedStatus;
@@ -160,18 +163,11 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
         setArrowState(false);
 
-        boolean playDrawable;
-        if (playDrawable = sunDrawable == null) {
-            sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(28), AndroidUtilities.dp(28), true, null);
-            sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
-            if (Theme.isCurrentThemeDay()) {
-                sunDrawable.setCustomEndFrame(0);
-                sunDrawable.setCurrentFrame(0);
-            } else {
-                sunDrawable.setCurrentFrame(35);
-                sunDrawable.setCustomEndFrame(36);
-            }
-        }
+        sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
+        sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
+        darkThemeBackgroundView = new FrameLayout(context);
+        ScaleStateListAnimator.apply(darkThemeBackgroundView);
+        addView(darkThemeBackgroundView, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 12, 96));
         darkThemeView = new RLottieImageView(context) {
             @Override
             public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
@@ -183,24 +179,16 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
                 }
             }
         };
-        darkThemeView.setFocusable(true);
-        darkThemeView.setBackground(Theme.createCircleSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector), 0, 0));
-        sunDrawable.beginApplyLayerColors();
-        int color = Theme.getColor(Theme.key_chats_menuName);
-        sunDrawable.setLayerColor("Sunny.**", color);
-        sunDrawable.setLayerColor("Path 6.**", color);
-        sunDrawable.setLayerColor("Path.**", color);
-        sunDrawable.setLayerColor("Path 5.**", color);
-        sunDrawable.commitApplyLayerColors();
         darkThemeView.setScaleType(ImageView.ScaleType.CENTER);
         darkThemeView.setAnimation(sunDrawable);
-        if (!playDrawable && sunDrawable.getCustomEndFrame() != sunDrawable.getCurrentFrame()) {
-            darkThemeView.playAnimation();
-        }
-        darkThemeView.setOnClickListener(v -> {
-            if (Theme.isAnimatingColor()) {
+        darkThemeBackgroundView.addView(darkThemeView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+        updateThemeToggleColors(Theme.getColor(Theme.key_chats_menuName));
+        syncThemeToggle(Theme.isCurrentThemeDark(), false);
+        darkThemeBackgroundView.setOnClickListener(v -> {
+            if (DialogsActivity.switchingTheme || Theme.isAnimatingColor()) {
                 return;
             }
+            resetThemeTogglePressAnimation();
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", Context.MODE_PRIVATE);
             String dayThemeName = preferences.getString("lastDayTheme", "Blue");
             if (Theme.getTheme(dayThemeName) == null || Theme.getTheme(dayThemeName).isDark()) {
@@ -211,24 +199,28 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
                 nightThemeName = "Dark Blue";
             }
             boolean toDark;
+            Theme.ThemeInfo themeInfo;
             if (Theme.isCurrentThemeDark()) {
                 toDark = false;
-                switchTheme(Theme.getTheme(dayThemeName), false);
+                themeInfo = Theme.getTheme(dayThemeName);
             } else {
                 toDark = true;
-                switchTheme(Theme.getTheme(nightThemeName), true);
+                themeInfo = Theme.getTheme(nightThemeName);
             }
-            sunDrawable.setCustomEndFrame(toDark ? 36 : 0);
-            darkThemeView.playAnimation();
+            if (themeInfo == null) {
+                return;
+            }
+            DialogsActivity.switchingTheme = true;
+            syncThemeToggle(toDark, true);
+            switchTheme(themeInfo, toDark);
             Theme.turnOffAutoNight((BulletinFactory) null, null);
         });
-        darkThemeView.setOnLongClickListener(e -> {
+        darkThemeBackgroundView.setOnLongClickListener(e -> {
             if (drawerLayoutContainer != null) {
                 drawerLayoutContainer.presentFragment(new org.telegram.ui.ThemeActivity(org.telegram.ui.ThemeActivity.THEME_TYPE_BASIC));
             }
             return true;
         });
-        addView(darkThemeView, LayoutHelper.createFrame(48, 48, Gravity.RIGHT | Gravity.BOTTOM, 0, 10, 6, 90));
 
         status = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(this, AndroidUtilities.dp(20));
         nameTextView.setRightDrawable(status);
@@ -339,7 +331,6 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
 
         applyBackground(true);
         updateRightDrawable = true;
-        updateSunDrawable(Theme.isCurrentThemeDark());
     }
 
     public Integer applyBackground(boolean force) {
@@ -391,7 +382,12 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             snowflakesEffect.updateColors();
         }
         updateStatusColors();
-        updateSunLayerColors(nameColor);
+        if (!darkThemeView.isPlaying() && !DialogsActivity.switchingTheme) {
+            syncThemeToggle(Theme.isCurrentThemeDark(), false);
+        }
+        if (!DialogsActivity.switchingTheme || Theme.isCurrentThemeDark()) {
+            updateThemeToggleColors(nameColor);
+        }
         invalidate();
         darkThemeView.invalidate();
     }
@@ -406,16 +402,61 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         }
     }
 
-    private void updateSunLayerColors(int color) {
-        if (sunDrawable == null) {
+    private void applyThemeToggleDrawableColors(RLottieDrawable drawable, int color) {
+        if (drawable == null) {
             return;
         }
-        sunDrawable.beginApplyLayerColors();
-        sunDrawable.setLayerColor("Sunny.**", color);
-        sunDrawable.setLayerColor("Path 6.**", color);
-        sunDrawable.setLayerColor("Path.**", color);
-        sunDrawable.setLayerColor("Path 5.**", color);
-        sunDrawable.commitApplyLayerColors();
+        drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        drawable.beginApplyLayerColors();
+        drawable.setLayerColor("Sunny.**", color);
+        drawable.setLayerColor("Path 6.**", color);
+        drawable.setLayerColor("Path.**", color);
+        drawable.setLayerColor("Path 5.**", color);
+        drawable.commitApplyLayerColors();
+    }
+
+    private void updateThemeToggleColors(int color) {
+        darkThemeBackgroundView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(18), Theme.multAlpha(color, 0.075f)));
+        ScaleStateListAnimator.apply(darkThemeBackgroundView);
+        applyThemeToggleDrawableColors(sunDrawable, color);
+        darkThemeView.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        darkThemeView.invalidate();
+    }
+
+    private int getThemeToggleCurrentFrame(boolean toDark) {
+        return toDark ? sunDrawable.getFramesCount() - 1 : 0;
+    }
+
+    private int getThemeToggleEndFrame(boolean toDark) {
+        return toDark ? sunDrawable.getFramesCount() : 0;
+    }
+
+    private void setThemeToggleStaticState(boolean toDark) {
+        sunDrawable.stop();
+        sunDrawable.setCurrentFrame(getThemeToggleCurrentFrame(toDark));
+        sunDrawable.setCustomEndFrame(getThemeToggleEndFrame(toDark));
+        darkThemeView.invalidate();
+    }
+
+    private void syncThemeToggle(boolean toDark, boolean animated) {
+        if (sunDrawable == null || sunDrawable.getFramesCount() <= 0) {
+            return;
+        }
+        int currentFrame = getThemeToggleCurrentFrame(toDark);
+        int endFrame = getThemeToggleEndFrame(toDark);
+        if (animated) {
+            sunDrawable.setCustomEndFrame(endFrame);
+            darkThemeView.playAnimation();
+        } else {
+            if (!isAttachedToWindow()) {
+                setThemeToggleStaticState(toDark);
+                return;
+            }
+            sunDrawable.stop();
+            sunDrawable.setCurrentFrame(currentFrame, false, true);
+            sunDrawable.setCustomEndFrame(currentFrame);
+            darkThemeView.invalidate();
+        }
     }
 
     @Override
@@ -520,14 +561,6 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         return nameTextView;
     }
 
-    public void updateSunDrawable(boolean toDark) {
-        if (sunDrawable != null) {
-            sunDrawable.setCustomEndFrame(toDark ? 36 : 0);
-            sunDrawable.setCurrentFrame(toDark ? 35 : 0, false, true);
-            darkThemeView.invalidate();
-        }
-    }
-
     private void setArrowState(boolean animated) {
         float rotation = accountsShown ? 180.0f : 0.0f;
         if (animated) {
@@ -539,12 +572,18 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         arrowView.setContentDescription(accountsShown ? LocaleController.getString(R.string.AccDescrHideAccounts) : LocaleController.getString(R.string.AccDescrShowAccounts));
     }
 
+    private void resetThemeTogglePressAnimation() {
+        darkThemeBackgroundView.setPressed(false);
+        darkThemeBackgroundView.setScaleX(1f);
+        darkThemeBackgroundView.setScaleY(1f);
+    }
+
     private void switchTheme(Theme.ThemeInfo themeInfo, boolean toDark) {
         int[] pos = new int[2];
-        darkThemeView.getLocationInWindow(pos);
-        pos[0] += darkThemeView.getMeasuredWidth() / 2;
-        pos[1] += darkThemeView.getMeasuredHeight() / 2;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, darkThemeView);
+        darkThemeBackgroundView.getLocationInWindow(pos);
+        pos[0] += darkThemeBackgroundView.getMeasuredWidth() / 2;
+        pos[1] += darkThemeBackgroundView.getMeasuredHeight() / 2;
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, darkThemeView, null, null, false, null);
     }
 
     @Override
@@ -552,6 +591,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         super.onAttachedToWindow();
         status.attach();
         updateColors();
+        if (!darkThemeView.isPlaying() && !DialogsActivity.switchingTheme) {
+            syncThemeToggle(Theme.isCurrentThemeDark(), false);
+        }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
