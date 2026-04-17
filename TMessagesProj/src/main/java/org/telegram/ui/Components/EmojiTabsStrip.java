@@ -516,7 +516,15 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
             return;
         }
         final boolean isPremium = UserConfig.getInstance(UserConfig.selectedAccount).isPremium() || allowEmojisForNonPremium();
-        if (NekoConfig.disableTrending.Bool() && !isPremium) {
+        boolean hasInstalledUnlockedPacks = false;
+        for (int i = 0; i < emojiPacks.size(); ++i) {
+            EmojiView.EmojiPack pack = emojiPacks.get(i);
+            if (pack != null && isInstalled(pack) && (pack.free || pack.enabledForNonPremium) && !pack.featured) {
+                hasInstalledUnlockedPacks = true;
+                break;
+            }
+        }
+        if (NekoConfig.disableTrending.Bool() && !isPremium && !hasInstalledUnlockedPacks) {
             return;
         }
         int childCount = contentView.getChildCount() - packsIndexStart - (settingsTab != null ? 1 : 0);
@@ -556,7 +564,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                     currentPackButton.setLock(null, false);
                 }
             } else {
-                final boolean free = newPack.free;
+                final boolean free = newPack.free || newPack.enabledForNonPremium && isInstalled(newPack) && !newPack.featured;
                 if (newPack.thumbDocumentId != null) {
                     if (currentPackButton == null) {
                         currentPackButton = new EmojiTabButton(getContext(), newPack.thumbDocumentId, free, false, false);

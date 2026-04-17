@@ -1395,6 +1395,12 @@ object NaConfig {
             ConfigItem.configTypeInt,
             1 // 0: off; 1: release; 2: beta
         )
+    val sendLockedCustomEmojiAsSticker =
+        addConfig(
+            "SendLockedCustomEmojiAsSticker",
+            ConfigItem.configTypeBool,
+            false
+        )
     val premiumItemEmojiStatus =
         addConfig(
             "PremiumItemEmojiStatus",

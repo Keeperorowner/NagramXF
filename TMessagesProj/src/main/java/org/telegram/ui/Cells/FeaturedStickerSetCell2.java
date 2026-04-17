@@ -53,6 +53,8 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+import xyz.nextalone.nagram.NaConfig;
+
 public class FeaturedStickerSetCell2 extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
     private final int currentAccount = UserConfig.selectedAccount;
@@ -299,7 +301,10 @@ public class FeaturedStickerSetCell2 extends FrameLayout implements Notification
         addButton.setVisibility(VISIBLE);
         this.forceInstalled = forceInstalled;
         isInstalled = forceInstalled || MediaDataController.getInstance(currentAccount).isStickerPackInstalled(set.set.id);
-        isLocked = !UserConfig.getInstance(currentAccount).isPremium() && MessageObject.isPremiumEmojiPack(set);
+        boolean canInstallPremiumEmojiPacks = NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker().Bool();
+        isLocked = !UserConfig.getInstance(currentAccount).isPremium()
+            && MessageObject.isPremiumEmojiPack(set)
+            && (set.set == null || !set.set.emojis || !canInstallPremiumEmojiPacks);
         if (animated) {
             if (isLocked) {
                 unlockButton.setVisibility(VISIBLE);
