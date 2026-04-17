@@ -254,6 +254,8 @@
     <string name="PreferCommonGroupsTab">Prefer Groups Tab</string>
     <string name="PreferCommonGroupsTabNotice">Auto-select \"Groups\" tab instead of \"Gifts\" when possible.</string>
     <string name="SendHighQualityPhoto">Send High Quality Photo</string>
+    <string name="SendLockedCustomEmojiAsSticker">Send Premium Emoji as Sticker</string>
+    <string name="SendLockedCustomEmojiAsStickerInfo">Only supports WebP/WebM custom emoji. TGS-only emoji are excluded.</string>
     <string name="GroupedMessageMenu">Group Message Menu</string>
     <string name="GroupedMessageMenuNotice">Grouping moves the main actions to the bottom of the message menu.</string>
     <string name="CopySticker">Copy Sticker</string>
