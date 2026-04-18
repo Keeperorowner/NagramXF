@@ -1,193 +1,190 @@
 package com.radolyn.ayugram.utils.seq;
 
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.UserConfig;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Set;
 
 public class DummyMessageWaiter extends SyncWaiter {
 
-    public enum Result {
-        NONE,
-        COMPLETE,
-        FAIL
-    }
+    private static final long LOOKUP_TIMEOUT_MS = 3500L;
+    private static final long WATCHER_TIMEOUT_MS = 300000L;
+    private static final long POLL_INTERVAL_MS = 25L;
 
-    private long taskId;
+    private final Set<Integer> alreadySent = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Integer> baselineIds = new HashSet<>();
+
     private long dialogId;
-    private int expectedCount;
-    private int completedCount;
-    private long lastActivityTime;
-    private final HashSet<Integer> baselineIds = new HashSet<>();
-    private final HashSet<Integer> trackedIds = new HashSet<>();
-    private final HashSet<Integer> handledIds = new HashSet<>();
-    private final HashSet<Integer> ackedIds = new HashSet<>();
-    private final HashSet<Integer> pendingErrorIds = new HashSet<>();
+    private int baselinePendingCount;
+    private volatile boolean failed;
+    private volatile boolean queueWatcherStarted;
+
+    public int sendingId;
 
     public DummyMessageWaiter(int currentAccount) {
         super(currentAccount);
+        notifications.add(NotificationCenter.messageReceivedByServer);
+        notifications.add(NotificationCenter.messageSendError);
+        notifications.add(NotificationCenter.messageReceivedByAck);
+        notifications.add(NotificationCenter.messagesDeleted);
     }
 
-    public void prepare(long taskId, long dialogId, SendMessagesHelper sendMessagesHelper) {
-        clear();
-        this.taskId = taskId;
-        this.dialogId = dialogId;
-        this.lastActivityTime = android.os.SystemClock.elapsedRealtime();
-        baselineIds.addAll(sendMessagesHelper.getSendingMessageIds(dialogId));
-    }
-
-    public void clear() {
-        taskId = 0L;
-        dialogId = 0L;
-        expectedCount = 0;
-        completedCount = 0;
-        lastActivityTime = 0L;
-        baselineIds.clear();
-        trackedIds.clear();
-        handledIds.clear();
-        ackedIds.clear();
-        pendingErrorIds.clear();
-    }
-
-    public boolean isActive() {
-        return taskId != 0L;
-    }
-
-    public long getTaskId() {
-        return taskId;
-    }
-
-    public long getDialogId() {
-        return dialogId;
-    }
-
-    public void setExpectedCount(int expectedCount) {
-        this.expectedCount = expectedCount;
-    }
-
-    public int getExpectedCount() {
-        return expectedCount;
-    }
-
-    public int getCompletedCount() {
-        return completedCount;
-    }
-
-    public long getLastActivityTime() {
-        return lastActivityTime;
-    }
-
-    public void bumpActivity() {
-        markActivity();
-    }
-
-    public Result refreshTrackedSendIds(SendMessagesHelper sendMessagesHelper, Runnable onMessageSent) {
-        if (!isActive()) {
-            return Result.NONE;
+    public void trySetSendingId(long dialogId, ArrayList<Integer> existingIds) {
+        if (dialogId == 0) {
+            dialogId = UserConfig.getInstance(currentAccount).getClientUserId();
         }
-        ArrayList<Integer> currentIds = sendMessagesHelper.getSendingMessageIds(dialogId);
-        HashSet<Integer> currentIdSet = new HashSet<>(currentIds.size());
-        for (int i = 0; i < currentIds.size(); i++) {
-            int localId = currentIds.get(i);
-            currentIdSet.add(localId);
-            if (baselineIds.contains(localId)) {
-                continue;
+        this.dialogId = dialogId;
+        SendMessagesHelper sendMessagesHelper = SendMessagesHelper.getInstance(currentAccount);
+        baselineIds.clear();
+        if (existingIds != null) {
+            baselineIds.addAll(existingIds);
+        }
+        baselinePendingCount = baselineIds.size();
+        long start = System.currentTimeMillis();
+        int currentSendingId = 0;
+        while (currentSendingId == 0) {
+            currentSendingId = resolveNewSendingId(sendMessagesHelper);
+            if (currentSendingId != 0) {
+                break;
             }
-            if (trackedIds.add(localId)) {
-                markActivity();
-                if (pendingErrorIds.remove(localId)) {
-                    return Result.FAIL;
+            if (System.currentTimeMillis() - start > LOOKUP_TIMEOUT_MS) {
+                startQueueWatcher(sendMessagesHelper);
+                break;
+            }
+            try {
+                Thread.sleep(POLL_INTERVAL_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                unsubscribe();
+                break;
+            }
+        }
+        if (currentSendingId != 0) {
+            setSendingId(currentSendingId);
+            startQueueWatcher(sendMessagesHelper);
+        }
+    }
+
+    public boolean hasFailed() {
+        return failed || isTimedOut();
+    }
+
+    private void setSendingId(int sendingId) {
+        this.sendingId = sendingId;
+        if (alreadySent.contains(sendingId)) {
+            unsubscribe();
+        }
+    }
+
+    private int resolveNewSendingId(SendMessagesHelper sendMessagesHelper) {
+        try {
+            ArrayList<Integer> currentIds = sendMessagesHelper.getSendingMessageIds(dialogId);
+            for (int i = 0; i < currentIds.size(); i++) {
+                Integer id = currentIds.get(i);
+                if (id != null && !baselineIds.contains(id)) {
+                    return id;
                 }
             }
+        } catch (Exception ignore) {
         }
-        return completeAckedMessagesMissingFromQueue(currentIdSet, onMessageSent);
+        return 0;
     }
 
-    public Result handleAcknowledged(Object... args) {
-        if (!isActive() || args == null || args.length == 0 || !(args[0] instanceof Integer)) {
-            return Result.NONE;
+    private void startQueueWatcher(SendMessagesHelper sendMessagesHelper) {
+        if (queueWatcherStarted || isReleased()) {
+            return;
         }
-        int localId = (Integer) args[0];
-        if (handledIds.contains(localId) || baselineIds.contains(localId)) {
-            return Result.NONE;
-        }
-        if (pendingErrorIds.remove(localId)) {
-            return Result.FAIL;
-        }
-        trackedIds.add(localId);
-        ackedIds.add(localId);
-        markActivity();
-        return Result.NONE;
-    }
+        queueWatcherStarted = true;
+        Thread watcher = new Thread(() -> {
+            boolean observedNewPending = sendingId != 0;
+            long start = System.currentTimeMillis();
+            while (!isReleased() && System.currentTimeMillis() - start < WATCHER_TIMEOUT_MS) {
+                try {
+                    ArrayList<Integer> currentIds = sendMessagesHelper.getSendingMessageIds(dialogId);
+                    for (int i = 0; i < currentIds.size(); i++) {
+                        Integer id = currentIds.get(i);
+                        if (id != null && !baselineIds.contains(id)) {
+                            observedNewPending = true;
+                            if (sendingId == 0) {
+                                setSendingId(id);
+                            }
+                            break;
+                        }
+                    }
 
-    public Result handleConfirmedByServer(Object[] args, Runnable onMessageSent) {
-        if (!isActive() || args == null || args.length < 4 || !(args[0] instanceof Integer) || !(args[3] instanceof Long)) {
-            return Result.NONE;
-        }
-        int localId = (Integer) args[0];
-        long dialogId = (Long) args[3];
-        if (dialogId != this.dialogId) {
-            return Result.NONE;
-        }
-        return finalizeCompletedSend(localId, onMessageSent) ? Result.COMPLETE : Result.NONE;
-    }
+                    if (!observedNewPending && !alreadySent.isEmpty()) {
+                        observedNewPending = true;
+                    }
 
-    public Result handleError(Object... args) {
-        if (!isActive() || args == null || args.length == 0 || !(args[0] instanceof Integer)) {
-            return Result.NONE;
-        }
-        int localId = (Integer) args[0];
-        if (handledIds.contains(localId) || baselineIds.contains(localId)) {
-            return Result.NONE;
-        }
-        if (trackedIds.contains(localId)) {
-            return Result.FAIL;
-        }
-        pendingErrorIds.add(localId);
-        return Result.NONE;
-    }
+                    if (observedNewPending && currentIds.size() <= baselinePendingCount) {
+                        unsubscribe();
+                        return;
+                    }
 
-    private Result completeAckedMessagesMissingFromQueue(HashSet<Integer> currentIds, Runnable onMessageSent) {
-        if (ackedIds.isEmpty()) {
-            return Result.NONE;
-        }
-        ArrayList<Integer> completedIds = null;
-        for (Integer ackedId : ackedIds) {
-            if (ackedId == null || handledIds.contains(ackedId) || baselineIds.contains(ackedId) || currentIds.contains(ackedId)) {
-                continue;
+                    Thread.sleep(POLL_INTERVAL_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                } catch (Exception ignore) {
+                }
             }
-            if (completedIds == null) {
-                completedIds = new ArrayList<>();
-            }
-            completedIds.add(ackedId);
-        }
-        if (completedIds == null) {
-            return Result.NONE;
-        }
-        for (int i = 0; i < completedIds.size(); i++) {
-            if (finalizeCompletedSend(completedIds.get(i), onMessageSent)) {
-                return Result.COMPLETE;
-            }
-        }
-        return Result.NONE;
+        }, "AyuMessageWaiter-" + currentAccount);
+        watcher.setDaemon(true);
+        watcher.start();
     }
 
-    private boolean finalizeCompletedSend(int localId, Runnable onMessageSent) {
-        if (baselineIds.contains(localId) || !handledIds.add(localId)) {
-            return false;
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.messageReceivedByAck
+                || id == NotificationCenter.messageReceivedByServer
+                || id == NotificationCenter.messageSendError) {
+            if (args == null || args.length == 0 || !(args[0] instanceof Integer)) {
+                return;
+            }
+            Integer messageId = (Integer) args[0];
+            if (id == NotificationCenter.messageSendError) {
+                failed = true;
+            }
+            if (sendingId == 0) {
+                alreadySent.add(messageId);
+                return;
+            }
+            if (messageId == sendingId) {
+                unsubscribe();
+            }
+            return;
         }
-        trackedIds.add(localId);
-        ackedIds.remove(localId);
-        pendingErrorIds.remove(localId);
-        markActivity();
-        completedCount++;
-        if (onMessageSent != null) {
-            onMessageSent.run();
-        }
-        return expectedCount > 0 && completedCount >= expectedCount;
-    }
 
-    private void markActivity() {
-        lastActivityTime = android.os.SystemClock.elapsedRealtime();
+        if (id != NotificationCenter.messagesDeleted || args == null || args.length < 2 || !(args[0] instanceof ArrayList) || !(args[1] instanceof Long)) {
+            return;
+        }
+
+        ArrayList<?> deletedIds = (ArrayList<?>) args[0];
+        Long dialogId = (Long) args[1];
+        if (Math.abs(dialogId) != Math.abs(this.dialogId) && dialogId != 0L && this.dialogId != 0L) {
+            return;
+        }
+
+        if (sendingId == 0) {
+            for (int i = 0; i < deletedIds.size(); i++) {
+                Object value = deletedIds.get(i);
+                if (value instanceof Integer) {
+                    alreadySent.add((Integer) value);
+                }
+            }
+            return;
+        }
+
+        for (int i = 0; i < deletedIds.size(); i++) {
+            Object value = deletedIds.get(i);
+            if (value instanceof Integer && (Integer) value == sendingId) {
+                unsubscribe();
+                return;
+            }
+        }
     }
 }

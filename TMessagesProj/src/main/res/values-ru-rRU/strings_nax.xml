@@ -405,14 +405,11 @@
     <string name="CancelForwarding">Отменить пересылку</string>
     <string name="DirectForwardNotAllowed">Прямая пересылка запрещена.</string>
     <string name="ForceForwardFailed">Не удалось выполнить принудительную пересылку.</string>
-    <string name="ForceForwardMediaTimedOut">Время ожидания загрузки медиа истекло.</string>
     <string name="ForceForwardMediaStalled">Загрузка медиа остановилась.</string>
-    <string name="ForceForwardMediaDidNotStart">Загрузка медиа не началась.</string>
     <string name="ForceForwardStatusPreparingMedia">Подготовка медиа</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="ForceForwardStatusChunkCount">фрагмент %1$d из %2$d</string>
     <string name="ForceForwardStatusWaitingDownloads">Ожидание загрузки медиа</string>
-    <string name="ForceForwardStatusMediaReady">Медиа готово</string>
     <string name="ForceForwardStatusForwarding">Пересылка</string>
     <string name="ForceForwardStatusStopping">Остановка пересылки</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">Остановка текущей партии</string>
@@ -424,11 +421,8 @@
     <string name="ForceForwardStatusDocumentFallback">Отправка как документа</string>
     <string name="ForceForwardStatusStickerCopy">Копирование стикера</string>
     <string name="ForceForwardStatusTextFallback">Отправка как текста</string>
-    <string name="ForceForwardStatusMediaFallback">Отправка как медиа</string>
     <string name="ForceForwardStatusDocumentGroup">Пересылка группы документов</string>
     <string name="ForceForwardStatusMediaGroup">Пересылка группы медиа</string>
-    <string name="ForceForwardStatusDocumentGroupFallback">Отправка как группы документов</string>
-    <string name="ForceForwardStatusMediaGroupFallback">Отправка как группы медиа</string>
     <string name="ForceForwardSomeSkipped">Не удалось переслать %1$d сообщений.</string>
     <string name="BlurOptions">Параметры размытия</string>
     <string name="ClearSavedMessageDataNotification">Сохранённые данные очищены.</string>
