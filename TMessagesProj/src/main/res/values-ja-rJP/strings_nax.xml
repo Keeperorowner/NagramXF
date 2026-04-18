@@ -321,7 +321,6 @@
     <string name="StickerSavedHint">ステッカーを保存しました。</string>
     <string name="StickerCopied">ステッカーをコピーしました。</string>
     <string name="NagramXForkChannel">Nagram XF チャンネル</string>
-    <string name="AyuGramMenu">AyuGram</string>
     <string name="DeletedMarkText">削除済みマーク</string>
     <string name="DeletedMarkNothing">なし</string>
     <string name="DeletedMarkTrashBin">ごみ箱</string>
@@ -351,7 +350,6 @@
     <string name="MainTabsDisplayModeHide">非表示</string>
     <string name="MainTabsDisplayModeFloating">フローティング</string>
     <string name="FoldersAtBottom">フォルダを下部に移動</string>
-    <string name="StyleOneUI4" translatable="false">OneUI</string>
     <string name="AppNavigation">アプリナビゲーション</string>
     <string name="SwitchAccountNax">アカウントを切り替え</string>
     <string name="CurrentNax">現在</string>
@@ -410,7 +408,6 @@
     <string name="SingleCornerRadius">角丸半径を統一</string>
     <string name="SingleCornerRadiusInfo">トピックグループでも、チャットメッセージと同じアバター形状が使用されます。</string>
     <string name="BlurOptions">ぼかしオプション</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">添付ファイルを保存</string>
     <string name="SaveAttachmentsCardSubtitle">チャットと上限を設定</string>
     <string name="AttachmentFolder">添付ファイルフォルダ</string>

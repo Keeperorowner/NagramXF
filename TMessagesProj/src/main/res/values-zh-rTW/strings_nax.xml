@@ -326,7 +326,6 @@
     <string name="BlurOptions">模糊選項</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>
     <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="PeekOnlineMenuText">在線預覽</string>
     <string name="PeekOnlineSuccess">在線狀態已更新</string>
     <string name="PeekOnlineUnavailable">無法取得精確在線狀態。</string>
