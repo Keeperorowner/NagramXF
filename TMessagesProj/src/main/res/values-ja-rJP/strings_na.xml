@@ -104,4 +104,12 @@
     <string name="VideoPlayerDecoderPreferSW">SW 優先</string>
     <string name="VideoPlayerDecoderHardware">HW のみ</string>
     <string name="VideoPlayerDecoderPreferHW">HW 優先</string>
+    <string name="SquareFloatingButton">四角いフローティングボタン</string>
+    <string name="PushServiceTypeUnifiedGateway">Unified Push ゲートウェイ</string>
+    <string name="RegexFiltersEnabled">メッセージフィルターを有効化</string>
+    <string name="RegexFiltersMaskMessages">フィルタまたはブロックされたメッセージを非表示ではなくマスクする</string>
+    <string name="RegexFiltersMaskMessagesShort">非表示の代わりにマスク</string>
+    <string name="RegexFiltersMaskMessagesAbout">フィルタまたはブロックされたメッセージは削除されず、マスクされたプレースホルダーとしてチャット内に残ります。</string>
+    <string name="UseSystemAiService">システム AI サービスを使用</string>
+    <string name="UseSystemAiServiceDesc">現在は HyperOS と ColorOS のみ対応しています</string>
 </resources>

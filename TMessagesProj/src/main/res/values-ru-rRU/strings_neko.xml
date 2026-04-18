@@ -271,4 +271,6 @@
     <string name="EmojiUseDefault">Использовать системные эмодзи</string>
     <string name="Chat">Чаты</string>
     <string name="Appearance">Внешний вид</string>
+    <string name="HideProxySponsorChannel">Скрыть спонсорский прокси-канал</string>
+    <string name="hideSponsoredMessage">Скрыть спонсируемые сообщения</string>
 </resources>
