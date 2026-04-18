@@ -2,47 +2,70 @@ package com.radolyn.ayugram.utils.seq;
 
 import android.text.TextUtils;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import org.telegram.messenger.NotificationCenter;
 
 public class DummyFileUploadWaiter extends SyncWaiter {
-    private final HashSet<String> trackedUploadPaths = new HashSet<>();
 
-    public DummyFileUploadWaiter(int currentAccount) {
+    private final String path;
+    private volatile boolean failed;
+    private int messageId;
+
+    public DummyFileUploadWaiter(int currentAccount, String path) {
         super(currentAccount);
+        this.path = path;
+        notifications.add(NotificationCenter.fileUploaded);
+        notifications.add(NotificationCenter.fileUploadFailed);
+        notifications.add(NotificationCenter.filePreparingFailed);
+        notifications.add(NotificationCenter.messageReceivedByServer);
     }
 
-    public void clear() {
-        trackedUploadPaths.clear();
+    public void setMessageId(int messageId) {
+        this.messageId = messageId;
     }
 
-    public void addUploadPaths(ArrayList<String> uploadPaths) {
-        if (uploadPaths == null) {
+    public boolean hasFailed() {
+        return failed || isTimedOut();
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.fileUploaded || id == NotificationCenter.fileUploadFailed) {
+            if (args == null || args.length == 0 || !(args[0] instanceof String)) {
+                return;
+            }
+            process((String) args[0], id == NotificationCenter.fileUploadFailed);
             return;
         }
-        for (int i = 0; i < uploadPaths.size(); i++) {
-            String path = uploadPaths.get(i);
-            if (!TextUtils.isEmpty(path)) {
-                trackedUploadPaths.add(path);
+
+        if (id == NotificationCenter.filePreparingFailed) {
+            if (args == null || args.length < 2 || !(args[1] instanceof String)) {
+                return;
+            }
+            process((String) args[1], true);
+            return;
+        }
+
+        if (id == NotificationCenter.messageReceivedByServer && args != null && args.length > 0 && args[0] instanceof Integer) {
+            if (messageId != 0 && messageId == (Integer) args[0]) {
+                unsubscribe();
             }
         }
     }
 
-    public boolean matchesTrackedUploadPath(String path) {
-        if (TextUtils.isEmpty(path) || trackedUploadPaths.isEmpty()) {
+    private void process(String value, boolean failure) {
+        if (!matches(value)) {
+            return;
+        }
+        failed = failure;
+        unsubscribe();
+    }
+
+    private boolean matches(String value) {
+        if (TextUtils.isEmpty(path) || TextUtils.isEmpty(value)) {
             return false;
         }
-        if (trackedUploadPaths.contains(path)) {
-            return true;
-        }
-        for (String trackedPath : trackedUploadPaths) {
-            if (TextUtils.isEmpty(trackedPath)) {
-                continue;
-            }
-            if (trackedPath.contains(path) || path.contains(trackedPath) || trackedPath.endsWith(path) || path.endsWith(trackedPath)) {
-                return true;
-            }
-        }
-        return false;
+        return path.equals(value)
+                || path.contains(value)
+                || value.endsWith(path);
     }
 }

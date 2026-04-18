@@ -52,6 +52,7 @@ import androidx.core.view.inputmethod.InputContentInfoCompat;
 
 import com.radolyn.ayugram.utils.AyuGhostPreferences;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 import com.radolyn.ayugram.utils.AyuState;
 
 import org.json.JSONObject;
@@ -2033,16 +2034,12 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
+    private boolean hasFullAyuForwardMessages(ArrayList<MessageObject> messages) {
+        return AyuForward.isFullAyuForwardsNeeded(messages);
+    }
+
     private boolean hasAyuForwardMessages(ArrayList<MessageObject> messages) {
-        if (messages == null) {
-            return false;
-        }
-        for (int i = 0; i < messages.size(); i++) {
-            if (AyuForward.isAyuForwardNeeded(messages.get(i))) {
-                return true;
-            }
-        }
-        return false;
+        return AyuForward.isAyuForwardNeeded(messages);
     }
 
     private ArrayList<ArrayList<MessageObject>> splitForwardChunks(ArrayList<MessageObject> messages, ArrayList<Boolean> ayuForwardModes) {
@@ -2113,6 +2110,15 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         if (currentPayStars != payStars) {
             AlertsCreator.ensurePaidMessageConfirmation(currentAccount, peer, Math.max(1, messages.size()), newPayStars -> {
                 sendMessageSmart(messages, peer, forwardFromMyName, hideCaption, notify, scheduleDate, scheduleRepeatPeriod, replyToTopMsg, video_timestamp, newPayStars, monoForumPeerId, suggestionParams, onAsyncFailure);
+            });
+            return 0;
+        }
+        if (hasFullAyuForwardMessages(messages)) {
+            AyuForward handler = new AyuForward(currentAccount, replyToTopMsg, 0, null, 0, monoForumPeerId, suggestionParams);
+            handler.forwardMessages(messages, peer, false, hideCaption, notify, scheduleDate, payStars, shouldContinue -> {
+                if (!shouldContinue) {
+                    notifyForwardChunkFailure(onAsyncFailure, 0, handler.consumeLastFailureReason());
+                }
             });
             return 0;
         }
@@ -4213,9 +4219,35 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             return;
         }
 
-        if (replyQuote != null && replyQuote.message != null && replyToMsg != null) {
-            replyToMsg = replyQuote.message;
+        MessageObject pseudoReplySource = replyQuote != null && replyQuote.message != null && replyToMsg != null
+                ? replyQuote.message
+                : replyToMsg;
+        if (pseudoReplySource != null
+                && pseudoReplySource.messageOwner != null
+                && AyuMessageUtils.isUnrepliable(pseudoReplySource)
+                && (Math.abs(pseudoReplySource.getDialogId()) != Math.abs(peer) || pseudoReplySource.messageOwner.ayuDeleted)) {
+            if (entities == null) {
+                entities = new ArrayList<>();
+            }
+            AyuMessageUtils.PseudoReplyResult pseudoReply = AyuMessageUtils.prependPseudoReply(
+                    message,
+                    caption,
+                    photo,
+                    peer,
+                    replyQuote,
+                    pseudoReplySource,
+                    entities
+            );
+            message = pseudoReply.text;
+            caption = pseudoReply.caption;
+            if (pseudoReplySource.isAyuDeleted()
+                    || (Math.abs(pseudoReplySource.getDialogId()) != Math.abs(peer)
+                    && (AyuMessageUtils.isUnforwardable(pseudoReplySource)
+                    || AyuMessageUtils.isChatNoForwards(currentAccount, pseudoReplySource.getDialogId())))) {
+                pseudoReplySource = null;
+            }
         }
+        replyToMsg = pseudoReplySource;
 
         String originalPath = null;
         if (params != null && params.containsKey("originalPath")) {

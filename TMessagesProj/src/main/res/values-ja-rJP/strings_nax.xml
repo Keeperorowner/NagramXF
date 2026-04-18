@@ -377,14 +377,11 @@
     <string name="CancelForwarding">転送をキャンセル</string>
     <string name="DirectForwardNotAllowed">直接転送は許可されていません。</string>
     <string name="ForceForwardFailed">強制転送に失敗しました。</string>
-    <string name="ForceForwardMediaTimedOut">メディアのダウンロードがタイムアウトしました。</string>
     <string name="ForceForwardMediaStalled">メディアのダウンロードが停止しました。</string>
-    <string name="ForceForwardMediaDidNotStart">メディアのダウンロードが開始されませんでした。</string>
     <string name="ForceForwardStatusPreparingMedia">メディアを準備中</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="ForceForwardStatusChunkCount">%2$d 個中 %1$d 個目のチャンク</string>
     <string name="ForceForwardStatusWaitingDownloads">メディアのダウンロードを待機中</string>
-    <string name="ForceForwardStatusMediaReady">メディアの準備完了</string>
     <string name="ForceForwardStatusForwarding">転送中</string>
     <string name="ForceForwardStatusStopping">転送を停止中</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">現在の転送バッチを停止中</string>
@@ -396,11 +393,8 @@
     <string name="ForceForwardStatusDocumentFallback">ファイルとして送信中</string>
     <string name="ForceForwardStatusStickerCopy">ステッカーをコピー中</string>
     <string name="ForceForwardStatusTextFallback">テキストとして送信中</string>
-    <string name="ForceForwardStatusMediaFallback">メディアとして送信中</string>
     <string name="ForceForwardStatusDocumentGroup">ファイルグループを転送中</string>
     <string name="ForceForwardStatusMediaGroup">メディアグループを転送中</string>
-    <string name="ForceForwardStatusDocumentGroupFallback">ファイルグループとして送信中</string>
-    <string name="ForceForwardStatusMediaGroupFallback">メディアグループとして送信中</string>
     <string name="ForceForwardSomeSkipped">%1$d 件のメッセージを転送できませんでした</string>
     <string name="AvatarCorners">アバターの角丸</string>
     <string name="AvatarCornersLeft">より四角</string>

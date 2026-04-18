@@ -25,6 +25,7 @@ import org.telegram.messenger.secretmedia.EncryptedFileInputStream;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ChatActivity;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -52,25 +53,26 @@ public abstract class AyuMessageUtils {
         if (messageObject == null || messageObject.currentAccount < 0) {
             return false;
         }
-        long chatId = messageObject.getChatId();
-        if (chatId < 0) {
-            chatId = -chatId;
-        }
-        if (chatId == 0) {
-            return false;
-        }
-        MessagesController controller = MessagesController.getInstance(messageObject.currentAccount);
-        TLRPC.Chat chat = controller.getChat(chatId);
+        return isChatNoForwards(messageObject.currentAccount, messageObject.getDialogId());
+    }
+
+    public static boolean isChatNoForwards(int currentAccount, long dialogId) {
+        MessagesController controller = MessagesController.getInstance(currentAccount);
+        TLRPC.Chat chat = controller.getChat(dialogId);
         if (chat == null) {
+            chat = controller.getChat(-dialogId);
+        }
+        if (chat == null) {
+            if (DialogObject.isUserDialog(dialogId)) {
+                TLRPC.UserFull userFull = controller.getUserFull(dialogId);
+                return userFull != null && (userFull.noforwards_peer_enabled || userFull.noforwards_my_enabled);
+            }
             return false;
         }
         if (chat instanceof TLRPC.TL_channelForbidden || chat instanceof TLRPC.TL_chatForbidden) {
             return true;
         }
         if (chat.banned_rights != null && chat.banned_rights.view_messages) {
-            return true;
-        }
-        if (chat.noforwards) {
             return true;
         }
         if (chat.migrated_to != null) {
@@ -85,7 +87,7 @@ public abstract class AyuMessageUtils {
                 return migratedTo.noforwards;
             }
         }
-        return false;
+        return chat.noforwards;
     }
 
     public static boolean isPeerNoForwards(MessageObject messageObject) {
@@ -143,8 +145,37 @@ public abstract class AyuMessageUtils {
         return messageObject.type == MessageObject.TYPE_PAID_MEDIA || message.media instanceof TLRPC.TL_messageMediaPaidMedia;
     }
 
+    public static boolean isMediaDownloadable(MessageObject messageObject, boolean mediaOnly) {
+        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.media == null) {
+            return false;
+        }
+        TLRPC.Message message = messageObject.messageOwner;
+        TLRPC.MessageMedia media = message.media;
+        if (media.photo instanceof TLRPC.TL_photoEmpty || media.document instanceof TLRPC.TL_documentEmpty || MessageObject.isMediaEmpty(message)) {
+            return false;
+        }
+        if (media instanceof TLRPC.TL_messageMediaPaidMedia && ((TLRPC.TL_messageMediaPaidMedia) media).stars_amount != 0) {
+            return true;
+        }
+        boolean downloadableMedia = (messageObject.isSecretMedia() && !messageObject.isVoice())
+                || messageObject.isGif()
+                || messageObject.isNewGif()
+                || messageObject.isRoundVideo()
+                || messageObject.isVideo()
+                || messageObject.isPhoto()
+                || messageObject.isSticker()
+                || messageObject.isAnimatedSticker();
+        return (mediaOnly || downloadableMedia)
+                ? downloadableMedia
+                : messageObject.isDocument() || messageObject.isMusic() || messageObject.isVoice();
+    }
+
+    public static boolean isFullAyuForwardsNeeded(MessageObject messageObject) {
+        return isChatNoForwards(messageObject);
+    }
+
     public static boolean isAyuForwardNeeded(MessageObject messageObject) {
-        return canForwardAyuDeletedMessage(messageObject) || isPeerNoForwards(messageObject) || isUnforwardable(messageObject);
+        return canForwardAyuDeletedMessage(messageObject) || isUnforwardable(messageObject);
     }
 
     public static boolean isUnrepliable(MessageObject messageObject) {
@@ -168,11 +199,8 @@ public abstract class AyuMessageUtils {
         return !TextUtils.isEmpty(messageObject.messageOwner.attachPath) && new File(messageObject.messageOwner.attachPath).exists();
     }
 
-    public static PseudoReplyResult prependPseudoReply(String text, String caption, boolean photoMarker, MessageObject messageObject, ArrayList<TLRPC.MessageEntity> entities, int currentAccount, long targetDialogId) {
-        if ((TextUtils.isEmpty(text) && TextUtils.isEmpty(caption) && !photoMarker) || messageObject == null) {
-            return new PseudoReplyResult(text, caption);
-        }
-        if (!shouldPrependPseudoReply(messageObject, targetDialogId)) {
+    public static PseudoReplyResult prependPseudoReply(String text, String caption, TLRPC.TL_photo photoMarker, long targetDialogId, ChatActivity.ReplyQuote replyQuote, MessageObject messageObject, ArrayList<TLRPC.MessageEntity> entities) {
+        if ((TextUtils.isEmpty(text) && TextUtils.isEmpty(caption) && photoMarker == null) || messageObject == null) {
             return new PseudoReplyResult(text, caption);
         }
 
@@ -198,8 +226,9 @@ public abstract class AyuMessageUtils {
             }
         }
 
-        long senderId = messageObject.getSenderId();
-        String summary = senderName + shortifyText(messageText, 100);
+        long senderId = replyQuote != null ? replyQuote.peerId : messageObject.getSenderId();
+        CharSequence quoteText = replyQuote != null ? replyQuote.getText() : messageText;
+        String summary = senderName + shortifyText(quoteText, 100);
         int shift;
         if (!TextUtils.isEmpty(text)) {
             text = summary + "\n" + text;
@@ -207,7 +236,7 @@ public abstract class AyuMessageUtils {
         } else if (!TextUtils.isEmpty(caption)) {
             caption = summary + "\n" + caption;
             shift = summary.length() + 1;
-        } else if (photoMarker) {
+        } else if (photoMarker != null) {
             caption = summary;
             shift = summary.length();
         } else {
@@ -216,21 +245,16 @@ public abstract class AyuMessageUtils {
 
         shiftEntities(entities, shift);
 
-        if (!TextUtils.isEmpty(senderName)) {
-            TLRPC.TL_messageEntityBold bold = new TLRPC.TL_messageEntityBold();
-            bold.offset = 0;
-            bold.length = senderName.length();
-            entities.add(bold);
+        TLRPC.TL_messageEntityBold bold = new TLRPC.TL_messageEntityBold();
+        bold.offset = 0;
+        bold.length = senderName.length();
+        entities.add(bold);
 
-            TLRPC.InputUser inputUser = MessagesController.getInstance(currentAccount).getInputUser(senderId);
-            if (inputUser != null) {
-                TLRPC.TL_inputMessageEntityMentionName mention = new TLRPC.TL_inputMessageEntityMentionName();
-                mention.user_id = inputUser;
-                mention.offset = 0;
-                mention.length = senderName.length();
-                entities.add(mention);
-            }
-        }
+        TLRPC.TL_inputMessageEntityMentionName mention = new TLRPC.TL_inputMessageEntityMentionName();
+        mention.user_id = MessagesController.getInstance(messageObject.currentAccount).getInputUser(senderId);
+        mention.offset = 0;
+        mention.length = senderName.length();
+        entities.add(mention);
 
         TLRPC.TL_messageEntityBlockquote blockquote = new TLRPC.TL_messageEntityBlockquote();
         blockquote.offset = 0;
@@ -238,16 +262,6 @@ public abstract class AyuMessageUtils {
         entities.add(blockquote);
 
         return new PseudoReplyResult(text, caption);
-    }
-
-    private static boolean shouldPrependPseudoReply(MessageObject messageObject, long targetDialogId) {
-        if (messageObject == null || messageObject.messageOwner == null || !isUnrepliable(messageObject)) {
-            return false;
-        }
-        if (messageObject.isAyuDeleted()) {
-            return true;
-        }
-        return Math.abs(messageObject.getDialogId()) != Math.abs(targetDialogId);
     }
 
     private static void shiftEntities(ArrayList<TLRPC.MessageEntity> entities, int offset) {
