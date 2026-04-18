@@ -9,7 +9,6 @@
     <string name="DeleteKeepLocally">本地保留</string>
     <string name="ClearMessageDatabase">清除消息数据库</string>
     <string name="ClearMessageDatabaseNotification">消息数据库已清除</string>
-    <string name="AyuGramMenu">AyuGram</string>
     <string name="CustomDeletedMark">自定义已删除消息标记</string>
     <string name="DeletedMarkText">已删除标识</string>
     <string name="DeletedMarkNothing">无</string>
@@ -262,7 +261,6 @@
     <string name="SwitchStyle">开关样式</string>
     <string name="SliderStyle">滑块样式</string>
     <string name="StyleModern">现代</string>
-    <string name="StyleOneUI4" translatable="false">OneUI</string>
     <string name="SaveDeletedExclusionMenu">保存已删除</string>
     <string name="SaveDeletedExcluded">排除</string>
     <string name="MarkdownParser">Markdown 解析器</string>
@@ -410,7 +408,6 @@
     <string name="SingleCornerRadius">统一圆角半径</string>
     <string name="SingleCornerRadiusInfo">话题群组会采用与聊天消息相同的头像形状。</string>
     <string name="BlurOptions">模糊选项</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>
     <string name="SaveAttachmentsCardSubtitle">配置聊天和限制</string>
     <string name="AttachmentFolder">附件文件夹</string>

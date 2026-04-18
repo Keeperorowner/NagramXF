@@ -10,7 +10,7 @@
     <string name="DeleteKeepLocally">Keep locally</string>
     <string name="ClearMessageDatabase">Clear Message Database</string>
     <string name="ClearMessageDatabaseNotification">Message database cleared.</string>
-    <string name="AyuGramMenu">AyuGram</string>
+    <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="CustomDeletedMark">Custom Deleted Mark</string>
     <string name="DeletedMarkText">Deleted Mark</string>
     <string name="DeletedMarkNothing">Nothing</string>
@@ -279,7 +279,7 @@
     <string name="SliderStyle">Slider Style</string>
     <string name="StyleModern">Modern</string>
     <string name="StyleMaterialDesign3" translatable="false">Material Design 3</string>
-    <string name="StyleOneUI4" translatable="false">OneUI</string>
+    <string name="StyleOneUI" translatable="false">OneUI</string>
     <string name="SaveDeletedExclusionMenu">Save Deleted</string>
     <string name="SaveDeletedExcluded">Exclude</string>
     <string name="MarkdownParser">Markdown Parser</string>
@@ -429,7 +429,7 @@
     <string name="SingleCornerRadius">Unified corner radius</string>
     <string name="SingleCornerRadiusInfo">Topic groups will use the same avatar shape as chat messages.</string>
     <string name="BlurOptions">Blur Options</string>
-    <string name="AyuMoments">AyuMoments</string>
+    <string name="AyuMoments" translatable="false">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>
     <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>
     <string name="AttachmentFolder">Attachment Folder</string>

@@ -327,7 +327,6 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Показывает содержимое уведомлений даже при включённой блокировке паролем.</string>
     <string name="StickerSavedHint">Стикер сохранён в галерею.</string>
     <string name="StickerCopied">Стикер скопирован в буфер обмена.</string>
-    <string name="AyuGramMenu">Приватность</string>
     <string name="HideHomeSearchField">Скрыть панель поиска</string>
     <string name="ReplaceBlockedMyInfo">Заменить информацию о пользователях, которые меня заблокировали</string>
     <string name="ReplaceBlockedMyInfoDescription">Отображать пользователей, которые вас заблокировали, с помощью серого аватара-заглушки.</string>
@@ -341,7 +340,6 @@
     <string name="AvatarCornersRight">Круглый</string>
     <string name="SingleCornerRadius">Единый радиус скругления</string>
     <string name="SingleCornerRadiusInfo">Группы тем будут использовать ту же форму аватара, что и сообщения в чате.</string>
-    <string name="AyuMoments">Приватность</string>
     <string name="SaveAttachmentsCardTitle">Сохранять вложения</string>
     <string name="SaveAttachmentsCardSubtitle">Настройка чатов и лимитов</string>
     <string name="AttachmentFolder">Папка вложений</string>
@@ -381,7 +379,6 @@
     <string name="MainTabsDisplayModeShow">Показать</string>
     <string name="MainTabsDisplayModeHide">Скрыть</string>
     <string name="MainTabsDisplayModeFloating">Плавающий</string>
-    <string name="StyleOneUI4" translatable="false">OneUI</string>
     <string name="AppNavigation">Навигация по приложению</string>
     <string name="SwitchAccountNax">Сменить аккаунт</string>
     <string name="CurrentNax">Текущий</string>
