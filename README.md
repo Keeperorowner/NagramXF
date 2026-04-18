@@ -1,6 +1,6 @@
-# Fork Info
+# Nagram XF
 
-A fork of [NagramX](https://github.com/risin42/NagramX) with additional features.
+A fork of [Nagram X](https://github.com/risin42/NagramX) with additional features.
 
 ## Download
 
