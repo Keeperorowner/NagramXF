@@ -7334,7 +7334,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateProxyButton(false, true);
         updateStoriesVisibility(false);
         if (NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool()) {
-            hideFloatingButton(true);
+            floatingButtonHidden = true;
+            updateFloatingButtonVisibility(true);
         }
         checkSuggestClearDatabase();
         checkUi_mainTabsVisible();
@@ -11231,6 +11232,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     boolean floatingButtonHidden;
 
     private void hideFloatingButton(boolean hide) {
+        final boolean hideTabsOnScroll = hide || rightSlidingDialogContainer.hasFragment();
+
         if (NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool()) {
             floatingForceVisible = false;
             hide = true;
@@ -11247,7 +11250,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         updateFloatingButtonVisibility(true);
 
         if (mainTabsActivityController != null && NaConfig.INSTANCE.getMainTabsDisplayMode().Int() == MainTabsHelper.BOTTOM_BAR_MODE_FLOATING) {
-            mainTabsActivityController.setTabsScrollHide(hide);
+            mainTabsActivityController.setTabsScrollHide(hideTabsOnScroll);
         }
 
         if (hide) {
