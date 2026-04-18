@@ -2874,6 +2874,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (!onlySelect) {
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.closeSearchByActiveAction);
                 NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxySettingsChanged);
+                NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsLayoutChanged);
                 getNotificationCenter().addObserver(this, NotificationCenter.filterSettingsUpdated);
                 getNotificationCenter().addObserver(this, NotificationCenter.dialogsUnreadCounterChanged);
             }
@@ -3092,6 +3093,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (!onlySelect) {
                 NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.closeSearchByActiveAction);
                 NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxySettingsChanged);
+                NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsLayoutChanged);
                 getNotificationCenter().removeObserver(this, NotificationCenter.filterSettingsUpdated);
                 getNotificationCenter().removeObserver(this, NotificationCenter.dialogsUnreadCounterChanged);
             }
@@ -5872,7 +5874,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean shouldReplaceHomeSearchFieldWithMainTabsButton() {
-        return hasMainTabs && NaConfig.INSTANCE.getMainTabsShowSearchButton().Bool();
+        return hasMainTabs
+                && NaConfig.INSTANCE.getMainTabsShowSearchButton().Bool()
+                && NaConfig.INSTANCE.getMainTabsDisplayMode().Int() != MainTabsHelper.BOTTOM_BAR_MODE_HIDE;
     }
 
     private boolean shouldHideHomeSearchField() {
@@ -5889,6 +5893,24 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private int getMaxScrollYOffset() {
         return getMaxScrollYOffsetWithoutSearch() + getSearchFieldReservedHeight();
+    }
+
+    private void refreshSearchSettingsUi() {
+        invalidateScrollY = true;
+        if (viewPages != null) {
+            for (ViewPage page : viewPages) {
+                if (page != null && page.listView != null) {
+                    page.listView.requestLayout();
+                }
+            }
+        }
+        if (fragmentView != null) {
+            fragmentView.requestLayout();
+            fragmentView.invalidate();
+        }
+        checkUi_searchFieldVisibility();
+        checkUi_itemSearchVisibility();
+        blur3_InvalidateBlur();
     }
 
     public boolean isStarsSubscriptionHintVisible() {
@@ -10728,21 +10750,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             updateVisibleRows(MessagesController.UPDATE_MASK_SEND_STATE);
         } else if (id == NotificationCenter.didSetPasscode) {
             checkUi_itemPasscodeVisibility();
+        } else if (id == NotificationCenter.mainTabsLayoutChanged) {
+            refreshSearchSettingsUi();
         } else if (id == NotificationCenter.updateSearchSettings) {
-            invalidateScrollY = true;
-            if (viewPages != null) {
-                for (ViewPage page : viewPages) {
-                    if (page != null && page.listView != null) {
-                        page.listView.requestLayout();
-                    }
-                }
-            }
-            if (fragmentView != null) {
-                fragmentView.requestLayout();
-                fragmentView.invalidate();
-            }
-            checkUi_searchFieldVisibility();
-            blur3_InvalidateBlur();
+            refreshSearchSettingsUi();
         } else if (id == NotificationCenter.needReloadRecentDialogsSearch) {
             if (searchViewPager != null && searchViewPager.dialogsSearchAdapter != null) {
                 searchViewPager.dialogsSearchAdapter.loadRecentSearch();
@@ -14162,7 +14173,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factor1 = animatorSearchButtonVisible.getFloatValue();
         final float factor2 = 1f - getRightSlidingProgress();
         final float factor3 = 1f - animatorDoneButtonVisible.getFloatValue();
-        final float factor = shouldHideHomeSearchField() ? 0 : factor0 * factor1 * factor2 * factor3;
+        final float factor = shouldReplaceHomeSearchFieldWithMainTabsButton()
+                ? 0
+                : factor0 * factor1 * factor2 * factor3;
         FragmentFloatingButton.setAnimatedVisibility(searchItem, factor);
         if (dialogStoriesCell != null) {
             dialogStoriesCell.invalidate();
