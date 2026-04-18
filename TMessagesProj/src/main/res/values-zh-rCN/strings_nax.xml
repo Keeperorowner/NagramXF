@@ -439,4 +439,6 @@
     <string name="PeekOnlineSuccess">在线状态已刷新</string>
     <string name="PeekOnlineUnavailable">无法获取精确在线状态。</string>
     <string name="PeekOnlineRestoreFailed">无法恢复“最后上线”隐私设置。</string>
+    <string name="SendLockedCustomEmojiAsSticker">将 Premium Emoji 作为贴纸发送</string>
+    <string name="SendLockedCustomEmojiAsStickerInfo">仅支持 WebP/WebM 自定义 Emoji。仅支持 TGS 的 Emoji 不包含在内。</string>
 </resources>

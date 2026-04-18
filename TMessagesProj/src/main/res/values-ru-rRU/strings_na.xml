@@ -109,4 +109,7 @@
     <string name="RegexFiltersEnabled">Включить фильтры сообщений</string>
     <string name="UseSystemAiService">Использовать системный ИИ-сервис</string>
     <string name="UseSystemAiServiceDesc">Поддерживаются только HyperOS и ColorOS</string>
+    <string name="RegexFiltersMaskMessages">Маскировать отфильтрованные или заблокированные сообщения вместо скрытия</string>
+    <string name="RegexFiltersMaskMessagesShort">Маскировать вместо скрытия</string>
+    <string name="RegexFiltersMaskMessagesAbout">Отфильтрованные или заблокированные сообщения остаются в чате как замаскированные заполнители вместо удаления.</string>
 </resources>
