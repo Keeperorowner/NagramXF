@@ -26,6 +26,8 @@ import org.telegram.ui.Stories.DialogStoriesCell
 import xyz.nextalone.nagram.NaConfig
 
 object FoldersHelper {
+    private const val FLOATING_BUTTONS_OFFSET_WITH_MAIN_TABS_DP = 55f
+    private const val FLOATING_BUTTONS_OFFSET_WITHOUT_MAIN_TABS_DP = 10f
 
     @JvmStatic
     fun moveFoldersToBottom(): Boolean {
@@ -37,14 +39,20 @@ object FoldersHelper {
         if (!moveFoldersToBottom() || filterTabsView == null || filterTabsView.height <= AndroidUtilities.dp(5f)) {
             return 0f
         }
-        return AndroidUtilities.dp(if (showMainTabs) 55f else 10f).toFloat()
+        return AndroidUtilities.dp(
+            if (showMainTabs) {
+                FLOATING_BUTTONS_OFFSET_WITH_MAIN_TABS_DP
+            } else {
+                FLOATING_BUTTONS_OFFSET_WITHOUT_MAIN_TABS_DP
+            }
+        ).toFloat()
     }
 
     private fun getFilterTabsOffset(showMainTabs: Boolean): Int {
         if (!moveFoldersToBottom()) {
             return 0
         }
-        return if (showMainTabs) AndroidUtilities.dp(80f) else AndroidUtilities.dp(30f)
+        return AndroidUtilities.dp(35f)
     }
 
     @JvmStatic
@@ -182,6 +190,7 @@ object FoldersHelper {
     fun updateFoldersOffset(
         filterTabsView: FilterTabsView?,
         forwardControlsVisibleProgress: Float,
+        mainTabsScrollHideProgress: Float,
         showMainTabs: Boolean,
         navigationBarHeight: Int,
         additionFloatingButtonOffset: Int,
@@ -195,9 +204,17 @@ object FoldersHelper {
         val update = Runnable {
             val clampedForwardControlsVisibleProgress = forwardControlsVisibleProgress.coerceIn(0f, 1f)
             val forwardControlsOffset = AndroidUtilities.dp(150f) * clampedForwardControlsVisibleProgress
+            val tabsScrollHideOffset = getFilterTabsOffset(showMainTabs) * mainTabsScrollHideProgress.coerceIn(0f, 1f)
+            val hiddenMainTabsOffset = if (showMainTabs) {
+                0
+            } else {
+                AndroidUtilities.dp(FLOATING_BUTTONS_OFFSET_WITH_MAIN_TABS_DP - FLOATING_BUTTONS_OFFSET_WITHOUT_MAIN_TABS_DP)
+            }
             filterTabsView.translationY = (
                 -navigationBarHeight
                     - additionFloatingButtonOffset
+                    + hiddenMainTabsOffset
+                    + tabsScrollHideOffset
                     - additionalFloatingTranslation
                     - floatingButtonPanOffset
                     - AndroidUtilities.dp(52f)

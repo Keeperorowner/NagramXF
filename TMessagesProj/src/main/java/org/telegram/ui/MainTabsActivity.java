@@ -590,6 +590,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         bundle.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
         dialogsActivity = new DialogsActivity(bundle);
         dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
+        dialogsActivity.setMainTabsScrollHideProgress(animatorTabsScrollHide.getFloatValue());
         putFragmentAtPosition(getPreferredStartPositionFor(MainTabsConfigManager.TabType.CHATS), dialogsActivity);
         return dialogsActivity;
     }
@@ -633,6 +634,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
                 dialogsActivity = new DialogsActivity(args);
                 dialogsActivity.setMainTabsActivityController(new MainTabsActivityControllerImpl());
+                dialogsActivity.setMainTabsScrollHideProgress(animatorTabsScrollHide.getFloatValue());
                 return dialogsActivity;
             }
         }
@@ -1013,6 +1015,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (id == ANIMATOR_ID_TABS_VISIBLE || id == ANIMATOR_ID_TABS_SCROLL_HIDE) {
             checkUi_tabsPosition();
             checkUi_fadeView();
+            if (dialogsActivity != null) {
+                dialogsActivity.setMainTabsScrollHideProgress(animatorTabsScrollHide.getFloatValue());
+            }
         }
     }
 
