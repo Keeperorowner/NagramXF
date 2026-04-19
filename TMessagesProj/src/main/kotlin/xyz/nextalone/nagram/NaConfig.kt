@@ -651,6 +651,18 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val saveMediaOnCellularDataLimit =
+        addConfig(
+            "SaveMediaOnCellularDataLimit",
+            ConfigItem.configTypeLong,
+            16L * 1024L * 1024L
+        )
+    val saveMediaOnWiFiLimit =
+        addConfig(
+            "SaveMediaOnWiFiLimit",
+            ConfigItem.configTypeLong,
+            64L * 1024L * 1024L
+        )
     val attachmentFolderSizeLimitPreset =
         addConfig(
             "AttachmentFolderSizeLimitPreset",

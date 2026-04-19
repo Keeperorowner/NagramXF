@@ -101,8 +101,8 @@
     <string name="ShadowBanRemoved">Removed from **user filters**.</string>
     <string name="botCommandConfirmTitle">Send Command</string>
     <string name="botCommandConfirmText">Do you want to send this command?\n\n%s</string>
-    <string name="MessageSavingSaveMedia">Save Media</string>
-    <string name="MessageSavingSaveMediaHint">Click for More.</string>
+    <string name="MessageSavingSaveMedia">Save Attachments</string>
+    <string name="MessageSavingSaveMediaHint">Configure chats &amp; limits</string>
     <string name="MessageSavingSaveMediaInPrivateChats">… in Private Chats</string>
     <string name="MessageSavingSaveMediaInPublicChannels">… in Public Channels</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">… in Private Channels</string>
@@ -426,6 +426,8 @@
     <string name="AyuMoments" translatable="false">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>
     <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>
+    <string name="MaximumMediaSizeCellular">Media size limit (cellular data)</string>
+    <string name="MaximumMediaSizeWiFi">Media size limit (WiFi)</string>
     <string name="AttachmentFolder">Attachment Folder</string>
     <string name="AttachmentFolderSizeLimit">Folder Size Limit</string>
     <string name="AttachmentFolderSizeLimitInfo">If the folder size exceeds this limit, the oldest attachments will be removed from the device.</string>

@@ -74,7 +74,7 @@
     <string name="botCommandConfirmTitle">確認傳送</string>
     <string name="botCommandConfirmText">您確定要發送此指令嗎？\n\n%s</string>
     <string name="MessageSavingSaveMedia">儲存媒體</string>
-    <string name="MessageSavingSaveMediaHint">點擊以查看更多選項。</string>
+    <string name="MessageSavingSaveMediaHint">設定聊天與限制</string>
     <string name="MessageSavingSaveMediaInPrivateChats">私聊</string>
     <string name="MessageSavingSaveMediaInPublicChannels">公開頻道</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">私有頻道</string>

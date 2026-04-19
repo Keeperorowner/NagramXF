@@ -45,6 +45,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
+import org.telegram.ui.Cells.MaxFileSizeCell;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckBoxCell;
@@ -972,6 +973,20 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
             linearLayout.addView(cells[a], LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 50));
         }
 
+        MaxFileSizeCell[] sizeCells = new MaxFileSizeCell[2];
+        for (int a = 0; a < sizeCells.length; a++) {
+            MaxFileSizeCell sizeCell = sizeCells[a] = new MaxFileSizeCell(getParentActivity());
+            sizeCell.setSliderStyleOverride(org.telegram.ui.Components.SeekBarView.SLIDER_STYLE_DEFAULT);
+            if (a == 0) {
+                sizeCell.setText(getString(R.string.MaximumMediaSizeCellular));
+                sizeCell.setSize(NaConfig.INSTANCE.getSaveMediaOnCellularDataLimit().Long());
+            } else {
+                sizeCell.setText(getString(R.string.MaximumMediaSizeWiFi));
+                sizeCell.setSize(NaConfig.INSTANCE.getSaveMediaOnWiFiLimit().Long());
+            }
+            linearLayout.addView(sizeCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 80));
+        }
+
         FrameLayout buttonsLayout = new FrameLayout(getParentActivity());
         buttonsLayout.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         linearLayout.addView(buttonsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 52));
@@ -1000,6 +1015,8 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
             NaConfig.INSTANCE.getSaveMediaInPrivateChannels().setConfigBool(cells[2].isChecked());
             NaConfig.INSTANCE.getSaveMediaInPublicGroups().setConfigBool(cells[3].isChecked());
             NaConfig.INSTANCE.getSaveMediaInPrivateGroups().setConfigBool(cells[4].isChecked());
+            NaConfig.INSTANCE.getSaveMediaOnCellularDataLimit().setConfigLong(sizeCells[0].getSize());
+            NaConfig.INSTANCE.getSaveMediaOnWiFiLimit().setConfigLong(sizeCells[1].getSize());
             builder.getDismissRunnable().run();
         });
         showDialog(builder.create());

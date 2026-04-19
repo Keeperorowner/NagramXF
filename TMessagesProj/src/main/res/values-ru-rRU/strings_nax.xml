@@ -80,8 +80,8 @@
     <string name="ShadowBanRemoved">Удалено из **пользовательских фильтров**.</string>
     <string name="botCommandConfirmTitle">Отправить команду</string>
     <string name="botCommandConfirmText">Вы хотите отправить эту команду?\n\n%s</string>
-    <string name="MessageSavingSaveMedia">Сохранять медиа</string>
-    <string name="MessageSavingSaveMediaHint">Нажмите, чтобы узнать больше.</string>
+    <string name="MessageSavingSaveMedia">Сохранять вложения</string>
+    <string name="MessageSavingSaveMediaHint">Настроить чаты и лимиты</string>
     <string name="MessageSavingSaveMediaInPrivateChats">… в личных чатах</string>
     <string name="MessageSavingSaveMediaInPublicChannels">… в публичных каналах</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">… в частных каналах</string>
@@ -342,6 +342,8 @@
     <string name="SingleCornerRadiusInfo">Группы тем будут использовать ту же форму аватара, что и сообщения в чате.</string>
     <string name="SaveAttachmentsCardTitle">Сохранять вложения</string>
     <string name="SaveAttachmentsCardSubtitle">Настройка чатов и лимитов</string>
+    <string name="MaximumMediaSizeCellular">Лимит на размер (моб.)</string>
+    <string name="MaximumMediaSizeWiFi">Лимит на размер (WiFi)</string>
     <string name="AttachmentFolder">Папка вложений</string>
     <string name="AttachmentFolderSizeLimit">Лимит размера папки</string>
     <string name="AttachmentFolderSizeLimitInfo">Если размер папки превысит этот лимит, старые вложения будут удалены с устройства.</string>
