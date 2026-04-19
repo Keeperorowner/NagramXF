@@ -599,6 +599,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private float additionalFloatingTranslation;
     private float floatingButtonPanOffset;
+    private float mainTabsScrollHideProgress;
 
     private AnimatorSet searchAnimator;
     private float searchAnimationProgress;
@@ -1301,7 +1302,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     childTop = 0;
                 } else if (child == topPanelLayout || child == topBubblesFadeView || child == filterTabsView) {
                     childTop += actionBar.getMeasuredHeight();
-                    childTop += getSearchFieldReservedHeight();
+                    if (child != filterTabsView || !foldersAtBottom) {
+                        childTop += getSearchFieldReservedHeight();
+                    }
                 } else if (dialogStoriesCell != null && dialogStoriesCell.getPremiumHint() == child) {
                     continue;
                 }
@@ -2808,6 +2811,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     public void setMainTabsActivityController(MainTabsActivityController controller) {
         mainTabsActivityController = controller;
+    }
+
+    public void setMainTabsScrollHideProgress(float progress) {
+        float clamped = Utilities.clamp(progress, 1f, 0f);
+        if (mainTabsScrollHideProgress == clamped) {
+            return;
+        }
+        mainTabsScrollHideProgress = clamped;
+        updateFloatingButtonOffset();
+        blur3_InvalidateBlur();
     }
 
 
@@ -5896,6 +5909,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void refreshSearchSettingsUi() {
+        additionNavigationBarHeight = hasMainTabs || foldersAtBottom ? dp(MainTabsHelper.getMainTabsHeightWithMargins()) : 0;
+        additionFloatingButtonOffset = hasMainTabs || foldersAtBottom ? dp(MainTabsHelper.getMainTabsHeight() + MainTabsHelper.getMainTabsMargin()) : 0;
         invalidateScrollY = true;
         if (viewPages != null) {
             for (ViewPage page : viewPages) {
@@ -5904,6 +5919,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
+        checkUi_chatListViewPaddingsBottom();
+        updateFloatingButtonOffset();
         if (fragmentView != null) {
             fragmentView.requestLayout();
             fragmentView.invalidate();
@@ -8953,6 +8970,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         FoldersHelper.INSTANCE.updateFoldersOffset(
             filterTabsView,
             getForwardControlsVisibleProgress(),
+            mainTabsScrollHideProgress,
             hasMainTabs,
             navigationBarHeight,
             additionFloatingButtonOffset,
@@ -8980,6 +8998,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         FoldersHelper.INSTANCE.updateFoldersOffset(
             filterTabsView,
             getForwardControlsVisibleProgress(),
+            mainTabsScrollHideProgress,
             hasMainTabs,
             navigationBarHeight,
             additionFloatingButtonOffset,
@@ -13967,6 +13986,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             if (alphaChanged && viewPages[0] != null) {
                 viewPages[0].listView.requestLayout();
+            }
+            if (foldersAtBottom) {
+                updateFloatingButtonOffset();
             }
         }
         updateContextViewPosition();
