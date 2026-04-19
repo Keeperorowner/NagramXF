@@ -74,7 +74,7 @@
     <string name="botCommandConfirmTitle">Kirim Perintah</string>
     <string name="botCommandConfirmText">Apakah Anda ingin mengirim perintah ini?\n\n%s</string>
     <string name="MessageSavingSaveMedia">Simpan Media</string>
-    <string name="MessageSavingSaveMediaHint">Klik untuk Lebih Lanjut.</string>
+    <string name="MessageSavingSaveMediaHint">Konfigurasikan chat dan batas</string>
     <string name="MessageSavingSaveMediaInPrivateChats">… di Obrolan Pribadi</string>
     <string name="MessageSavingSaveMediaInPublicChannels">… di Saluran Publik</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">… di Saluran Pribadi</string>

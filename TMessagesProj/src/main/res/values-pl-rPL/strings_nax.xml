@@ -74,7 +74,7 @@
     <string name="botCommandConfirmTitle">Wyślij polecenie</string>
     <string name="botCommandConfirmText">Czy chcesz wysłać to polecenie?\n\n%s</string>
     <string name="MessageSavingSaveMedia">Zapisz multimedia</string>
-    <string name="MessageSavingSaveMediaHint">Kliknij, aby uzyskać więcej.</string>
+    <string name="MessageSavingSaveMediaHint">Skonfiguruj czaty i limity</string>
     <string name="MessageSavingSaveMediaInPrivateChats">… w prywatnych czatach</string>
     <string name="MessageSavingSaveMediaInPublicChannels">… w kanałach publicznych</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">… w kanałach prywatnych</string>

@@ -74,7 +74,7 @@
     <string name="botCommandConfirmTitle">Enviar comando</string>
     <string name="botCommandConfirmText">Você quer enviar este comando?\n\n%s</string>
     <string name="MessageSavingSaveMedia">Salvar mídia</string>
-    <string name="MessageSavingSaveMediaHint">Clique para mais.</string>
+    <string name="MessageSavingSaveMediaHint">Configurar chats e limites</string>
     <string name="MessageSavingSaveMediaInPrivateChats">... em chats privados</string>
     <string name="MessageSavingSaveMediaInPublicChannels">... em canais públicos</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">... em canais privados</string>

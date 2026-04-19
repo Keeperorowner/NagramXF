@@ -87,8 +87,8 @@
     <string name="ShadowBanRemoved">已从**用户过滤器**中移除。</string>
     <string name="botCommandConfirmTitle">确认发送</string>
     <string name="botCommandConfirmText">您确定要发送此指令吗？\n\n%s</string>
-    <string name="MessageSavingSaveMedia">保存媒体</string>
-    <string name="MessageSavingSaveMediaHint">点击查看更多选项。</string>
+    <string name="MessageSavingSaveMedia">保存附件</string>
+    <string name="MessageSavingSaveMediaHint">配置聊天和限制</string>
     <string name="MessageSavingSaveMediaInPrivateChats">私聊</string>
     <string name="MessageSavingSaveMediaInPublicChannels">公开频道</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">私有频道</string>
@@ -404,6 +404,8 @@
     <string name="BlurOptions">模糊选项</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>
     <string name="SaveAttachmentsCardSubtitle">配置聊天和限制</string>
+    <string name="MaximumMediaSizeCellular">媒体大小限制 (移动数据)</string>
+    <string name="MaximumMediaSizeWiFi">媒体大小限制 (WiFi)</string>
     <string name="AttachmentFolder">附件文件夹</string>
     <string name="AttachmentFolderSizeLimit">文件夹大小上限</string>
     <string name="AttachmentFolderSizeLimitInfo">如果文件夹大小超过此限制，最早的附件将从设备中删除。</string>

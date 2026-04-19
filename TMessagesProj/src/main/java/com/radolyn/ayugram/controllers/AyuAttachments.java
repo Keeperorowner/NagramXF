@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
 
+import xyz.nextalone.nagram.NaConfig;
+
 public class AyuAttachments {
 
     private static final AyuAttachments[] INSTANCES = new AyuAttachments[16];
@@ -144,6 +146,14 @@ public class AyuAttachments {
         if (forceLoad && TextUtils.isEmpty(path)) {
             if (Thread.currentThread() == ApplicationLoader.applicationHandler.getLooper().getThread()) {
                 return "/";
+            }
+            if (messageSize > 0) {
+                long limit = ApplicationLoader.isConnectedToWiFi()
+                        ? NaConfig.INSTANCE.getSaveMediaOnWiFiLimit().Long()
+                        : NaConfig.INSTANCE.getSaveMediaOnCellularDataLimit().Long();
+                if (messageSize > limit) {
+                    return "/";
+                }
             }
             ArrayList<MessageObject> messages = new ArrayList<>(1);
             messages.add(messageObject);

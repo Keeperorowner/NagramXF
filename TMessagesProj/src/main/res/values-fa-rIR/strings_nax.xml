@@ -55,7 +55,7 @@
     <string name="botCommandConfirmTitle">ارسال دستور</string>
     <string name="botCommandConfirmText">آیا می‌خواهید این دستور را ارسال کنید؟\n\n%s</string>
     <string name="MessageSavingSaveMedia">ذخیره رسانه‌ها</string>
-    <string name="MessageSavingSaveMediaHint">برای اطلاعات بیشتر کلیک کنید.</string>
+    <string name="MessageSavingSaveMediaHint">پیکربندی گفتگو ها و محدودیت ها</string>
     <string name="MessageSavingSaveMediaInPrivateChats">... در گفتگوهای خصوصی</string>
     <string name="MessageSavingSaveMediaInPublicChannels">... در کانال‌های عمومی</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">... در کانال‌های خصوصی</string>

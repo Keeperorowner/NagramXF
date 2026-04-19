@@ -132,6 +132,11 @@ public class MaxFileSizeCell extends FrameLayout {
         return currentSize;
     }
 
+    public void setSliderStyleOverride(int style) {
+        seekBarView.setSliderStyleOverride(style);
+        invalidate();
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(80), MeasureSpec.EXACTLY));
