@@ -10424,12 +10424,14 @@ public class MessagesStorage extends BaseController {
                             TLRPC.User oldUser = TLRPC.User.TLdeserialize(data, data.readInt32(false), false);
                             data.reuse();
                             if (oldUser != null) {
-                                if (user.username != null) {
-                                    oldUser.username = user.username;
-                                    oldUser.flags |= 8;
-                                } else {
-                                    oldUser.username = null;
-                                    oldUser.flags = oldUser.flags & ~8;
+                                if (user.bot) {
+                                    if (user.username != null) {
+                                        oldUser.username = user.username;
+                                        oldUser.flags |= 8;
+                                    } else {
+                                        oldUser.username = null;
+                                        oldUser.flags = oldUser.flags & ~8;
+                                    }
                                 }
                                 if (user.apply_min_photo) {
                                     if (user.photo != null) {
