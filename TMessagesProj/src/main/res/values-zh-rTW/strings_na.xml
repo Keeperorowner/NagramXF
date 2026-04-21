@@ -105,4 +105,11 @@
     <string name="VideoPlayerDecoderPreferSW">軟解優先</string>
     <string name="VideoPlayerDecoderHardware">僅硬解</string>
     <string name="VideoPlayerDecoderPreferHW">硬解優先</string>
+    <string name="SquareFloatingButton">方形浮動按鈕</string>
+    <string name="PushServiceTypeUnifiedGateway">Unified Push 網關</string>
+    <string name="RegexFiltersEnabled">啟用消息過濾</string>
+    <string name="RegexFiltersMaskMessagesShort">遮罩而不隱藏</string>
+    <string name="RegexFiltersMaskMessagesAbout">過濾或被屏蔽的消息會以遮罩占位形式保留在聊天中，而不是直接隱藏。</string>
+    <string name="UseSystemAiService">使用系統 AI 服務</string>
+    <string name="UseSystemAiServiceDesc">當前僅支持 HyperOS 和 ColorOS</string>
 </resources>
