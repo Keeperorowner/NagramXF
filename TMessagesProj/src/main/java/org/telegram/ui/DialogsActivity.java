@@ -3520,7 +3520,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         });
         fragmentSearchFieldWatcher.setDoNotCloseAfterFieldEmpty();
 
-        if (initialDialogsType == DIALOGS_TYPE_DEFAULT) {
+        if (initialDialogsType == DIALOGS_TYPE_DEFAULT && !onlySelect) {
             optionsItem = menu.addItem(4, R.drawable.ic_ab_other);
             optionsItem.setOnClickListener(v -> {
                 getContactsController().loadGlobalPrivacySetting();

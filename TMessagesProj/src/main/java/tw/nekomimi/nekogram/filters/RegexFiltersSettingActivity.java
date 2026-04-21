@@ -33,7 +33,7 @@ import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.DialogOrContactPickerActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -395,7 +395,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         } else if (position == userFiltersPageRow) {
             presentFragment(new ShadowBanListActivity());
         } else if (position == addChatFilterBtnRow) {
-            presentFragment(getDialogsActivity());
+            presentFragment(getDialogOrContactPickerActivity());
         } else if (position >= chatFiltersStartRow && position < chatFiltersEndRow) {
             int idx = position - chatFiltersStartRow;
             var chatEntries = checkChatFilters(AyuFilter.getChatFilterEntries());
@@ -407,22 +407,17 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
     }
 
     @NonNull
-    private DialogsActivity getDialogsActivity() {
+    private DialogOrContactPickerActivity getDialogOrContactPickerActivity() {
         Bundle b = new Bundle();
-        b.putBoolean("onlySelect", true);
         b.putBoolean("allowGlobalSearch", false);
-        b.putBoolean("checkCanWrite", false);
-        DialogsActivity activity = new DialogsActivity(b);
-        activity.setDelegate((fragment, did, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
-            if (did != null && !did.isEmpty()) {
-                long dialogId = did.get(0).dialogId;
+        return new DialogOrContactPickerActivity(getString(R.string.SelectChat), b, (fragment, dialogId) -> {
+            if (dialogId != 0L) {
                 parentLayout.removeFragmentFromStack(fragment, true);
                 presentFragment(new RegexFilterEditActivity(dialogId));
                 return true;
             }
             return false;
         });
-        return activity;
     }
 
     private ArrayList<AyuFilter.ChatFilterEntry> checkChatFilters(ArrayList<AyuFilter.ChatFilterEntry> chatEntries) {

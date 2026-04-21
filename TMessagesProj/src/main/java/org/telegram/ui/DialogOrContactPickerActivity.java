@@ -46,6 +46,10 @@ import java.util.ArrayList;
 
 public class DialogOrContactPickerActivity extends BaseFragment {
 
+    public interface DialogOrContactPickerDelegate {
+        boolean didSelectDialog(DialogOrContactPickerActivity fragment, long dialogId);
+    }
+
     private static class ViewPage extends FrameLayout {
         private BaseFragment parentFragment;
         private FrameLayout fragmentView;
@@ -62,6 +66,9 @@ public class DialogOrContactPickerActivity extends BaseFragment {
     private DialogsActivity dialogsActivity;
     private ContactsActivity contactsActivity;
     private ActionBarMenuItem searchItem;
+    private final boolean customSelectionMode;
+    private final CharSequence customTitle;
+    private final DialogOrContactPickerDelegate customDelegate;
 
     private final static int search_button = 0;
 
@@ -82,6 +89,9 @@ public class DialogOrContactPickerActivity extends BaseFragment {
 
     public DialogOrContactPickerActivity() {
         super();
+        customSelectionMode = false;
+        customTitle = null;
+        customDelegate = null;
 
         Bundle args = new Bundle();
         args.putBoolean("onlySelect", true);
@@ -116,10 +126,46 @@ public class DialogOrContactPickerActivity extends BaseFragment {
         contactsActivity.onFragmentCreate();
     }
 
+    public DialogOrContactPickerActivity(CharSequence title, Bundle dialogArgs, DialogOrContactPickerDelegate delegate) {
+        super();
+        customSelectionMode = true;
+        customTitle = title;
+        customDelegate = delegate;
+
+        Bundle args = dialogArgs != null ? new Bundle(dialogArgs) : new Bundle();
+        args.putBoolean("onlySelect", true);
+        args.putBoolean("checkCanWrite", false);
+        args.putBoolean("resetDelegate", false);
+        dialogsActivity = new DialogsActivity(args);
+        dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
+            if (customDelegate == null || dids == null || dids.isEmpty()) {
+                return false;
+            }
+            return customDelegate.didSelectDialog(DialogOrContactPickerActivity.this, dids.get(0).dialogId);
+        });
+        dialogsActivity.onFragmentCreate();
+
+        args = new Bundle();
+        args.putBoolean("onlyUsers", true);
+        args.putBoolean("destroyAfterSelect", true);
+        args.putBoolean("returnAsResult", true);
+        args.putBoolean("disableSections", true);
+        args.putBoolean("needFinishFragment", false);
+        args.putBoolean("resetDelegate", false);
+        args.putBoolean("allowSelf", false);
+        contactsActivity = new ContactsActivity(args);
+        contactsActivity.setDelegate((user, param, activity) -> {
+            if (customDelegate != null && user != null) {
+                customDelegate.didSelectDialog(DialogOrContactPickerActivity.this, user.id);
+            }
+        });
+        contactsActivity.onFragmentCreate();
+    }
+
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(LocaleController.getString(R.string.BlockUserMultiTitle));
+        actionBar.setTitle(customSelectionMode && customTitle != null ? customTitle : LocaleController.getString(R.string.BlockUserMultiTitle));
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
         }
