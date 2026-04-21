@@ -34,13 +34,16 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.DrawerLayoutContainer;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.DialogsActivity;
+import org.telegram.ui.ThemeActivity;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
+import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FireworksEffect;
@@ -213,7 +216,17 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             DialogsActivity.switchingTheme = true;
             syncThemeToggle(toDark, true);
             switchTheme(themeInfo, toDark);
-            Theme.turnOffAutoNight((BulletinFactory) null, null);
+            FrameLayout drawerParent = drawerLayoutContainer != null && drawerLayoutContainer.getParent() instanceof FrameLayout
+                    ? (FrameLayout) drawerLayoutContainer.getParent()
+                    : null;
+            BaseFragment bulletinFragment = drawerLayoutContainer != null && drawerLayoutContainer.getParentActionBarLayout() != null
+                    ? drawerLayoutContainer.getParentActionBarLayout().getSafeLastFragment()
+                    : null;
+            Theme.turnOffAutoNight(resolveDrawerBulletinFactory(drawerParent, bulletinFragment), () -> {
+                if (drawerLayoutContainer != null) {
+                    drawerLayoutContainer.presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
+                }
+            });
         });
         darkThemeBackgroundView.setOnLongClickListener(e -> {
             if (drawerLayoutContainer != null) {
@@ -584,6 +597,23 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         pos[0] += darkThemeBackgroundView.getMeasuredWidth() / 2;
         pos[1] += darkThemeBackgroundView.getMeasuredHeight() / 2;
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, false, pos, -1, toDark, darkThemeView, null, null, false, null);
+    }
+
+    private BulletinFactory resolveDrawerBulletinFactory(FrameLayout drawerParent, BaseFragment bulletinFragment) {
+        if (drawerParent != null) {
+            return BulletinFactory.of(drawerParent, bulletinFragment != null ? bulletinFragment.getResourceProvider() : null);
+        }
+        if (bulletinFragment != null) {
+            FrameLayout bulletinContainer = BulletinFactory.resolveBulletinContainer(bulletinFragment);
+            if (bulletinContainer != null) {
+                return BulletinFactory.of(bulletinContainer, bulletinFragment.getResourceProvider());
+            }
+            if (bulletinFragment.getParentActivity() != null) {
+                return BulletinFactory.of(Bulletin.BulletinWindow.make(bulletinFragment.getParentActivity()), bulletinFragment.getResourceProvider());
+            }
+            return BulletinFactory.of(bulletinFragment);
+        }
+        return BulletinFactory.of(Bulletin.BulletinWindow.make(getContext()), null);
     }
 
     @Override
