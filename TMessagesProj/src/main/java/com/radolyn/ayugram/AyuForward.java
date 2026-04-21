@@ -179,7 +179,8 @@ public class AyuForward {
     }
 
     public static boolean isAyuForwardNeeded(MessageObject messageObject) {
-        return AyuMessageUtils.isUnforwardable(messageObject);
+        return AyuMessageUtils.canForwardAyuDeletedMessage(messageObject)
+                || AyuMessageUtils.isUnforwardable(messageObject);
     }
 
     public static boolean isAyuForwardNeeded(ArrayList<MessageObject> messages) {
