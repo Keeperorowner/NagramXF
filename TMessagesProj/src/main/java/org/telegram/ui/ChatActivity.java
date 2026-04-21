@@ -9562,6 +9562,9 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean lastInAppInputVisible;
+
+    private boolean hideFilteredMessages = true;
+
     private void createAyuGramMenuItem() {
         if (headerItem == null || getParentActivity() == null) {
             return;
@@ -9684,6 +9687,40 @@ public class ChatActivity extends BaseFragment implements
                     ayuSwipeBack.openForeground(regexFiltersSwipeBackIndex);
                 }
             });
+
+            ActionBarMenuSubItem showFilteredItem = new ActionBarMenuSubItem(getContext(), false, false, false, getResourceProvider());
+            showFilteredItem.setTextAndIcon(getString(hideFilteredMessages ? R.string.ShowFilteredMessagesMenuText : R.string.HideFilteredMessagesMenuText), R.drawable.msg_clear_recent);
+            showFilteredItem.setOnClickListener(v -> {
+                hideFilteredMessages = !hideFilteredMessages;
+                showFilteredItem.setTextAndIcon(getString(hideFilteredMessages ? R.string.ShowFilteredMessagesMenuText : R.string.HideFilteredMessagesMenuText), R.drawable.msg_clear_recent);
+                if (messages != null) {
+                    for (int i = 0; i < messages.size(); i++) {
+                        MessageObject m = messages.get(i);
+                        if (m != null) {
+                            m.skipAyuFiltering = !hideFilteredMessages;
+                            m.forceUpdate = true;
+                            AyuFilter.refreshMaskStateForMessage(m);
+                            if (m.replyMessageObject != null) {
+                                m.replyMessageObject.skipAyuFiltering = !hideFilteredMessages;
+                                AyuFilter.refreshMaskStateForMessage(m.replyMessageObject);
+                            }
+                        }
+                    }
+                }
+                if (chatAdapter != null) {
+                    chatAdapter.notifyDataSetChanged(true);
+                }
+                dismissMenu.run();
+            });
+            showFilteredItem.setMinimumWidth(AndroidUtilities.dp(196));
+            ayuLayout.addView(showFilteredItem);
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) showFilteredItem.getLayoutParams();
+            if (LocaleController.isRTL) {
+                lp.gravity = Gravity.RIGHT;
+            }
+            lp.width = LayoutHelper.MATCH_PARENT;
+            lp.height = AndroidUtilities.dp(48);
+            showFilteredItem.setLayoutParams(lp);
         }
 
         if (showViewDeleted) {
@@ -10952,7 +10989,7 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         undoView = new UndoView(getContext(), this, false, themeDelegate);
-        undoView.setAdditionalTranslationY(shouldHideBottomForGesture() ? 0 : AndroidUtilities.dp(51));
+        undoView.setAdditionalTranslationY(shouldHideBottomBar() ? 0 : AndroidUtilities.dp(51));
         contentView.addView(undoView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
     }
 
@@ -11641,7 +11678,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void updatePagedownButtonsPosition() {
-        updatePagedownButtonsPosition(shouldHideBottomForGesture());
+        updatePagedownButtonsPosition(shouldHideBottomBar());
     }
 
     private void updatePagedownButtonsPosition(boolean hideBottomForGesture) {
@@ -12993,7 +13030,7 @@ public class ChatActivity extends BaseFragment implements
         if (undoView != null) {
             undoView.setAdditionalTranslationY(
                 windowInsetsStateHolder.getAnimatedMaxBottomInset() + dp(9 + 7)
-                    + (shouldHideBottomForGesture() ? 0 : chatInputViewsContainer.getInputBubbleHeight())
+                    + (shouldHideBottomBar() ? 0 : chatInputViewsContainer.getInputBubbleHeight())
                     + getTopicTabsSideSize(TopicsTabsView.Position.BOTTOM));
         }
         if (messagesSearchListContainer != null) {
@@ -16938,7 +16975,7 @@ public class ChatActivity extends BaseFragment implements
         int maxPositiveUnreadId = Integer.MIN_VALUE;
         int maxNegativeUnreadId = Integer.MAX_VALUE;
         int maxUnreadDate = Integer.MIN_VALUE;
-        int recyclerChatViewHeight = (contentView.getMeasuredHeight() - (inPreviewMode || isInsideContainer || shouldHideBottomForGesture() ? 0 : AndroidUtilities.dp(48)) - chatListView.getTop());
+        int recyclerChatViewHeight = (contentView.getMeasuredHeight() - (inPreviewMode || isInsideContainer || shouldHideBottomBar() ? 0 : AndroidUtilities.dp(48)) - chatListView.getTop());
         pollsToCheck.clear();
         float clipTop = chatListViewPaddingTop;
         float clipTopicTop = chatListViewPaddingTop + dp(28);
@@ -18684,12 +18721,12 @@ public class ChatActivity extends BaseFragment implements
             return actionBar.getVisibility() == VISIBLE;
         }
 
-        private void drawChildElement(Canvas canvas, float listTop, ChatMessageCell cell, int type, boolean hideBottomForGesture) {
+        private void drawChildElement(Canvas canvas, float listTop, ChatMessageCell cell, int type, boolean hideBottomBar) {
             int restoreCount = canvas.save();
             float canvasOffsetX = chatListView.getLeft() + cell.getX();
             float canvasOffsetY = chatListView.getY() + cell.getY() + cell.getPaddingTop();
             float alpha = cell.shouldDrawAlphaLayer() ? cell.getAlpha() : 1f;
-            canvas.clipRect(chatListView.getLeft(), listTop, chatListView.getRight(), chatListView.getY() + chatListView.getMeasuredHeight() - blurredViewBottomOffset - windowInsetsStateHolder.getCurrentMaxBottomInset() - (hideBottomForGesture ? 0 : inputIslandHeightCurrent) - dp(9));
+            canvas.clipRect(chatListView.getLeft(), listTop, chatListView.getRight(), chatListView.getY() + chatListView.getMeasuredHeight() - blurredViewBottomOffset - windowInsetsStateHolder.getCurrentMaxBottomInset() - (hideBottomBar ? 0 : inputIslandHeightCurrent) - dp(9));
             canvas.translate(canvasOffsetX, canvasOffsetY);
             cell.setInvalidatesParent(true);
             if (type == 0) {
@@ -18735,7 +18772,7 @@ public class ChatActivity extends BaseFragment implements
 
         @Override
         protected void dispatchDraw(Canvas canvas) {
-            final boolean hideBottomForGesture = shouldHideBottomForGesture();
+            final boolean hideBottomBar = shouldHideBottomBar();
             chatActivityEnterView.checkAnimation();
             updateChatListViewTopPadding();
             if (invalidateMessagesVisiblePart || (chatListItemAnimator != null && chatListItemAnimator.isRunning())) {
@@ -18743,7 +18780,7 @@ public class ChatActivity extends BaseFragment implements
                 updateMessagesVisiblePart(false);
             }
             updateTextureViewPosition(false, false);
-            updatePagedownButtonsPosition(hideBottomForGesture);
+            updatePagedownButtonsPosition(hideBottomBar);
             if (scheduledOrNoSoundHint != null && scheduledOrNoSoundHint.isShowing()) {
                 scheduledOrNoSoundHint.updatePosition();
             }
@@ -18908,7 +18945,7 @@ public class ChatActivity extends BaseFragment implements
                             canvas.save();
                             float viewClipBottom2 = getMeasuredHeight()
                                     - windowInsetsStateHolder.getCurrentMaxBottomInset()
-                                    - (hideBottomForGesture ? 0 : inputIslandHeightCurrent)
+                                    - (hideBottomBar ? 0 : inputIslandHeightCurrent)
                                     - dp(9)
                                     - (mentionContainer != null ? mentionContainer.clipBottom() : 0);
 
@@ -18928,7 +18965,7 @@ public class ChatActivity extends BaseFragment implements
                         float viewClipRight = chatListView.getRight();
                         float viewClipBottom = getMeasuredHeight()
                             - windowInsetsStateHolder.getCurrentMaxBottomInset()
-                            - (hideBottomForGesture ? 0 : inputIslandHeightCurrent)
+                            - (hideBottomBar ? 0 : inputIslandHeightCurrent)
                             - dp(9);
 
                         float clipTop = 0, clipBottom = 0;
@@ -19086,14 +19123,14 @@ public class ChatActivity extends BaseFragment implements
                     int size = drawTimeAfter.size();
                     if (size > 0) {
                         for (int a = 0; a < size; a++) {
-                            drawChildElement(canvas, listTop, drawTimeAfter.get(a), 0, hideBottomForGesture);
+                            drawChildElement(canvas, listTop, drawTimeAfter.get(a), 0, hideBottomBar);
                         }
                         drawTimeAfter.clear();
                     }
                     size = drawNamesAfter.size();
                     if (size > 0) {
                         for (int a = 0; a < size; a++) {
-                            drawChildElement(canvas, listTop, drawNamesAfter.get(a), 1, hideBottomForGesture);
+                            drawChildElement(canvas, listTop, drawNamesAfter.get(a), 1, hideBottomBar);
                         }
                         drawNamesAfter.clear();
                     }
@@ -19104,7 +19141,7 @@ public class ChatActivity extends BaseFragment implements
                             if (cell.getCurrentPosition() == null && !cell.getTransitionParams().animateBackgroundBoundsInner) {
                                 continue;
                             }
-                            drawChildElement(canvas, listTop, cell, 2, hideBottomForGesture);
+                            drawChildElement(canvas, listTop, cell, 2, hideBottomBar);
                         }
                         drawCaptionAfter.clear();
                     }
@@ -19115,7 +19152,7 @@ public class ChatActivity extends BaseFragment implements
                             if (cell.getCurrentPosition() == null && !cell.getTransitionParams().animateBackgroundBoundsInner) {
                                 continue;
                             }
-                            drawChildElement(canvas, listTop, cell, 3, hideBottomForGesture);
+                            drawChildElement(canvas, listTop, cell, 3, hideBottomBar);
                         }
                     }
                     if (scrimViewReaction != null && scrimGroup != null) {
@@ -19138,7 +19175,7 @@ public class ChatActivity extends BaseFragment implements
                             if (cell.getCurrentPosition() == null && !cell.getTransitionParams().animateBackgroundBoundsInner) {
                                 continue;
                             }
-                            drawChildElement(canvas, listTop, cell, 4, hideBottomForGesture);
+                            drawChildElement(canvas, listTop, cell, 4, hideBottomBar);
                         }
                         drawReactionsAfter.clear();
                     }
@@ -19220,7 +19257,7 @@ public class ChatActivity extends BaseFragment implements
                 bottom = (int) chatInputViewsContainer.getInputBubbleBottom();
 
                 top -= (int) ((pullingDownAnimateToActivity == null ? 0 : pullingDownAnimateToActivity.pullingBottomOffset) * pullingDownAnimateProgress);
-                if (!hideBottomForGesture) {
+                if (!hideBottomBar) {
                     pullingDownDrawable.drawBottomPanel(canvas, top, bottom, getMeasuredWidth());
                 }
             }
@@ -19406,7 +19443,7 @@ public class ChatActivity extends BaseFragment implements
                 } else if (child == chatListView || child == chatListThanosEffect) {
                     int contentWidthSpec = MeasureSpec.makeMeasureSpec(widthSize, MeasureSpec.EXACTLY);
                     int h = heightSize + blurredViewTopOffset + blurredViewBottomOffset + chatListViewPaddingsAnimator.getCurrentAdditionalHeight();
-                    if (shouldHideBottomForGesture()) {
+                    if (shouldHideBottomBar()) {
                         h += AndroidUtilities.dp(51);
                     }
                     int contentHeightSpec = MeasureSpec.makeMeasureSpec(
@@ -19745,12 +19782,12 @@ public class ChatActivity extends BaseFragment implements
         boolean hideKeyboard = false;
         bottomOverlayText.setBackground(null);
         bottomOverlayText.setOnClickListener(null);
-        if (AyuForward.isForwardingToDialog(dialog_id)) {
-            String forceForwardStatus = AyuForward.getStatusForDialog(dialog_id);
+        if (AyuForward.isForwardingToDialog(currentAccount, dialog_id)) {
+            String forceForwardStatus = AyuForward.getStatusForDialog(currentAccount, dialog_id);
             if (!TextUtils.isEmpty(forceForwardStatus)) {
                 bottomOverlayText.setText(forceForwardStatus + " - " + LocaleController.getString(R.string.CancelForwarding));
                 bottomOverlayText.setBackground(Theme.createSelectorWithBackgroundDrawable(0, Theme.getColor(Theme.key_listSelector)));
-                bottomOverlayText.setOnClickListener(v -> AyuForward.stopForDialog(dialog_id));
+                bottomOverlayText.setOnClickListener(v -> AyuForward.stopForDialog(currentAccount, dialog_id));
                 bottomOverlay.setVisibility(inPreviewMode ? View.INVISIBLE : View.VISIBLE);
                 if (chatActivityEnterView != null) {
                     chatActivityEnterView.setVisibility(View.INVISIBLE);
@@ -28782,6 +28819,10 @@ public class ChatActivity extends BaseFragment implements
         }
         return chatMode == MODE_DEFAULT && !ChatObject.canWriteToChat(currentChat) && !ChatObject.isNotInChat(currentChat);
     }
+
+    private boolean shouldHideBottomBar() {
+        return shouldHideBottomFor3ButtonNav() || shouldHideBottomForGesture();
+    }
     // hide bottom end
 
     public void updateBottomOverlay() {
@@ -29174,7 +29215,7 @@ public class ChatActivity extends BaseFragment implements
         bottomChannelButtonsLayout.showButton(ChatActivityChannelButtonsLayout.BUTTON_GIFT, !showSuggestButton && showGiftButton && bottomChannelButtonsLayout.getVisibility() == View.VISIBLE, animated);
         bottomChannelButtonsLayout.showButton(ChatActivityChannelButtonsLayout.BUTTON_GIGA_GROUP_INFO, showGigaGroupButton && bottomChannelButtonsLayout.getVisibility() == View.VISIBLE, animated);
 
-        if (shouldHideBottomForGesture()) {
+        if (shouldHideBottomBar()) {
             bottomOverlayChatText.setText("");
             chatInputViewsContainer.setVisibility(View.GONE);
             chatInputViewsContainer.setBackgroundWithFadeDrawable(null);
@@ -39260,20 +39301,26 @@ public class ChatActivity extends BaseFragment implements
                 if (msg == null || msg.messageOwner != null && msg.messageOwner.hide) {
                     return -1000;
                 }
-                if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
-                    long fromId = msg.getFromChatId();
-                    if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                        return -1000;
-                    }
-                    if (msg.replyMessageObject != null) {
-                        fromId = msg.replyMessageObject.getFromChatId();
+                msg.skipAyuFiltering = !hideFilteredMessages;
+                if (msg.replyMessageObject != null) {
+                    msg.replyMessageObject.skipAyuFiltering = !hideFilteredMessages;
+                }
+                if (hideFilteredMessages) {
+                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
+                        long fromId = msg.getFromChatId();
                         if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
                             return -1000;
                         }
+                        if (msg.replyMessageObject != null) {
+                            fromId = msg.replyMessageObject.getFromChatId();
+                            if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
+                                return -1000;
+                            }
+                        }
                     }
-                }
-                if (AyuFilter.shouldHideFilteredMessage(msg, getGroup(msg.getGroupId()))) {
-                    return -1000;
+                    if (AyuFilter.shouldHideFilteredMessage(msg, getGroup(msg.getGroupId()))) {
+                        return -1000;
+                    }
                 }
                 if (msg.contentType == 2) { // ChatUnreadCell
                     int scanIndex = position - messagesStartRow - 1;
@@ -39284,21 +39331,23 @@ public class ChatActivity extends BaseFragment implements
                         if (m.messageOwner != null && m.messageOwner.hide) {
                             continue;
                         }
-                        if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
-                            long fromId = m.getFromChatId();
-                            if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                                continue;
-                            }
-                            if (m.replyMessageObject != null) {
-                                fromId = m.replyMessageObject.getFromChatId();
+                        if (hideFilteredMessages) {
+                            if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
+                                long fromId = m.getFromChatId();
                                 if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
                                     continue;
                                 }
+                                if (m.replyMessageObject != null) {
+                                    fromId = m.replyMessageObject.getFromChatId();
+                                    if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
+                                        continue;
+                                    }
+                                }
                             }
-                        }
-                        var g = getGroup(m.getGroupId());
-                        if (AyuFilter.shouldHideFilteredMessage(m, g)) {
-                            continue;
+                            var g = getGroup(m.getGroupId());
+                            if (AyuFilter.shouldHideFilteredMessage(m, g)) {
+                                continue;
+                            }
                         }
                         hasVisibleAfter = true;
                         break;
@@ -48732,9 +48781,9 @@ public class ChatActivity extends BaseFragment implements
 
     private static final Rect clipBoundsRect = new Rect();
     private void checkUi_BlurHeight() {
-        final boolean hideBottomForGesture = shouldHideBottomForGesture();
+        final boolean hideBottomBar = shouldHideBottomBar();
         final float inputHeight = windowInsetsStateHolder.getAnimatedMaxBottomInset()
-            + dp(9) + (hideBottomForGesture ? 0 : chatInputViewsContainer.getInputBubbleHeight()) + dp(7)
+            + dp(9) + (hideBottomBar ? 0 : chatInputViewsContainer.getInputBubbleHeight()) + dp(7)
             + getTopicTabsSideSize(TopicsTabsView.Position.BOTTOM);
 
         chatInputViewsContainer.setBlurredBottomHeight(inputHeight);
