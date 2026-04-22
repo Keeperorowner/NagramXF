@@ -8969,7 +8969,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         FoldersHelper.INSTANCE.updateFoldersOffset(
             filterTabsView,
-            getForwardControlsVisibleProgress(),
             mainTabsScrollHideProgress,
             hasMainTabs,
             navigationBarHeight,
@@ -8997,7 +8996,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         FoldersHelper.INSTANCE.updateFoldersOffset(
             filterTabsView,
-            getForwardControlsVisibleProgress(),
             mainTabsScrollHideProgress,
             hasMainTabs,
             navigationBarHeight,
@@ -9009,13 +9007,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private boolean shouldShowFloatingButtons() {
         return !(onlySelect && initialDialogsType != 10 || folderId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden);
-    }
-
-    private float getForwardControlsVisibleProgress() {
-        if (initialDialogsType != DIALOGS_TYPE_FORWARD || commentView == null) {
-            return 0f;
-        }
-        return animatorForwardButtonVisible.getFloatValue();
     }
 
     private boolean shouldUseMainTabsStyleForFolders() {
