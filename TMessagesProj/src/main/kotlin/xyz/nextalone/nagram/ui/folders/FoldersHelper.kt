@@ -189,7 +189,6 @@ object FoldersHelper {
     @JvmStatic
     fun updateFoldersOffset(
         filterTabsView: FilterTabsView?,
-        forwardControlsVisibleProgress: Float,
         mainTabsScrollHideProgress: Float,
         showMainTabs: Boolean,
         navigationBarHeight: Int,
@@ -202,8 +201,6 @@ object FoldersHelper {
         }
 
         val update = Runnable {
-            val clampedForwardControlsVisibleProgress = forwardControlsVisibleProgress.coerceIn(0f, 1f)
-            val forwardControlsOffset = AndroidUtilities.dp(150f) * clampedForwardControlsVisibleProgress
             val tabsScrollHideOffset = getFilterTabsOffset(showMainTabs) * mainTabsScrollHideProgress.coerceIn(0f, 1f)
             val hiddenMainTabsOffset = if (showMainTabs) {
                 0
@@ -219,7 +216,6 @@ object FoldersHelper {
                     - floatingButtonPanOffset
                     - AndroidUtilities.dp(52f)
                     - getFilterTabsOffset(showMainTabs)
-                    - forwardControlsOffset
                 ).toFloat()
         }
 
