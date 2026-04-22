@@ -218,20 +218,34 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                         updateDayNightMode();
                         updateSelectedPosition();
 
+                        if (Theme.isCurrentThemeDay()) {
+                            dayNightCell.textView.setText(LocaleController.getString(R.string.SettingsSwitchToNightMode));
+                        } else {
+                            dayNightCell.textView.setText(LocaleController.getString(R.string.SettingsSwitchToDayMode));
+                        }
+
                         int iconNewColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4);
-                        darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(iconNewColor, PorterDuff.Mode.SRC_IN));
+                        PorterDuffColorFilter iconColorFilter = new PorterDuffColorFilter(iconNewColor, PorterDuff.Mode.SRC_IN);
+                        darkThemeDrawable.setColorFilter(iconColorFilter);
+                        dayNightCell.getImageView().setColorFilter(iconColorFilter);
+                        dayNightCell.getImageView().setImageDrawable(darkThemeDrawable);
+                        dayNightCell.getImageView().setVisibility(VISIBLE);
                         ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1f);
                         valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                             @Override
                             public void onAnimationUpdate(ValueAnimator valueAnimator) {
                                 int iconColor = ColorUtils.blendARGB(iconOldColor, iconNewColor, (float) valueAnimator.getAnimatedValue());
-                                darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN));
+                                PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(iconColor, PorterDuff.Mode.SRC_IN);
+                                darkThemeDrawable.setColorFilter(colorFilter);
+                                dayNightCell.getImageView().setColorFilter(colorFilter);
                             }
                         });
                         valueAnimator.addListener(new AnimatorListenerAdapter() {
                             @Override
                             public void onAnimationEnd(Animator animation) {
-                                darkThemeDrawable.setColorFilter(new PorterDuffColorFilter(iconNewColor, PorterDuff.Mode.SRC_IN));
+                                PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(iconNewColor, PorterDuff.Mode.SRC_IN);
+                                darkThemeDrawable.setColorFilter(colorFilter);
+                                dayNightCell.getImageView().setColorFilter(colorFilter);
                                 super.onAnimationEnd(animation);
                             }
                         });
@@ -266,12 +280,6 @@ public class DefaultThemesPreviewCell extends LinearLayout {
                             });
                             navBarAnimator.setDuration((long) fullDuration);
                             navBarAnimator.start();
-                        }
-
-                        if (Theme.isCurrentThemeDay()) {
-                            dayNightCell.setTextAndIcon(LocaleController.getString(R.string.SettingsSwitchToNightMode), darkThemeDrawable, true);
-                        } else {
-                            dayNightCell.setTextAndIcon(LocaleController.getString(R.string.SettingsSwitchToDayMode), darkThemeDrawable, true);
                         }
 
                         Theme.turnOffAutoNight(parentFragment);
