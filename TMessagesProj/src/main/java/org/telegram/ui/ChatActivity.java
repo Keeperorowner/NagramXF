@@ -19785,9 +19785,7 @@ public class ChatActivity extends BaseFragment implements
         if (AyuForward.isForwardingToDialog(currentAccount, dialog_id)) {
             String forceForwardStatus = AyuForward.getStatusForDialog(currentAccount, dialog_id);
             if (!TextUtils.isEmpty(forceForwardStatus)) {
-                bottomOverlayText.setText(forceForwardStatus + " - " + LocaleController.getString(R.string.CancelForwarding));
-                bottomOverlayText.setBackground(Theme.createSelectorWithBackgroundDrawable(0, Theme.getColor(Theme.key_listSelector)));
-                bottomOverlayText.setOnClickListener(v -> AyuForward.stopForDialog(currentAccount, dialog_id));
+                bottomOverlayText.setText(forceForwardStatus);
                 bottomOverlay.setVisibility(inPreviewMode ? View.INVISIBLE : View.VISIBLE);
                 if (chatActivityEnterView != null) {
                     chatActivityEnterView.setVisibility(View.INVISIBLE);

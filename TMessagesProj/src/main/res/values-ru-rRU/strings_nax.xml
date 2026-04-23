@@ -434,8 +434,7 @@
     <string name="ForceForwardStatusChunkCount">фрагмент %1$d из %2$d</string>
     <string name="ForceForwardStatusWaitingDownloads">Ожидание загрузки медиа</string>
     <string name="ForceForwardStatusForwarding">Пересылка</string>
-    <string name="ForceForwardStatusStopping">Остановка пересылки</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">Остановка текущей партии</string>
+
     <string name="ForceForwardStatusStarting">Запуск пересылки</string>
     <string name="ForceForwardStatusTextCopy">Копирование текста</string>
     <string name="ForceForwardStatusPhotoCopy">Копирование фото</string>

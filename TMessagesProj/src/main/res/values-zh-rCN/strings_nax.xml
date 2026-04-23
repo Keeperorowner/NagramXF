@@ -404,8 +404,7 @@
     <string name="ForceForwardStatusChunkCount">%2$d 中的第 %1$d 块</string>
     <string name="ForceForwardStatusWaitingDownloads">等待媒体下载</string>
     <string name="ForceForwardStatusForwarding">正在转发</string>
-    <string name="ForceForwardStatusStopping">正在停止转发</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">正在停止当前转发</string>
+
     <string name="ForceForwardStatusStarting">开始转发</string>
     <string name="ForceForwardStatusTextCopy">正在复制文本</string>
     <string name="ForceForwardStatusPhotoCopy">正在复制图片</string>

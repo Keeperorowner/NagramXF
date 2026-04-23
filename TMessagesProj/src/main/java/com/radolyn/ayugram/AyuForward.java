@@ -39,7 +39,6 @@ public class AyuForward {
     private static final int STATUS_IDLE = 0;
     private static final int STATUS_LOADING = 1;
     private static final int STATUS_FORWARDING = 2;
-    private static final int STATUS_STOPPING = 3;
     private static final int STATUS_REFRESH_MASK_BASE = 1 << 30;
 
     private static final class CaptionPayload {
@@ -199,15 +198,19 @@ public class AyuForward {
         return forward != null && forward.isForwarding();
     }
 
+    public static boolean isForwardingToDialog(int currentAccount, long dialogId) {
+        return isForwardingToDialog(dialogId);
+    }
+
     public static String getStatusForDialog(long dialogId) {
         AyuForward forward = activeForwards.get(dialogId);
         return forward != null ? forward.getForwardingStatus() : null;
     }
 
-    public static boolean stopForDialog(long dialogId) {
-        AyuForward forward = activeForwards.get(dialogId);
-        return forward != null && forward.stopCurrentRun();
+    public static String getStatusForDialog(int currentAccount, long dialogId) {
+        return getStatusForDialog(dialogId);
     }
+
 
     public static String consumeFailureReasonForDialog(long dialogId) {
         AyuForward forward = activeForwards.get(dialogId);
@@ -241,17 +244,6 @@ public class AyuForward {
         return reason;
     }
 
-    public boolean stopCurrentRun() {
-        if (!isForwarding()) {
-            return false;
-        }
-        stopRequested = true;
-        currentStatus = STATUS_STOPPING;
-        currentStatusDetail = LocaleController.getString(R.string.ForceForwardStatusStoppingCurrentBatch);
-        lastFailureReason = null;
-        notifyStatusChanged();
-        return true;
-    }
 
     public String getForwardingStatus() {
         if (!isForwarding()) {
@@ -273,15 +265,6 @@ public class AyuForward {
                     ? LocaleController.getString(R.string.ForceForwardStatusForwarding)
                     : currentStatusDetail;
             return label + " " + progress;
-        }
-
-        if (currentStatus == STATUS_STOPPING) {
-            String label = TextUtils.isEmpty(currentStatusDetail)
-                    ? LocaleController.getString(R.string.ForceForwardStatusStopping)
-                    : currentStatusDetail;
-            return totalChunks > 1
-                    ? label + " | " + LocaleController.formatString(R.string.ForceForwardStatusChunkCount, currentChunkIndex + 1, totalChunks)
-                    : label;
         }
 
         return null;

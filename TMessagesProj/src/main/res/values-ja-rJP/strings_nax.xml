@@ -404,8 +404,7 @@
     <string name="ForceForwardStatusChunkCount">%2$d 個中 %1$d 個目のチャンク</string>
     <string name="ForceForwardStatusWaitingDownloads">メディアのダウンロードを待機中</string>
     <string name="ForceForwardStatusForwarding">転送中</string>
-    <string name="ForceForwardStatusStopping">転送を停止中</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">現在の転送バッチを停止中</string>
+
     <string name="ForceForwardStatusStarting">転送を開始中</string>
     <string name="ForceForwardStatusTextCopy">テキストをコピー中</string>
     <string name="ForceForwardStatusPhotoCopy">写真をコピー中</string>
