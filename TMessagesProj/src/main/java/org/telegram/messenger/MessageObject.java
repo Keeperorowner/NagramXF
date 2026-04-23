@@ -231,6 +231,7 @@ public class MessageObject {
     public boolean isDateObject;
     public boolean isVideoConversionObject;
     public boolean isPlayingExplanationObject;
+    public boolean skipAyuFiltering;
     public TLObject photoThumbsObject;
     public TLObject photoThumbsObject2;
     public ArrayList<TLRPC.PhotoSize> photoThumbs;

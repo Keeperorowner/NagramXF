@@ -112,4 +112,15 @@
     <string name="VideoPlayerDecoderPreferSW">软解优先</string>
     <string name="VideoPlayerDecoderHardware">仅硬解</string>
     <string name="VideoPlayerDecoderPreferHW">硬解优先</string>
+    <string name="RegexFiltersListEmpty">还没有过滤器，点击 + 添加一个。</string>
+    <string name="RegexFiltersShadowBanEmpty">还没有静默屏蔽对象，点击 + 添加一个。</string>
+    <string name="RegexFiltersFilterEnabled">启用过滤器</string>
+    <string name="RegexFiltersShadowBannedBot">机器人</string>
+    <string name="RegexFiltersShadowBannedUser">用户</string>
+    <string name="RegexFiltersShadowBannedChannel">频道</string>
+    <string name="RegexFiltersShadowBannedGroup">群组</string>
+    <string name="RegexFiltersPattern">正则表达式</string>
+    <string name="RegexFiltersReversed">反向表达式</string>
+    <string name="RegexFiltersExcluded">已排除的过滤器</string>
+    <string name="RegexFiltersExcludeShared">排除共享过滤器</string>
 </resources>

@@ -210,6 +210,7 @@
 # Be explicit for AyuFilter models to be safe
 -keepclassmembers class tw.nekomimi.nekogram.filters.AyuFilter$FilterModel { <fields>; }
 -keepclassmembers class tw.nekomimi.nekogram.filters.AyuFilter$ChatFilterEntry { <fields>; }
+-keepclassmembers class tw.nekomimi.nekogram.filters.AyuFilter$ExcludedFilterEntry { <fields>; }
 -keepclassmembers class tw.nekomimi.nekogram.filters.AyuFilter$CustomFilteredUser { <fields>; }
 
 # https://github.com/osmdroid/osmdroid/issues/633

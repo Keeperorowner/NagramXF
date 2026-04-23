@@ -19474,6 +19474,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             stringFinalText = TextUtils.ellipsize(stringFinalText, textPaint, maxWidth, TextUtils.TruncateAt.END);
                         }
                     }
+                    if (messageObject.replyMessageObject != null && AyuFilter.isFiltered(messageObject.replyMessageObject, null)) {
+                        if (replyImageReceiver != null) {
+                            replyImageReceiver.setImageBitmap((Drawable) null);
+                        }
+                        needReplyImage = false;
+                        stringFinalText = "\uD83D\uDC7B";
+                    }
                 } else {
                     replyImageReceiver.setImageBitmap((Drawable) null);
                     needReplyImage = false;

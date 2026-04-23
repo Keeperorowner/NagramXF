@@ -63,6 +63,27 @@
     <string name="RegexFiltersImportSuccess">過濾器已匯入。</string>
     <string name="RegexFiltersImportError">無法從剪貼簿匯入過濾器。</string>
     <string name="RegexFiltersExportError">匯出過濾器失敗。</string>
+    <string name="FiltersExportClipboard">複製到剪貼簿</string>
+    <string name="FiltersExportTitle">選擇匯出過濾器的方式</string>
+    <string name="FiltersExportURL">發佈到 dpaste.com</string>
+    <string name="FiltersToastFailPublish">無法發佈過濾器。</string>
+    <string name="RegexFiltersImportSourceTitle">匯入過濾器</string>
+    <string name="RegexFiltersImportFromClipboard">從剪貼簿</string>
+    <string name="RegexFiltersImportFromURL">從 URL</string>
+    <string name="RegexFiltersImportUrlTitle">從 URL 匯入</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
+    <string name="RegexFiltersImportUrlAction">下載</string>
+    <string name="RegexFiltersImportUrlFetchFailed">無法從此 URL 下載過濾器。</string>
+    <string name="RegexFiltersImportPreviewTitle">確認匯入</string>
+    <string name="RegexFiltersImportPreviewSubtitle">以下變更將套用到您的過濾器。</string>
+    <string name="RegexFiltersImportConfirm">匯入</string>
+    <string name="RegexFiltersImportNoChanges">沒有需要匯入的新內容。</string>
+    <string name="RegexFiltersImportNewFilters">新增 **%1$d** 條共用過濾器</string>
+    <string name="RegexFiltersImportUpdatedFilters">更新 **%1$d** 條既有過濾器</string>
+    <string name="RegexFiltersImportChatFilters">**%1$d** 條聊天專屬過濾器</string>
+    <string name="RegexFiltersImportExclusions">**%1$d** 條聊天排除規則</string>
+    <string name="RegexFiltersImportShadowBans">**%1$d** 位影子封鎖使用者</string>
+    <string name="RegexFiltersImportPeers">**%1$d** 個未知對話待解析</string>
     <string name="RegexFiltersUserHeader">使用者過濾器</string>
     <string name="RegexFiltersUserFilterHint">輸入使用者 ID</string>
     <string name="RegexFiltersGlobalHeader">全域過濾器</string>
@@ -439,4 +460,6 @@
     <string name="TelegramLocalDatabase">Telegram 本地數據庫</string>
     <string name="SendLockedCustomEmojiAsSticker">將 Premium Emoji 作為貼紙發送</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">僅支持 WebP/WebM 自定義 Emoji。僅支持 TGS 的 Emoji 不包含在內。</string>
+    <string name="ShowFilteredMessagesMenuText">顯示過濾訊息</string>
+    <string name="HideFilteredMessagesMenuText">隱藏過濾訊息</string>
 </resources>

@@ -70,6 +70,27 @@
     <string name="RegexFiltersImportSuccess">Фильтры импортированы.</string>
     <string name="RegexFiltersImportError">Не удалось импортировать фильтры из буфера обмена.</string>
     <string name="RegexFiltersExportError">Не удалось экспортировать фильтры.</string>
+    <string name="FiltersExportClipboard">Копировать в буфер</string>
+    <string name="FiltersExportTitle">Выберите способ экспорта фильтров</string>
+    <string name="FiltersExportURL">Опубликовать на dpaste.com</string>
+    <string name="FiltersToastFailPublish">Не удалось опубликовать фильтры.</string>
+    <string name="RegexFiltersImportSourceTitle">Импортировать фильтры</string>
+    <string name="RegexFiltersImportFromClipboard">Из буфера обмена</string>
+    <string name="RegexFiltersImportFromURL">По URL</string>
+    <string name="RegexFiltersImportUrlTitle">Импорт по URL</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
+    <string name="RegexFiltersImportUrlAction">Загрузить</string>
+    <string name="RegexFiltersImportUrlFetchFailed">Не удалось загрузить фильтры по этому URL.</string>
+    <string name="RegexFiltersImportPreviewTitle">Проверьте импорт</string>
+    <string name="RegexFiltersImportPreviewSubtitle">К вашим фильтрам будут применены следующие изменения.</string>
+    <string name="RegexFiltersImportConfirm">Импортировать</string>
+    <string name="RegexFiltersImportNoChanges">Нечего импортировать.</string>
+    <string name="RegexFiltersImportNewFilters">Новых общих фильтров: **%1$d**</string>
+    <string name="RegexFiltersImportUpdatedFilters">Обновлено существующих фильтров: **%1$d**</string>
+    <string name="RegexFiltersImportChatFilters">Фильтров по чатам: **%1$d**</string>
+    <string name="RegexFiltersImportExclusions">Исключений в чатах: **%1$d**</string>
+    <string name="RegexFiltersImportShadowBans">Скрытых пользователей: **%1$d**</string>
+    <string name="RegexFiltersImportPeers">Неизвестных диалогов к разрешению: **%1$d**</string>
     <string name="RegexFiltersUserHeader">Пользовательские фильтры</string>
     <string name="RegexFiltersUserFilterHint">Введите ID пользователя</string>
     <string name="RegexFiltersGlobalHeader">Общие фильтры</string>
@@ -434,4 +455,6 @@
     <string name="PeekOnlineRestoreFailed">Не удалось восстановить настройки приватности статуса «Был(а) недавно».</string>
     <string name="SendLockedCustomEmojiAsSticker">Отправлять Premium Emoji как стикер</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">Поддерживаются только пользовательские Emoji в формате WebP/WebM. Emoji только в формате TGS не поддерживаются.</string>
+    <string name="ShowFilteredMessagesMenuText">Показывать отфильтрованные</string>
+    <string name="HideFilteredMessagesMenuText">Скрывать отфильтрованные</string>
 </resources>

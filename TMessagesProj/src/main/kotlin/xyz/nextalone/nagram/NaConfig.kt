@@ -475,6 +475,12 @@ object NaConfig {
             ConfigItem.configTypeString,
             "[]"
         )
+    val regexFiltersExcludedEntriesData =
+        addConfig(
+            "RegexFiltersExcludedEntriesData",
+            ConfigItem.configTypeString,
+            "[]"
+        )
     val blockedChannelsData =
         addConfig(
             "BlockedChannelsData",
@@ -486,6 +492,12 @@ object NaConfig {
             "CustomFilteredUsersData",
             ConfigItem.configTypeString,
             "[]"
+        )
+    val regexFiltersLastImportLink =
+        addConfig(
+            "RegexFiltersLastImportLink",
+            ConfigItem.configTypeString,
+            ""
         )
     val showTimeHint =
         addConfig(

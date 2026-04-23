@@ -91,6 +91,27 @@
     <string name="RegexFiltersImportSuccess">Filters imported.</string>
     <string name="RegexFiltersImportError">Failed to import filters from clipboard.</string>
     <string name="RegexFiltersExportError">Failed to export filters.</string>
+    <string name="FiltersExportClipboard">Copy to Clipboard</string>
+    <string name="FiltersExportTitle">Select a way to export filters</string>
+    <string name="FiltersExportURL">Publish on dpaste.com</string>
+    <string name="FiltersToastFailPublish">Failed to publish filters.</string>
+    <string name="RegexFiltersImportSourceTitle">Import filters</string>
+    <string name="RegexFiltersImportFromClipboard">From clipboard</string>
+    <string name="RegexFiltersImportFromURL">From URL</string>
+    <string name="RegexFiltersImportUrlTitle">Import from URL</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
+    <string name="RegexFiltersImportUrlAction">Download</string>
+    <string name="RegexFiltersImportUrlFetchFailed">Couldn\'t download filters from this URL.</string>
+    <string name="RegexFiltersImportPreviewTitle">Review import</string>
+    <string name="RegexFiltersImportPreviewSubtitle">The following changes will be applied to your filters.</string>
+    <string name="RegexFiltersImportConfirm">Import</string>
+    <string name="RegexFiltersImportNoChanges">Nothing new to import.</string>
+    <string name="RegexFiltersImportNewFilters">**%1$d** new shared filter(s)</string>
+    <string name="RegexFiltersImportUpdatedFilters">**%1$d** existing filter(s) updated</string>
+    <string name="RegexFiltersImportChatFilters">**%1$d** per-chat filter(s)</string>
+    <string name="RegexFiltersImportExclusions">**%1$d** chat exclusion(s)</string>
+    <string name="RegexFiltersImportShadowBans">**%1$d** shadow-banned user(s)</string>
+    <string name="RegexFiltersImportPeers">**%1$d** unknown peer(s) to resolve</string>
     <string name="RegexFiltersUserHeader">User Filters</string>
     <string name="RegexFiltersUserFilterHint">Enter User ID</string>
     <string name="RegexFiltersGlobalHeader">Global Filters</string>
@@ -450,4 +471,6 @@
     <string name="AyuAttachments">Ayu Attachments</string>
     <string name="AyuDatabase">Ayu Database</string>
     <string name="TelegramLocalDatabase">Telegram Local Database</string>
+    <string name="ShowFilteredMessagesMenuText">Show Filtered</string>
+    <string name="HideFilteredMessagesMenuText">Hide Filtered</string>
 </resources>

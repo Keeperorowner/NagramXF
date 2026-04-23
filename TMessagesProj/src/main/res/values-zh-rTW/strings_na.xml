@@ -112,4 +112,15 @@
     <string name="RegexFiltersMaskMessagesAbout">過濾或被屏蔽的消息會以遮罩占位形式保留在聊天中，而不是直接隱藏。</string>
     <string name="UseSystemAiService">使用系統 AI 服務</string>
     <string name="UseSystemAiServiceDesc">當前僅支持 HyperOS 和 ColorOS</string>
+    <string name="RegexFiltersListEmpty">還沒有過濾器，點擊 + 新增一個。</string>
+    <string name="RegexFiltersShadowBanEmpty">還沒有靜默屏蔽對象，點擊 + 新增一個。</string>
+    <string name="RegexFiltersFilterEnabled">啟用過濾器</string>
+    <string name="RegexFiltersShadowBannedBot">機器人</string>
+    <string name="RegexFiltersShadowBannedUser">用戶</string>
+    <string name="RegexFiltersShadowBannedChannel">頻道</string>
+    <string name="RegexFiltersShadowBannedGroup">群組</string>
+    <string name="RegexFiltersPattern">正則表達式</string>
+    <string name="RegexFiltersReversed">反向表達式</string>
+    <string name="RegexFiltersExcluded">已排除的過濾器</string>
+    <string name="RegexFiltersExcludeShared">排除共用過濾器</string>
 </resources>
