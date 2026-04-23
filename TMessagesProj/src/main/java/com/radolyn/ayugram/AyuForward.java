@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-import tw.nekomimi.nekogram.filters.AyuFilter;
 
 public class AyuForward {
 
@@ -530,7 +529,7 @@ public class AyuForward {
     }
 
     private String resolveMessageText(MessageObject messageObject) {
-        CharSequence messageText = AyuFilter.getMessageText(messageObject, null);
+        CharSequence messageText = resolveMessageTextSequence(messageObject);
         return messageText != null ? messageText.toString() : "";
     }
 
