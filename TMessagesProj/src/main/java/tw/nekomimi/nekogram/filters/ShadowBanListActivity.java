@@ -1,71 +1,67 @@
 package tw.nekomimi.nekogram.filters;
 
-import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.text.InputType;
+import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
-import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCell;
-import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.PrivacyUsersActivity;
+import org.telegram.ui.DialogsActivity;
 import org.telegram.ui.ProfileActivity;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import tw.nekomimi.nekogram.filters.popup.RegexUserFilterPopup;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.FiltersChatCell;
-import tw.nekomimi.nekogram.ui.cells.HeaderCell;
-import tw.nekomimi.nekogram.utils.AndroidUtil;
 
 public class ShadowBanListActivity extends BaseNekoSettingsActivity {
 
     private final HashSet<Long> resolvingCustomFilteredUsers = new HashSet<>();
     private final HashSet<Long> resolvedCustomFilteredUsers = new HashSet<>();
     private final HashMap<Long, String> customFilteredUserDisplayCache = new HashMap<>();
-    private int headerRow;
-    private int blockedChannelsRow;
-    private int blockedChannelsDividerRow;
-    private int addUserFilterBtnRow;
-    private int userFiltersStartRow;
-    private int userFiltersEndRow;
+    private ArrayList<Long> shadowBannedPeers = new ArrayList<>();
+    private int peersStartRow;
+    private int peersEndRow;
+    private int emptyRow;
 
     @Override
     protected void updateRows() {
         super.updateRows();
-        blockedChannelsRow = rowCount++;
-        blockedChannelsDividerRow = rowCount++;
-        headerRow = rowCount++;
-        addUserFilterBtnRow = rowCount++;
-        ArrayList<Long> userIds = AyuFilter.getCustomFilteredUsersList();
-        userFiltersStartRow = rowCount;
-        rowCount += userIds.size();
-        userFiltersEndRow = rowCount;
+        shadowBannedPeers = buildShadowBannedPeers();
+        peersStartRow = rowCount;
+        rowCount += shadowBannedPeers.size();
+        peersEndRow = rowCount;
+        emptyRow = shadowBannedPeers.isEmpty() ? rowCount++ : -1;
+    }
+
+    private ArrayList<Long> buildShadowBannedPeers() {
+        ArrayList<Long> merged = new ArrayList<>();
+        merged.addAll(AyuFilter.getBlockedChannelsList());
+        merged.addAll(AyuFilter.getCustomFilteredUsersList());
+        return merged;
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -80,140 +76,106 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
     }
 
     @Override
+    public View createView(Context context) {
+        View view = super.createView(context);
+        ActionBarMenu menu = actionBar.createMenu();
+        menu.addItem(0, R.drawable.msg_add).setContentDescription(getString(R.string.Add));
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                } else if (id == 0) {
+                    presentFragment(createPickerActivity());
+                }
+            }
+        });
+        return view;
+    }
+
+    @Override
     protected void onItemClick(View view, int position, float x, float y) {
-        if (position == blockedChannelsRow) {
-            presentFragment(new PrivacyUsersActivity(PrivacyUsersActivity.TYPE_BLOCKED_CHANNELS, AyuFilter.getBlockedChannelsList(), false, false));
-        } else if (position == addUserFilterBtnRow) {
-            showAddCustomFilteredUserDialog();
-        } else if (position >= userFiltersStartRow && position < userFiltersEndRow) {
-            int userIndex = position - userFiltersStartRow;
-            ArrayList<Long> userIds = AyuFilter.getCustomFilteredUsersList();
-            if (userIndex < 0 || userIndex >= userIds.size()) {
+        if (position >= peersStartRow && position < peersEndRow) {
+            int idx = position - peersStartRow;
+            if (idx < 0 || idx >= shadowBannedPeers.size()) {
                 return;
             }
-            long userId = userIds.get(userIndex);
-            RegexUserFilterPopup.show(this, view, x, y, getResourceProvider(), () -> deleteCustomFilteredUser(userId));
+            long dialogId = shadowBannedPeers.get(idx);
+            RegexUserFilterPopup.show(this, view, x, y, getResourceProvider(), () -> removeShadowBannedPeer(dialogId));
         }
     }
 
     @Override
     protected boolean onItemLongClick(View view, int position, float x, float y) {
-        if (position >= userFiltersStartRow && position < userFiltersEndRow) {
-            int userIndex = position - userFiltersStartRow;
-            ArrayList<Long> userIds = AyuFilter.getCustomFilteredUsersList();
-            if (userIndex >= 0 && userIndex < userIds.size()) {
-                long userId = userIds.get(userIndex);
-                presentFragment(ProfileActivity.of(userId));
-                return true;
+        if (position >= peersStartRow && position < peersEndRow) {
+            int idx = position - peersStartRow;
+            if (idx >= 0 && idx < shadowBannedPeers.size()) {
+                long dialogId = shadowBannedPeers.get(idx);
+                if (dialogId > 0) {
+                    presentFragment(ProfileActivity.of(dialogId));
+                    return true;
+                }
             }
         }
         return super.onItemLongClick(view, position, x, y);
     }
 
-    private void showAddCustomFilteredUserDialog() {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
-        EditTextBoldCursor editText = new EditTextBoldCursor(context);
-        editText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        editText.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-        editText.setHandlesColor(Theme.getColor(Theme.key_chat_TextSelectionCursor));
-        editText.setBackground(null);
-        editText.setLineColors(
-            Theme.getColor(Theme.key_windowBackgroundWhiteInputField),
-            Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated),
-            Theme.getColor(Theme.key_text_RedRegular)
-        );
-        editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
-        editText.setMinLines(1);
-        editText.setMaxLines(1);
-        editText.setHint(getString(R.string.RegexFiltersUserFilterHint));
-        editText.setPadding(0, 0, 0, dp(6));
-        editText.requestFocus();
-
-        FrameLayout container = new FrameLayout(context);
-        container.addView(editText, LayoutHelper.createFrame(
-            LayoutHelper.MATCH_PARENT,
-            LayoutHelper.WRAP_CONTENT,
-            Gravity.TOP | Gravity.LEFT,
-            24,
-            8,
-            24,
-            0
-        ));
-
-        AlertDialog dialog = new AlertDialog.Builder(context, getResourceProvider())
-            .setTitle(getString(R.string.RegexFiltersAdd))
-            .setView(container)
-            .setNegativeButton(getString(R.string.Cancel), null)
-            .setPositiveButton(getString(R.string.Save), null)
-            .create();
-
-        dialog.setOnShowListener(d -> dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String input = editText.getText() == null ? "" : editText.getText().toString();
-            ParsedSingleIdResult result = parseSingleCustomFilteredUser(input);
-            if (!result.valid) {
-                AndroidUtil.showInputError(editText);
-                return;
+    private DialogsActivity createPickerActivity() {
+        Bundle args = new Bundle();
+        args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_SHADOW_BAN);
+        args.putBoolean("onlySelect", true);
+        args.putBoolean("canSelectTopics", false);
+        args.putBoolean("allowSwitchAccount", true);
+        args.putBoolean("checkCanWrite", false);
+        DialogsActivity dialogsActivity = new DialogsActivity(args);
+        dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
+            if (dids != null && !dids.isEmpty()) {
+                long dialogId = ((MessagesStorage.TopicKey) dids.get(0)).dialogId;
+                addShadowBannedPeer(dialogId);
+                dialogsActivity.finishFragment();
             }
-            long selfUserId = getUserConfig().getClientUserId();
-            if (result.userId == selfUserId) {
-                AndroidUtil.showInputError(editText);
-                return;
-            }
-
-            HashSet<Long> idSet = new HashSet<>(AyuFilter.getCustomFilteredUsersList());
-            if (idSet.contains(result.userId)) {
-                AndroidUtil.showInputError(editText);
-                return;
-            }
-
-            idSet.add(result.userId);
-            ArrayList<Long> updated = new ArrayList<>(idSet);
-            Collections.sort(updated);
-            AyuFilter.setCustomFilteredUsers(updated);
-            TLRPC.User localUser = getMessagesController().getUser(result.userId);
-            if (localUser != null) {
-                AyuFilter.updateCustomFilteredUserFromLocalUser(localUser);
-            }
-            refreshRows();
-            dialog.dismiss();
-        }));
-        showDialog(dialog);
+            return true;
+        });
+        return dialogsActivity;
     }
 
-    public void deleteCustomFilteredUser(long userId) {
+    private void addShadowBannedPeer(long dialogId) {
+        if (dialogId == 0L) {
+            return;
+        }
+        if (dialogId < 0L) {
+            AyuFilter.blockPeer(dialogId);
+            refreshRows();
+            return;
+        }
+        long selfUserId = getUserConfig().getClientUserId();
+        if (dialogId == selfUserId) {
+            return;
+        }
+        HashSet<Long> idSet = new HashSet<>(AyuFilter.getCustomFilteredUsersList());
+        if (!idSet.add(dialogId)) {
+            return;
+        }
+        AyuFilter.setCustomFilteredUsers(new ArrayList<>(idSet));
+        TLRPC.User localUser = getMessagesController().getUser(dialogId);
+        if (localUser != null) {
+            AyuFilter.updateCustomFilteredUserFromLocalUser(localUser);
+        }
+        refreshRows();
+    }
+
+    private void removeShadowBannedPeer(long dialogId) {
+        if (dialogId < 0L) {
+            AyuFilter.unblockPeer(dialogId);
+            refreshRows();
+            return;
+        }
         ArrayList<Long> userIds = AyuFilter.getCustomFilteredUsersList();
-        if (!userIds.remove(userId)) {
+        if (!userIds.remove(dialogId)) {
             return;
         }
         AyuFilter.setCustomFilteredUsers(userIds);
         refreshRows();
-    }
-
-    private ParsedSingleIdResult parseSingleCustomFilteredUser(String rawInput) {
-        ParsedSingleIdResult result = new ParsedSingleIdResult();
-        String input = rawInput == null ? "" : rawInput.trim();
-        if (TextUtils.isEmpty(input)) {
-            return result;
-        }
-        if (input.contains(",") || input.contains(" ") || input.contains("\n") || input.contains("\t")) {
-            return result;
-        }
-        try {
-            long userId = Long.parseLong(input);
-            if (userId < 100000) {
-                return result;
-            }
-            result.valid = true;
-            result.userId = userId;
-            return result;
-        } catch (Exception ignore) {
-            return result;
-        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -288,8 +250,30 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
         return String.valueOf(userId);
     }
 
-    private String getCustomFilteredUserRowSubtitle(long userId) {
-        return String.valueOf(userId);
+    private String getPeerRowSubtitle(long dialogId) {
+        if (dialogId > 0) {
+            TLRPC.User user = getMessagesController().getUser(dialogId);
+            if (user != null && user.bot) {
+                return getString(R.string.RegexFiltersShadowBannedBot);
+            }
+            return getString(R.string.RegexFiltersShadowBannedUser);
+        }
+        TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
+        if (chat != null && ChatObject.isChannelAndNotMegaGroup(chat)) {
+            return getString(R.string.RegexFiltersShadowBannedChannel);
+        }
+        return getString(R.string.RegexFiltersShadowBannedGroup);
+    }
+
+    private String getPeerRowTitle(long dialogId) {
+        if (dialogId > 0) {
+            return getCustomFilteredUserRowTitle(dialogId);
+        }
+        TLRPC.Chat chat = getMessagesController().getChat(-dialogId);
+        if (chat != null && !TextUtils.isEmpty(chat.title)) {
+            return chat.title;
+        }
+        return String.valueOf(dialogId);
     }
 
     private boolean cacheResolvedCustomFilteredUser(long userId, TLRPC.User user, boolean notifyRow) {
@@ -479,12 +463,11 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
         if (listAdapter == null) {
             return;
         }
-        ArrayList<Long> userIds = AyuFilter.getCustomFilteredUsersList();
-        int index = userIds.indexOf(userId);
+        int index = shadowBannedPeers.indexOf(userId);
         if (index < 0) {
             return;
         }
-        int position = userFiltersStartRow + index;
+        int position = peersStartRow + index;
         if (position >= 0 && position < rowCount) {
             listAdapter.notifyItemChanged(position);
         }
@@ -498,11 +481,6 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
     @Override
     protected String getActionBarTitle() {
         return getString(R.string.ShadowBan);
-    }
-
-    private static class ParsedSingleIdResult {
-        boolean valid;
-        long userId;
     }
 
     private class ListAdapter extends BaseListAdapter {
@@ -526,34 +504,24 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean payload) {
             switch (holder.getItemViewType()) {
-                case TYPE_HEADER:
-                    if (position == headerRow) {
-                        ((HeaderCell) holder.itemView).setText(getString(R.string.RegexFiltersUserHeader));
-                    }
-                    break;
-                case TYPE_TEXT:
-                    if (position == blockedChannelsRow) {
-                        TextCell textCell = (TextCell) holder.itemView;
-                        int count = AyuFilter.getBlockedChannelsCount();
-                        String value = count == 0 ? getString(R.string.BlockedEmpty) : String.valueOf(count);
-                        textCell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        textCell.setTextAndValueAndIcon(getString(R.string.BlockedChannels), value, R.drawable.msg2_block2, false);
-                    } else if (position == addUserFilterBtnRow) {
-                        TextCell textCell = (TextCell) holder.itemView;
-                        textCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
-                        textCell.setTextAndIcon(getString(R.string.RegexFiltersAdd), R.drawable.msg_add, userFiltersStartRow < userFiltersEndRow);
+                case TYPE_INFO_PRIVACY:
+                    TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
+                    infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
+                    if (position == emptyRow) {
+                        infoCell.setText(getString(R.string.RegexFiltersShadowBanEmpty));
                     }
                     break;
                 case TYPE_ACCOUNT:
-                    if (position >= userFiltersStartRow && position < userFiltersEndRow) {
-                        ArrayList<Long> userIds = AyuFilter.getCustomFilteredUsersList();
-                        int userIndex = position - userFiltersStartRow;
-                        if (userIndex >= 0 && userIndex < userIds.size()) {
-                            long userId = userIds.get(userIndex);
-                            boolean needUserDivider = position + 1 < userFiltersEndRow;
+                    if (position >= peersStartRow && position < peersEndRow) {
+                        int idx = position - peersStartRow;
+                        if (idx >= 0 && idx < shadowBannedPeers.size()) {
+                            long dialogId = shadowBannedPeers.get(idx);
+                            boolean needDivider = position + 1 < peersEndRow;
                             FiltersChatCell chatCell = (FiltersChatCell) holder.itemView;
-                            chatCell.setUserFilter(userId, getCustomFilteredUserRowTitle(userId), getCustomFilteredUserRowSubtitle(userId), needUserDivider);
-                            ensureCustomFilteredUserResolved(userId);
+                            chatCell.setShadowBannedPeer(dialogId, getPeerRowTitle(dialogId), getPeerRowSubtitle(dialogId), needDivider);
+                            if (dialogId > 0) {
+                                ensureCustomFilteredUserResolved(dialogId);
+                            }
                         }
                     }
                     break;
@@ -562,12 +530,8 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerRow) {
-                return TYPE_HEADER;
-            } else if (position == blockedChannelsDividerRow) {
-                return TYPE_SHADOW;
-            } else if (position == blockedChannelsRow || position == addUserFilterBtnRow) {
-                return TYPE_TEXT;
+            if (position == emptyRow) {
+                return TYPE_INFO_PRIVACY;
             }
             return TYPE_ACCOUNT;
         }

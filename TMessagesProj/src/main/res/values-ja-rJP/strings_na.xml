@@ -112,4 +112,15 @@
     <string name="RegexFiltersMaskMessagesAbout">フィルタまたはブロックされたメッセージは削除されず、マスクされたプレースホルダーとしてチャット内に残ります。</string>
     <string name="UseSystemAiService">システム AI サービスを使用</string>
     <string name="UseSystemAiServiceDesc">現在は HyperOS と ColorOS のみ対応しています</string>
+    <string name="RegexFiltersListEmpty">フィルタがありません。+ をタップして追加してください。</string>
+    <string name="RegexFiltersShadowBanEmpty">シャドウバンされた対象はありません。+ をタップして追加してください。</string>
+    <string name="RegexFiltersFilterEnabled">フィルタを有効にする</string>
+    <string name="RegexFiltersShadowBannedBot">ボット</string>
+    <string name="RegexFiltersShadowBannedUser">ユーザー</string>
+    <string name="RegexFiltersShadowBannedChannel">チャンネル</string>
+    <string name="RegexFiltersShadowBannedGroup">グループ</string>
+    <string name="RegexFiltersPattern">パターン</string>
+    <string name="RegexFiltersReversed">反転した表現</string>
+    <string name="RegexFiltersExcluded">除外済みフィルタ</string>
+    <string name="RegexFiltersExcludeShared">共有フィルタを除外</string>
 </resources>

@@ -836,13 +836,43 @@ public class MessageHelper extends BaseController {
         return messageObject.messageOwner.message;
     }
 
-    public static CharSequence getMessagePlainTextFull(MessageObject messageObject, MessageObject.GroupedMessages messageGroup) {
-        StringBuilder text = new StringBuilder();
-        if (messageGroup != null) {
-            for (var groupedMessage : messageGroup.messages) {
-                text.append(getMessagePlainText(groupedMessage, null));
-            }
+    private static void appendFilterPlainText(StringBuilder text, MessageObject messageObject) {
+        if (text == null || messageObject == null || messageObject.messageOwner == null) {
+            return;
         }
+        CharSequence messageText = messageObject.messageText;
+        if (!TextUtils.isEmpty(messageText)
+            && !TextUtils.equals(messageText, LocaleController.getString(R.string.AttachVideo))
+            && !TextUtils.equals(messageText, LocaleController.getString(R.string.AttachPhoto))
+            && !TextUtils.equals(messageText, LocaleController.getString(R.string.Album))) {
+            text.append(messageText);
+            text.append("\n");
+        }
+        if (!TextUtils.isEmpty(messageObject.caption)) {
+            text.append(messageObject.caption);
+            text.append("\n");
+        }
+        if (!TextUtils.isEmpty(messageObject.getVoiceTranscription())) {
+            text.append(messageObject.getVoiceTranscription());
+            text.append("\n");
+        }
+        String restrictionReason = MessagesController.getInstance(messageObject.currentAccount).getRestrictionReason(messageObject.messageOwner.restriction_reason);
+        if (!TextUtils.isEmpty(restrictionReason)) {
+            text.append(restrictionReason);
+            text.append("\n");
+        }
+    }
+
+    public static CharSequence getMessageFilterMatchText(MessageObject messageObject, MessageObject.GroupedMessages messageGroup) {
+        StringBuilder text = new StringBuilder();
+        if (messageGroup != null && messageGroup.messages != null) {
+            for (var groupedMessage : messageGroup.messages) {
+                appendFilterPlainText(text, groupedMessage);
+            }
+        } else {
+            appendFilterPlainText(text, messageObject);
+        }
+
         if (messageObject != null && messageObject.messageOwner != null) {
             if (messageObject.isPoll()) {
                 TLRPC.Poll poll = ((TLRPC.TL_messageMediaPoll) messageObject.messageOwner.media).poll;
@@ -852,11 +882,47 @@ public class MessageHelper extends BaseController {
                     pollText.append(answer.text.text);
                 }
                 text.append(pollText);
-            } else if (!TextUtils.isEmpty(messageObject.getVoiceTranscription())) {
-                text.append(messageObject.messageOwner.voiceTranscription);
-            } else {
-                text.append(messageObject.messageOwner.message);
+                text.append("\n");
             }
+
+            ArrayList<TLRPC.MessageEntity> entities = messageObject.messageOwner.entities;
+            if (entities != null && !entities.isEmpty()) {
+                for (TLRPC.MessageEntity entity : entities) {
+                    if (entity instanceof TLRPC.TL_messageEntityTextUrl && !TextUtils.isEmpty(entity.url)) {
+                        text.append("\n");
+                        text.append(entity.url);
+                    }
+                }
+                text.append("\n");
+            }
+
+            TLRPC.ReplyMarkup replyMarkup = messageObject.messageOwner.reply_markup;
+            if (replyMarkup != null && replyMarkup.rows != null && !replyMarkup.rows.isEmpty()) {
+                text.append("\n");
+                for (TLRPC.TL_keyboardButtonRow row : replyMarkup.rows) {
+                    if (row == null || row.buttons == null) {
+                        continue;
+                    }
+                    for (TLRPC.KeyboardButton button : row.buttons) {
+                        if (button == null) {
+                            continue;
+                        }
+                        text.append("<button>");
+                        if (!TextUtils.isEmpty(button.text)) {
+                            text.append(button.text);
+                        }
+                        if (!TextUtils.isEmpty(button.url)) {
+                            text.append(" ");
+                            text.append(button.url);
+                        }
+                        text.append("</button>\n");
+                    }
+                }
+            }
+
+            text.append("\n<type>");
+            text.append(messageObject.type);
+            text.append("</type>");
         }
         return text.toString();
     }

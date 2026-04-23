@@ -63,6 +63,27 @@
     <string name="RegexFiltersImportSuccess">フィルターがインポートされました。</string>
     <string name="RegexFiltersImportError">クリップボードからフィルターのインポートに失敗しました。</string>
     <string name="RegexFiltersExportError">フィルターのエクスポートに失敗しました。</string>
+    <string name="FiltersExportClipboard">クリップボードにコピー</string>
+    <string name="FiltersExportTitle">フィルターのエクスポート方法を選択</string>
+    <string name="FiltersExportURL">dpaste.com で公開</string>
+    <string name="FiltersToastFailPublish">フィルターの公開に失敗しました。</string>
+    <string name="RegexFiltersImportSourceTitle">フィルターをインポート</string>
+    <string name="RegexFiltersImportFromClipboard">クリップボードから</string>
+    <string name="RegexFiltersImportFromURL">URL から</string>
+    <string name="RegexFiltersImportUrlTitle">URL からインポート</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
+    <string name="RegexFiltersImportUrlAction">ダウンロード</string>
+    <string name="RegexFiltersImportUrlFetchFailed">この URL からフィルターをダウンロードできませんでした。</string>
+    <string name="RegexFiltersImportPreviewTitle">インポート内容を確認</string>
+    <string name="RegexFiltersImportPreviewSubtitle">以下の変更がフィルターに適用されます。</string>
+    <string name="RegexFiltersImportConfirm">インポート</string>
+    <string name="RegexFiltersImportNoChanges">インポートする新規項目はありません。</string>
+    <string name="RegexFiltersImportNewFilters">新しい共有フィルター **%1$d** 件</string>
+    <string name="RegexFiltersImportUpdatedFilters">既存フィルター **%1$d** 件を更新</string>
+    <string name="RegexFiltersImportChatFilters">チャット別フィルター **%1$d** 件</string>
+    <string name="RegexFiltersImportExclusions">チャット除外 **%1$d** 件</string>
+    <string name="RegexFiltersImportShadowBans">シャドウ BAN 対象 **%1$d** 名</string>
+    <string name="RegexFiltersImportPeers">未解決の対話 **%1$d** 件</string>
     <string name="RegexFiltersUserHeader">ユーザーフィルター</string>
     <string name="RegexFiltersUserFilterHint">ユーザー ID を入力</string>
     <string name="RegexFiltersGlobalHeader">グローバルフィルター</string>
@@ -434,4 +455,6 @@
     <string name="PeekOnlineRestoreFailed">「最終オンライン」プライバシー設定を復元できませんでした。</string>
     <string name="SendLockedCustomEmojiAsSticker">Premium 絵文字をステッカーとして送信</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">WebP/WebM のカスタム絵文字のみ対応しています。TGS 専用の絵文字は含まれません。</string>
+    <string name="ShowFilteredMessagesMenuText">フィルタリングされたメッセージを表示</string>
+    <string name="HideFilteredMessagesMenuText">フィルタリングされたメッセージを隠す</string>
 </resources>
