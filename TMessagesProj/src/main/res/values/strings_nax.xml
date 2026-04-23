@@ -425,8 +425,7 @@
     <string name="ForceForwardStatusChunkCount">chunk %1$d of %2$d</string>
     <string name="ForceForwardStatusWaitingDownloads">Waiting for media downloads</string>
     <string name="ForceForwardStatusForwarding">Forwarding</string>
-    <string name="ForceForwardStatusStopping">Stopping forwarding</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">Stopping current batch</string>
+
     <string name="ForceForwardStatusStarting">Starting forwarding</string>
     <string name="ForceForwardStatusTextCopy">Forwarding text copy</string>
     <string name="ForceForwardStatusPhotoCopy">Forwarding photo copy</string>
