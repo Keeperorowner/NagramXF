@@ -45924,7 +45924,7 @@ public class ChatActivity extends BaseFragment implements
             }
             case nkbtn_forward_nocaption:
             case nkbtn_forward_noquote: {
-                noForwardQuote = true;
+                noForwardQuote = id == nkbtn_forward_noquote;
                 noForwardCaption = id == nkbtn_forward_nocaption;
                 if (messagePreviewParams != null) {
                     messagePreviewParams.setHideForwardSendersName(noForwardQuote);
