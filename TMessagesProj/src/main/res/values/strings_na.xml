@@ -63,7 +63,6 @@
     <string name="ShowSmallGIF">Show Small GIF</string>
     <string name="DisableClickCommandToSend">Ask Before Sending Bot Command</string>
     <string name="DisableDialogsFloatingButton">Hide Floating Button</string>
-    <string name="SquareFloatingButton">Square Floating Button</string>
     <string name="CenterActionBarTitleType">Use Centered Title</string>
     <string name="ShowQuickReplyInBotCommands">Show Quick Reply in Bot Commands</string>
     <string name="PushServiceType">Push Service Type</string>
@@ -91,25 +90,11 @@
     <string name="RegexFiltersChatHeader">Chat Filters</string>
     <string name="RegexFiltersEnabled">Enable Message Filters</string>
     <string name="RegexFiltersEnableInChats">Enable Filters in Private Chats</string>
-    <string name="RegexFiltersMaskMessages">Mask filtered or blocked messages instead of hiding them</string>
-    <string name="RegexFiltersMaskMessagesShort">Mask Instead of Hiding</string>
-    <string name="RegexFiltersMaskMessagesAbout">Filtered or blocked messages stay in chat as masked placeholders instead of being removed.</string>
     <string name="RegexFiltersCaseInsensitive">Case insensitive expressions</string>
-    <string name="RegexFiltersReversed">Reversed expression</string>
-    <string name="RegexFiltersPattern">Pattern</string>
     <string name="RegexFiltersAdd">Add filter</string>
     <string name="RegexFiltersEdit">Edit filter</string>
-    <string name="RegexFiltersExcluded">Excluded Filters</string>
-    <string name="RegexFiltersExcludeShared">Exclude Shared Filter</string>
     <string name="RegexFiltersAddDescription">You can use site <![CDATA[<a href="https://regex101.com">regex101.com</a>]]> to fully test your regular expression. You can also use plain text, but don\'t forget to escape brackets.</string>
     <string name="RegexFiltersAddError">Regex syntax error</string>
-    <string name="RegexFiltersListEmpty">No filters yet. Tap + to add one.</string>
-    <string name="RegexFiltersShadowBanEmpty">No shadow-banned peers yet. Tap + to add one.</string>
-    <string name="RegexFiltersFilterEnabled">Enable filter</string>
-    <string name="RegexFiltersShadowBannedBot">Bot</string>
-    <string name="RegexFiltersShadowBannedUser">User</string>
-    <string name="RegexFiltersShadowBannedChannel">Channel</string>
-    <string name="RegexFiltersShadowBannedGroup">Group</string>
     <string name="ShowTimeHint">Tap Time for Details</string>
     <string name="SearchHashtagDefaultPageChannel">Default Hashtag Search Page in Channels</string>
     <string name="SearchHashtagDefaultPageChat">Default Hashtag Search Page in Chats</string>
@@ -122,8 +107,6 @@
     <string name="DisableBotOpenButton">Disable Bot Open Button</string>
     <string name="CustomTitleUserName">Use User Nickname as Title</string>
     <string name="EnhancedVideoBitrate">Enhanced Shared Video Bitrate</string>
-    <string name="UseSystemAiService">Use System Ai Service</string>
-    <string name="UseSystemAiServiceDesc">Only support HyperOS and ColorOS</string>
     <string name="ActionBarButtons">Action Bar Buttons</string>
     <string name="VideoPlayerDecoder">Video Decoder</string>
     <string name="VideoPlayerDecoderPreferSW">Prefer SW</string>

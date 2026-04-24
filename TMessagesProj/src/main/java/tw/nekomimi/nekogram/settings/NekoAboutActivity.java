@@ -22,7 +22,6 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     private int channelRow;
     private int channelTipsRow;
     private int sourceCodeRow;
-    private int translationRow;
     private int datacenterStatusRow;
 
     @Override
@@ -34,7 +33,6 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
         channelRow = addRow();
         channelTipsRow = addRow();
         sourceCodeRow = addRow();
-        translationRow = addRow();
         datacenterStatusRow = addRow();
     }
 
@@ -53,8 +51,6 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
             MessagesController.getInstance(currentAccount).openByUserName("nagram_channel", NekoAboutActivity.this, 1);
         } else if (position == channelTipsRow) {
             MessagesController.getInstance(currentAccount).openByUserName("NagramTips", NekoAboutActivity.this, 1);
-        } else if (position == translationRow) {
-            Browser.openUrl(getParentActivity(), "https://crowdin.com/project/NagramX");
         } else if (position == sourceCodeRow) {
             Browser.openUrl(getParentActivity(), "https://github.com/Keeperorowner/NagramX_Fork");
         } else if (position == datacenterStatusRow) {
@@ -87,8 +83,6 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                     textCell.setTextAndValue(getString(R.string.TipsChannel), "@" + "NagramTips", true);
                 } else if (position == sourceCodeRow) {
                     textCell.setTextAndValue(getString(R.string.SourceCode), "Github", true);
-                } else if (position == translationRow) {
-                    textCell.setTextAndValue(getString(R.string.TransSite), "Crowdin", true);
                 } else if (position == datacenterStatusRow) {
                     textCell.setText(getString(R.string.DatacenterStatus), false);
                 }

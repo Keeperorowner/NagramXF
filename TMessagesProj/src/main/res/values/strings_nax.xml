@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NagramX" translatable="false">Nagram X</string>
     <string name="XChannel">Nagram X Channel</string>
@@ -10,13 +10,7 @@
     <string name="DeleteKeepLocally">Keep locally</string>
     <string name="ClearMessageDatabase">Clear Message Database</string>
     <string name="ClearMessageDatabaseNotification">Message database cleared.</string>
-    <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="CustomDeletedMark">Custom Deleted Mark</string>
-    <string name="DeletedMarkText">Deleted Mark</string>
-    <string name="DeletedMarkNothing">Nothing</string>
-    <string name="DeletedMarkTrashBin">Trash Bin</string>
-    <string name="DeletedMarkCross">Cross</string>
-    <string name="DeletedMarkEyeCrossed">Eye Crossed</string>
     <string name="HidePremiumSection">Hide Premium in Settings</string>
     <string name="HideHelpSection">Hide Help in Settings</string>
     <string name="ProviderLLMTranslator">AI Translator</string>
@@ -59,15 +53,7 @@
     <string name="LlmTestResultDuration">Duration</string>
     <string name="LlmTestResultResponse">Response</string>
     <string name="AITranslatorSettings">AI Translator</string>
-    <string name="NowPlaying">Now Playing</string>
-    <string name="NowPlayingService">Service</string>
-    <string name="NowPlayingLocalOnlyInfo">This is a local-only integration and is only shown on this device.</string>
-    <string name="NowPlayingLastFmUsername">Last.fm username</string>
-    <string name="NowPlayingLastFmApiKey">Last.fm API key</string>
-    <string name="NowPlayingLastFmApiKeyInfo">Local mode needs your own **Last.fm API key**.</string>
-    <string name="NowPlayingNothingPlaying">Nothing playing</string>
     <string name="TranslucentDeletedMessages">Translucent Deleted Messages</string>
-    <string name="SemiTransparentDeletedMessages">Semi-transparent Deleted Messages</string>
     <string name="ArticleTranslationProvider">Article Translation Provider</string>
     <string name="EnableSeparateArticleTranslator">Use a Different Provider for Article</string>
     <string name="DisableCrashlyticsCollection">Disable Firebase Crashlytics</string>
@@ -91,27 +77,6 @@
     <string name="RegexFiltersImportSuccess">Filters imported.</string>
     <string name="RegexFiltersImportError">Failed to import filters from clipboard.</string>
     <string name="RegexFiltersExportError">Failed to export filters.</string>
-    <string name="FiltersExportClipboard">Copy to Clipboard</string>
-    <string name="FiltersExportTitle">Select a way to export filters</string>
-    <string name="FiltersExportURL">Publish on dpaste.com</string>
-    <string name="FiltersToastFailPublish">Failed to publish filters.</string>
-    <string name="RegexFiltersImportSourceTitle">Import filters</string>
-    <string name="RegexFiltersImportFromClipboard">From clipboard</string>
-    <string name="RegexFiltersImportFromURL">From URL</string>
-    <string name="RegexFiltersImportUrlTitle">Import from URL</string>
-    <string name="RegexFiltersImportUrlHint">https://…</string>
-    <string name="RegexFiltersImportUrlAction">Download</string>
-    <string name="RegexFiltersImportUrlFetchFailed">Couldn\'t download filters from this URL.</string>
-    <string name="RegexFiltersImportPreviewTitle">Review import</string>
-    <string name="RegexFiltersImportPreviewSubtitle">The following changes will be applied to your filters.</string>
-    <string name="RegexFiltersImportConfirm">Import</string>
-    <string name="RegexFiltersImportNoChanges">Nothing new to import.</string>
-    <string name="RegexFiltersImportNewFilters">**%1$d** new shared filter(s)</string>
-    <string name="RegexFiltersImportUpdatedFilters">**%1$d** existing filter(s) updated</string>
-    <string name="RegexFiltersImportChatFilters">**%1$d** per-chat filter(s)</string>
-    <string name="RegexFiltersImportExclusions">**%1$d** chat exclusion(s)</string>
-    <string name="RegexFiltersImportShadowBans">**%1$d** shadow-banned user(s)</string>
-    <string name="RegexFiltersImportPeers">**%1$d** unknown peer(s) to resolve</string>
     <string name="RegexFiltersUserHeader">User Filters</string>
     <string name="RegexFiltersUserFilterHint">Enter User ID</string>
     <string name="RegexFiltersGlobalHeader">Global Filters</string>
@@ -122,8 +87,6 @@
     <string name="ShadowBanRemoved">Removed from **user filters**.</string>
     <string name="botCommandConfirmTitle">Send Command</string>
     <string name="botCommandConfirmText">Do you want to send this command?\n\n%s</string>
-    <string name="MessageSavingSaveMedia">Save Attachments</string>
-    <string name="MessageSavingSaveMediaHint">Configure chats &amp; limits</string>
     <string name="MessageSavingSaveMediaInPrivateChats">… in Private Chats</string>
     <string name="MessageSavingSaveMediaInPublicChannels">… in Public Channels</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">… in Private Channels</string>
@@ -142,7 +105,6 @@
     <string name="InstantViewTranslation">Instant View</string>
     <string name="SaveDeletedMessageForBot">Save in Bot Chats</string>
     <string name="HideArchive">Remove \"Archived Chats\" from Chat List</string>
-    <string name="HideHomeSearchField">Hide Home Search Box</string>
     <string name="ReplaceBlockedMyInfo">Replace Info of Users Who Blocked Me</string>
     <string name="ReplaceBlockedMyInfoDescription">Show users who blocked you with a gray avatar placeholder.</string>
     <string name="ConfirmAllLinks">Ask Before Opening Inline Links</string>
@@ -162,13 +124,11 @@
     <string name="SpringAnimationCrossfade">Animated Action Bar</string>
     <string name="Other">Other</string>
     <string name="RestartApp">Restart App</string>
-    <string name="AppWillRestartInSeconds">App will restart in %1$d seconds.</string>
     <string name="ResetSettings">Reset Settings</string>
     <string name="ResetSettingsAlert">Are you sure you want to reset all N-Settings?</string>
     <string name="DontAutoPlayNextVoice">Don\'t Auto Play Next Voice Message</string>
     <string name="SaveToChatSubfolder">Save Attachments by Chat Name</string>
     <string name="MessageColoredBackground">Colorful Message Backgrounds</string>
-    <string name="RemoveMessageTail">Remove Message Tail</string>
     <string name="ColoredBackgroundNotice">Background color and emojis for replies, quotes, and link previews.</string>
     <string name="ChatMenu">Chat Menu</string>
     <string name="MediaViewerMenu">Media Viewer Menu</string>
@@ -243,22 +203,13 @@
     <string name="DebugMenuShowFrameMetrics">Show Frame Metrics</string>
     <string name="DebugMenuHideFrameMetrics">Hide Frame Metrics</string>
     <string name="TranslateMessageLLM">Translate with AI</string>
-    <string name="UserAvatarsInMessagePreview">User Avatars in Message Preview</string>
     <string name="EditLocalNameOverride">Editing local name override.</string>
     <string name="ResetChatNameOverrides">Reset Chat Name Overrides</string>
     <string name="ResetChatNameNotification">Chat name overrides cleared.</string>
     <string name="LeftBottomButtonAction">Left Button Action</string>
     <string name="MainTabsCustomize">Customize Bottom Tabs</string>
     <string name="MainTabsCustomizeDesc">Tap a tab to show or hide it. Long-press and drag to reorder.</string>
-    <string name="MainTabsCustomizeDrawerLocked">When Home Drawer is enabled, Chats is pinned to the far left.</string>
-    <string name="HomeDrawer">Home Drawer</string>
-    <string name="DrawerElements">Drawer Elements</string>
     <string name="MainTabsShowTitles">Show Tab Titles</string>
-    <string name="MainTabsDisplayMode">Bottom Bar Display Mode</string>
-    <string name="MainTabsDisplayModeShow">Show</string>
-    <string name="MainTabsDisplayModeHide">Hide</string>
-    <string name="MainTabsDisplayModeFloating">Floating</string>
-    <string name="FoldersAtBottom">Move Folders to Bottom</string>
     <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">Configure OpenAI-compatible API. You can refer to this **documentation**.\n</string>
     <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
@@ -275,8 +226,6 @@
     <string name="PreferCommonGroupsTab">Prefer Groups Tab</string>
     <string name="PreferCommonGroupsTabNotice">Auto-select \"Groups\" tab instead of \"Gifts\" when possible.</string>
     <string name="SendHighQualityPhoto">Send High Quality Photo</string>
-    <string name="SendLockedCustomEmojiAsSticker">Send Premium Emoji as Sticker</string>
-    <string name="SendLockedCustomEmojiAsStickerInfo">Only supports WebP/WebM custom emoji. TGS-only emoji are excluded.</string>
     <string name="GroupedMessageMenu">Group Message Menu</string>
     <string name="GroupedMessageMenuNotice">Grouping moves the main actions to the bottom of the message menu.</string>
     <string name="CopySticker">Copy Sticker</string>
@@ -300,7 +249,6 @@
     <string name="SliderStyle">Slider Style</string>
     <string name="StyleModern">Modern</string>
     <string name="StyleMaterialDesign3" translatable="false">Material Design 3</string>
-    <string name="StyleOneUI" translatable="false">OneUI</string>
     <string name="SaveDeletedExclusionMenu">Save Deleted</string>
     <string name="SaveDeletedExcluded">Exclude</string>
     <string name="MarkdownParser">Markdown Parser</string>
@@ -373,15 +321,10 @@
     <string name="DeviceAccount">Device</string>
     <string name="ApiKeyNotSet">API Key is not configured.</string>
     <string name="SaveLocalLastSeen">Save Last Seen Date</string>
-    <string name="PeekOnlineMenuText">Peek Online</string>
-    <string name="PeekOnlineSuccess">Online status refreshed</string>
-    <string name="PeekOnlineUnavailable">Could not fetch exact online status.</string>
-    <string name="PeekOnlineRestoreFailed">Failed to restore Last Seen privacy.</string>
     <string name="CopyVideoFrame">Copy Frame</string>
     <string name="SetLocalName">Set Local Name</string>
     <string name="DeleteChatForBothSides">Use \"Also delete for\" by Default</string>
     <string name="BackAnimationStyle">Navigation Animation</string>
-    <string name="AppNavigation">App Navigation</string>
     <string name="BackAnimationClassic">Classic</string>
     <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">Predictive</string>
@@ -395,7 +338,6 @@
     <string name="PrivateChatMessage">Cannot open private chat: %1$s\n\nThis chat is private and can only be accessed from the original account.</string>
     <string name="DeleteChatTitle">Delete Chat</string>
     <string name="DeleteChatMessage">Are you sure you want to remove %1$s from recent chats?</string>
-    <string name="ShowRecentChatsSidebar">Show Recent Chats Sidebar</string>
     <string name="ChatRemovedFromRecent">Chat removed from recent chats</string>
     <string name="ChatHistory_ResultCount">%1$d results</string>
     <string name="ChatCategoryAll">All</string>
@@ -417,59 +359,4 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Shows notification content even when passcode lock is active.</string>
     <string name="StickerSavedHint">Sticker saved to gallery.</string>
     <string name="StickerCopied">Sticker copied to clipboard.</string>
-    <string name="DirectForwardNotAllowed">Direct forwarding is not allowed.</string>
-    <string name="ForceForwardFailed">Force forward failed.</string>
-    <string name="ForceForwardMediaStalled">Media download stalled.</string>
-    <string name="ForceForwardStatusPreparingMedia">Preparing media</string>
-    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
-    <string name="ForceForwardStatusChunkCount">chunk %1$d of %2$d</string>
-    <string name="ForceForwardStatusWaitingDownloads">Waiting for media downloads</string>
-    <string name="ForceForwardStatusForwarding">Forwarding</string>
-
-    <string name="ForceForwardStatusStarting">Starting forwarding</string>
-    <string name="ForceForwardStatusTextCopy">Forwarding text copy</string>
-    <string name="ForceForwardStatusPhotoCopy">Forwarding photo copy</string>
-    <string name="ForceForwardStatusMediaCopy">Forwarding media copy</string>
-    <string name="ForceForwardStatusDocumentCopy">Forwarding document copy</string>
-    <string name="ForceForwardStatusDocumentFallback">Forwarding document fallback</string>
-    <string name="ForceForwardStatusStickerCopy">Forwarding sticker copy</string>
-    <string name="ForceForwardStatusTextFallback">Forwarding text fallback</string>
-    <string name="ForceForwardStatusDocumentGroup">Forwarding document group</string>
-    <string name="ForceForwardStatusMediaGroup">Forwarding media group</string>
-    <string name="ForceForwardSomeSkipped">%1$d message(s) could not be forwarded</string>
-    <string name="AvatarCorners">Avatar corners</string>
-    <string name="AvatarCornersLeft">Sharp</string>
-    <string name="AvatarCornersRight">Round</string>
-    <string name="SingleCornerRadius">Unified corner radius</string>
-    <string name="SingleCornerRadiusInfo">Topic groups will use the same avatar shape as chat messages.</string>
-    <string name="BlurOptions">Blur Options</string>
-    <string name="AyuMoments" translatable="false">AyuMoments</string>
-    <string name="SaveAttachmentsCardTitle">Save Attachments</string>
-    <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>
-    <string name="MaximumMediaSizeCellular">Media size limit (cellular data)</string>
-    <string name="MaximumMediaSizeWiFi">Media size limit (WiFi)</string>
-    <string name="AttachmentFolder">Attachment Folder</string>
-    <string name="AttachmentFolderSizeLimit">Folder Size Limit</string>
-    <string name="AttachmentFolderSizeLimitInfo">If the folder size exceeds this limit, the oldest attachments will be removed from the device.</string>
-    <string name="AttachmentFolderSizeLimitUnlimited">Unlimited</string>
-    <string name="AttachmentFolderUpdated">Attachment folder updated.</string>
-    <string name="AttachmentFolderSelectionFailed">Failed to select attachment folder.</string>
-    <string name="ExportMessageDatabase">Export Database</string>
-    <string name="ImportMessageDatabase">Import Database</string>
-    <string name="ExportMessageDatabaseDescription">Export the local Ayu database to the current client download folder.</string>
-    <string name="ExportMessageDatabaseNotification">Database exported.</string>
-    <string name="ImportMessageDatabaseNotification">Database imported.</string>
-    <string name="ExportMessageDatabaseFailed">Failed to export database</string>
-    <string name="ImportMessageDatabaseFailed">Failed to import database</string>
-    <string name="ImportMessageDatabaseNotFound">No database backup was found in the current client download folder.</string>
-    <string name="ImportMessageDatabaseConfirm">Importing will overwrite the current local Ayu database. Continue?</string>
-    <string name="ClearSavedMessageData">Clear</string>
-    <string name="ClearSavedMessageDataDescription">Choose what you want to clear.</string>
-    <string name="ClearSavedMessageDataConfirm">This will delete the local Ayu database and all saved attachments.</string>
-    <string name="ClearSavedMessageDataNotification">Saved message data cleared.</string>
-    <string name="AyuAttachments">Ayu Attachments</string>
-    <string name="AyuDatabase">Ayu Database</string>
-    <string name="TelegramLocalDatabase">Telegram Local Database</string>
-    <string name="ShowFilteredMessagesMenuText">Show Filtered</string>
-    <string name="HideFilteredMessagesMenuText">Hide Filtered</string>
 </resources>

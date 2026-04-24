@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">N-設定</string>
     <string name="IPv6">偏好 IPv6</string>
@@ -250,7 +250,6 @@
     <string name="repeatConfirm">復讀前確認</string>
     <string name="repeatConfirmText">確定要復讀這條訊息？</string>
     <string name="rememberAllBackMessages">記住所有已點擊的回覆</string>
-    <string name="DisableInstantCamera">停用相機即時預覽</string>
     <string name="showSeconds">以秒為單位顯示時間戳</string>
     <string name="Name">名稱</string>
     <string name="StickerSettings">貼圖</string>
@@ -271,7 +270,4 @@
     <string name="EmojiUseDefault">使用系統 Emoji</string>
     <string name="Chat">聊天</string>
     <string name="Appearance">外觀</string>
-    <string name="HideProxySponsorChannel">隱藏代理贊助商頻道</string>
-    <string name="hideSponsoredMessage">隱藏贊助消息</string>
-    <string name="GoogleCloudTransKey">Google Cloud 翻譯密鑰</string>
 </resources>
