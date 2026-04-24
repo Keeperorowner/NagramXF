@@ -11066,6 +11066,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public static final int DIALOGS_TYPE_FOLDER2 = 8;
     public static final int DIALOGS_TYPE_BLOCK = 9;
     public static final int DIALOGS_TYPE_SHADOW_BAN = 667;
+    public static final int DIALOGS_TYPE_REGEX_FILTER = 666;
     public static final int DIALOGS_TYPE_WIDGET = 10;
     public static final int DIALOGS_TYPE_IMPORT_HISTORY_GROUPS = 11; // groups only
     public static final int DIALOGS_TYPE_IMPORT_HISTORY_USERS = 12; // users only
@@ -11136,6 +11137,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>(messagesController.dialogsUsersOnly.size() + messagesController.dialogsChannelsOnly.size());
             dialogs.addAll(messagesController.dialogsUsersOnly);
             dialogs.addAll(messagesController.dialogsChannelsOnly);
+            messagesController.sortDialogsList(dialogs);
+            return dialogs;
+        } else if (dialogsType == DIALOGS_TYPE_REGEX_FILTER) {
+            ArrayList<TLRPC.Dialog> dialogs = new ArrayList<>();
+            dialogs.addAll(messagesController.dialogsGroupsOnly);
+            dialogs.addAll(messagesController.dialogsChannelsOnly);
+            int usersSize = messagesController.dialogsUsersOnly.size();
+            for (int i = 0; i < usersSize; i++) {
+                TLRPC.Dialog d = messagesController.dialogsUsersOnly.get(i);
+                TLRPC.User user = messagesController.getUser(d.id);
+                if (user == null) continue;
+                if (UserObject.isUserSelf(user)) continue;
+                if (!user.bot) continue;
+                dialogs.add(d);
+            }
             messagesController.sortDialogsList(dialogs);
             return dialogs;
         } else if (dialogsType == DIALOGS_TYPE_BOT_SHARE || dialogsType == DIALOGS_TYPE_BOT_SELECT_VERIFY || dialogsType == DIALOGS_TYPE_START_ATTACH_BOT) {
