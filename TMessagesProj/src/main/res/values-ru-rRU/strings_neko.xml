@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">Настройки N</string>
     <string name="IPv6">Предпочитать IPv6</string>
@@ -271,6 +271,4 @@
     <string name="EmojiUseDefault">Использовать системные эмодзи</string>
     <string name="Chat">Чаты</string>
     <string name="Appearance">Внешний вид</string>
-    <string name="HideProxySponsorChannel">Скрыть спонсорский прокси-канал</string>
-    <string name="hideSponsoredMessage">Скрыть спонсируемые сообщения</string>
 </resources>

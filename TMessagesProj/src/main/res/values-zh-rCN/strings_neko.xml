@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">N-设置</string>
     <string name="IPv6">偏好 IPv6</string>
@@ -105,8 +105,6 @@
     <string name="channelLabel">频道</string>
     <string name="forceBlurInChat">强制启用聊天顶栏模糊</string>
     <string name="ChatBlurAlphaValue">聊天顶栏不透明度</string>
-    <string name="HideProxySponsorChannel">隐藏代理赞助商频道</string>
-    <string name="hideSponsoredMessage">隐藏赞助消息</string>
     <string name="MutualContact">双向联系人</string>
     <string name="MutualContactDescription">此联系人为双向联系人。</string>
     <string name="DatacenterStatusAbout">检查 Telegram 的**数据中心**的状态。</string>

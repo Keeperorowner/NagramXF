@@ -61,7 +61,6 @@
     <string name="ShowSmallGIF">GIF 显示得更小</string>
     <string name="DisableClickCommandToSend">点击机器人指令发送前确认</string>
     <string name="DisableDialogsFloatingButton">隐藏浮动按钮</string>
-    <string name="SquareFloatingButton">方形浮动按钮</string>
     <string name="CenterActionBarTitleType">标题居中</string>
     <string name="ShowQuickReplyInBotCommands">在输入框中显示快速回复按钮</string>
     <string name="PushServiceType">推送服务类型</string>
@@ -86,9 +85,6 @@
     <string name="RegexFiltersChatHeader">聊天过滤器</string>
     <string name="RegexFiltersEnabled">启用消息过滤</string>
     <string name="RegexFiltersEnableInChats">在私聊中启用消息过滤</string>
-    <string name="RegexFiltersMaskMessages">将过滤或被屏蔽的消息遮罩而不是隐藏</string>
-    <string name="RegexFiltersMaskMessagesShort">遮罩而不隐藏</string>
-    <string name="RegexFiltersMaskMessagesAbout">过滤或被屏蔽的消息会以遮罩占位形式保留在聊天中，而不是直接隐藏。</string>
     <string name="RegexFiltersCaseInsensitive">不区分大小写</string>
     <string name="RegexFiltersAdd">添加过滤器</string>
     <string name="RegexFiltersEdit">编辑过滤器</string>
@@ -105,22 +101,9 @@
     <string name="DisableBotOpenButton">禁用 Bot 的打开小程序按钮</string>
     <string name="CustomTitleUserName">使用用户昵称作为标题</string>
     <string name="EnhancedVideoBitrate">改善上传视频画质</string>
-    <string name="UseSystemAiService">使用系统 AI 服务</string>
-    <string name="UseSystemAiServiceDesc">当前仅支持 HyperOS 和 ColorOS</string>
     <string name="ActionBarButtons">导航栏按钮</string>
     <string name="VideoPlayerDecoder">视频解码器</string>
     <string name="VideoPlayerDecoderPreferSW">软解优先</string>
     <string name="VideoPlayerDecoderHardware">仅硬解</string>
     <string name="VideoPlayerDecoderPreferHW">硬解优先</string>
-    <string name="RegexFiltersListEmpty">还没有过滤器，点击 + 添加一个。</string>
-    <string name="RegexFiltersShadowBanEmpty">还没有静默屏蔽对象，点击 + 添加一个。</string>
-    <string name="RegexFiltersFilterEnabled">启用过滤器</string>
-    <string name="RegexFiltersShadowBannedBot">机器人</string>
-    <string name="RegexFiltersShadowBannedUser">用户</string>
-    <string name="RegexFiltersShadowBannedChannel">频道</string>
-    <string name="RegexFiltersShadowBannedGroup">群组</string>
-    <string name="RegexFiltersPattern">正则表达式</string>
-    <string name="RegexFiltersReversed">反向表达式</string>
-    <string name="RegexFiltersExcluded">已排除的过滤器</string>
-    <string name="RegexFiltersExcludeShared">排除共享过滤器</string>
 </resources>

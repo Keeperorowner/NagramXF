@@ -83,7 +83,6 @@
     <string name="RegexFiltersSubMenuDescription">您可以選擇為此聊天排除全域過濾器。</string>
     <string name="RegexFiltersChatHeader">聊天過濾器</string>
     <string name="RegexFiltersEnableInChats">在私聊中啟用訊息過濾</string>
-    <string name="RegexFiltersMaskMessages">將過濾或被封鎖的訊息遮罩而不是隱藏</string>
     <string name="RegexFiltersCaseInsensitive">不區分大小寫</string>
     <string name="RegexFiltersAdd">新增過濾器</string>
     <string name="RegexFiltersEdit">編輯過濾器</string>
@@ -105,22 +104,4 @@
     <string name="VideoPlayerDecoderPreferSW">軟解優先</string>
     <string name="VideoPlayerDecoderHardware">僅硬解</string>
     <string name="VideoPlayerDecoderPreferHW">硬解優先</string>
-    <string name="SquareFloatingButton">方形浮動按鈕</string>
-    <string name="PushServiceTypeUnifiedGateway">Unified Push 網關</string>
-    <string name="RegexFiltersEnabled">啟用消息過濾</string>
-    <string name="RegexFiltersMaskMessagesShort">遮罩而不隱藏</string>
-    <string name="RegexFiltersMaskMessagesAbout">過濾或被屏蔽的消息會以遮罩占位形式保留在聊天中，而不是直接隱藏。</string>
-    <string name="UseSystemAiService">使用系統 AI 服務</string>
-    <string name="UseSystemAiServiceDesc">當前僅支持 HyperOS 和 ColorOS</string>
-    <string name="RegexFiltersListEmpty">還沒有過濾器，點擊 + 新增一個。</string>
-    <string name="RegexFiltersShadowBanEmpty">還沒有靜默屏蔽對象，點擊 + 新增一個。</string>
-    <string name="RegexFiltersFilterEnabled">啟用過濾器</string>
-    <string name="RegexFiltersShadowBannedBot">機器人</string>
-    <string name="RegexFiltersShadowBannedUser">用戶</string>
-    <string name="RegexFiltersShadowBannedChannel">頻道</string>
-    <string name="RegexFiltersShadowBannedGroup">群組</string>
-    <string name="RegexFiltersPattern">正則表達式</string>
-    <string name="RegexFiltersReversed">反向表達式</string>
-    <string name="RegexFiltersExcluded">已排除的過濾器</string>
-    <string name="RegexFiltersExcludeShared">排除共用過濾器</string>
 </resources>

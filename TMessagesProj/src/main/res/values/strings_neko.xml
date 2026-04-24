@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">N-Settings</string>
     <string name="IPv6">Prefer IPv6</string>
@@ -105,8 +105,6 @@
     <string name="channelLabel">channel</string>
     <string name="forceBlurInChat">Force Enable Chat Blur</string>
     <string name="ChatBlurAlphaValue">Chat Blur Alpha</string>
-    <string name="HideProxySponsorChannel">Hide proxy sponsor channel</string>
-    <string name="hideSponsoredMessage">Hide sponsored messages</string>
     <string name="MutualContact">Mutual contact</string>
     <string name="MutualContactDescription">This contact is a mutual contact.</string>
     <string name="DatacenterStatusAbout">Check the status of Telegram\'s **datacenters**.</string>

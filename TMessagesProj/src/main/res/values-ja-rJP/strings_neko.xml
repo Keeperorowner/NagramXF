@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">N-設定</string>
     <string name="IPv6">IPv6 を優先</string>
@@ -270,7 +270,4 @@
     <string name="EmojiUseDefault">システム絵文字を使用</string>
     <string name="Chat">チャット</string>
     <string name="Appearance">外観</string>
-    <string name="HideProxySponsorChannel">プロキシのスポンサー チャンネルを非表示</string>
-    <string name="hideSponsoredMessage">スポンサー メッセージを非表示</string>
-    <string name="GoogleCloudTransKey">Google Cloud 翻訳キー</string>
 </resources>

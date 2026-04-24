@@ -105,22 +105,4 @@
     <string name="VideoPlayerDecoderPreferSW">Предпочтение SW</string>
     <string name="VideoPlayerDecoderHardware">Только HW</string>
     <string name="VideoPlayerDecoderPreferHW">Предпочтение HW</string>
-    <string name="SquareFloatingButton">Квадратная плавающая кнопка</string>
-    <string name="RegexFiltersEnabled">Включить фильтры сообщений</string>
-    <string name="UseSystemAiService">Использовать системный ИИ-сервис</string>
-    <string name="UseSystemAiServiceDesc">Поддерживаются только HyperOS и ColorOS</string>
-    <string name="RegexFiltersMaskMessages">Маскировать отфильтрованные или заблокированные сообщения вместо скрытия</string>
-    <string name="RegexFiltersMaskMessagesShort">Маскировать вместо скрытия</string>
-    <string name="RegexFiltersMaskMessagesAbout">Отфильтрованные или заблокированные сообщения остаются в чате как замаскированные заполнители вместо удаления.</string>
-    <string name="RegexFiltersListEmpty">Пока нет фильтров. Нажмите +, чтобы добавить.</string>
-    <string name="RegexFiltersShadowBanEmpty">Пока нет теневых блокировок. Нажмите +, чтобы добавить.</string>
-    <string name="RegexFiltersFilterEnabled">Включить фильтр</string>
-    <string name="RegexFiltersShadowBannedBot">Бот</string>
-    <string name="RegexFiltersShadowBannedUser">Пользователь</string>
-    <string name="RegexFiltersShadowBannedChannel">Канал</string>
-    <string name="RegexFiltersShadowBannedGroup">Группа</string>
-    <string name="RegexFiltersPattern">Шаблон</string>
-    <string name="RegexFiltersReversed">Обратное выражение</string>
-    <string name="RegexFiltersExcluded">Исключённые фильтры</string>
-    <string name="RegexFiltersExcludeShared">Исключить общий фильтр</string>
 </resources>
