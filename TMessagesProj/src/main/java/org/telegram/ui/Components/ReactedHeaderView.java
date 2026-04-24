@@ -237,7 +237,7 @@ public class ReactedHeaderView extends FrameLayout {
                 TLRPC.TL_messages_messageReactionsList list = (TLRPC.TL_messages_messageReactionsList) response;
                 int c = list.count;
                 int ic = list.users.size();
-                LastSeenHelper.saveLastSeenFromPeerReactions(list.reactions, UserConfig.getInstance(currentAccount).getClientUserId());
+                LastSeenHelper.saveLastSeenFromPeerReactions(currentAccount, list.reactions, UserConfig.getInstance(currentAccount).getClientUserId());
                 post(() -> {
                     String str;
                     if (seenUsers.isEmpty() || seenUsers.size() < c) {

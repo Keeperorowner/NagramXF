@@ -4,28 +4,40 @@ import com.radolyn.ayugram.database.AyuData;
 import com.radolyn.ayugram.database.dao.LastSeenDao;
 import com.radolyn.ayugram.database.entities.LastSeenEntity;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.support.LongSparseIntArray;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import xyz.nextalone.nagram.NaConfig;
 
 public class LastSeenHelper {
     private static final int FLUSH_DELAY_MS = 5000;
     private static final int CLEANUP_DAYS = 7;
+    private static final int MIN_LAST_SEEN_TIMESTAMP = 1397411401;
+    private static final int ONLINE_PRIVACY_FRESHNESS_SECONDS = 30;
 
     private static final LongSparseIntArray cache = new LongSparseIntArray();
     private static final LongSparseIntArray pending = new LongSparseIntArray();
     private static volatile boolean flushScheduled;
+    private static final AtomicBoolean preloadStarted = new AtomicBoolean(false);
 
     public static void preload() {
         if (!NaConfig.INSTANCE.getSaveLocalLastSeen().Bool()) {
+            return;
+        }
+        if (!preloadStarted.compareAndSet(false, true)) {
             return;
         }
         AyuQueues.lastSeenQueue.postRunnable(() -> {
@@ -53,7 +65,14 @@ public class LastSeenHelper {
     }
 
     public static void saveLastSeen(long userId, int timestamp) {
-        if (!NaConfig.INSTANCE.getSaveLocalLastSeen().Bool() || timestamp <= 0) {
+        saveLastSeen(UserConfig.selectedAccount, userId, timestamp);
+    }
+
+    public static void saveLastSeen(int currentAccount, long userId, int timestamp) {
+        if (!NaConfig.INSTANCE.getSaveLocalLastSeen().Bool() || timestamp < MIN_LAST_SEEN_TIMESTAMP) {
+            return;
+        }
+        if (UserConfig.getInstance(currentAccount).getClientUserId() == userId) {
             return;
         }
         synchronized (cache) {
@@ -65,6 +84,33 @@ public class LastSeenHelper {
             pending.put(userId, timestamp);
         }
         scheduleFlush();
+
+        MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        int currentServerTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        if (timestamp >= currentServerTime - ONLINE_PRIVACY_FRESHNESS_SECONDS) {
+            messagesController.onlinePrivacy.put(userId, timestamp);
+        }
+
+        TLRPC.User user = messagesController.getUser(userId);
+        if (user != null && !user.bot && isBadStatus(user.status)) {
+            final int account = currentAccount;
+            AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(account)
+                    .postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_STATUS));
+        }
+    }
+
+    private static boolean isBadStatus(TLRPC.UserStatus status) {
+        if (status == null) {
+            return true;
+        }
+        if (status instanceof TLRPC.TL_userStatusRecently
+                || status instanceof TLRPC.TL_userStatusLastWeek
+                || status instanceof TLRPC.TL_userStatusLastMonth) {
+            return true;
+        }
+        int expires = status.expires;
+        return expires == -1 || expires == -100 || expires == -101 || expires == -102
+                || expires == -1000 || expires == -1001 || expires == -1002;
     }
 
     private static void scheduleFlush() {
@@ -214,7 +260,7 @@ public class LastSeenHelper {
         return lastReactionDate;
     }
 
-    public static void saveLastSeenFromLoadedMessages(long userId, long selfUserId, ArrayList<MessageObject> messages, ChatActivity.ChatActivityAdapter chatAdapter) {
+    public static void saveLastSeenFromLoadedMessages(int currentAccount, long userId, long selfUserId, ArrayList<MessageObject> messages, ChatActivity.ChatActivityAdapter chatAdapter) {
         if (!NaConfig.INSTANCE.getSaveLocalLastSeen().Bool()) {
             return;
         }
@@ -227,22 +273,22 @@ public class LastSeenHelper {
         }
         int lastMessageDate = getLastMessageDate(userId, messageObjects);
         if (lastMessageDate > 0) {
-            LastSeenHelper.saveLastSeen(userId, lastMessageDate);
+            LastSeenHelper.saveLastSeen(currentAccount, userId, lastMessageDate);
         }
         int lastReactionDate = getLastReactionDate(userId, messageObjects);
         if (lastReactionDate > 0) {
-            LastSeenHelper.saveLastSeen(userId, lastReactionDate);
+            LastSeenHelper.saveLastSeen(currentAccount, userId, lastReactionDate);
         }
     }
 
-    public static void saveLastSeenFromMessageReactions(TLRPC.TL_messageReactions reactions, long selfUserId) {
+    public static void saveLastSeenFromMessageReactions(int currentAccount, TLRPC.TL_messageReactions reactions, long selfUserId) {
         if (reactions == null || reactions.recent_reactions == null || reactions.recent_reactions.isEmpty()) {
             return;
         }
-        saveLastSeenFromPeerReactions(reactions.recent_reactions, selfUserId);
+        saveLastSeenFromPeerReactions(currentAccount, reactions.recent_reactions, selfUserId);
     }
 
-    public static void saveLastSeenFromPeerReactions(List<TLRPC.MessagePeerReaction> reactions, long selfUserId) {
+    public static void saveLastSeenFromPeerReactions(int currentAccount, List<TLRPC.MessagePeerReaction> reactions, long selfUserId) {
         if (!NaConfig.INSTANCE.getSaveLocalLastSeen().Bool()) {
             return;
         }
@@ -258,7 +304,7 @@ public class LastSeenHelper {
             if (peerId <= 0 || peerId == selfUserId) {
                 continue;
             }
-            saveLastSeen(peerId, reaction.date);
+            saveLastSeen(currentAccount, peerId, reaction.date);
         }
     }
 }
