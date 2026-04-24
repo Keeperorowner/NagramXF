@@ -3080,7 +3080,9 @@ public class LocaleController {
                     return LastSeenHelper.getFormattedLastSeenOrDefault(user, madeShorter, getString(R.string.WithinAMonth));
                     // return getString("WithinAMonth", R.string.WithinAMonth);
                 } else {
-                    return formatDateOnline(user.status.expires, madeShorter);
+                    int savedLastSeen = LastSeenHelper.getLastSeen(user.id);
+                    int effectiveLastSeen = Math.max(user.status.expires, savedLastSeen);
+                    return formatDateOnline(effectiveLastSeen, madeShorter);
                 }
             }
         }

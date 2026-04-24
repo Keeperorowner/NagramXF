@@ -40,6 +40,10 @@ public class PeekOnlineHelper {
             callback.onError(null);
             return;
         }
+        if (isUserVisibleAsOnline(currentAccount, user)) {
+            callback.onSuccess(user, LocaleController.formatUserStatus(currentAccount, user), currentAccount);
+            return;
+        }
 
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
         TLRPC.InputUser targetInputUser = messagesController.getInputUser(user);
@@ -49,6 +53,21 @@ public class PeekOnlineHelper {
         }
 
         attemptPeek(collectProbeAccounts(currentAccount), 0, user, null, callback);
+    }
+
+    private static boolean isUserVisibleAsOnline(int currentAccount, TLRPC.User user) {
+        TLRPC.UserStatus status = user.status;
+        if (status == null) {
+            return false;
+        }
+        int currentTime = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+        if (status instanceof TLRPC.TL_userStatusOnline && status.expires > currentTime) {
+            return true;
+        }
+        if (status.expires <= 0) {
+            return MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id);
+        }
+        return false;
     }
 
     private static void attemptPeek(ArrayList<Integer> probeAccounts, int index, TLRPC.User originalUser, TLRPC.TL_error lastError, Callback callback) {
@@ -160,6 +179,21 @@ public class PeekOnlineHelper {
             ContactsController.getInstance(currentAccount).setPrivacyRules(privacyRules.rules, ContactsController.PRIVACY_RULES_TYPE_LASTSEEN);
 
             ArrayList<TLRPC.PrivacyRule> originalRules = privacyRules.rules != null ? privacyRules.rules : new ArrayList<>();
+
+            Boolean alreadyAllowed = evaluateTargetAllowed(originalRules, user);
+            if (Boolean.TRUE.equals(alreadyAllowed)) {
+                fetchUserStatus(currentAccount, user, targetInputUser, (fetchedUser, fetchError) -> {
+                    if (fetchError != null) {
+                        callback.onContinue(fetchError);
+                    } else if (isExactStatusAvailable(fetchedUser)) {
+                        callback.onSuccess(fetchedUser);
+                    } else {
+                        callback.onContinue(null);
+                    }
+                });
+                return;
+            }
+
             ArrayList<TLRPC.InputPrivacyRule> originalInputRules = buildInputRules(messagesController, originalRules, targetInputUser, user.id, false);
             ArrayList<TLRPC.InputPrivacyRule> temporaryInputRules = buildInputRules(messagesController, originalRules, targetInputUser, user.id, true);
             if (originalInputRules == null || temporaryInputRules == null) {
@@ -222,7 +256,7 @@ public class PeekOnlineHelper {
                 users.add(fetchedUser);
                 MessagesController.getInstance(currentAccount).putUsers(users, false);
                 if (fetchedUser.status instanceof TLRPC.TL_userStatusOffline && fetchedUser.status.expires > 0) {
-                    LastSeenHelper.saveLastSeen(fetchedUser.id, fetchedUser.status.expires);
+                    LastSeenHelper.saveLastSeen(currentAccount, fetchedUser.id, fetchedUser.status.expires);
                 }
             }
             callback.onComplete(fetchedUser, null);
@@ -252,6 +286,39 @@ public class PeekOnlineHelper {
         }
         int expires = user.status.expires;
         return expires != -1 && expires != -100 && expires != -101 && expires != -102;
+    }
+
+    private static Boolean evaluateTargetAllowed(ArrayList<TLRPC.PrivacyRule> privacyRules, TLRPC.User targetUser) {
+        if (privacyRules == null || targetUser == null) {
+            return null;
+        }
+        for (int i = 0; i < privacyRules.size(); i++) {
+            TLRPC.PrivacyRule rule = privacyRules.get(i);
+            if (rule instanceof TLRPC.TL_privacyValueAllowUsers) {
+                if (((TLRPC.TL_privacyValueAllowUsers) rule).users.contains(targetUser.id)) {
+                    return Boolean.TRUE;
+                }
+            } else if (rule instanceof TLRPC.TL_privacyValueDisallowUsers) {
+                if (((TLRPC.TL_privacyValueDisallowUsers) rule).users.contains(targetUser.id)) {
+                    return Boolean.FALSE;
+                }
+            } else if (rule instanceof TLRPC.TL_privacyValueAllowAll) {
+                return Boolean.TRUE;
+            } else if (rule instanceof TLRPC.TL_privacyValueDisallowAll) {
+                return Boolean.FALSE;
+            } else if (rule instanceof TLRPC.TL_privacyValueAllowContacts) {
+                if (targetUser.contact) {
+                    return Boolean.TRUE;
+                }
+            } else if (rule instanceof TLRPC.TL_privacyValueDisallowContacts) {
+                if (targetUser.contact) {
+                    return Boolean.FALSE;
+                }
+            } else {
+                return null;
+            }
+        }
+        return null;
     }
 
     private static ArrayList<TLRPC.InputPrivacyRule> buildInputRules(MessagesController messagesController, ArrayList<TLRPC.PrivacyRule> privacyRules, TLRPC.InputUser targetInputUser, long targetUserId, boolean injectTarget) {

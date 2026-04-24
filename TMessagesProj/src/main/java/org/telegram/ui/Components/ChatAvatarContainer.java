@@ -710,7 +710,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
                     if (timeItem != null && !monoforum) {
                         args.putLong("dialog_id", parentFragment.getDialogId());
                     }
-                    if (!user.bot) LastSeenHelper.saveLastSeenFromLoadedMessages(user.id, UserConfig.getInstance(parentFragment.getCurrentAccount()).getClientUserId(), parentFragment.messages, parentFragment.chatAdapter);
+                    if (!user.bot) LastSeenHelper.saveLastSeenFromLoadedMessages(parentFragment.getCurrentAccount(), user.id, UserConfig.getInstance(parentFragment.getCurrentAccount()).getClientUserId(), parentFragment.messages, parentFragment.chatAdapter);
                 }
                 if (UserObject.isBotForum(user)) {
                     args.putLong("topic_id", parentFragment.getTopicId());

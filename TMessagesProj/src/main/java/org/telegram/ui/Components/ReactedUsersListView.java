@@ -273,7 +273,7 @@ public class ReactedUsersListView extends FrameLayout {
                     TLRPC.TL_messages_messageReactionsList res = (TLRPC.TL_messages_messageReactionsList) response;
                     MessagesController.getInstance(currentAccount).putUsers(res.users, false);
                     MessagesController.getInstance(currentAccount).putChats(res.chats, false);
-                    LastSeenHelper.saveLastSeenFromPeerReactions(res.reactions, UserConfig.getInstance(currentAccount).getClientUserId());
+                    LastSeenHelper.saveLastSeenFromPeerReactions(currentAccount, res.reactions, UserConfig.getInstance(currentAccount).getClientUserId());
 
                     HashSet<ReactionsLayoutInBubble.VisibleReaction> visibleCustomEmojiReactions = new HashSet<>();
                     for (int i = 0; i < res.reactions.size(); i++) {
