@@ -236,12 +236,11 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
     @NonNull
     private DialogsActivity createSelectChatActivity() {
         Bundle b = new Bundle();
-        b.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
+        b.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_REGEX_FILTER);
         b.putBoolean("onlySelect", true);
         b.putBoolean("canSelectTopics", false);
         b.putBoolean("allowSwitchAccount", true);
         b.putBoolean("checkCanWrite", false);
-        b.putBoolean("allowGlobalSearch", false);
         DialogsActivity dialogsActivity = new DialogsActivity(b);
         dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
             if (dids != null && !dids.isEmpty()) {
