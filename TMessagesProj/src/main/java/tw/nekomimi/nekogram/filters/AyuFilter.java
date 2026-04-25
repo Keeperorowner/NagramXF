@@ -210,7 +210,7 @@ public class AyuFilter {
             return false;
         }
 
-        Boolean cached = AyuFilterCache.get(dialogId, msg.getId());
+        Boolean cached = AyuFilterCache.get(dialogId, msg, group);
         if (cached != null) {
             return cached;
         }
@@ -228,7 +228,9 @@ public class AyuFilter {
         }
 
         boolean result = isFilteredInternal(text, dialogId);
-        AyuFilterCache.put(dialogId, msg, group, result);
+        if (group != null || msg.getGroupId() == 0) {
+            AyuFilterCache.put(dialogId, msg, group, result);
+        }
 
         return result;
     }
