@@ -29215,14 +29215,12 @@ public class ChatActivity extends BaseFragment implements
 
         if (shouldHideBottomBar()) {
             bottomOverlayChatText.setText("");
-            chatInputViewsContainer.setVisibility(View.GONE);
-            chatInputViewsContainer.setBackgroundWithFadeDrawable(null);
-            chatInputViewsContainer.getFadeView().invalidate();
+            chatInputViewsContainer.setVisibility(View.INVISIBLE);
         } else {
             chatInputViewsContainer.setVisibility(View.VISIBLE);
-            chatInputViewsContainer.setBackgroundWithFadeDrawable(fadeDrawable);
-            chatInputViewsContainer.getFadeView().invalidate();
         }
+        chatInputViewsContainer.setBackgroundWithFadeDrawable(fadeDrawable);
+        chatInputViewsContainer.getFadeView().invalidate();
 
         checkRaiseSensors();
     }
