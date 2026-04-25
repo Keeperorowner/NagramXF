@@ -985,7 +985,7 @@ object NaConfig {
         addConfig(
             "PreferredTranslateTargetLang",
             ConfigItem.configTypeString,
-            "ja, zh"
+            ""
         )
     val telegramUIAutoTranslate =
         addConfig(

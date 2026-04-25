@@ -321,6 +321,8 @@ interface Translator {
             Arrays.sort(it, Comparator.comparing(Locale::toString))
         }
 
+        private val firstLevelTargetLanguageCodes = listOf("ja")
+
         data class ProviderInfo(val providerConstant: Int, val nameResId: Int) {
             companion object {
                 val PROVIDERS = arrayOf(
@@ -366,6 +368,18 @@ interface Translator {
             if (preferredLocales.isNotEmpty()) {
                 locales.removeAll(preferredLocales.toSet())
                 locales.addAll(1, preferredLocales)
+            }
+
+            val firstLevelLocales = if (full) {
+                emptyList()
+            } else {
+                firstLevelTargetLanguageCodes.map { it.code2Locale }
+                    .filter { it != firstLocale && it !in preferredLocales }
+            }
+
+            if (firstLevelLocales.isNotEmpty()) {
+                locales.removeAll(firstLevelLocales.toSet())
+                locales.addAll(firstLevelLocales)
             }
 
             val currLocale = LocaleController.getInstance().currentLocale
