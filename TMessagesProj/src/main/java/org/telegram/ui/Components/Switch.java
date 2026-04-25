@@ -29,6 +29,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.util.StateSet;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.Keep;
@@ -291,6 +292,9 @@ public class Switch extends View {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedToWindow = true;
+        if (NaConfig.INSTANCE.getSwitchStyle().Int() == SWITCH_STYLE_ONEUI && getParent() instanceof ViewGroup) {
+            ((ViewGroup) getParent()).setClipChildren(false);
+        }
     }
 
     @Override
@@ -426,7 +430,7 @@ public class Switch extends View {
 
             float start = x + thumb / 2f;
             float end = x + width - thumb / 2f;
-            tx = (int) (start + (end - start) * progress + AndroidUtilities.dp(isChecked ? 2 : 1));
+            tx = (int) (start + (end - start) * progress + AndroidUtilities.dp(1 + progress));
         } else {
             if (isUsingSeparateView) {
                 width = AndroidUtilities.dp(36);
