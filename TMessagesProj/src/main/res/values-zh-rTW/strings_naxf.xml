@@ -2,6 +2,7 @@
 <resources>
     <string name="RegexFiltersMaskMessages">將過濾或被封鎖的訊息遮罩而不是隱藏</string>
     <string name="SquareFloatingButton">方形浮動按鈕</string>
+    <string name="SeparateHeaders">分離標題</string>
     <string name="PushServiceTypeUnifiedGateway">Unified Push 網關</string>
     <string name="RegexFiltersEnabled">啟用消息過濾</string>
     <string name="RegexFiltersMaskMessagesShort">遮罩而不隱藏</string>

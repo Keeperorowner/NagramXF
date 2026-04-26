@@ -957,6 +957,12 @@ object NaConfig {
             ConfigItem.configTypeInt,
             1 // 0: off; 1: always on; 2: settings only; 3: chats only
         )
+    val sectionsSeparatedHeaders =
+        addConfig(
+            "sectionsSeparatedHeaders",
+            ConfigItem.configTypeBool,
+            true
+        )
     val drawerItemMyProfile =
         addConfig(
             "DrawerItemMyProfile",

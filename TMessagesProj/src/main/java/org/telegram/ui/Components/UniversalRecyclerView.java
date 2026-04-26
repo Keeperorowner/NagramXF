@@ -29,6 +29,8 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 
+import xyz.nextalone.nagram.NaConfig;
+
 import java.util.ArrayList;
 
 public class UniversalRecyclerView extends RecyclerListView {
@@ -384,9 +386,11 @@ public class UniversalRecyclerView extends RecyclerListView {
             view -> {
                 if (view.getParent() != this) return false;
                 final ViewHolder viewHolder = getChildViewHolder(view);
-                return !UniversalAdapter.isShadow(viewHolder.getItemViewType());
+                final int viewType = viewHolder.getItemViewType();
+                if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() && UniversalAdapter.isHeader(viewType)) return false;
+                return !UniversalAdapter.isShadow(viewType);
             },
-            UniversalAdapter::isShadow,
+            viewType -> !(NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() && UniversalAdapter.isHeader(viewType)) && !UniversalAdapter.isShadow(viewType),
             padding, roundRadius,
             super::drawBackgroundRect,
             topPadding

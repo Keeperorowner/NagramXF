@@ -3,6 +3,7 @@ package tw.nekomimi.nekogram.ui.cells;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -20,6 +21,8 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.LayoutHelper;
+
+import xyz.nextalone.nagram.NaConfig;
 
 import java.util.ArrayList;
 
@@ -66,12 +69,14 @@ public class HeaderCell extends LinearLayout {
     public HeaderCell(Context context, int textColorKey, int padding, int topMargin, int bottomMargin, boolean text2, boolean animated, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        this.padding = padding;
-        this.bottomMargin = bottomMargin;
+        boolean separatedHeaders = NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool();
+        this.padding = separatedHeaders ? 24 : padding;
+        this.bottomMargin = separatedHeaders ? 3 : bottomMargin;
         this.animated = animated;
+        int effectiveTopMargin = separatedHeaders ? 6 : topMargin;
 
         setOrientation(LinearLayout.VERTICAL);
-        setPadding(AndroidUtilities.dp(padding), AndroidUtilities.dp(topMargin), AndroidUtilities.dp(padding), 0);
+        setPadding(AndroidUtilities.dp(this.padding), AndroidUtilities.dp(effectiveTopMargin), AndroidUtilities.dp(this.padding), separatedHeaders && !text2 ? AndroidUtilities.dp(this.bottomMargin) : 0);
 
         if (animated) {
             animatedTextView = new AnimatedTextView(getContext());
@@ -81,14 +86,14 @@ public class HeaderCell extends LinearLayout {
             animatedTextView.setTextColor(getThemedColor(textColorKey));
             animatedTextView.setTag(textColorKey);
             animatedTextView.getDrawable().setHacks(true, true, false);
-            addView(animatedTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, height - topMargin));
+            addView(animatedTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, height - effectiveTopMargin));
         } else {
             textView = new TextView(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             textView.setTypeface(AndroidUtilities.bold());
             textView.setEllipsize(TextUtils.TruncateAt.END);
             textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
-            textView.setMinHeight(AndroidUtilities.dp(height - topMargin));
+            textView.setMinHeight(AndroidUtilities.dp(height - effectiveTopMargin));
             textView.setTextColor(getThemedColor(textColorKey));
             textView.setTag(textColorKey);
             addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -98,7 +103,7 @@ public class HeaderCell extends LinearLayout {
         textView2.setTextSize(13);
         textView2.setMovementMethod(new AndroidUtilities.LinkMovementMethodMy());
         textView2.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, bottomMargin));
+        addView(textView2, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, this.bottomMargin));
 
         if (!text2) textView2.setVisibility(View.GONE);
 
@@ -122,6 +127,9 @@ public class HeaderCell extends LinearLayout {
     }
 
     public void setHeight(int value) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
         int newMinHeight = AndroidUtilities.dp(height = value) - ((LayoutParams) textView.getLayoutParams()).topMargin;
         if (textView.getMinHeight() != newMinHeight) {
             textView.setMinHeight(newMinHeight);
@@ -130,11 +138,17 @@ public class HeaderCell extends LinearLayout {
     }
 
     public void setTopMargin(int topMargin) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
         ((LayoutParams) textView.getLayoutParams()).topMargin = AndroidUtilities.dp(topMargin);
         setHeight(height);
     }
 
     public void setBottomMargin(int bottomMargin) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
         ((LayoutParams) textView.getLayoutParams()).bottomMargin = AndroidUtilities.dp(bottomMargin);
         if (textView2 != null) {
             ((LayoutParams) textView2.getLayoutParams()).bottomMargin = AndroidUtilities.dp(bottomMargin);
@@ -211,5 +225,13 @@ public class HeaderCell extends LinearLayout {
 
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
+        super.setBackground(background);
     }
 }

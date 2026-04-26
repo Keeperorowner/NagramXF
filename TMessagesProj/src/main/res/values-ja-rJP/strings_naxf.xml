@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="SquareFloatingButton">四角いフローティングボタン</string>
+    <string name="SeparateHeaders">セクションヘッダーを分離</string>
     <string name="PushServiceTypeUnifiedGateway">Unified Push ゲートウェイ</string>
     <string name="RegexFiltersEnabled">メッセージフィルターを有効化</string>
     <string name="RegexFiltersMaskMessages">フィルタまたはブロックされたメッセージを非表示ではなくマスクする</string>
