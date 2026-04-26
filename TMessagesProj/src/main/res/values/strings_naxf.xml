@@ -131,4 +131,6 @@
     <string name="HideFilteredMessagesMenuText">Hide Filtered</string>
     <string name="HideProxySponsorChannel">Hide proxy sponsor channel</string>
     <string name="hideSponsoredMessage">Hide sponsored messages</string>
+    <string name="StickerSizeLeft">Small</string>
+    <string name="StickerSizeRight">Large</string>
 </resources>

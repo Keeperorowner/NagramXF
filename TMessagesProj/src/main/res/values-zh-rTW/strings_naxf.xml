@@ -160,4 +160,6 @@
     <string name="HideProxySponsorChannel">隱藏代理贊助商頻道</string>
     <string name="hideSponsoredMessage">隱藏贊助消息</string>
     <string name="GoogleCloudTransKey">Google Cloud 翻譯密鑰</string>
+    <string name="StickerSizeLeft">小</string>
+    <string name="StickerSizeRight">大</string>
 </resources>

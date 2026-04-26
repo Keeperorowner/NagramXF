@@ -43,6 +43,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellSelectBox;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
 import tw.nekomimi.nekogram.ui.cells.AvatarCornersPreviewCell;
+import tw.nekomimi.nekogram.ui.cells.FabShapePreviewCell;
 import xyz.nextalone.nagram.NaConfig;
 
 @SuppressLint("RtlHardcoded")
@@ -51,6 +52,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
 
     private ListAdapter listAdapter;
     private AvatarCornersPreviewCell avatarCornersPreviewCell;
+    private FabShapePreviewCell fabShapePreviewCell;
     private ChatBlurAlphaSeekBar chatBlurAlphaSeekbar;
     private Parcelable recyclerViewState = null;
 
@@ -63,7 +65,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell headerAppearance = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Appearance)));
     private final AbstractConfigCell typefaceRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.typeface));
     private final AbstractConfigCell hideDividersRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideDividers()));
-    private final AbstractConfigCell squareFloatingButtonRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSquareFloatingButton()));
+    private final AbstractConfigCell fabShapePreviewRow = cellGroup.appendCell(new ConfigCellCustom("FabShapePreview", ConfigCellCustom.CUSTOM_ITEM_FabShapePreview, false));
     private final AbstractConfigCell alwaysShowDownloadIconRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getAlwaysShowDownloadIcon()));
     private final AbstractConfigCell showStickersInTopLevelRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowStickersRowToplevel()));
     private final AbstractConfigCell hidePremiumSectionRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHidePremiumSection()));
@@ -206,12 +208,18 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         if (!NaConfig.INSTANCE.getCenterActionBarTitle().Bool()) {
             NaConfig.INSTANCE.getCenterActionBarTitleType().setConfigInt(0);
         }
+        cellGroup.rows.remove(headerAppearance);
+        cellGroup.rows.remove(fabShapePreviewRow);
+        cellGroup.rows.remove(typefaceRow);
         cellGroup.rows.remove(avatarCornersPreviewRow);
         cellGroup.rows.remove(singleCornerRadiusRow);
         cellGroup.rows.remove(avatarCornersInfoRow);
         cellGroup.rows.add(0, avatarCornersPreviewRow);
         cellGroup.rows.add(1, singleCornerRadiusRow);
         cellGroup.rows.add(2, avatarCornersInfoRow);
+        cellGroup.rows.add(3, headerAppearance);
+        cellGroup.rows.add(4, fabShapePreviewRow);
+        cellGroup.rows.add(5, typefaceRow);
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
@@ -231,7 +239,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
                     || key.equals(NekoConfig.tabletMode.getKey())
                     || key.equals(NaConfig.INSTANCE.getHideDividers().getKey())
-                    || key.equals(NaConfig.INSTANCE.getSquareFloatingButton().getKey())
                     || key.equals(NekoConfig.typeface.getKey())
                     || key.equals(NaConfig.INSTANCE.getHidePremiumSection().getKey())
                     || key.equals(NaConfig.INSTANCE.getHideHelpSection().getKey())
@@ -391,6 +398,10 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 case ConfigCellCustom.CUSTOM_ITEM_AvatarCorners -> avatarCornersPreviewCell = new AvatarCornersPreviewCell(
                         mContext,
                         NekoAppearanceSettingsActivity.this::reloadAvatarCorners
+                );
+                case ConfigCellCustom.CUSTOM_ITEM_FabShapePreview -> fabShapePreviewCell = new FabShapePreviewCell(
+                        mContext,
+                        null
                 );
                 case ConfigCellCustom.CUSTOM_ITEM_CharBlurAlpha -> {
                     chatBlurAlphaSeekbar = new ChatBlurAlphaSeekBar(mContext);
