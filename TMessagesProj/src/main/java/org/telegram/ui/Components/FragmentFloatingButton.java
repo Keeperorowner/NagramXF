@@ -320,6 +320,10 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         attachedInstances.add(this);
+        if (!isSubButton) {
+            setOutlineProvider(createFabOutlineProvider());
+        }
+        updateColors();
     }
 
     @Override

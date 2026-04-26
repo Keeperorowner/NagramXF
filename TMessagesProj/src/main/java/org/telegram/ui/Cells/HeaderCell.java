@@ -11,6 +11,7 @@ package org.telegram.ui.Cells;
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -28,6 +29,8 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.LayoutHelper;
+
+import xyz.nextalone.nagram.NaConfig;
 
 import java.util.ArrayList;
 
@@ -76,8 +79,8 @@ public class HeaderCell extends FrameLayout {
     public HeaderCell(Context context, int textColorKey, int padding, int topMargin, int bottomMargin, boolean text2, boolean animated, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        this.padding = padding;
-        this.bottomMargin = bottomMargin;
+        this.padding = NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() ? 24 : padding;
+        this.bottomMargin = NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() ? 3 : bottomMargin;
         this.animated = animated;
 
         if (animated) {
@@ -88,7 +91,7 @@ public class HeaderCell extends FrameLayout {
             animatedTextView.setTextColor(getThemedColor(textColorKey));
             animatedTextView.setTag(textColorKey);
             animatedTextView.getDrawable().setHacks(true, true, false);
-            addView(animatedTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, height - topMargin, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, topMargin, padding, text2 ? 0 : bottomMargin));
+            addView(animatedTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, height - topMargin, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, this.padding, topMargin, this.padding, text2 ? 0 : this.bottomMargin));
         } else {
             textView = new TextView(getContext());
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -98,14 +101,14 @@ public class HeaderCell extends FrameLayout {
             textView.setMinHeight(AndroidUtilities.dp(height - topMargin));
             textView.setTextColor(getThemedColor(textColorKey));
             textView.setTag(textColorKey);
-            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, padding, topMargin, padding, text2 ? 0 : bottomMargin));
+            addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, this.padding, topMargin, this.padding, text2 ? 0 : this.bottomMargin));
         }
 
         if (text2) {
             textView2 = new SimpleTextView(getContext());
             textView2.setTextSize(13);
             textView2.setGravity((LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP);
-            addView(textView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, padding, 21, padding, bottomMargin));
+            addView(textView2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, this.padding, 21, this.padding, this.bottomMargin));
         }
 
         ViewCompat.setAccessibilityHeading(this, true);
@@ -120,6 +123,9 @@ public class HeaderCell extends FrameLayout {
     }
 
     public void setHeight(int value) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
         int newMinHeight = AndroidUtilities.dp(height = value) - ((LayoutParams) textView.getLayoutParams()).topMargin;
         if (textView.getMinHeight() != newMinHeight) {
             textView.setMinHeight(newMinHeight);
@@ -128,11 +134,17 @@ public class HeaderCell extends FrameLayout {
     }
 
     public void setTopMargin(int topMargin) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
         ((LayoutParams) textView.getLayoutParams()).topMargin = AndroidUtilities.dp(topMargin);
         setHeight(height);
     }
 
     public void setBottomMargin(int bottomMargin) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
         ((LayoutParams) textView.getLayoutParams()).bottomMargin = AndroidUtilities.dp(bottomMargin);
         if (textView2 != null) {
             ((LayoutParams) textView2.getLayoutParams()).bottomMargin = AndroidUtilities.dp(bottomMargin);
@@ -214,5 +226,13 @@ public class HeaderCell extends FrameLayout {
 
     private int getThemedColor(int key) {
         return Theme.getColor(key, resourcesProvider);
+    }
+
+    @Override
+    public void setBackground(Drawable background) {
+        if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool()) {
+            return;
+        }
+        super.setBackground(background);
     }
 }

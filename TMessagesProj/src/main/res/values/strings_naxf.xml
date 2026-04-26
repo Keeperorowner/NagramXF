@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="SquareFloatingButton">Square Floating Button</string>
+    <string name="SeparateHeaders">Separate Headers</string>
     <string name="RegexFiltersMaskMessages">Mask filtered or blocked messages instead of hiding them</string>
     <string name="RegexFiltersMaskMessagesShort">Mask Instead of Hiding</string>
     <string name="RegexFiltersMaskMessagesAbout">Filtered or blocked messages stay in chat as masked placeholders instead of being removed.</string>

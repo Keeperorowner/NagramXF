@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="SquareFloatingButton">方形浮动按钮</string>
+    <string name="SeparateHeaders">分离标题</string>
     <string name="RegexFiltersMaskMessages">将过滤或被屏蔽的消息遮罩而不是隐藏</string>
     <string name="RegexFiltersMaskMessagesShort">遮罩而不隐藏</string>
     <string name="RegexFiltersMaskMessagesAbout">过滤或被屏蔽的消息会以遮罩占位形式保留在聊天中，而不是直接隐藏。</string>
