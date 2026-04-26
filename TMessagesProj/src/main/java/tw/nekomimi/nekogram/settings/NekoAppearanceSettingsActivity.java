@@ -78,7 +78,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     }, null));
     private final AbstractConfigCell switchStyleRow = cellGroup.appendCell(new ConfigCellSelectBox("SwitchStyle", NaConfig.INSTANCE.getSwitchStyle(), new String[]{
             getString(R.string.Default),
-            getString(R.string.StyleModern),
             getString(R.string.StyleMaterialDesign3),
             getString(R.string.StyleOneUI)
     }, null));

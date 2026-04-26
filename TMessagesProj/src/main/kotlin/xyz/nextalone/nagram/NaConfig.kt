@@ -1700,6 +1700,15 @@ object NaConfig {
         if (normalizedLlmApiUrl != currentLlmApiUrl) {
             llmApiUrl.setConfigString(normalizedLlmApiUrl)
         }
+
+        if (!getPreferences().getBoolean("SwitchStyleModernRemoved", false)) {
+            when (switchStyle.Int()) {
+                1 -> switchStyle.setConfigInt(0)
+                2 -> switchStyle.setConfigInt(1)
+                3 -> switchStyle.setConfigInt(2)
+            }
+            getPreferences().edit { putBoolean("SwitchStyleModernRemoved", true) }
+        }
     }
 
     private fun addConfig(
