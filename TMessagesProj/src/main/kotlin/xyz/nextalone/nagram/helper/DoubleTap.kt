@@ -7,6 +7,9 @@ object DoubleTap {
     @JvmField
     var doubleTapActionMap: MutableMap<Int, String> =
         HashMap()
+    @JvmField
+    var doubleTapActionIconMap: MutableMap<Int, Int> =
+        HashMap()
     const val DOUBLE_TAP_ACTION_NONE =
         0
     const val DOUBLE_TAP_ACTION_SEND_REACTIONS =
@@ -75,5 +78,17 @@ object DoubleTap {
             getString(
                 R.string.Delete
             )
+
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_NONE] = R.drawable.msg_block
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_SEND_REACTIONS] = R.drawable.msg_reactions2
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_SHOW_REACTIONS] = R.drawable.msg_reactions
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_TRANSLATE] = R.drawable.msg_translate
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPLY] = R.drawable.menu_reply
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_SAVE] = R.drawable.msg_saved
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPEAT] = R.drawable.msg_repeat
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPEAT_AS_COPY] = R.drawable.msg_repeat
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_EDIT] = R.drawable.msg_edit
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_TRANSLATE_LLM] = R.drawable.msg_translate
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_DELETE] = R.drawable.msg_delete
     }
 }

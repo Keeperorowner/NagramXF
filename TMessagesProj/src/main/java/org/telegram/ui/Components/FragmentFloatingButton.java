@@ -29,6 +29,9 @@ import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorPro
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
@@ -36,6 +39,20 @@ import xyz.nextalone.nagram.NaConfig;
 
 @SuppressLint("ViewConstructor")
 public class FragmentFloatingButton extends FrameLayout implements FactorAnimator.Target {
+
+    private static final Set<FragmentFloatingButton> attachedInstances =
+        Collections.newSetFromMap(new WeakHashMap<>());
+
+    public static void notifyShapeChanged() {
+        for (FragmentFloatingButton btn : new ArrayList<>(attachedInstances)) {
+            if (btn != null) {
+                btn.setOutlineProvider(createFabOutlineProvider());
+                btn.updateColors();
+                btn.invalidate();
+            }
+        }
+    }
+
     private final int ANIMATOR_ID_BUTTON_VISIBLE = 0;
     private final int ANIMATOR_ID_PROGRESS_VISIBLE = 1;
 
@@ -297,5 +314,17 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
         v.setScaleX(lerp(0.4f, 1f, f));
         v.setScaleY(lerp(0.4f, 1f, f));
         v.setVisibility(f > 0 ? VISIBLE : GONE);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        attachedInstances.add(this);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        attachedInstances.remove(this);
+        super.onDetachedFromWindow();
     }
 }

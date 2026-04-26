@@ -157,4 +157,6 @@
     <string name="HideFilteredMessagesMenuText">Скрывать отфильтрованные</string>
     <string name="HideProxySponsorChannel">Скрыть спонсорский прокси-канал</string>
     <string name="hideSponsoredMessage">Скрыть спонсируемые сообщения</string>
+    <string name="StickerSizeLeft">Меньше</string>
+    <string name="StickerSizeRight">Больше</string>
 </resources>

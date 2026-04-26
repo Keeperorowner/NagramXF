@@ -129,4 +129,6 @@
     <string name="HideFilteredMessagesMenuText">隐藏过滤消息</string>
     <string name="HideProxySponsorChannel">隐藏代理赞助商频道</string>
     <string name="hideSponsoredMessage">隐藏赞助消息</string>
+    <string name="StickerSizeLeft">小</string>
+    <string name="StickerSizeRight">大</string>
 </resources>

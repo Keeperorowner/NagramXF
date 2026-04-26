@@ -22,6 +22,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.AvatarDrawable;
@@ -35,12 +36,16 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
     private final DeletedMessagePreviewCard previewCell;
 
     public DeletedMessagesPreviewCell(Context context) {
+        this(context, null);
+    }
+
+    public DeletedMessagesPreviewCell(Context context, INavigationLayout parentLayout) {
         super(context);
 
         setClipChildren(false);
         setClipToPadding(false);
 
-        previewCell = new DeletedMessagePreviewCard(context);
+        previewCell = new DeletedMessagePreviewCard(context, parentLayout);
         previewCell.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         addView(previewCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
     }
@@ -59,10 +64,15 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
         private final MessageObject messageObject;
         private final Drawable monetBackgroundDrawable;
         private final Drawable shadowDrawable;
+        private final INavigationLayout parentLayout;
         private BackgroundGradientDrawable.Disposable backgroundGradientDisposable;
+        private BackgroundGradientDrawable.Disposable oldBackgroundGradientDisposable;
+        private Drawable backgroundDrawable;
+        private Drawable oldBackgroundDrawable;
 
-        public DeletedMessagePreviewCard(Context context) {
+        public DeletedMessagePreviewCard(Context context, INavigationLayout parentLayout) {
             super(context);
+            this.parentLayout = parentLayout;
 
             setWillNotDraw(false);
             setOrientation(VERTICAL);
@@ -131,6 +141,7 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
         }
 
         public void refresh() {
+            messageObject.forceUpdate = true;
             cell.setMessageObject(messageObject, null, false, false, false);
             cell.invalidate();
         }
@@ -146,39 +157,69 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
         @Override
         protected void onDraw(@NonNull Canvas canvas) {
             boolean isMonetTheme = Theme.getActiveTheme() != null && Theme.getActiveTheme().isMonet();
-            Drawable drawable = isMonetTheme ? monetBackgroundDrawable : Theme.getCachedWallpaperNonBlocking();
-            if (drawable == null) {
+            Drawable newBackground = isMonetTheme ? monetBackgroundDrawable : Theme.getCachedWallpaperNonBlocking();
+            if (newBackground != backgroundDrawable && newBackground != null) {
+                if (Theme.isAnimatingColor()) {
+                    oldBackgroundDrawable = backgroundDrawable;
+                    oldBackgroundGradientDisposable = backgroundGradientDisposable;
+                } else if (backgroundGradientDisposable != null) {
+                    backgroundGradientDisposable.dispose();
+                    backgroundGradientDisposable = null;
+                }
+                backgroundDrawable = newBackground;
+            }
+            if (backgroundDrawable == null && oldBackgroundDrawable == null) {
                 canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray));
             } else {
-                drawable.setAlpha(drawable == monetBackgroundDrawable ? 150 : 255);
-                if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
-                    drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                    if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
-                        backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
+                float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1f;
+                for (int i = 0; i < 2; i++) {
+                    Drawable drawable = i == 0 ? oldBackgroundDrawable : backgroundDrawable;
+                    if (drawable == null) {
+                        continue;
+                    }
+                    int baseAlpha = drawable == monetBackgroundDrawable ? 150 : 255;
+                    if (i == 1 && oldBackgroundDrawable != null) {
+                        drawable.setAlpha((int) (baseAlpha * themeAnimationValue));
                     } else {
+                        drawable.setAlpha(baseAlpha);
+                    }
+                    if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
+                        drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                        if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
+                            backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
+                        } else {
+                            drawable.draw(canvas);
+                        }
+                    } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
+                        if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
+                            canvas.save();
+                            float scale = 2.0f / AndroidUtilities.density;
+                            canvas.scale(scale, scale);
+                            drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
+                        } else {
+                            int viewHeight = getMeasuredHeight();
+                            float scaleX = (float) getMeasuredWidth() / drawable.getIntrinsicWidth();
+                            float scaleY = (float) viewHeight / drawable.getIntrinsicHeight();
+                            float scale = Math.max(scaleX, scaleY);
+                            int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
+                            int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
+                            int x = (getMeasuredWidth() - width) / 2;
+                            int y = (viewHeight - height) / 2;
+                            canvas.save();
+                            canvas.clipRect(0, 0, width, getMeasuredHeight());
+                            drawable.setBounds(x, y, x + width, y + height);
+                        }
                         drawable.draw(canvas);
+                        canvas.restore();
                     }
-                } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
-                    if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
-                        canvas.save();
-                        float scale = 2.0f / AndroidUtilities.density;
-                        canvas.scale(scale, scale);
-                        drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
-                    } else {
-                        int viewHeight = getMeasuredHeight();
-                        float scaleX = (float) getMeasuredWidth() / drawable.getIntrinsicWidth();
-                        float scaleY = (float) viewHeight / drawable.getIntrinsicHeight();
-                        float scale = Math.max(scaleX, scaleY);
-                        int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
-                        int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
-                        int x = (getMeasuredWidth() - width) / 2;
-                        int y = (viewHeight - height) / 2;
-                        canvas.save();
-                        canvas.clipRect(0, 0, width, getMeasuredHeight());
-                        drawable.setBounds(x, y, x + width, y + height);
+                    if (i == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1f) {
+                        if (oldBackgroundGradientDisposable != null) {
+                            oldBackgroundGradientDisposable.dispose();
+                            oldBackgroundGradientDisposable = null;
+                        }
+                        oldBackgroundDrawable = null;
+                        invalidate();
                     }
-                    drawable.draw(canvas);
-                    canvas.restore();
                 }
             }
 
@@ -192,6 +233,10 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
             if (backgroundGradientDisposable != null) {
                 backgroundGradientDisposable.dispose();
                 backgroundGradientDisposable = null;
+            }
+            if (oldBackgroundGradientDisposable != null) {
+                oldBackgroundGradientDisposable.dispose();
+                oldBackgroundGradientDisposable = null;
             }
         }
 

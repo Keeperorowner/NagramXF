@@ -7,22 +7,28 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -35,6 +41,8 @@ import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.AnimatedTextView;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarView;
@@ -63,6 +71,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import tw.nekomimi.nekogram.ui.PopupBuilder;
+import tw.nekomimi.nekogram.ui.cells.DoubleTapPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.EmojiSetCell;
 import tw.nekomimi.nekogram.ui.cells.StickerSizePreviewMessagesCell;
 import xyz.nextalone.nagram.NaConfig;
@@ -89,8 +98,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
     private final CellGroup cellGroup = new CellGroup(this);
 
-    // Sticker Size
-    private final AbstractConfigCell headerStickerSize = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.StickerSize)));
     private final AbstractConfigCell stickerSizeRow = cellGroup.appendCell(new ConfigCellCustom("StickerSize", ConfigCellCustom.CUSTOM_ITEM_StickerSize, false));
     private final AbstractConfigCell showTimeHintRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowTimeHint()));
     private final AbstractConfigCell hideTimeForStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideTimeForSticker));
@@ -141,9 +148,11 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
     // Double Tap
     private final AbstractConfigCell headerDoubleTap = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.DoubleTapAction)));
+    private final AbstractConfigCell doubleTapPreviewRow = cellGroup.appendCell(new ConfigCellCustom("DoubleTapPreview", ConfigCellCustom.CUSTOM_ITEM_DoubleTapPreview, false));
     private final AbstractConfigCell doubleTapActionRow = cellGroup.appendCell(new ConfigCellCustom("DoubleTapIncoming", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell doubleTapActionOutRow = cellGroup.appendCell(new ConfigCellCustom("DoubleTapOutgoing", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell dividerDoubleTap = cellGroup.appendCell(new ConfigCellDivider());
+    private DoubleTapPreviewCell doubleTapPreviewCell;
 
     // Camera
     private final AbstractConfigCell headerCamera = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.CameraSettings)));
@@ -626,12 +635,16 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             types.add(DoubleTap.DOUBLE_TAP_ACTION_DELETE);
             PopupBuilder builder = new PopupBuilder(view);
             builder.setItems(arrayList, (i, str) -> {
-                if (position == cellGroup.rows.indexOf(doubleTapActionRow)) {
+                boolean isIncoming = position == cellGroup.rows.indexOf(doubleTapActionRow);
+                if (isIncoming) {
                     NaConfig.INSTANCE.getDoubleTapAction().setConfigInt(types.get(i));
                 } else {
                     NaConfig.INSTANCE.getDoubleTapActionOut().setConfigInt(types.get(i));
                 }
                 listAdapter.notifyItemChanged(position);
+                if (doubleTapPreviewCell != null) {
+                    doubleTapPreviewCell.updateIcons(isIncoming ? 1 : 2, true);
+                }
                 return Unit.INSTANCE;
             });
             builder.show();
@@ -714,34 +727,114 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         private final int startStickerSize = 2;
         private final int endStickerSize = 20;
 
-        private final TextPaint textPaint;
+        private final AnimatedTextView headerValueChip;
+        private final TextView leftTextView;
+        private final TextView rightTextView;
 
         public StickerSizeCell(Context context) {
             super(context);
 
-            setWillNotDraw(false);
+            LinearLayout titleRow = new LinearLayout(context);
+            titleRow.setOrientation(LinearLayout.HORIZONTAL);
+            titleRow.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
 
-            textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-            textPaint.setTextSize(AndroidUtilities.dp(16));
+            TextView titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            titleView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            titleView.setText(LocaleController.getString(R.string.StickerSize));
+            titleView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            titleRow.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+
+            headerValueChip = new AnimatedTextView(context, false, true, true) {
+                final Drawable backgroundDrawable = Theme.createRoundRectDrawable(
+                        AndroidUtilities.dp(4f),
+                        Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader), 0.15f));
+
+                @Override
+                protected void onDraw(Canvas canvas) {
+                    backgroundDrawable.setBounds(0, 0,
+                            (int) (getPaddingLeft() + getDrawable().getCurrentWidth() + getPaddingRight()),
+                            getMeasuredHeight());
+                    backgroundDrawable.draw(canvas);
+                    super.onDraw(canvas);
+                }
+            };
+            headerValueChip.setAnimationProperties(0.45f, 0L, 240L, CubicBezierInterpolator.EASE_OUT_QUINT);
+            headerValueChip.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
+            headerValueChip.setPadding(AndroidUtilities.dp(5.33f), AndroidUtilities.dp(2f), AndroidUtilities.dp(5.33f), AndroidUtilities.dp(2f));
+            headerValueChip.setTextSize(AndroidUtilities.dp(12f));
+            headerValueChip.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
+            titleRow.addView(headerValueChip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 17, Gravity.CENTER_VERTICAL, 6, 1, 0, 0));
+
+            addView(titleRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, 17, 21, 0));
+
+            FrameLayout labelsRow = new FrameLayout(context);
+            leftTextView = new TextView(context);
+            leftTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            leftTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            leftTextView.setGravity(Gravity.LEFT);
+            leftTextView.setText(LocaleController.getString(R.string.StickerSizeLeft));
+            labelsRow.addView(leftTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
+
+            rightTextView = new TextView(context);
+            rightTextView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+            rightTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            rightTextView.setGravity(Gravity.RIGHT);
+            rightTextView.setText(LocaleController.getString(R.string.StickerSizeRight));
+            labelsRow.addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
+
+            addView(labelsRow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, 52, 21, 0));
 
             sizeBar = new SeekBarView(context);
             sizeBar.setReportChanges(true);
             sizeBar.setSeparatorsCount(endStickerSize - startStickerSize + 1);
             sizeBar.setDelegate((stop, progress) -> {
                 NekoConfig.stickerSize.setConfigFloat(startStickerSize + (endStickerSize - startStickerSize) * progress);
+                updateChip();
+                updateLabelColors();
                 StickerSizeCell.this.invalidate();
                 menuItem.setVisibility(View.VISIBLE);
             });
-            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 9, 5, 43, 11));
+            addView(sizeBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.LEFT | Gravity.TOP, 6, 71, 6, 0));
 
             messagesCell = new StickerSizePreviewMessagesCell(context, NekoChatSettingsActivity.this);
-            addView(messagesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 53, 0, 0));
+            addView(messagesCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 0, 119, 0, 0));
+
+            updateChip();
+            updateLabelColors();
         }
 
-        @Override
-        protected void onDraw(Canvas canvas) {
-            textPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteValueText));
-            canvas.drawText("" + Math.round(NekoConfig.stickerSize.Float()), getMeasuredWidth() - AndroidUtilities.dp(39), AndroidUtilities.dp(28), textPaint);
+        private void updateChip() {
+            if (headerValueChip == null) return;
+            headerValueChip.cancelAnimation();
+            headerValueChip.setText(String.valueOf(Math.round(NekoConfig.stickerSize.Float())), true);
+        }
+
+        private void updateLabelColors() {
+            if (leftTextView == null || rightTextView == null) return;
+            float current = NekoConfig.stickerSize.Float();
+            int min = startStickerSize;
+            int max = endStickerSize;
+            int gray = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
+            int blue = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+            float mid = (((max - min) / 2f) + min) * 1.5f;
+            float minHalf = min * 0.5f;
+            float midPair = (min + max) * 0.5f;
+            if (current >= mid - minHalf) {
+                float denom = max - (mid - minHalf);
+                float t = denom == 0 ? 0 : (current - (mid - minHalf)) / denom;
+                rightTextView.setTextColor(ColorUtils.blendARGB(gray, blue, Math.max(0f, Math.min(1f, t))));
+                leftTextView.setTextColor(gray);
+            } else if (current <= midPair) {
+                float denom = min - midPair;
+                float t = denom == 0 ? 0 : (current - midPair) / denom;
+                leftTextView.setTextColor(ColorUtils.blendARGB(gray, blue, Math.max(0f, Math.min(1f, t))));
+                rightTextView.setTextColor(gray);
+            } else {
+                leftTextView.setTextColor(gray);
+                rightTextView.setTextColor(gray);
+            }
         }
 
         @Override
@@ -753,8 +846,10 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         @Override
         public void invalidate() {
             super.invalidate();
-            messagesCell.invalidate();
-            sizeBar.invalidate();
+            if (messagesCell != null) messagesCell.invalidate();
+            if (sizeBar != null) sizeBar.invalidate();
+            updateChip();
+            updateLabelColors();
         }
     }
 
@@ -795,6 +890,9 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                     break;
                 case ConfigCellCustom.CUSTOM_ITEM_EmojiSet:
                     view = new EmojiSetCell(mContext, false);
+                    break;
+                case ConfigCellCustom.CUSTOM_ITEM_DoubleTapPreview:
+                    view = doubleTapPreviewCell = new DoubleTapPreviewCell(mContext);
                     break;
                 case CellGroup.ITEM_TYPE_CHECK2:
                     view = new TextCheckCell2(mContext);

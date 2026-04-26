@@ -1061,7 +1061,7 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
             } else if (viewType == CellGroup.ITEM_TYPE_HEADER) {
                 return new HeaderCell(mContext);
             } else if (viewType == ConfigCellCustom.CUSTOM_ITEM_DeletedMessagesAppearanceCard) {
-                return deletedMessagesPreviewCell = new DeletedMessagesPreviewCell(mContext);
+                return deletedMessagesPreviewCell = new DeletedMessagesPreviewCell(mContext, getParentLayout());
             } else if (viewType == ConfigCellCustom.CUSTOM_ITEM_DeletedMessagesColorPicker) {
                 deletedMessagesColorPickerCell = new DeletedMessagesColorPickerCell(mContext, getResourceProvider());
                 deletedMessagesColorPickerCell.setOnColorSelected(colorId -> {

@@ -159,4 +159,6 @@
     <string name="HideProxySponsorChannel">プロキシのスポンサー チャンネルを非表示</string>
     <string name="hideSponsoredMessage">スポンサー メッセージを非表示</string>
     <string name="GoogleCloudTransKey">Google Cloud 翻訳キー</string>
+    <string name="StickerSizeLeft">小</string>
+    <string name="StickerSizeRight">大</string>
 </resources>
