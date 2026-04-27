@@ -686,11 +686,11 @@ voipgroup_unmuteButton=a2_500
 voipgroup_unmuteButton2=a2_600
 voipgroup_windowBackgroundWhiteInputField=n1_0
 voipgroup_windowBackgroundWhiteInputFieldActivated=n1_0
-windowBackgroundChecked=n1_1000
+windowBackgroundChecked=a1_300 (a=30)
 windowBackgroundCheckText=n1_50
 windowBackgroundGray=n1_1000
 windowBackgroundGrayShadow=0
-windowBackgroundUnchecked=n1_1000
+windowBackgroundUnchecked=n1_800
 windowBackgroundWhite=n1_1000
 windowBackgroundWhiteBlackText=n1_50
 windowBackgroundWhiteBlueButton=a1_100
