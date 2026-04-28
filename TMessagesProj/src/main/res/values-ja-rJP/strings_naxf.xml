@@ -164,4 +164,8 @@
     <string name="StickerSizeRight">大</string>
     <string name="UseScheduledMessages">予約送信</string>
     <string name="UseScheduledMessagesDescription">送信メッセージを約 12 秒後（メディアの場合はさらに長く）に自動で予約送信します。この機能を使用するとオンライン状態にならずに済みます。不安定なネットワークでは使用しないでください。</string>
+    <string name="CreationDateChat">**%1$s** は **%2$s** に作成されました。</string>
+    <string name="JoinDateChat">あなたは **%2$s** に **%1$s** に参加しました。</string>
+    <string name="CreationDateUserApproximately">**%1$s** はおよそ **%2$s** にアカウントを作成しました。</string>
+    <string name="CreationDateSelfApproximately">あなたはおよそ **%1$s** にアカウントを作成しました。</string>
 </resources>

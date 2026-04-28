@@ -888,6 +888,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     };
     private boolean fragmentOpened;
     private NestedFrameLayout contentView;
+    private HintView2 creationDateHint;
     private float titleAnimationsYDiff;
     private float customAvatarProgress;
     private float customPhotoOffset;
@@ -5982,6 +5983,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (fwdRestrictedHint != null) {
                     fwdRestrictedHint.hide();
                 }
+                if (creationDateHint != null && (dx != 0 || dy != 0)) {
+                    creationDateHint.hide();
+                }
                 checkListViewScroll();
                 if (participantsMap != null && !usersEndReached && layoutManager.findLastVisibleItemPosition() > membersEndRow - 8) {
                     getChannelParticipants(false);
@@ -9966,6 +9970,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (undoView != null) {
             undoView.hide(true, 0);
         }
+        if (creationDateHint != null) {
+            creationDateHint.hide();
+        }
         if (imageUpdater != null) {
             imageUpdater.onPause();
         }
@@ -13872,6 +13879,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     TextDetailCell detailCell = (TextDetailCell) holder.itemView;
                     boolean containsQr = false;
                     boolean containsGift = false;
+                    boolean containsCalendar = false;
                     if (position == birthdayRow) {
                         TLRPC.UserFull userFull = getMessagesController().getUserFull(userId);
                         if (userFull != null && userFull.birthday != null) {
@@ -13915,7 +13923,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             phoneNumber = null;
                         }
                         isFragmentPhoneNumber = phoneNumber != null && phoneNumber.matches("888\\d{8}");
-                        detailCell.setTextAndValue(text, LocaleController.getString(isFragmentPhoneNumber ? R.string.AnonymousNumber : R.string.PhoneMobile), false);
+                        detailCell.setTextAndValue(text, LocaleController.getString(isFragmentPhoneNumber ? R.string.AnonymousNumber : R.string.PhoneMobile), infoEndRow > phoneRow);
                     } else if (position == noteRow) {
                         final TLRPC.UserFull userInfo = getMessagesController().getUserFull(userId);
                         if (userInfo == null) return;
@@ -13992,12 +14000,17 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             value = "";
                             usernames = new ArrayList<>();
                         }
-                        detailCell.setTextAndValue(text, alsoUsernamesString(username, usernames, value), infoEndRowEmpty == -1 && (isTopic || bizHoursRow != -1 || bizLocationRow != -1) && birthdayRow < 0);
+                        detailCell.setTextAndValue(text, alsoUsernamesString(username, usernames, value), idDcRow != -1 || (infoEndRowEmpty == -1 && (isTopic || bizHoursRow != -1 || bizLocationRow != -1) && birthdayRow < 0));
                     } else if (position == idDcRow) {
                         long id = getId(true);
                         int dc = getDc();
                         boolean isUserSelf = userId == UserConfig.getInstance(currentAccount).getClientUserId();
                         detailCell.setTextAndValue(id + "", dc != 0 ? String.format(Locale.US, "DC%d %s, %s", dc, getDCName(dc), getDCLocation(dc)) : "DC " + getString(R.string.NumberUnknown), isUserSelf);
+                        if (userId != 0 && !isBot) {
+                            containsCalendar = true;
+                        } else if (chatId != 0 && currentChat != null && currentChat.date != 0) {
+                            containsCalendar = true;
+                        }
                     } else if (position == restrictionReasonRow) {
                         ArrayList<TLRPC.RestrictionReason> reasons = new ArrayList<>();
                         if (userId != 0) {
@@ -14079,8 +14092,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     } else if (containsQr) {
                         Drawable drawable = ContextCompat.getDrawable(detailCell.getContext(), R.drawable.header_qr_24);
-                        drawable.setColorFilter(new PorterDuffColorFilter(dontApplyPeerColor(getThemedColor(Theme.key_actionBarDefaultIcon), false), PorterDuff.Mode.MULTIPLY));
+                        drawable.setColorFilter(new PorterDuffColorFilter(dontApplyPeerColor(getThemedColor(Theme.key_switch2TrackChecked), false), PorterDuff.Mode.MULTIPLY));
                         detailCell.setImage(drawable, LocaleController.getString(R.string.GetQRCode));
+                        detailCell.setImageClickListener(ProfileActivity.this::onTextDetailCellImageClicked);
+                    } else if (containsCalendar) {
+                        Drawable drawable = ContextCompat.getDrawable(detailCell.getContext(), R.drawable.msg_calendar2);
+                        drawable.setColorFilter(new PorterDuffColorFilter(dontApplyPeerColor(getThemedColor(Theme.key_switch2TrackChecked), false), PorterDuff.Mode.MULTIPLY));
+                        detailCell.setImage(drawable, LocaleController.getString(R.string.Calendar));
                         detailCell.setImageClickListener(ProfileActivity.this::onTextDetailCellImageClicked);
                     } else {
                         detailCell.setImage(null);
@@ -15994,7 +16012,84 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
             showDialog(new GiftSheet(getContext(), currentAccount, userId, null, null));
+        } else if (parent.getTag() != null && ((int) parent.getTag()) == idDcRow) {
+            onIdDcImageClicked(view);
         }
+    }
+
+    private void onIdDcImageClicked(View imageView) {
+        if (getContext() == null || contentView == null) {
+            return;
+        }
+        CharSequence dateText = null;
+        if (userId != 0) {
+            String regDate = ProfileDateHelper.getUserTime(userId);
+            if (regDate == null || "unknown".equals(regDate)) {
+                return;
+            }
+            if (userId == UserConfig.getInstance(currentAccount).getClientUserId()) {
+                dateText = LocaleController.formatString(R.string.CreationDateSelfApproximately, regDate);
+            } else {
+                TLRPC.User user = getMessagesController().getUser(userId);
+                String name = user != null ? ContactsController.formatName(user) : "";
+                dateText = LocaleController.formatString(R.string.CreationDateUserApproximately, name, regDate);
+            }
+        } else if (chatId != 0 && currentChat != null && currentChat.date != 0) {
+            String name = currentChat.title != null ? currentChat.title : "";
+            String dateStr = LocaleController.formatDateChat(currentChat.date);
+            boolean joinedAsMember = (ChatObject.isMegagroup(currentChat) || ChatObject.isChannel(currentChat))
+                    && ChatObject.isInChat(currentChat);
+            if (joinedAsMember) {
+                dateText = LocaleController.formatString(R.string.JoinDateChat, name, dateStr);
+            } else {
+                dateText = LocaleController.formatString(R.string.CreationDateChat, name, dateStr);
+            }
+        }
+        if (TextUtils.isEmpty(dateText)) {
+            return;
+        }
+        showCreationDateHint(imageView, dateText);
+    }
+
+    private void showCreationDateHint(View view, CharSequence text) {
+        if (getContext() == null || view == null || contentView == null) {
+            return;
+        }
+        final HintView2 oldHint = creationDateHint;
+        if (oldHint != null) {
+            oldHint.setOnHiddenListener(() -> {
+                if (oldHint.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) oldHint.getParent()).removeView(oldHint);
+                }
+            });
+            oldHint.hide();
+            creationDateHint = null;
+        }
+        final HintView2 hint = new HintView2(getContext(), HintView2.DIRECTION_TOP)
+                .setMultilineText(true)
+                .setDuration(3000L)
+                .setBgColor(getThemedColor(Theme.key_undo_background))
+                .setTextColor(getThemedColor(Theme.key_undo_infoColor))
+                .setRounding(12f);
+        creationDateHint = hint;
+        hint.setText(AndroidUtilities.replaceTags(text.toString()));
+        hint.setMaxWidthPx(HintView2.cutInFancyHalf(hint.getText(), hint.getTextPaint()));
+        contentView.addView(hint, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 120, Gravity.TOP | Gravity.LEFT, 16, 0, 16, 0));
+        contentView.post(() -> {
+            float x = 0, y = 0;
+            View v = view;
+            while (v != null && v != contentView) {
+                x += v.getX();
+                y += v.getY();
+                if (!(v.getParent() instanceof View)) {
+                    break;
+                }
+                v = (View) v.getParent();
+            }
+            hint.setTranslationY(y + view.getHeight());
+            hint.setJointPx(0f, -dp(16) + x + view.getWidth() / 2f);
+            hint.show();
+        });
     }
 
     private boolean fullyVisible;

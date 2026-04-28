@@ -136,4 +136,8 @@
     <string name="StickerSizeRight">Large</string>
     <string name="UseScheduledMessages">Schedule Messages</string>
     <string name="UseScheduledMessagesDescription">Automatically schedules outgoing messages to send after ~12 seconds (longer for media). Using this feature, you won\'t appear online. Avoid using on unreliable networks.</string>
+    <string name="CreationDateChat">**%1$s** was created on **%2$s**.</string>
+    <string name="JoinDateChat">You joined **%1$s** on **%2$s**.</string>
+    <string name="CreationDateUserApproximately">**%1$s** created their account approximately on **%2$s**.</string>
+    <string name="CreationDateSelfApproximately">You created your account approximately on **%1$s**.</string>
 </resources>

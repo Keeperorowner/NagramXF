@@ -282,6 +282,7 @@ class SolarIcons {
             solarIcons.add(R.drawable.msg_rate_up to R.drawable.msg_rate_up_solar)
             solarIcons.add(R.drawable.msg_qr_mini to R.drawable.msg_qrcode_mini_solar)
             solarIcons.add(R.drawable.msg_qrcode to R.drawable.msg_qrcode_solar)
+            solarIcons.add(R.drawable.header_qr_24 to R.drawable.msg_qrcode_solar)
             solarIcons.add(R.drawable.msg_reactions to R.drawable.msg_reactions_solar)
             solarIcons.add(R.drawable.msg_reactions2 to R.drawable.msg_reactions_solar)
             solarIcons.add(R.drawable.msg_reactions_filled to R.drawable.msg_reactions_filled_solar)
