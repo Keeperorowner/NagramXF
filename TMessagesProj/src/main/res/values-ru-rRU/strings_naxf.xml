@@ -162,4 +162,8 @@
     <string name="StickerSizeRight">Больше</string>
     <string name="UseScheduledMessages">Запланированная отправка</string>
     <string name="UseScheduledMessagesDescription">Автоматически планирует исходящие сообщения для отправки примерно через 12 секунд (дольше для медиа). При использовании этой функции вы не отображаетесь онлайн. Избегайте использования при нестабильной сети.</string>
+    <string name="CreationDateChat">**%1$s** был создан **%2$s**.</string>
+    <string name="JoinDateChat">Вы присоединились к **%1$s** **%2$s**.</string>
+    <string name="CreationDateUserApproximately">**%1$s** создал(а) свой аккаунт примерно **%2$s**.</string>
+    <string name="CreationDateSelfApproximately">Вы создали свой аккаунт примерно **%1$s**.</string>
 </resources>

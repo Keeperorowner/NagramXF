@@ -134,4 +134,8 @@
     <string name="StickerSizeRight">大</string>
     <string name="UseScheduledMessages">定时发送消息</string>
     <string name="UseScheduledMessagesDescription">自动将发出的消息延迟约 12 秒后发送（含媒体的消息会更久）。使用此功能时您不会显示为在线。请勿在网络不稳定时使用。</string>
+    <string name="CreationDateChat">**%1$s** 创建于 **%2$s**。</string>
+    <string name="JoinDateChat">您于 **%2$s** 加入 **%1$s**。</string>
+    <string name="CreationDateUserApproximately">**%1$s** 大约于 **%2$s** 创建账户。</string>
+    <string name="CreationDateSelfApproximately">您大约在 **%1$s** 创建了账户。</string>
 </resources>
