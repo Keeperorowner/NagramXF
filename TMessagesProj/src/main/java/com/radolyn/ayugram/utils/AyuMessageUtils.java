@@ -11,6 +11,7 @@ import com.radolyn.ayugram.database.entities.AyuMessageBase;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
@@ -20,6 +21,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.secretmedia.EncryptedFileInputStream;
 import org.telegram.tgnet.NativeByteBuffer;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import tw.nekomimi.nekogram.NekoConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 public abstract class AyuMessageUtils {
@@ -186,6 +189,59 @@ public abstract class AyuMessageUtils {
             return true;
         }
         return isPeerNoForwards(messageObject);
+    }
+
+    /**
+     * Compute the schedule delay (in seconds) used by Ghost Mode "Schedule Messages".
+     * Text/sticker/animated sticker/gif → ~12s.
+     * Photo/document → 12s + ceil(sizeMB * 4.5s), with a minimum of 6s extra.
+     */
+    public static int getScheduleTime(TLRPC.TL_photo photo, TLRPC.TL_document document) {
+        final float baseTime = 12.0f;
+        if (document != null && document.access_hash != 0) {
+            if (MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true)) {
+                return (int) Math.ceil(baseTime);
+            }
+            if (MessageObject.isGifDocument(document)) {
+                return (int) Math.ceil(baseTime);
+            }
+        }
+        long photoSize = getPhotoSize(photo);
+        long docSize = (document != null) ? document.size : 0L;
+        long size = (photoSize != 0L) ? photoSize : docSize;
+        if (size != 0L) {
+            float sizeBased = (size / 1024f / 1024f) * 4.5f;
+            int sizeBasedInt = Math.max(6, (int) Math.ceil(sizeBased));
+            return (int) baseTime + sizeBasedInt;
+        }
+        return (int) baseTime;
+    }
+
+    private static long getPhotoSize(TLRPC.Photo photo) {
+        if (photo == null) {
+            return 0L;
+        }
+        TLRPC.PhotoSize closest = FileLoader.getClosestPhotoSizeWithSize(photo.sizes, AndroidUtilities.getPhotoSize(true));
+        return closest == null ? 0L : closest.size;
+    }
+
+    /**
+     * Suppresses notifications for our own messages that came back via the scheduled
+     * delivery mechanism in Ghost Mode "Schedule Messages". Saved Messages are exempted.
+     */
+    public static boolean shouldIgnoreNotification(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null) {
+            return false;
+        }
+        if (!NekoConfig.useScheduledMessages.Bool()) {
+            return false;
+        }
+        if (!messageObject.messageOwner.from_scheduled) {
+            return false;
+        }
+        long currentUserId = UserConfig.getInstance(messageObject.currentAccount).getClientUserId();
+        long dialogId = messageObject.getDialogId();
+        return currentUserId != dialogId;
     }
 
     public static boolean hasLocalForwardCopy(MessageObject messageObject) {

@@ -13932,6 +13932,11 @@ public class ChatActivity extends BaseFragment implements
         openScheduledMessages(0, false);
     }
     private void openScheduledMessages(int fromMessageId, boolean showConvertToast) {
+        // Ghost Mode: Schedule Messages — when our outgoing send was auto-converted to a scheduled
+        // message, suppress the automatic jump to the scheduled-messages view.
+        if (AyuState.getAutomaticallyScheduled()) {
+            return;
+        }
         if (parentLayout == null || parentLayout.getLastFragment() != this) {
             return;
         }

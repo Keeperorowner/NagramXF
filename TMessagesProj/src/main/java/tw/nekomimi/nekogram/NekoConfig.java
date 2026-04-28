@@ -187,6 +187,7 @@ public class NekoConfig {
     public static ConfigItem sendUploadProgress = addConfig("sendUploadProgress", configTypeBool, true);
     public static ConfigItem sendOfflinePacketAfterOnline = addConfig("sendOfflinePacketAfterOnline", configTypeBool, false);
     public static ConfigItem markReadAfterSend = addConfig("markReadAfterSend", configTypeBool, true);
+    public static ConfigItem useScheduledMessages = addConfig("useScheduledMessages", configTypeBool, false);
     public static ConfigItem showGhostInDrawer = addConfig("showGhostInDrawer", configTypeBool, false);
     public static ConfigItem showGhostModeStatus = addConfig("showGhostModeStatus", configTypeBool, false);
     public static ConfigItem navigationDrawerEnabled = addConfig("navigationDrawerEnabled", configTypeBool, false);

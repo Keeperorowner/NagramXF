@@ -132,4 +132,6 @@
     <string name="hideSponsoredMessage">隐藏赞助消息</string>
     <string name="StickerSizeLeft">小</string>
     <string name="StickerSizeRight">大</string>
+    <string name="UseScheduledMessages">定时发送消息</string>
+    <string name="UseScheduledMessagesDescription">自动将发出的消息延迟约 12 秒后发送（含媒体的消息会更久）。使用此功能时您不会显示为在线。请勿在网络不稳定时使用。</string>
 </resources>

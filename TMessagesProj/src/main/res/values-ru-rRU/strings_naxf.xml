@@ -160,4 +160,6 @@
     <string name="hideSponsoredMessage">Скрыть спонсируемые сообщения</string>
     <string name="StickerSizeLeft">Меньше</string>
     <string name="StickerSizeRight">Больше</string>
+    <string name="UseScheduledMessages">Запланированная отправка</string>
+    <string name="UseScheduledMessagesDescription">Автоматически планирует исходящие сообщения для отправки примерно через 12 секунд (дольше для медиа). При использовании этой функции вы не отображаетесь онлайн. Избегайте использования при нестабильной сети.</string>
 </resources>

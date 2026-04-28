@@ -97,6 +97,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
+import com.radolyn.ayugram.utils.AyuMessageUtils;
+
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
@@ -1078,6 +1080,10 @@ public class NotificationsController extends BaseController {
                     continue;
                 }
                 if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
+                    continue;
+                }
+                // Ghost Mode: Schedule Messages — suppress notifications for our own scheduled-delivery messages.
+                if (AyuMessageUtils.shouldIgnoreNotification(messageObject)) {
                     continue;
                 }
                 if (messageObject.isStoryPush) {
