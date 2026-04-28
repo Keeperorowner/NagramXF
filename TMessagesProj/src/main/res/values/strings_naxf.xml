@@ -134,4 +134,6 @@
     <string name="hideSponsoredMessage">Hide sponsored messages</string>
     <string name="StickerSizeLeft">Small</string>
     <string name="StickerSizeRight">Large</string>
+    <string name="UseScheduledMessages">Schedule Messages</string>
+    <string name="UseScheduledMessagesDescription">Automatically schedules outgoing messages to send after ~12 seconds (longer for media). Using this feature, you won\'t appear online. Avoid using on unreliable networks.</string>
 </resources>

@@ -42,6 +42,8 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
     private int ghostModeNoticeRow;
     private int markReadAfterSendRow;
     private int markReadAfterSendNoticeRow;
+    private int useScheduledMessagesRow;
+    private int useScheduledMessagesNoticeRow;
 
     private int sendWithoutSoundRow;
     private int sendWithoutSoundNoticeRow;
@@ -72,6 +74,8 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
         }
         markReadAfterSendRow = addRow();
         markReadAfterSendNoticeRow = addRow();
+        useScheduledMessagesRow = addRow();
+        useScheduledMessagesNoticeRow = addRow();
         sendWithoutSoundRow = addRow();
         sendWithoutSoundNoticeRow = addRow();
         showGhostInDrawerRow = addRow();
@@ -144,6 +148,9 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
             NekoConfig.markReadAfterSend.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.markReadAfterSend.Bool());
             AyuState.setAllowReadPacket(false, -1);
+        } else if (position == useScheduledMessagesRow) {
+            NekoConfig.useScheduledMessages.toggleConfigBool();
+            ((TextCheckCell) view).setChecked(NekoConfig.useScheduledMessages.Bool());
         } else if (position == sendWithoutSoundRow) {
             NaConfig.INSTANCE.getSilentMessageByDefault().toggleConfigBool();
             ((TextCheckCell) view).setChecked(NaConfig.INSTANCE.getSilentMessageByDefault().Bool());
@@ -250,6 +257,8 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
                     textCheckCell.setEnabled(true, null);
                     if (position == markReadAfterSendRow) {
                         textCheckCell.setTextAndCheck(getString(R.string.MarkReadAfterSend), NekoConfig.markReadAfterSend.Bool(), true);
+                    } else if (position == useScheduledMessagesRow) {
+                        textCheckCell.setTextAndCheck(getString(R.string.UseScheduledMessages), NekoConfig.useScheduledMessages.Bool(), true);
                     } else if (position == sendWithoutSoundRow) {
                         textCheckCell.setTextAndCheck(getString(R.string.SilentMessageByDefault), NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), true);
                     } else if (position == showGhostInDrawerRow) {
@@ -271,6 +280,8 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
                         cell.setText(getString(R.string.GhostModeNotice));
                     } else if (position == markReadAfterSendNoticeRow) {
                         cell.setText(getString(R.string.MarkReadAfterSendNotice));
+                    } else if (position == useScheduledMessagesNoticeRow) {
+                        cell.setText(getString(R.string.UseScheduledMessagesDescription));
                     } else if (position == sendWithoutSoundNoticeRow) {
                         cell.setText(getString(R.string.SendWithoutSoundRowNotice));
                     }
@@ -341,7 +352,7 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == ghostEssentialsHeaderRow) {
                 return TYPE_HEADER;
-            } else if (position == ghostModeNoticeRow || position == markReadAfterSendNoticeRow || position == sendWithoutSoundNoticeRow) {
+            } else if (position == ghostModeNoticeRow || position == markReadAfterSendNoticeRow || position == useScheduledMessagesNoticeRow || position == sendWithoutSoundNoticeRow) {
                 return TYPE_INFO_PRIVACY;
             } else if (position == ghostModeToggleRow) {
                 return TYPE_CHECK2;

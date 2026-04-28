@@ -162,4 +162,6 @@
     <string name="GoogleCloudTransKey">Google Cloud 翻訳キー</string>
     <string name="StickerSizeLeft">小</string>
     <string name="StickerSizeRight">大</string>
+    <string name="UseScheduledMessages">予約送信</string>
+    <string name="UseScheduledMessagesDescription">送信メッセージを約 12 秒後（メディアの場合はさらに長く）に自動で予約送信します。この機能を使用するとオンライン状態にならずに済みます。不安定なネットワークでは使用しないでください。</string>
 </resources>

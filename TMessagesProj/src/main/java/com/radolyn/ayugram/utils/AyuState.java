@@ -18,6 +18,7 @@ import tw.nekomimi.nekogram.NekoConfig;
 public class AyuState {
     private static final AyuStateVariable allowReadPacket = new AyuStateVariable();
     private static final AyuStateVariable hideSelection = new AyuStateVariable();
+    private static final AyuStateVariable automaticallyScheduled = new AyuStateVariable();
     private static final LongSparseArray<ArrayList<Integer>> deletePermitted = new LongSparseArray<>();
 
     public static void setAllowReadPacket(boolean val, int resetAfter) {
@@ -36,6 +37,15 @@ public class AyuState {
 
     public static boolean getHideSelection() {
         return hideSelection.process();
+    }
+
+    public static void setAutomaticallyScheduled(boolean val, int resetAfter) {
+        automaticallyScheduled.val = val;
+        automaticallyScheduled.resetAfter = resetAfter;
+    }
+
+    public static boolean getAutomaticallyScheduled() {
+        return automaticallyScheduled.process();
     }
 
     public static void permitDeleteMessage(long dialogId, int messageId) {

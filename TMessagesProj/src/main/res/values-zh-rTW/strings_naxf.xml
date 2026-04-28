@@ -163,4 +163,6 @@
     <string name="GoogleCloudTransKey">Google Cloud 翻譯密鑰</string>
     <string name="StickerSizeLeft">小</string>
     <string name="StickerSizeRight">大</string>
+    <string name="UseScheduledMessages">定時傳送訊息</string>
+    <string name="UseScheduledMessagesDescription">自動將傳送的訊息延遲約 12 秒後送出（含媒體的訊息會更久）。使用此功能時您不會顯示為線上。請避免在網路不穩定時使用。</string>
 </resources>

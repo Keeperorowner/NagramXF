@@ -2143,7 +2143,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public int sendMessage(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate, int scheduleRepeatPeriod, MessageObject replyToTopMsg, int video_timestamp, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams, Utilities.Callback2<Integer, String> onAsyncFailure) {
-        return sendMessageSmart(messages, peer, forwardFromMyName, hideCaption, notify, scheduleDate, scheduleRepeatPeriod, replyToTopMsg, video_timestamp, payStars, monoForumPeerId, suggestionParams, onAsyncFailure);
+        // Ghost Mode: Schedule Messages — automatically convert non-scheduled forwards to scheduled (~12s) so we don't appear online.
+        int effectiveScheduleDate = scheduleDate;
+        if (NekoConfig.useScheduledMessages.Bool() && !DialogObject.isEncryptedDialog(peer) && effectiveScheduleDate == 0) {
+            effectiveScheduleDate = getConnectionsManager().getCurrentTime() + 12;
+            AyuState.setAutomaticallyScheduled(true, 1);
+        }
+        return sendMessageSmart(messages, peer, forwardFromMyName, hideCaption, notify, effectiveScheduleDate, scheduleRepeatPeriod, replyToTopMsg, video_timestamp, payStars, monoForumPeerId, suggestionParams, onAsyncFailure);
     }
 
     private int sendMessageInternal(ArrayList<MessageObject> messages, final long peer, boolean forwardFromMyName, boolean hideCaption, boolean notify, int scheduleDate, int scheduleRepeatPeriod, MessageObject replyToTopMsg, int video_timestamp, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
@@ -4217,6 +4223,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 sendMessage(sendMessageParams);
             });
             return;
+        }
+
+        // Ghost Mode: Schedule Messages — automatically convert outgoing messages to scheduled (~12s+) so we don't appear online.
+        if (NekoConfig.useScheduledMessages.Bool() && !DialogObject.isEncryptedDialog(peer) && scheduleDate == 0) {
+            scheduleDate = getConnectionsManager().getCurrentTime() + AyuMessageUtils.getScheduleTime(photo, document);
+            sendMessageParams.scheduleDate = scheduleDate;
+            AyuState.setAutomaticallyScheduled(true, 1);
         }
 
         MessageObject pseudoReplySource = replyQuote != null && replyQuote.message != null && replyToMsg != null
