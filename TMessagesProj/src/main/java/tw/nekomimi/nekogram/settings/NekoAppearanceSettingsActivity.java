@@ -34,6 +34,7 @@ import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
 import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
@@ -252,6 +253,16 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NekoConfig.navigationDrawerEnabled.getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getSectionsSeparatedHeaders().getKey())) {
+                if (listView != null) {
+                    for (int i = 0, n = listView.getChildCount(); i < n; i++) {
+                        View child = listView.getChildAt(i);
+                        if (child instanceof HeaderCell) {
+                            ((HeaderCell) child).applySeparatedHeadersStyle();
+                        }
+                    }
+                    listView.getRecycledViewPool().clear();
+                    listView.invalidateItemDecorations();
+                }
                 reloadUI(0);
             } else if (key.equals(NekoConfig.forceBlurInChat.getKey())) {
                 boolean enabled = (Boolean) newValue;

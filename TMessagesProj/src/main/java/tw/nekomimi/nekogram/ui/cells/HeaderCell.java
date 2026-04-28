@@ -38,20 +38,25 @@ public class HeaderCell extends LinearLayout {
     private AnimatedTextView animatedTextView;
     private int height = 40;
 
+    private final int originalPadding;
+    private final int originalTopMargin;
+    private final int originalBottomMargin;
+    private final boolean hasText2;
+
     public HeaderCell(Context context) {
-        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false, null);
+        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 6, false, null);
     }
 
     public HeaderCell(Context context, Theme.ResourcesProvider resourcesProvider) {
-        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 15, false, resourcesProvider);
+        this(context, Theme.key_windowBackgroundWhiteBlueHeader, 21, 6, false, resourcesProvider);
     }
 
     public HeaderCell(Context context, int padding) {
-        this(context, Theme.key_windowBackgroundWhiteBlueHeader, padding, 15, false, null);
+        this(context, Theme.key_windowBackgroundWhiteBlueHeader, padding, 6, false, null);
     }
 
     public HeaderCell(Context context, int padding, Theme.ResourcesProvider resourcesProvider) {
-        this(context, Theme.key_windowBackgroundWhiteBlueHeader, padding, 15, false, resourcesProvider);
+        this(context, Theme.key_windowBackgroundWhiteBlueHeader, padding, 6, false, resourcesProvider);
     }
 
     public HeaderCell(Context context, int textColorKey, int padding, int topMargin, boolean text2) {
@@ -69,11 +74,15 @@ public class HeaderCell extends LinearLayout {
     public HeaderCell(Context context, int textColorKey, int padding, int topMargin, int bottomMargin, boolean text2, boolean animated, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
+        this.originalPadding = padding;
+        this.originalTopMargin = topMargin;
+        this.originalBottomMargin = bottomMargin;
+        this.hasText2 = text2;
         boolean separatedHeaders = NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool();
         this.padding = separatedHeaders ? 24 : padding;
         this.bottomMargin = separatedHeaders ? 3 : bottomMargin;
         this.animated = animated;
-        int effectiveTopMargin = separatedHeaders ? 6 : topMargin;
+        int effectiveTopMargin = topMargin;
 
         setOrientation(LinearLayout.VERTICAL);
         setPadding(AndroidUtilities.dp(this.padding), AndroidUtilities.dp(effectiveTopMargin), AndroidUtilities.dp(this.padding), separatedHeaders && !text2 ? AndroidUtilities.dp(this.bottomMargin) : 0);
@@ -108,6 +117,33 @@ public class HeaderCell extends LinearLayout {
         if (!text2) textView2.setVisibility(View.GONE);
 
         ViewCompat.setAccessibilityHeading(this, true);
+    }
+
+    public void applySeparatedHeadersStyle() {
+        boolean separatedHeaders = NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool();
+        int newPadding = separatedHeaders ? 24 : originalPadding;
+        int newBottomMargin = separatedHeaders ? 3 : originalBottomMargin;
+        int newTopMargin = originalTopMargin;
+
+        this.padding = newPadding;
+        this.bottomMargin = newBottomMargin;
+
+        setPadding(
+                AndroidUtilities.dp(newPadding),
+                AndroidUtilities.dp(newTopMargin),
+                AndroidUtilities.dp(newPadding),
+                separatedHeaders && !hasText2 ? AndroidUtilities.dp(newBottomMargin) : 0
+        );
+
+        if (textView2 != null && textView2.getLayoutParams() instanceof LayoutParams lp) {
+            int bottomMarginPx = AndroidUtilities.dp(newBottomMargin);
+            if (lp.bottomMargin != bottomMarginPx) {
+                lp.bottomMargin = bottomMarginPx;
+                textView2.setLayoutParams(lp);
+            }
+        }
+
+        requestLayout();
     }
 
     // NekoX: BottomSheet BigTitle, move big title from constructor to here
