@@ -229,9 +229,8 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     public static class HintInnerCell extends FrameLayout {
 
         private RLottieImageView imageView;
-        private TextView messageTextView;
 
-        public HintInnerCell(Context context, int resId, CharSequence text) {
+        public HintInnerCell(Context context, int resId) {
             super(context);
 
             imageView = new RLottieImageView(context);
@@ -239,20 +238,13 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             imageView.playAnimation();
             imageView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-            addView(imageView, LayoutHelper.createFrame(90, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 14, 0, 0));
+            addView(imageView, LayoutHelper.createFrame(90, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 14, 0, 17));
             imageView.setOnClickListener(v -> {
                 if (!imageView.isPlaying()) {
                     imageView.setProgress(0.0f);
                     imageView.playAnimation();
                 }
             });
-
-            messageTextView = new TextView(context);
-            messageTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4));
-            messageTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            messageTextView.setGravity(Gravity.CENTER);
-            messageTextView.setText(text);
-            addView(messageTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 40, 121, 40, 24));
         }
 
         @Override
@@ -562,6 +554,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         ArrayList<TLRPC.TL_dialogFilterSuggested> suggestedFilters = getMessagesController().suggestedFilters;
         ArrayList<MessagesController.DialogFilter> dialogFilters = getMessagesController().getDialogFilters();
         items.add(ItemInner.asHint());
+        items.add(ItemInner.asHintInfo(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CreateNewFilterInfo))));
         if (!suggestedFilters.isEmpty() && dialogFilters.size() < 10) {
             items.add(ItemInner.asHeader(LocaleController.getString(R.string.FilterRecommended)));
             for (int i = 0; i < suggestedFilters.size(); ++i) {
@@ -772,6 +765,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     private static final int VIEW_TYPE_BUTTON = 4;
     private static final int VIEW_TYPE_FILTER_SUGGESTION = 5;
     private static final int VIEW_TYPE_CHECK = 6;
+    private static final int VIEW_TYPE_HINT_INFO = 7;
 
     private int shiftDp = -4;
 
@@ -792,6 +786,11 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         }
         public static ItemInner asHint() {
             return new ItemInner(VIEW_TYPE_HINT);
+        }
+        public static ItemInner asHintInfo(CharSequence text) {
+            ItemInner i = new ItemInner(VIEW_TYPE_HINT_INFO);
+            i.text = text;
+            return i;
         }
         public static ItemInner asShadow(CharSequence text) {
             ItemInner i = new ItemInner(VIEW_TYPE_SHADOW);
@@ -832,7 +831,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             if (other.viewType != viewType) {
                 return false;
             }
-            if (viewType == VIEW_TYPE_HEADER || viewType == VIEW_TYPE_BUTTON || viewType == VIEW_TYPE_SHADOW || viewType == VIEW_TYPE_CHECK) {
+            if (viewType == VIEW_TYPE_HEADER || viewType == VIEW_TYPE_BUTTON || viewType == VIEW_TYPE_SHADOW || viewType == VIEW_TYPE_CHECK || viewType == VIEW_TYPE_HINT_INFO) {
                 if (!TextUtils.equals(text, other.text)) {
                     return false;
                 }
@@ -868,7 +867,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
             int type = holder.getItemViewType();
-            return type != VIEW_TYPE_SHADOW && type != VIEW_TYPE_HEADER && type != VIEW_TYPE_FILTER_SUGGESTION && type != VIEW_TYPE_HINT;
+            return type != VIEW_TYPE_SHADOW && type != VIEW_TYPE_HEADER && type != VIEW_TYPE_FILTER_SUGGESTION && type != VIEW_TYPE_HINT && type != VIEW_TYPE_HINT_INFO;
         }
 
         @Override
@@ -884,8 +883,14 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     view = new HeaderCell(mContext);
                     break;
                 case VIEW_TYPE_HINT:
-                    view = new HintInnerCell(mContext, R.raw.filters, AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CreateNewFilterInfo)));
+                    view = new HintInnerCell(mContext, R.raw.filters);
                     break;
+                case VIEW_TYPE_HINT_INFO: {
+                    TextInfoPrivacyCell hintInfoCell = new TextInfoPrivacyCell(mContext, 40);
+                    hintInfoCell.setTextGravity(Gravity.CENTER);
+                    view = hintInfoCell;
+                    break;
+                }
                 case VIEW_TYPE_FILTER:
                     FilterCell filterCell = new FilterCell(mContext);
                     filterCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
@@ -1042,6 +1047,11 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 case VIEW_TYPE_HEADER: {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
                     headerCell.setText(item.text);
+                    break;
+                }
+                case VIEW_TYPE_HINT_INFO: {
+                    TextInfoPrivacyCell hintInfoCell = (TextInfoPrivacyCell) holder.itemView;
+                    hintInfoCell.setText(item.text);
                     break;
                 }
                 case VIEW_TYPE_FILTER: {

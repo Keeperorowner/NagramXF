@@ -9565,6 +9565,25 @@ public class ChatActivity extends BaseFragment implements
 
     private boolean hideFilteredMessages = true;
 
+    private ActionBarMenuSubItem showFilteredMenuItem;
+    private boolean showFilteredMenuItemRevealed = false;
+
+    private void revealShowFilteredMenuItem() {
+        if (showFilteredMenuItemRevealed) {
+            return;
+        }
+        final ActionBarMenuSubItem item = showFilteredMenuItem;
+        if (item == null) {
+            return;
+        }
+        showFilteredMenuItemRevealed = true;
+        AndroidUtilities.runOnUIThread(() -> {
+            if (item.getVisibility() != View.VISIBLE) {
+                item.setVisibility(View.VISIBLE);
+            }
+        });
+    }
+
     private void createAyuGramMenuItem() {
         if (headerItem == null || getParentActivity() == null) {
             return;
@@ -9689,6 +9708,9 @@ public class ChatActivity extends BaseFragment implements
             });
 
             ActionBarMenuSubItem showFilteredItem = new ActionBarMenuSubItem(getContext(), false, false, false, getResourceProvider());
+            showFilteredMenuItem = showFilteredItem;
+            showFilteredMenuItemRevealed = false;
+            showFilteredItem.setVisibility(View.GONE);
             showFilteredItem.setTextAndIcon(getString(hideFilteredMessages ? R.string.ShowFilteredMessagesMenuText : R.string.HideFilteredMessagesMenuText), R.drawable.msg_clear_recent);
             showFilteredItem.setOnClickListener(v -> {
                 hideFilteredMessages = !hideFilteredMessages;
@@ -39304,11 +39326,13 @@ public class ChatActivity extends BaseFragment implements
                     if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
                         long fromId = msg.getFromChatId();
                         if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
+                            revealShowFilteredMenuItem();
                             return -1000;
                         }
                         if (msg.replyMessageObject != null) {
                             fromId = msg.replyMessageObject.getFromChatId();
                             if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
+                                revealShowFilteredMenuItem();
                                 return -1000;
                             }
                         }
@@ -39323,6 +39347,7 @@ public class ChatActivity extends BaseFragment implements
                             filterMsg = msg;
                         }
                         if (AyuFilter.shouldHideFilteredMessage(filterMsg, filterGroup)) {
+                            revealShowFilteredMenuItem();
                             return -1000;
                         }
                     }
