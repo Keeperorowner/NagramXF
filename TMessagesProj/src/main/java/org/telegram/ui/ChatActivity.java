@@ -48669,9 +48669,6 @@ public class ChatActivity extends BaseFragment implements
         if (!NaConfig.INSTANCE.getCenterActionBarTitle().Bool()) {
             return false;
         }
-        if (NaConfig.INSTANCE.getCenterActionBarTitleType().Int() == 2) {
-            return false;
-        }
         if (parentFragment == null) {
             return false;
         }

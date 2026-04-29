@@ -285,6 +285,7 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
                 if (snowflakesEffect == null) {
                     fireworksEffect = null;
                     snowflakesEffect = new SnowflakesEffect(0);
+                    snowflakesEffect.occupyStatusBar = occupyStatusBar;
                     titleTextView[0].invalidate();
                     invalidate();
                 } else {
@@ -336,20 +337,13 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
                     }
                 }
             }
-            if (NekoConfig.actionBarDecoration.Int() == 3) {
-                if (snowflakesEffect != null) {
-                    snowflakesEffect = null;
+            if (NaConfig.INSTANCE.getForceSnowfall().Bool() || Theme.canStartHolidayAnimation()) {
+                if (snowflakesEffect == null) {
+                    snowflakesEffect = new SnowflakesEffect(0);
+                    snowflakesEffect.occupyStatusBar = occupyStatusBar;
                 }
                 if (fireworksEffect != null) {
                     fireworksEffect = null;
-                }
-            } else if (NekoConfig.actionBarDecoration.Int() == 2) {
-                if (fireworksEffect == null) {
-                    fireworksEffect = new FireworksEffect();
-                }
-            } else if (NekoConfig.actionBarDecoration.Int() == 1 || Theme.canStartHolidayAnimation()) {
-                if (snowflakesEffect == null) {
-                    snowflakesEffect = new SnowflakesEffect(0);
                 }
             } else if (!manualStart) {
                 if (snowflakesEffect != null) {
@@ -2265,7 +2259,7 @@ public class ActionBar extends FrameLayout implements Theme.Colorable {
     }
 
     private boolean isCentered() {
-        return NaConfig.INSTANCE.getCenterActionBarTitle().Bool() && NaConfig.INSTANCE.getCenterActionBarTitleType().Int() != 3;
+        return NaConfig.INSTANCE.getCenterActionBarTitle().Bool();
     }
 
     // --- Spring Animation ---

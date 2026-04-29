@@ -67,11 +67,6 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
 
     // General
     private final AbstractConfigCell headerGeneral = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.General)));
-    private final AbstractConfigCell customTitleRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getCustomTitle(),
-        getString(R.string.CustomTitleHint), null,
-        (input) -> input.isEmpty() ? (String) NaConfig.INSTANCE.getCustomTitle().defaultValue : input));
-    private final AbstractConfigCell folderNameAsTitleRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getFolderNameAsTitle()));
-    private final AbstractConfigCell customTitleUserNameRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getCustomTitleUserName()));
     private final AbstractConfigCell disableNumberRoundingRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableNumberRounding, "4.8K -> 4777"));
     private final AbstractConfigCell preferCommonGroupsTabRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getPreferCommonGroupsTab(), getString(R.string.PreferCommonGroupsTabNotice)));
     private final AbstractConfigCell usePersianCalendarRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.usePersianCalendar, getString(R.string.UsePersianCalendarInfo)));
@@ -167,7 +162,6 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
 
         checkCustomDoHRows();
         checkMapDriftingFixRows();
-        checkCustomTitleRows();
         checkPushServiceTypeRows();
         addRowsToMap(cellGroup);
     }
@@ -211,9 +205,6 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
             } else if (key.equals(NaConfig.INSTANCE.getPushServiceTypeUnifiedGateway().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getDisableCrashlyticsCollection().getKey())) {
-                tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
-            } else if (key.equals(NaConfig.INSTANCE.getCustomTitleUserName().getKey())) {
-                checkCustomTitleRows();
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NekoConfig.usePersianCalendar.getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
@@ -330,30 +321,6 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
             int rowIndex = cellGroup.rows.indexOf(mapDriftingFixForGoogleMapsRow);
             if (rowIndex != -1) {
                 cellGroup.rows.remove(mapDriftingFixForGoogleMapsRow);
-                listAdapter.notifyItemRemoved(rowIndex);
-            }
-        }
-        addRowsToMap(cellGroup);
-    }
-
-    private void checkCustomTitleRows() {
-        boolean useUserName = NaConfig.INSTANCE.getCustomTitleUserName().Bool();
-        if (listAdapter == null) {
-            if (useUserName) {
-                cellGroup.rows.remove(customTitleRow);
-            }
-            return;
-        }
-        if (!useUserName) {
-            final int index = cellGroup.rows.indexOf(headerGeneral);
-            if (!cellGroup.rows.contains(customTitleRow)) {
-                cellGroup.rows.add(index + 1, customTitleRow);
-                listAdapter.notifyItemInserted(index + 1);
-            }
-        } else {
-            int rowIndex = cellGroup.rows.indexOf(customTitleRow);
-            if (rowIndex != -1) {
-                cellGroup.rows.remove(customTitleRow);
                 listAdapter.notifyItemRemoved(rowIndex);
             }
         }

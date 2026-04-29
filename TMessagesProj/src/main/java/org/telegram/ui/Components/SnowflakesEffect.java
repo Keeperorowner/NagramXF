@@ -39,6 +39,8 @@ public class SnowflakesEffect {
 
     Bitmap particleBitmap;
 
+    public boolean occupyStatusBar = true;
+
     private long lastAnimationTime;
 
     private class Particle {
@@ -193,7 +195,7 @@ public class SnowflakesEffect {
         if (particles.size() < maxCount) {
             for (int i = 0; i < createPerFrame; i++) {
                 if (particles.size() < maxCount && Utilities.random.nextFloat() > 0.7f) {
-                    int statusBarHeight = AndroidUtilities.statusBarHeight;
+                    int statusBarHeight = occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
                     float cx = Utilities.random.nextFloat() * parent.getMeasuredWidth();
                     float cy;
                     if (viewType == 0) {

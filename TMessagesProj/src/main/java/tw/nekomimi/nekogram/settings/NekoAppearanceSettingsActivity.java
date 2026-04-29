@@ -19,6 +19,9 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -43,7 +46,9 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellSelectBox;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
+import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.ui.cells.AvatarCornersPreviewCell;
+import tw.nekomimi.nekogram.ui.cells.ChatListPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.FabShapePreviewCell;
 import xyz.nextalone.nagram.NaConfig;
 
@@ -54,6 +59,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private ListAdapter listAdapter;
     private AvatarCornersPreviewCell avatarCornersPreviewCell;
     private FabShapePreviewCell fabShapePreviewCell;
+    private ChatListPreviewCell chatListPreviewCell;
     private ChatBlurAlphaSeekBar chatBlurAlphaSeekbar;
     private Parcelable recyclerViewState = null;
 
@@ -87,17 +93,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.StyleModern),
             getString(R.string.StyleMaterialDesign3)
     }, null));
-    private final AbstractConfigCell actionBarDecorationRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NekoConfig.actionBarDecoration, new String[]{
-            getString(R.string.DependsOnDate),
-            getString(R.string.Snowflakes),
-            getString(R.string.Fireworks),
-            getString(R.string.DecorationNone),
-    }, null));
-    private final AbstractConfigCell chatDecorationRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getChatDecoration(), new String[]{
-            getString(R.string.DependsOnDate),
-            getString(R.string.Snowflakes),
-            getString(R.string.DecorationNone),
-    }, null));
     private final AbstractConfigCell notificationIconRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getNotificationIcon(), new String[]{
             getString(R.string.MapPreviewProviderTelegram),
             getString(R.string.NagramX),
@@ -108,12 +103,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.TabletModeDefault),
             getString(R.string.Enable),
             getString(R.string.Disable)
-    }, null));
-    private final AbstractConfigCell centerActionBarTitleRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getCenterActionBarTitleType(), new String[]{
-            getString(R.string.Disable),
-            getString(R.string.Enable),
-            getString(R.string.SettingsOnly),
-            getString(R.string.ChatsOnly)
     }, null));
     private final AbstractConfigCell dividerAppearance = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell avatarCornersPreviewRow = cellGroup.appendCell(new ConfigCellCustom("AvatarCorners", ConfigCellCustom.CUSTOM_ITEM_AvatarCorners, false));
@@ -126,6 +115,14 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     );
     private final AbstractConfigCell avatarCornersInfoRow = cellGroup.appendCell(new ConfigCellCustom("SingleCornerRadiusInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell headerDialogs = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.DialogsSettings)));
+    private final AbstractConfigCell chatListPreviewRow = cellGroup.appendCell(new ConfigCellCustom("ChatListPreview", ConfigCellCustom.CUSTOM_ITEM_ChatListPreview, false));
+    private final AbstractConfigCell forceSnowfallRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getForceSnowfall(), getString(R.string.ForceSnowfallInfo), getString(R.string.ForceSnowfall)));
+    private final AbstractConfigCell centerActionBarTitleRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getCenterActionBarTitle(), null, getString(R.string.CenterActionBarTitleType)));
+    private final AbstractConfigCell folderNameAsTitleRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getFolderNameAsTitle()));
+    private final AbstractConfigCell customTitleUserNameRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getCustomTitleUserName()));
+    private final AbstractConfigCell customTitleRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getCustomTitle(),
+            getString(R.string.CustomTitleHint), null,
+            (input) -> input.isEmpty() ? (String) NaConfig.INSTANCE.getCustomTitle().defaultValue : input));
     private final AbstractConfigCell sortByUnreadRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSortByUnread()));
     private final AbstractConfigCell disableDialogsFloatingButtonRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDisableDialogsFloatingButton()));
     private final AbstractConfigCell hideHomeSearchFieldRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideHomeSearchField()));
@@ -206,9 +203,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     }
 
     public NekoAppearanceSettingsActivity() {
-        if (!NaConfig.INSTANCE.getCenterActionBarTitle().Bool()) {
-            NaConfig.INSTANCE.getCenterActionBarTitleType().setConfigInt(0);
-        }
         cellGroup.rows.remove(headerAppearance);
         cellGroup.rows.remove(fabShapePreviewRow);
         cellGroup.rows.remove(typefaceRow);
@@ -221,9 +215,29 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.rows.add(3, headerAppearance);
         cellGroup.rows.add(4, fabShapePreviewRow);
         cellGroup.rows.add(5, typefaceRow);
+        List<AbstractConfigCell> dialogsBlock = Arrays.asList(
+                headerDialogs,
+                chatListPreviewRow,
+                forceSnowfallRow,
+                centerActionBarTitleRow,
+                folderNameAsTitleRow,
+                customTitleUserNameRow,
+                customTitleRow,
+                sortByUnreadRow,
+                disableDialogsFloatingButtonRow,
+                hideHomeSearchFieldRow,
+                disableBotOpenButtonRow,
+                mediaPreviewRow,
+                userAvatarsInMessagePreviewRow,
+                dividerDialogs
+        );
+        cellGroup.rows.removeAll(dialogsBlock);
+        int appearanceIdx = cellGroup.rows.indexOf(headerAppearance);
+        cellGroup.rows.addAll(appearanceIdx, dialogsBlock);
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
+        checkCustomTitleRows();
         addRowsToMap(cellGroup);
     }
 
@@ -236,8 +250,18 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         setupDefaultListeners();
 
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
-            if (key.equals(NekoConfig.actionBarDecoration.getKey())
-                    || key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
+            if (key.equals(NaConfig.INSTANCE.getForceSnowfall().getKey())) {
+                if (chatListPreviewCell != null) {
+                    chatListPreviewCell.invalidate();
+                }
+                if (getActionBar() != null) {
+                    getActionBar().invalidate();
+                }
+                if (listView != null) {
+                    listView.invalidate();
+                }
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.invalidateMotionBackground);
+            } else if (key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
                     || key.equals(NekoConfig.tabletMode.getKey())
                     || key.equals(NaConfig.INSTANCE.getHideDividers().getKey())
                     || key.equals(NekoConfig.typeface.getKey())
@@ -276,10 +300,11 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     parentLayout.rebuildFragments(INavigationLayout.REBUILD_FLAG_REBUILD_LAST);
                     listView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
                 }
-            } else if (key.equals(NaConfig.INSTANCE.getCenterActionBarTitleType().getKey())) {
-                int value = (int) newValue;
-                NaConfig.INSTANCE.getCenterActionBarTitle().setConfigBool(value != 0);
+            } else if (key.equals(NaConfig.INSTANCE.getCenterActionBarTitle().getKey())) {
                 animateActionBarUpdate(this);
+                if (chatListPreviewCell != null) {
+                    chatListPreviewCell.refresh();
+                }
             } else if (key.equals(NaConfig.INSTANCE.getSingleCornerRadius().getKey())) {
                 reloadAvatarCorners();
             } else if (key.equals(NaConfig.INSTANCE.getSortByUnread().getKey())) {
@@ -292,6 +317,16 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload, true);
             } else if (key.equals(NaConfig.INSTANCE.getHideHomeSearchField().getKey())) {
                 getNotificationCenter().postNotificationName(NotificationCenter.updateSearchSettings);
+            } else if (key.equals(NaConfig.INSTANCE.getCustomTitleUserName().getKey())) {
+                checkCustomTitleRows();
+                if (chatListPreviewCell != null) {
+                    chatListPreviewCell.refresh();
+                }
+            } else if (key.equals(NaConfig.INSTANCE.getCustomTitle().getKey())
+                    || key.equals(NaConfig.INSTANCE.getFolderNameAsTitle().getKey())) {
+                if (chatListPreviewCell != null) {
+                    chatListPreviewCell.refresh();
+                }
             }
         };
 
@@ -348,8 +383,32 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         addRowsToMap(cellGroup);
     }
 
+    private void checkCustomTitleRows() {
+        boolean useUserName = NaConfig.INSTANCE.getCustomTitleUserName().Bool();
+        if (listAdapter == null) {
+            if (useUserName) {
+                cellGroup.rows.remove(customTitleRow);
+            }
+            return;
+        }
+        if (!useUserName) {
+            final int index = cellGroup.rows.indexOf(customTitleUserNameRow);
+            if (!cellGroup.rows.contains(customTitleRow)) {
+                cellGroup.rows.add(index + 1, customTitleRow);
+                listAdapter.notifyItemInserted(index + 1);
+            }
+        } else {
+            int rowIndex = cellGroup.rows.indexOf(customTitleRow);
+            if (rowIndex != -1) {
+                cellGroup.rows.remove(customTitleRow);
+                listAdapter.notifyItemRemoved(rowIndex);
+            }
+        }
+        addRowsToMap(cellGroup);
+    }
+
     private boolean isCentered() {
-        return NaConfig.INSTANCE.getCenterActionBarTitle().Bool() && NaConfig.INSTANCE.getCenterActionBarTitleType().Int() != 3;
+        return NaConfig.INSTANCE.getCenterActionBarTitle().Bool();
     }
 
     private void animateActionBarUpdate(BaseNekoXSettingsActivity fragment) {
@@ -416,6 +475,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                         mContext,
                         null
                 );
+                case ConfigCellCustom.CUSTOM_ITEM_ChatListPreview -> chatListPreviewCell = new ChatListPreviewCell(mContext);
                 case ConfigCellCustom.CUSTOM_ITEM_CharBlurAlpha -> {
                     chatBlurAlphaSeekbar = new ChatBlurAlphaSeekBar(mContext);
                     chatBlurAlphaSeekbar.setEnabled(NekoConfig.forceBlurInChat.Bool());

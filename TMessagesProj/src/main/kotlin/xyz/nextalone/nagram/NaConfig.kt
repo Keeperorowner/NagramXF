@@ -175,7 +175,7 @@ object NaConfig {
         addConfig(
             "CustomTitle",
             ConfigItem.configTypeString,
-            "Nagram X"
+            "Nagram XF"
         )
     val dateOfForwardedMsg =
         addConfig(
@@ -290,6 +290,12 @@ object NaConfig {
             "ChatDecoration",
             ConfigItem.configTypeInt,
             0
+        )
+    val forceSnowfall =
+        addConfig(
+            "ForceSnowfall",
+            ConfigItem.configTypeBool,
+            false
         )
     val doNotUnarchiveBySwipe =
         addConfig(
@@ -557,7 +563,7 @@ object NaConfig {
         addConfig(
             "CustomTitleUserName",
             ConfigItem.configTypeBool,
-            false
+            true
         )
     val enhancedVideoBitrate =
         addConfig(
