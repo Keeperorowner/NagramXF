@@ -50,6 +50,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.ui.cells.AvatarCornersPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.ChatListPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.FabShapePreviewCell;
+import tw.nekomimi.nekogram.ui.cells.FilterTabsPreviewCell;
 import xyz.nextalone.nagram.NaConfig;
 
 @SuppressLint("RtlHardcoded")
@@ -60,6 +61,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private AvatarCornersPreviewCell avatarCornersPreviewCell;
     private FabShapePreviewCell fabShapePreviewCell;
     private ChatListPreviewCell chatListPreviewCell;
+    private FilterTabsPreviewCell filterTabsPreviewCell;
     private ChatBlurAlphaSeekBar chatBlurAlphaSeekbar;
     private Parcelable recyclerViewState = null;
 
@@ -131,6 +133,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell userAvatarsInMessagePreviewRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getUserAvatarsInMessagePreview()));
     private final AbstractConfigCell dividerDialogs = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerFolder = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Folder)));
+    private final AbstractConfigCell filterTabsPreviewRow = cellGroup.appendCell(new ConfigCellCustom("FilterTabsPreview", ConfigCellCustom.CUSTOM_ITEM_FilterTabsPreview, false));
     private final AbstractConfigCell hideAllTabRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideAllTab, getString(R.string.HideAllTabAbout)));
     private final ConfigCellTextCheck foldersAtBottomRow = (ConfigCellTextCheck) cellGroup.appendCell(
             new ConfigCellTextCheck(NaConfig.INSTANCE.getFoldersAtBottom())
@@ -234,6 +237,13 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.rows.removeAll(dialogsBlock);
         int appearanceIdx = cellGroup.rows.indexOf(headerAppearance);
         cellGroup.rows.addAll(appearanceIdx, dialogsBlock);
+        cellGroup.rows.remove(ignoreUnreadCountRow);
+        cellGroup.rows.remove(tabsTitleTypeRow);
+        int hideAllTabIdx = cellGroup.rows.indexOf(hideAllTabRow);
+        if (hideAllTabIdx >= 0) {
+            cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
+            cellGroup.rows.add(hideAllTabIdx, ignoreUnreadCountRow);
+        }
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;
         checkOpenArchiveOnPullRows();
@@ -250,6 +260,10 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         setupDefaultListeners();
 
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
+            if (filterTabsPreviewCell != null
+                    && key.equals(NaConfig.INSTANCE.getFoldersAtBottom().getKey())) {
+                filterTabsPreviewCell.refresh();
+            }
             if (key.equals(NaConfig.INSTANCE.getForceSnowfall().getKey())) {
                 if (chatListPreviewCell != null) {
                     chatListPreviewCell.invalidate();
@@ -261,6 +275,10 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     listView.invalidate();
                 }
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.invalidateMotionBackground);
+            } else if (key.equals(NekoConfig.hideAllTab.getKey())
+                    || key.equals(NaConfig.INSTANCE.getIgnoreUnreadCount().getKey())
+                    || key.equals(NekoConfig.tabsTitleType.getKey())) {
+                getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
             } else if (key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
                     || key.equals(NekoConfig.tabletMode.getKey())
                     || key.equals(NaConfig.INSTANCE.getHideDividers().getKey())
@@ -269,9 +287,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NaConfig.INSTANCE.getHideHelpSection().getKey())
                     || key.equals(NaConfig.INSTANCE.getAlwaysShowDownloadIcon().getKey())
                     || key.equals(NaConfig.INSTANCE.getShowStickersRowToplevel().getKey())
-                    || key.equals(NekoConfig.hideAllTab.getKey())
                     || key.equals(NaConfig.INSTANCE.getFoldersAtBottom().getKey())
-                    || key.equals(NaConfig.INSTANCE.getIgnoreUnreadCount().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableDialogsFloatingButton().getKey())
                     || key.equals(NaConfig.INSTANCE.getDisableBotOpenButton().getKey())
                     || key.equals(NekoConfig.navigationDrawerEnabled.getKey())) {
@@ -476,6 +492,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                         null
                 );
                 case ConfigCellCustom.CUSTOM_ITEM_ChatListPreview -> chatListPreviewCell = new ChatListPreviewCell(mContext);
+                case ConfigCellCustom.CUSTOM_ITEM_FilterTabsPreview -> filterTabsPreviewCell = new FilterTabsPreviewCell(mContext);
                 case ConfigCellCustom.CUSTOM_ITEM_CharBlurAlpha -> {
                     chatBlurAlphaSeekbar = new ChatBlurAlphaSeekBar(mContext);
                     chatBlurAlphaSeekbar.setEnabled(NekoConfig.forceBlurInChat.Bool());

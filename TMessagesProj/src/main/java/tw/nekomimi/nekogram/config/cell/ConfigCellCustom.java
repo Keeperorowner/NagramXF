@@ -17,6 +17,7 @@ public class ConfigCellCustom extends AbstractConfigCell implements WithKey {
     public static final int CUSTOM_ITEM_DoubleTapPreview = 987;
     public static final int CUSTOM_ITEM_FabShapePreview = 986;
     public static final int CUSTOM_ITEM_ChatListPreview = 985;
+    public static final int CUSTOM_ITEM_FilterTabsPreview = 984;
 
     public final int type;
     public boolean enabled;
