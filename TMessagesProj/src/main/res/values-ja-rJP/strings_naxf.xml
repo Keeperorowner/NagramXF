@@ -168,4 +168,6 @@
     <string name="JoinDateChat">あなたは **%2$s** に **%1$s** に参加しました。</string>
     <string name="CreationDateUserApproximately">**%1$s** はおよそ **%2$s** にアカウントを作成しました。</string>
     <string name="CreationDateSelfApproximately">あなたはおよそ **%1$s** にアカウントを作成しました。</string>
+    <string name="ForceSnowfall">雪のエフェクトを常に表示</string>
+    <string name="ForceSnowfallInfo">日付に関係なく、タイトルバー、サイドメニュー、チャットの背景に常に雪のエフェクトを表示します。</string>
 </resources>

@@ -138,4 +138,6 @@
     <string name="JoinDateChat">您于 **%2$s** 加入 **%1$s**。</string>
     <string name="CreationDateUserApproximately">**%1$s** 大约于 **%2$s** 创建账户。</string>
     <string name="CreationDateSelfApproximately">您大约在 **%1$s** 创建了账户。</string>
+    <string name="ForceSnowfall">强制飘雪动效</string>
+    <string name="ForceSnowfallInfo">在标题栏、侧边栏和聊天背景上始终显示飘雪动效，不受日期限制。</string>
 </resources>

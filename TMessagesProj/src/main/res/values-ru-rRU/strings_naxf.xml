@@ -166,4 +166,6 @@
     <string name="JoinDateChat">Вы присоединились к **%1$s** **%2$s**.</string>
     <string name="CreationDateUserApproximately">**%1$s** создал(а) свой аккаунт примерно **%2$s**.</string>
     <string name="CreationDateSelfApproximately">Вы создали свой аккаунт примерно **%1$s**.</string>
+    <string name="ForceSnowfall">Принудительный снегопад</string>
+    <string name="ForceSnowfallInfo">Всегда показывать эффект снегопада в заголовке, боковом меню и фоне чата, независимо от даты.</string>
 </resources>

@@ -57,6 +57,7 @@ import org.telegram.ui.Components.Reactions.HwEmojis;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import xyz.nextalone.nagram.NaConfig;
 
 public class DrawerProfileCell extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -359,25 +360,12 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     }
 
     private void updateHeaderDecoration() {
-        int decoration = NekoConfig.actionBarDecoration.Int();
-        if (decoration == 3) {
-            snowflakesEffect = null;
-            fireworksEffect = null;
-            return;
-        }
-        if (Theme.getEventType() == 0 || decoration == 1) {
+        if (NaConfig.INSTANCE.getForceSnowfall().Bool() || Theme.getEventType() == 0) {
             if (snowflakesEffect == null) {
                 snowflakesEffect = new SnowflakesEffect(0);
             }
             snowflakesEffect.setColorKey(Theme.key_chats_menuName);
             fireworksEffect = null;
-            return;
-        }
-        if (decoration == 2) {
-            if (fireworksEffect == null) {
-                fireworksEffect = new FireworksEffect();
-            }
-            snowflakesEffect = null;
             return;
         }
         snowflakesEffect = null;

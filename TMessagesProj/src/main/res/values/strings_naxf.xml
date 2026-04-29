@@ -140,4 +140,6 @@
     <string name="JoinDateChat">You joined **%1$s** on **%2$s**.</string>
     <string name="CreationDateUserApproximately">**%1$s** created their account approximately on **%2$s**.</string>
     <string name="CreationDateSelfApproximately">You created your account approximately on **%1$s**.</string>
+    <string name="ForceSnowfall">Force Snowfall</string>
+    <string name="ForceSnowfallInfo">Always show the snowfall effect on the title bar, side drawer and chat background, regardless of the date.</string>
 </resources>
