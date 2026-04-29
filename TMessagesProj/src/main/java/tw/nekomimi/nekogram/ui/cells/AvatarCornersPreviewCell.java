@@ -3,16 +3,18 @@ package tw.nekomimi.nekogram.ui.cells;
 import android.content.Context;
 import android.os.Build;
 import android.graphics.Canvas;
-import android.graphics.Color;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.Region;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 
-import androidx.core.graphics.ColorUtils;
+import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AvatarCornerHelper;
@@ -27,9 +29,8 @@ public class AvatarCornersPreviewCell extends FrameLayout {
 
     private final RectF rect = new RectF();
     private final Path onlineCutoutPath = new Path();
-    private final Paint previewBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint previewStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint brightMockPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final AltSeekbar seekBar;
     private final FrameLayout preview;
     private float committedAvatarCorners;
@@ -66,107 +67,160 @@ public class AvatarCornersPreviewCell extends FrameLayout {
         seekBar.setProgress(previewAvatarCorners / 28.0f);
         addView(seekBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        outlinePaint.setStyle(Paint.Style.STROKE);
-        outlinePaint.setColor(ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_switchTrack), 63));
-        outlinePaint.setStrokeWidth(Math.max(2, AndroidUtilities.dp(1.0f)));
-
-        previewStrokePaint.setStyle(Paint.Style.STROKE);
-
         preview = new FrameLayout(context) {
             @SuppressWarnings("deprecation")
             @Override
             protected void onDraw(Canvas canvas) {
-                int color = Theme.getColor(Theme.key_switchTrack);
-                int red = Color.red(color);
-                int green = Color.green(color);
-                int blue = Color.blue(color);
-                float width = getMeasuredWidth();
-                float height = getMeasuredHeight();
-                float centerY = height / 2.0f;
-                float round = AndroidUtilities.dp(10.0f);
-                float previewRound = AndroidUtilities.dp(12.0f);
-                float rectRound = width / 2.0f;
-                float previewAlpha = Theme.isCurrentThemeDark() ? 0.05f : 0.035f;
-                float previewStroke = AndroidUtilities.dpf2(0.5f);
-
-                previewBackgroundPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), previewAlpha));
-                previewStrokePaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), previewAlpha + 0.085f));
-                previewStrokePaint.setStrokeWidth(previewStroke);
-
-                rect.set(0.0f, 0.0f, width, height);
-                canvas.drawRoundRect(rect, previewRound, previewRound, previewBackgroundPaint);
-                rect.set(
-                        previewStroke / 2.0f,
-                        previewStroke / 2.0f,
-                        width - previewStroke / 2.0f,
-                        height - previewStroke / 2.0f
-                );
-                canvas.drawRoundRect(rect, previewRound, previewRound, previewStrokePaint);
-
-                rect.set(0.0f, 0.0f, width, height);
-                Theme.dialogs_onlineCirclePaint.setColor(Color.argb(20, red, green, blue));
-                canvas.drawRoundRect(rect, round, round, Theme.dialogs_onlineCirclePaint);
-
-                float strokeWidth = outlinePaint.getStrokeWidth() / 2.0f;
-                rect.set(strokeWidth, strokeWidth, width - strokeWidth, height - strokeWidth);
-                canvas.drawRoundRect(rect, round, round, outlinePaint);
-
-                float onlineCenterX = AndroidUtilities.dp(68.0f);
-                float onlineCenterY = AndroidUtilities.dpf2(20.5f) + centerY;
-
-                Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
-                canvas.drawCircle(onlineCenterX, onlineCenterY, AndroidUtilities.dp(7.0f), Theme.dialogs_onlineCirclePaint);
-
-                Theme.dialogs_onlineCirclePaint.setColor(Color.argb(204, red, green, blue));
-                canvas.drawRoundRect(
-                        AndroidUtilities.dp(92.0f),
-                        centerY - AndroidUtilities.dpf2(15.5f),
-                        width - AndroidUtilities.dp(90.0f),
-                        centerY - AndroidUtilities.dpf2(7.5f),
-                        rectRound,
-                        rectRound,
-                        Theme.dialogs_onlineCirclePaint
-                );
-
-                onlineCutoutPath.reset();
-                onlineCutoutPath.addCircle(onlineCenterX, onlineCenterY, AndroidUtilities.dp(12.0f), Path.Direction.CCW);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    canvas.clipOutPath(onlineCutoutPath);
-                } else {
-                    canvas.clipPath(onlineCutoutPath, Region.Op.DIFFERENCE);
-                }
-                Theme.dialogs_onlineCirclePaint.setColor(Color.argb(90, red, green, blue));
-                canvas.drawRoundRect(
-                        AndroidUtilities.dp(92.0f),
-                        centerY + AndroidUtilities.dpf2(7.5f),
-                        width - AndroidUtilities.dp(50.0f),
-                        centerY + AndroidUtilities.dp(15.5f),
-                        rectRound,
-                        rectRound,
-                        Theme.dialogs_onlineCirclePaint
-                );
-
-                canvas.drawRoundRect(
-                        AndroidUtilities.dp(20.0f),
-                        centerY - AndroidUtilities.dp(28.0f),
-                        AndroidUtilities.dp(76.0f),
-                        centerY + AndroidUtilities.dp(28.0f),
-                        AvatarCornerHelper.getAvatarRoundRadius(56.0f, previewAvatarCorners, false, false, NaConfig.INSTANCE.getSingleCornerRadius().Bool()),
-                        AvatarCornerHelper.getAvatarRoundRadius(56.0f, previewAvatarCorners, false, false, NaConfig.INSTANCE.getSingleCornerRadius().Bool()),
-                        Theme.dialogs_onlineCirclePaint
-                );
+                drawMock(canvas, getMeasuredWidth());
             }
         };
         preview.setWillNotDraw(false);
+        preview.setBackground(new PreviewCardDrawable());
+        preview.setMinimumHeight(AndroidUtilities.dp(83));
         addView(preview, LayoutHelper.createFrame(
                 LayoutHelper.MATCH_PARENT,
-                LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT,
                 Gravity.CENTER_HORIZONTAL | Gravity.TOP,
                 21,
-                112,
+                114,
                 21,
                 21
         ));
+    }
+
+    private float getAvatarSquareness() {
+        float v = 1f - (previewAvatarCorners / 28f);
+        if (v < 0f) v = 0f;
+        if (v > 1f) v = 1f;
+        return v;
+    }
+
+    private float getOnlineDotOffset(float baseDp, float outerRadius) {
+        float diag = (float) (outerRadius / Math.sqrt(2.0));
+        return baseDp + (diag - baseDp) * getAvatarSquareness();
+    }
+
+    @SuppressWarnings("deprecation")
+    private void drawMock(Canvas canvas, float width) {
+        float dp1 = AndroidUtilities.dp(1f);
+        float left = AndroidUtilities.dp(15f);
+        float textStart = AndroidUtilities.dp(83f);
+        float avatarSize = AndroidUtilities.dp(56f);
+        float avatarTop = AndroidUtilities.dp(12f) + dp1;
+        float avatarRight = left + avatarSize;
+        float avatarBottom = avatarTop + avatarSize;
+
+        mockPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), 0.2f));
+        brightMockPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), 0.4f));
+
+        float squareness = getAvatarSquareness();
+        float outerRadius = AndroidUtilities.dpf2(2f * squareness + 7f);
+        float innerRadius = AndroidUtilities.dpf2(squareness + 5f);
+        float onlineCx = avatarRight - getOnlineDotOffset(AndroidUtilities.dpf2(8f), outerRadius);
+        float onlineCy = avatarBottom - getOnlineDotOffset(AndroidUtilities.dpf2(7.5f), outerRadius);
+
+        canvas.save();
+        onlineCutoutPath.reset();
+        onlineCutoutPath.addCircle(onlineCx, onlineCy, outerRadius, Path.Direction.CCW);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            canvas.clipOutPath(onlineCutoutPath);
+        } else {
+            canvas.clipPath(onlineCutoutPath, Region.Op.DIFFERENCE);
+        }
+        rect.set(left, avatarTop, avatarRight, avatarBottom);
+        int avatarCornerRadius = AvatarCornerHelper.getAvatarRoundRadius(
+                56f,
+                previewAvatarCorners,
+                false,
+                false,
+                NaConfig.INSTANCE.getSingleCornerRadius().Bool()
+        );
+        canvas.drawRoundRect(rect, avatarCornerRadius, avatarCornerRadius, brightMockPaint);
+        canvas.restore();
+
+        Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
+        canvas.drawCircle(onlineCx, onlineCy, innerRadius, Theme.dialogs_onlineCirclePaint);
+
+        float rowRadius = AndroidUtilities.dp(4f);
+        rect.set(
+                textStart + AndroidUtilities.dp(6f),
+                AndroidUtilities.dp(16f) + dp1,
+                textStart + AndroidUtilities.dp(6f) + 0.4f * width,
+                AndroidUtilities.dp(24.33f) + dp1
+        );
+        canvas.drawRoundRect(rect, rowRadius, rowRadius, brightMockPaint);
+
+        rect.set(
+                textStart + AndroidUtilities.dp(6f),
+                AndroidUtilities.dp(38f) + dp1,
+                textStart + AndroidUtilities.dp(6f) + 0.5f * width,
+                AndroidUtilities.dp(46.33f) + dp1
+        );
+        canvas.drawRoundRect(rect, rowRadius, rowRadius, mockPaint);
+
+        rect.set(
+                textStart + AndroidUtilities.dp(6f),
+                AndroidUtilities.dp(56f) + dp1,
+                textStart + AndroidUtilities.dp(6f) + 0.36f * width,
+                AndroidUtilities.dp(64.33f) + dp1
+        );
+        canvas.drawRoundRect(rect, rowRadius, rowRadius, mockPaint);
+
+        rect.set(
+                width - AndroidUtilities.dp(16f) - AndroidUtilities.dp(43f),
+                AndroidUtilities.dp(16f) + dp1,
+                width - AndroidUtilities.dp(16f),
+                AndroidUtilities.dp(24.33f) + dp1
+        );
+        canvas.drawRoundRect(rect, rowRadius, rowRadius, mockPaint);
+    }
+
+    private static final class PreviewCardDrawable extends Drawable {
+        private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF rectF = new RectF();
+        private final float radius = AndroidUtilities.dp(12f);
+
+        PreviewCardDrawable() {
+            strokePaint.setStyle(Paint.Style.STROKE);
+            strokePaint.setStrokeWidth(AndroidUtilities.dpf2(0.5f));
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            float baseAlpha = Theme.isCurrentThemeDark() ? 0.05f : 0.035f;
+            int textColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+            backgroundPaint.setColor(Theme.multAlpha(textColor, baseAlpha));
+            strokePaint.setColor(Theme.multAlpha(textColor, baseAlpha + 0.085f));
+            float sw = strokePaint.getStrokeWidth() / 2f;
+            rectF.set(
+                    getBounds().left + sw,
+                    getBounds().top + sw,
+                    getBounds().right - sw,
+                    getBounds().bottom - sw
+            );
+            canvas.drawRoundRect(rectF, radius, radius, backgroundPaint);
+            canvas.drawRoundRect(rectF, radius, radius, strokePaint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            backgroundPaint.setAlpha(alpha);
+            strokePaint.setAlpha(alpha);
+            invalidateSelf();
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
+            backgroundPaint.setColorFilter(colorFilter);
+            strokePaint.setColorFilter(colorFilter);
+            invalidateSelf();
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
     }
 
     @Override
