@@ -11070,6 +11070,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (userInfo != null && (userInfo.flags2 & 64) != 0 && (profileChannelMessageFetcher == null || !profileChannelMessageFetcher.loaded || !profileChannelMessageFetcher.messageObjects.isEmpty())) {
                     final TLRPC.Chat channel = getMessagesController().getChat(userInfo.personal_channel_id);
                     if (channel != null && (ChatObject.isPublic(channel) || !ChatObject.isNotInChat(channel))) {
+                        if (rowCount == 0 && emptyRow < 0 && emptyRow2 < 0) {
+                            emptyRow2 = rowCount++;
+                        }
                         channelRow = rowCount++;
                         channelDividerRow = rowCount++;
                     }
@@ -11221,6 +11224,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (chatInfo != null && chatInfo.linked_chat_id != 0 && (profileChannelMessageFetcher == null || !profileChannelMessageFetcher.loaded || profileChannelMessageFetcher.messageObjects != null)) {
                 TLRPC.Chat channel = getMessagesController().getChat(chatInfo.linked_chat_id);
                 if (channel != null && (ChatObject.isPublic(channel) || !ChatObject.isNotInChat(channel)) && ChatObject.isChannelAndNotMegaGroup(channel)) {
+                    if (rowCount == 0 && emptyRow < 0 && emptyRow2 < 0) {
+                        emptyRow2 = rowCount++;
+                    }
                     channelRow = rowCount++;
                     channelDividerRow = rowCount++;
                 }
