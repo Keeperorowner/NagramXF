@@ -1131,12 +1131,6 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
-    val messageColoredBackground =
-        addConfig(
-            "MessageColoredBackground",
-            ConfigItem.configTypeBool,
-            true
-        )
     val removeMessageTail =
         addConfig(
             "RemoveMessageTail",

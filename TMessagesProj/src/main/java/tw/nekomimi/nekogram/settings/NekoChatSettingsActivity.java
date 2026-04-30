@@ -112,7 +112,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell headerMessages = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.MessagesChartTitle)));
     private final AbstractConfigCell messagePreviewRow = cellGroup.appendCell(new ConfigCellCustom("MessagePreview", ConfigCellCustom.CUSTOM_ITEM_MessagePreview, false));
     private final AbstractConfigCell showTimeHintRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowTimeHint()));
-    private final AbstractConfigCell disableReplyBackgroundRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getMessageColoredBackground()));
     private final AbstractConfigCell removeMessageTailRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRemoveMessageTail()));
     private final AbstractConfigCell useEditedIconRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getUseEditedIcon()));
     private final AbstractConfigCell customEditedMessageRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getCustomEditedMessage(), "", null));
@@ -579,13 +578,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                         cellGroup.rows.add(index, customEditedMessageRow);
                         listAdapter.notifyItemInserted(index);
                     }
-                }
-                if (messageSettingsPreviewCell != null) {
-                    messageSettingsPreviewCell.refresh();
-                }
-            } else if (key.equals(NaConfig.INSTANCE.getMessageColoredBackground().getKey())) {
-                if (stickerSizeCell != null) {
-                    stickerSizeCell.invalidate();
                 }
                 if (messageSettingsPreviewCell != null) {
                     messageSettingsPreviewCell.refresh();
