@@ -32,6 +32,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
@@ -40,6 +41,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextCheckCell2;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AnimatedTextView;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -156,11 +158,21 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
 
     // Camera
     private final AbstractConfigCell headerCamera = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.CameraSettings)));
+    private final AbstractConfigCell cameraTypeRow = cellGroup.appendCell(new ConfigCellCustom("CameraType", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell cameraExtensionsRow = cellGroup.appendCell(new ConfigCellTextCheck2("CameraExtensions", getString(R.string.CameraExtensions), new ArrayList<>() {{
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getCameraMirrorMode()));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getCameraStabilization()));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getHideCameraTile(), null, null, 0, false));
+    }}, null));
+    private final ArrayList<ConfigCellCheckBox> cameraExtensionRows = ((ConfigCellTextCheck2) cameraExtensionsRow).getCheckBox();
     private final AbstractConfigCell cameraInVideoMessages = cellGroup.appendCell(new ConfigCellSelectBox("CameraInVideoMessages", NaConfig.INSTANCE.getCameraInVideoMessages(), new String[]{
             getString(R.string.CameraInVideoMessagesFront),
             getString(R.string.CameraInVideoMessagesRear),
             getString(R.string.CameraInVideoMessagesAsk)
     }, null));
+    private final AbstractConfigCell rememberLastUsedCameraRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRememberLastUsedCamera(), getString(R.string.RememberLastUsedCameraNotice)));
+    private final AbstractConfigCell staticZoomRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getStaticZoom()));
+    private final AbstractConfigCell staticZoomNoticeRow = cellGroup.appendCell(new ConfigCellCustom("StaticZoomNotice", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell dividerCamera = cellGroup.appendCell(new ConfigCellDivider());
 
     // Media
@@ -172,6 +184,8 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell dontAutoPlayNextVoiceRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDontAutoPlayNextVoice()));
     private final AbstractConfigCell showSpoilersDirectlyRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.showSpoilersDirectly));
     private final AbstractConfigCell sendHighQualityPhotoRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSendHighQualityPhoto()));
+    private final AbstractConfigCell hidePhotoCounterRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHidePhotoCounter(), getString(R.string.HidePhotoCounterNotice)));
+    private final AbstractConfigCell hideMediaViewerShareButtonRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideMediaViewerShareButton(), getString(R.string.HideMediaViewerShareButtonNotice)));
     private final AbstractConfigCell dividerMedia = cellGroup.appendCell(new ConfigCellDivider());
 
     // Stickers
@@ -493,7 +507,26 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         }
         checkSkipOpenLinkConfirmRows();
         checkConfirmAVRows();
+        expandCameraExtensionsByDefault();
         addRowsToMap(cellGroup);
+    }
+
+    private void expandCameraExtensionsByDefault() {
+        if (!(cameraExtensionsRow instanceof ConfigCellTextCheck2 row) || !row.isCollapsed()) {
+            return;
+        }
+        int index = cellGroup.rows.indexOf(cameraExtensionsRow);
+        if (index < 0) {
+            return;
+        }
+        row.setCollapsed(false);
+        for (int i = 0; i < cameraExtensionRows.size(); i++) {
+            AbstractConfigCell cell = cameraExtensionRows.get(i);
+            cell.bindCellGroup(cellGroup);
+            if (!cellGroup.rows.contains(cell)) {
+                cellGroup.rows.add(index + 1 + i, cell);
+            }
+        }
     }
 
     @Override
@@ -574,7 +607,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                         listAdapter.notifyItemRemoved(index);
                     }
                 }
-            } else if (key.equals("PremiumElements")) {
+            } else if (key.equals("PremiumElements") || key.equals("CameraExtensions")) {
                 addRowsToMap(cellGroup);
             }
         };
@@ -648,6 +681,17 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 return Unit.INSTANCE;
             });
             builder.show();
+        } else if (position == cellGroup.rows.indexOf(cameraTypeRow)) {
+            PopupBuilder builder = new PopupBuilder(view);
+            builder.setItems(new String[]{"Camera 1", "Camera 2"}, (i, str) -> {
+                boolean useCamera2 = i == 1;
+                if (SharedConfig.isUsingCamera2(currentAccount) != useCamera2) {
+                    SharedConfig.toggleUseCamera2(currentAccount);
+                }
+                listAdapter.notifyItemChanged(position);
+                return Unit.INSTANCE;
+            });
+            builder.show();
         } else if (position == cellGroup.rows.indexOf(emojiSetsRow)) {
             presentFragment(new NekoEmojiSettingsActivity());
         } else if (position == cellGroup.rows.indexOf(transcribeProviderCfCredentialsRow)) {
@@ -666,6 +710,10 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         int toggleRowIndex = cellGroup.rows.indexOf(premiumElementsToggleRow);
         if (position > toggleRowIndex && position <= toggleRowIndex + premiumElementsRows.size()) {
             listAdapter.notifyItemRangeChanged(toggleRowIndex, premiumElementsRows.size());
+        }
+        int cameraToggleRowIndex = cellGroup.rows.indexOf(cameraExtensionsRow);
+        if (cameraToggleRowIndex >= 0 && position > cameraToggleRowIndex && position <= cameraToggleRowIndex + cameraExtensionRows.size()) {
+            listAdapter.notifyItemChanged(cameraToggleRowIndex);
         }
     }
 
@@ -865,6 +913,12 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             if (holder.itemView instanceof TextSettingsCell textCell) {
                 if (position == cellGroup.rows.indexOf(maxRecentStickerCountRow)) {
                     textCell.setTextAndValue(getString(R.string.maxRecentStickerCount), String.valueOf(NekoConfig.maxRecentStickerCount.Int()), true);
+                } else if (position == cellGroup.rows.indexOf(cameraTypeRow)) {
+                    textCell.setTextAndValue(
+                            getString(R.string.CameraType),
+                            SharedConfig.isUsingCamera2(currentAccount) ? "Camera 2" : "Camera 1",
+                            true,
+                            cellGroup.needSetDivider(cameraTypeRow));
                 } else if (position == cellGroup.rows.indexOf(doubleTapActionRow)) {
                     textCell.setTextAndValue(getString(R.string.DoubleTapIncoming), DoubleTap.doubleTapActionMap.get(NaConfig.INSTANCE.getDoubleTapAction().Int()), true);
                 } else if (position == cellGroup.rows.indexOf(doubleTapActionOutRow)) {
@@ -875,6 +929,10 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                     textCell.setTextAndValue(getString(R.string.LlmProviderGeminiKey), "", true);
                 } else if (position == cellGroup.rows.indexOf(transcribeProviderOpenAiRow)) {
                     textCell.setTextAndValue(getString(R.string.TranscribeProviderOpenAI), "", true);
+                }
+            } else if (holder.itemView instanceof TextInfoPrivacyCell textInfoPrivacyCell) {
+                if (position == cellGroup.rows.indexOf(staticZoomNoticeRow)) {
+                    textInfoPrivacyCell.setText(getString(R.string.StaticZoomNotice));
                 }
             } else if (holder.itemView instanceof EmojiSetCell v1) {
                 v1.setData(EmojiHelper.getInstance().getCurrentEmojiPackInfo(), false, true);

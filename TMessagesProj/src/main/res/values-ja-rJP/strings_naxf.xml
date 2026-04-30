@@ -170,4 +170,22 @@
     <string name="CreationDateSelfApproximately">あなたはおよそ **%1$s** にアカウントを作成しました。</string>
     <string name="ForceSnowfall">雪のエフェクトを常に表示</string>
     <string name="ForceSnowfallInfo">日付に関係なく、タイトルバー、サイドメニュー、チャットの背景に常に雪のエフェクトを表示します。</string>
+    <string name="UseCamera2API">Camera 2 API を使用</string>
+    <string name="UseCamera2APIDescription">アプリ内カメラに最新の Camera 2 API を使用します。新しい端末での互換性、パフォーマンス、丸型動画録画の安定性が向上することがあります。無効にすると従来の Camera 1 API に戻ります。</string>
+    <string name="CameraType">カメラタイプ</string>
+    <string name="CameraExtensions">拡張設定</string>
+    <string name="CameraMirrorMode">セルフィーをミラー保存</string>
+    <string name="CameraMirrorModeNotice">フロントカメラで撮影した写真を、プレビューで見えるとおりに左右反転して保存します。動画には影響しません。</string>
+    <string name="CameraStabilization">動画手ぶれ補正</string>
+    <string name="CameraStabilizationNotice">動画録画時のカメラぶれを軽減します。端末がデジタルまたは光学手ぶれ補正に対応している必要があります。</string>
+    <string name="RememberLastUsedCamera">前回のカメラを記憶</string>
+    <string name="RememberLastUsedCameraNotice">アプリ内カメラを開く際、前回使ったフロント／リアレンズを再利用します。</string>
+    <string name="HideCameraTile">カメラタイルを非表示</string>
+    <string name="HideCameraTileNotice">添付メディアグリッド内のカメラショートカットタイルを非表示にします。</string>
+    <string name="StaticZoom">ズームを保持</string>
+    <string name="StaticZoomNotice">写真撮影後にカメラのズームを自動リセットせず、現在の倍率を維持します。</string>
+    <string name="HidePhotoCounter">写真カウンターを非表示</string>
+    <string name="HidePhotoCounterNotice">メディアビューアの「1 / 10」のような写真カウンターバッジを非表示にします。</string>
+    <string name="HideMediaViewerShareButton">メディアビューアの共有ボタンを非表示</string>
+    <string name="HideMediaViewerShareButtonNotice">メディアビューアメニューから外部共有項目を非表示にします。</string>
 </resources>

@@ -168,4 +168,22 @@
     <string name="CreationDateSelfApproximately">Вы создали свой аккаунт примерно **%1$s**.</string>
     <string name="ForceSnowfall">Принудительный снегопад</string>
     <string name="ForceSnowfallInfo">Всегда показывать эффект снегопада в заголовке, боковом меню и фоне чата, независимо от даты.</string>
+    <string name="UseCamera2API">Использовать API Camera 2</string>
+    <string name="UseCamera2APIDescription">Использовать современный API Camera 2 для встроенной камеры. Может повысить совместимость, производительность и надёжность записи кружков на новых устройствах. Отключите, чтобы вернуться к устаревшему API Camera 1.</string>
+    <string name="CameraType">Тип камеры</string>
+    <string name="CameraExtensions">Расширенные настройки</string>
+    <string name="CameraMirrorMode">Зеркальные селфи</string>
+    <string name="CameraMirrorModeNotice">Сохранять фотографии с фронтальной камеры зеркально, как вы видите себя в предпросмотре. Влияет только на фотографии, не на видео.</string>
+    <string name="CameraStabilization">Стабилизация видео</string>
+    <string name="CameraStabilizationNotice">Уменьшать дрожание камеры при записи видео, если оборудование устройства поддерживает цифровую или оптическую стабилизацию.</string>
+    <string name="RememberLastUsedCamera">Запоминать последнюю камеру</string>
+    <string name="RememberLastUsedCameraNotice">При открытии встроенной камеры использовать последнюю выбранную (фронтальную или основную).</string>
+    <string name="HideCameraTile">Скрыть плитку камеры</string>
+    <string name="HideCameraTileNotice">Скрыть быстрый ярлык камеры в сетке вложений с медиа.</string>
+    <string name="StaticZoom">Фиксированный зум</string>
+    <string name="StaticZoomNotice">Сохранять текущий зум камеры после съёмки фото вместо автоматического сброса.</string>
+    <string name="HidePhotoCounter">Скрыть счётчик фото</string>
+    <string name="HidePhotoCounterNotice">Скрыть бейдж счётчика в просмотрщике фото, например «1 из 10».</string>
+    <string name="HideMediaViewerShareButton">Скрыть кнопку «Поделиться»</string>
+    <string name="HideMediaViewerShareButtonNotice">Скрыть пункт внешней отправки из меню просмотрщика медиа.</string>
 </resources>

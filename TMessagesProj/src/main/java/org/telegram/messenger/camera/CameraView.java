@@ -124,7 +124,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
     private int focusAreaSize;
     private Drawable thumbDrawable;
 
-    private final boolean useCamera2 = false && SharedConfig.isUsingCamera2(UserConfig.selectedAccount);
+    private final boolean useCamera2 = SharedConfig.isUsingCamera2(UserConfig.selectedAccount);
     private final CameraSessionWrapper[] cameraSession = new CameraSessionWrapper[2];
     private CameraSessionWrapper cameraSessionRecording;
 
@@ -635,6 +635,7 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             cameraSession[1] = cameraSession0;
 
             isFrontface = !isFrontface;
+            saveLastUsedCameraFace(isFrontface);
 
             Handler handler = cameraThread.getHandler();
             if (handler != null) {
@@ -658,6 +659,24 @@ public class CameraView extends FrameLayout implements TextureView.SurfaceTextur
             cameraSession[0] = null;
         }
         isFrontface = !isFrontface;
+        saveLastUsedCameraFace(isFrontface);
+    }
+
+    public static void saveLastUsedCameraFace(boolean frontface) {
+        if (xyz.nextalone.nagram.NaConfig.INSTANCE.getRememberLastUsedCamera().Bool()) {
+            try {
+                MessagesController.getGlobalMainSettings().edit().putBoolean("last_used_camera_face", frontface).apply();
+            } catch (Throwable ignore) {}
+        }
+    }
+
+    public static boolean getLastUsedCameraFace(boolean fallback) {
+        if (xyz.nextalone.nagram.NaConfig.INSTANCE.getRememberLastUsedCamera().Bool()) {
+            try {
+                return MessagesController.getGlobalMainSettings().getBoolean("last_used_camera_face", fallback);
+            } catch (Throwable ignore) {}
+        }
+        return fallback;
     }
 
     public void resetCamera() {

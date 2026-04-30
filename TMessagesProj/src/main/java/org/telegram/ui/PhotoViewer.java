@@ -785,6 +785,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         private boolean nextNotAnimate;
 
         public void updateShow(boolean show, boolean animated) {
+            if (NaConfig.INSTANCE.getHidePhotoCounter().Bool()) {
+                show = false;
+            }
             if (shown != show) {
                 shown = show;
                 if (!show) {
@@ -6164,6 +6167,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (NaConfig.INSTANCE.getMediaViewerMenuItemNoQuoteForward().Bool()) menuItem.addSubItem(gallery_menu_send_noquote, R.drawable.msg_forward_noquote, getString(R.string.NoQuoteForward)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.addSubItem(gallery_menu_report, R.drawable.msg_report, getString(R.string.ReportProfilePhoto)).setColors(0xfffafafa, 0xfffafafa);
         menuItem.addSubItem(gallery_menu_share, R.drawable.msg_shareout, getString(R.string.ShareFile)).setColors(0xfffafafa, 0xfffafafa);
+        if (NaConfig.INSTANCE.getHideMediaViewerShareButton().Bool()) {
+            menuItem.hideSubItem(gallery_menu_share);
+        }
         menuItem.addSubItem(gallery_menu_masks2, R.drawable.msg_sticker, getString(R.string.ShowStickers)).setColors(0xfffafafa, 0xfffafafa);
         //menuItem.addSubItem(gallery_menu_edit_avatar, R.drawable.photo_paint, LocaleController.getString(R.string.EditPhoto)).setColors(0xfffafafa, 0xfffafafa);
 
@@ -11590,7 +11596,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             if (/*allowShare && */pageBlocksAdapter == null) {
                 if (visible) {
-                    menuItem.showSubItem(gallery_menu_share);
+                    if (!NaConfig.INSTANCE.getHideMediaViewerShareButton().Bool()) {
+                        menuItem.showSubItem(gallery_menu_share);
+                    }
                 } else {
                     menuItem.hideSubItem(gallery_menu_share);
                 }
@@ -14717,7 +14725,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 //            bottomButtonsLayout.setVisibility(!videoPlayerControlVisible ? View.VISIBLE : View.GONE);
             allowShare = true;
             menuItem.hideSubItem(gallery_menu_showall);
-            menuItem.showSubItem(gallery_menu_share);
+            if (!NaConfig.INSTANCE.getHideMediaViewerShareButton().Bool()) {
+                menuItem.showSubItem(gallery_menu_share);
+            }
             setImageIndex(0);
 
             if (sendPhotoType == SELECT_TYPE_AVATAR) {
@@ -15340,7 +15350,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 allowShare = true;
                 galleryButton.setVisibility(View.VISIBLE);
                 galleryGap.setVisibility(View.VISIBLE);
-                menuItem.showSubItem(gallery_menu_share);
+                if (!NaConfig.INSTANCE.getHideMediaViewerShareButton().Bool()) {
+                    menuItem.showSubItem(gallery_menu_share);
+                }
                 menuItem.showSubItem(gallery_menu_scan);
                 boolean canForwardFromViewer = canUseViewerForward(currentMessageObject, noforwards);
                 menuItem.setSubItemVisibility(gallery_menu_send_forward, canForwardFromViewer && centerTitle);
@@ -15453,7 +15465,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             menuItem.showSubItem(gallery_menu_scan);
             allowShare = !noforwards;
-            menuItem.showSubItem(gallery_menu_share);
+            if (!NaConfig.INSTANCE.getHideMediaViewerShareButton().Bool()) {
+                menuItem.showSubItem(gallery_menu_share);
+            }
             menuItem.checkHideMenuItem();
             groupedPhotosListView.fillList();
             editing = needCaptionLayout && (sendPhotoType == 0 || sendPhotoType == 2 || sendPhotoType == SELECT_TYPE_NO_SELECT);

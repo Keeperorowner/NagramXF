@@ -1587,6 +1587,48 @@ object NaConfig {
             ConfigItem.configTypeInt,
             1 // 0: front; 1: rear; 2: ask
         )
+    val cameraStabilization =
+        addConfig(
+            "CameraStabilization",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val cameraMirrorMode =
+        addConfig(
+            "CameraMirrorMode",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val rememberLastUsedCamera =
+        addConfig(
+            "RememberLastUsedCamera",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideCameraTile =
+        addConfig(
+            "HideCameraTile",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val staticZoom =
+        addConfig(
+            "StaticZoom",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hidePhotoCounter =
+        addConfig(
+            "HidePhotoCounter",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideMediaViewerShareButton =
+        addConfig(
+            "HideMediaViewerShareButton",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showCopyFrame =
         addConfig(
             "MessageMenuCopyFrame",
