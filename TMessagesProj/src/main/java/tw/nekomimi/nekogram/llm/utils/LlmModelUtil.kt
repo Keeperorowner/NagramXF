@@ -1,5 +1,6 @@
 package tw.nekomimi.nekogram.llm.utils
 
+import org.json.JSONObject
 import tw.nekomimi.nekogram.llm.preset.LlmPresetRegistry
 
 object LlmModelUtil {
@@ -25,6 +26,12 @@ object LlmModelUtil {
     }
 
     @JvmStatic
+    fun isDeepSeekV4(model: String?): Boolean {
+        val base = getBaseModelName(model).lowercase()
+        return base.startsWith("deepseek-v4")
+    }
+
+    @JvmStatic
     fun isReasoning(model: String?): Boolean {
         val base = getBaseModelName(model).lowercase()
         return base.contains("gemini") && base.contains("flash")
@@ -40,6 +47,27 @@ object LlmModelUtil {
             base.startsWith("gpt-5.") -> "none"
             base.startsWith("gpt-5") -> "minimal"
             else -> "none"
+        }
+    }
+
+    @JvmStatic
+    fun applyReasoningParameters(requestJson: JSONObject, url: String?, model: String?) {
+        if (isReasoning(model)) {
+            requestJson.put("reasoning_effort", getReasoningEffort(model))
+        } else if (isCerebrasGlm(url, model)) {
+            requestJson.put("disable_reasoning", true)
+        } else if (isDeepSeekV4(model)) {
+            if (url == LlmPresetRegistry.getPresetBaseUrl(LlmPresetRegistry.VERCEL_AI_GATEWAY)) {
+                requestJson.put(
+                    "providerOptions",
+                    JSONObject().put(
+                        "deepseek",
+                        JSONObject().put("thinking", JSONObject().put("type", "disabled"))
+                    )
+                )
+            } else {
+                requestJson.put("thinking", JSONObject().put("type", "disabled"))
+            }
         }
     }
 
