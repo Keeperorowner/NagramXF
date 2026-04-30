@@ -142,4 +142,22 @@
     <string name="CreationDateSelfApproximately">You created your account approximately on **%1$s**.</string>
     <string name="ForceSnowfall">Force Snowfall</string>
     <string name="ForceSnowfallInfo">Always show the snowfall effect on the title bar, side drawer and chat background, regardless of the date.</string>
+    <string name="UseCamera2API">Use Camera 2 API</string>
+    <string name="UseCamera2APIDescription">Use the modern Camera 2 API for the in-app camera. May improve compatibility, performance, and round video reliability on newer devices. Disable to fall back to the legacy Camera 1 API.</string>
+    <string name="CameraType">Camera type</string>
+    <string name="CameraExtensions">Extended settings</string>
+    <string name="CameraMirrorMode">Mirror selfies</string>
+    <string name="CameraMirrorModeNotice">Save photos taken with the front camera mirrored, the same way you see yourself in the preview. Affects photos only, not videos.</string>
+    <string name="CameraStabilization">Video stabilization</string>
+    <string name="CameraStabilizationNotice">Smooth out camera shake while recording video, when the device hardware supports digital or optical stabilization.</string>
+    <string name="RememberLastUsedCamera">Remember last used camera</string>
+    <string name="RememberLastUsedCameraNotice">When opening the in-app camera, reuse the front/back lens you last used.</string>
+    <string name="HideCameraTile">Hide camera tile</string>
+    <string name="HideCameraTileNotice">Hide the camera shortcut tile in the attachment media grid.</string>
+    <string name="StaticZoom">Static zoom</string>
+    <string name="StaticZoomNotice">Keep the current camera zoom after taking a photo instead of resetting it automatically.</string>
+    <string name="HidePhotoCounter">Hide photo counter</string>
+    <string name="HidePhotoCounterNotice">Hide the photo viewer counter badge, such as “1 of 10”.</string>
+    <string name="HideMediaViewerShareButton">Hide media viewer share button</string>
+    <string name="HideMediaViewerShareButtonNotice">Hide the external share entry from the media viewer menu.</string>
 </resources>

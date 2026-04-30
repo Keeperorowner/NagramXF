@@ -140,7 +140,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private static final int VIEW_TYPE_AVATAR_CONSTRUCTOR = 4;
     private static final int SHOW_FAST_SCROLL_MIN_COUNT = 30;
     private final boolean needCamera;
-    private final boolean disableAttachCamera = true;
+    private final boolean disableAttachCamera = xyz.nextalone.nagram.NaConfig.INSTANCE.getHideCameraTile().Bool();
 
     private RecyclerListView cameraPhotoRecyclerView;
     private LinearLayoutManager cameraPhotoLayoutManager;
@@ -1372,7 +1372,6 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 }
                 final File cameraFile = AndroidUtilities.generatePicturePath(parentAlert.baseFragment instanceof ChatActivity && ((ChatActivity) parentAlert.baseFragment).isSecretChat(), null);
                 final boolean sameTakePictureOrientation = cameraView.getCameraSession().isSameTakePictureOrientation();
-                cameraView.getCameraSession().setFlipFront(parentAlert.baseFragment instanceof ChatActivity || parentAlert.avatarPicker == 2);
                 takingPhoto = CameraController.getInstance().takePicture(cameraFile, false, cameraView.getCameraSessionObject(), (orientation) -> {
                     takingPhoto = false;
                     if (cameraFile == null || parentAlert.destroyed) {
@@ -2085,9 +2084,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (entry != null && !external && cameraPhotos.size() > 1) {
             updatePhotosCounter(false);
             if (cameraView != null) {
-                zoomControlView.setZoom(0.0f, false);
-                cameraZoom = 0.0f;
-                cameraView.setZoom(0.0f);
+                if (!xyz.nextalone.nagram.NaConfig.INSTANCE.getStaticZoom().Bool()) {
+                    zoomControlView.setZoom(0.0f, false);
+                    cameraZoom = 0.0f;
+                    cameraView.setZoom(0.0f);
+                }
                 CameraController.getInstance().startPreview(cameraView.getCameraSessionObject());
             }
             return;
@@ -2171,9 +2172,11 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                             cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
                         }
                     }, 1000);
-                    zoomControlView.setZoom(0.0f, false);
-                    cameraZoom = 0.0f;
-                    cameraView.setZoom(0.0f);
+                    if (!xyz.nextalone.nagram.NaConfig.INSTANCE.getStaticZoom().Bool()) {
+                        zoomControlView.setZoom(0.0f, false);
+                        cameraZoom = 0.0f;
+                        cameraView.setZoom(0.0f);
+                    }
                     CameraController.getInstance().startPreview(cameraView.getCameraSession());
                 }
                 if (cancelTakingPhotos && cameraPhotos.size() == 1) {
@@ -2592,7 +2595,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         if (cameraView == null) {
             final boolean lazy = !LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || disableAttachCamera;
-            cameraView = new CameraViewInternal(getContext(), isCameraFrontfaceBeforeEnteringEditMode != null ? isCameraFrontfaceBeforeEnteringEditMode : parentAlert.openWithFrontFaceCamera, lazy);
+            final boolean defaultFront = isCameraFrontfaceBeforeEnteringEditMode != null ? isCameraFrontfaceBeforeEnteringEditMode : parentAlert.openWithFrontFaceCamera;
+            cameraView = new CameraViewInternal(getContext(), org.telegram.messenger.camera.CameraView.getLastUsedCameraFace(defaultFront), lazy);
             //if (lazy) {
             //    cameraView.setThumbDrawable(cameraViewItemDecoration.placeholderDrawable);
             //}

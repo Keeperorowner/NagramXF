@@ -4877,7 +4877,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                                 BuildVars.DEBUG_PRIVATE_VERSION ? SharedConfig.photoViewerBlur ? "do not blur in photoviewer" : "blur in photoviewer" : null,
                                 !SharedConfig.payByInvoice ? getString(R.string.DebugMenuEnableInvoicePayment) : getString(R.string.DebugMenuDisableInvoicePayment),
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Update Attach Bots" : null,
-                                !SharedConfig.isUsingCamera2(currentAccount) ? getString(R.string.DebugMenuUseCamera2Api) : getString(R.string.DebugMenuUseOldCamera1Api),
+                                null,
                                 BuildVars.DEBUG_VERSION ? "Clear Mini Apps Permissions and Files" : null,
                                 BuildVars.DEBUG_PRIVATE_VERSION ? "Clear all login tokens" : null,
                                 SharedConfig.canBlurChat() && Build.VERSION.SDK_INT >= 31 ? SharedConfig.useNewBlur ? getString(R.string.DebugMenuUseCpuBlur) : getString(R.string.DebugMenuUseNewGpuBlur) : null,
