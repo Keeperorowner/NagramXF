@@ -57,6 +57,7 @@
     <string name="MessageSavingSaveMediaHint">Configure chats &amp; limits</string>
     <string name="HideHomeSearchField">Hide Home Search Box</string>
     <string name="AppWillRestartInSeconds">App will restart in %1$d seconds.</string>
+    <string name="MessagePreviewDialogMessage">I can eat glass and it doesn\'t hurt me.</string>
     <string name="RemoveMessageTail">Remove Message Tail</string>
     <string name="UserAvatarsInMessagePreview">User Avatars in Message Preview</string>
     <string name="MainTabsCustomizeDrawerLocked">When Home Drawer is enabled, Chats is pinned to the far left.</string>

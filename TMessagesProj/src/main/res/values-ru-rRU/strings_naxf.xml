@@ -95,6 +95,7 @@
     <string name="DeletedMarkEyeCrossed">Перечёркнутый глаз</string>
     <string name="SemiTransparentDeletedMessages">Полупрозрачные удалённые сообщения</string>
     <string name="AppWillRestartInSeconds">Приложение перезапустится через %1$d сек.</string>
+    <string name="MessagePreviewDialogMessage">Я могу есть стекло, и оно мне не вредит.</string>
     <string name="RemoveMessageTail">Убрать хвостик пузыря</string>
     <string name="MainTabsCustomizeDrawerLocked">При включённой боковой панели на главной вкладка «Чаты» закрепляется слева.</string>
     <string name="HomeDrawer">Боковая панель на главной</string>

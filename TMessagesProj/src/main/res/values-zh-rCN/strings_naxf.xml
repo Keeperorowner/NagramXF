@@ -56,6 +56,7 @@
     <string name="MessageSavingSaveMediaHint">配置聊天和限制</string>
     <string name="HideHomeSearchField">隐藏主页搜索框</string>
     <string name="AppWillRestartInSeconds">应用将在 %1$d 秒后重启。</string>
+    <string name="MessagePreviewDialogMessage">我能吞下玻璃而不伤身体。</string>
     <string name="RemoveMessageTail">移除消息气泡尾巴</string>
     <string name="MainTabsCustomizeDrawerLocked">开启主页侧边栏后，聊天会固定在最左侧。</string>
     <string name="HomeDrawer">主页侧边栏</string>
