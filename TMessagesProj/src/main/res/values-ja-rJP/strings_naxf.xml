@@ -61,6 +61,7 @@
     <string name="ReplaceBlockedMyInfo">自分をブロックしたユーザーの情報を置き換える</string>
     <string name="ReplaceBlockedMyInfoDescription">あなたをブロックしたユーザーを、灰色のプレースホルダーアバターで表示します。</string>
     <string name="AppWillRestartInSeconds">アプリは %1$d 秒後に再起動します。</string>
+    <string name="MessagePreviewDialogMessage">私はガラスを食べられます。それでも体に害はありません。</string>
     <string name="RemoveMessageTail">メッセージのしっぽを削除</string>
     <string name="MainTabsCustomize">下部タブをカスタマイズ</string>
     <string name="MainTabsCustomizeDesc">タブをタップすると表示と非表示を切り替えます。長押ししてドラッグすると並び替えられます。</string>

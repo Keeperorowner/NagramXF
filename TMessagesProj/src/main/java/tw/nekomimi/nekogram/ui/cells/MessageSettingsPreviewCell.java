@@ -1,0 +1,268 @@
+package tw.nekomimi.nekogram.ui.cells;
+
+import static org.telegram.messenger.AndroidUtilities.dp;
+import static org.telegram.messenger.LocaleController.getString;
+
+import android.annotation.SuppressLint;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Shader;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.content.Context;
+import android.os.SystemClock;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+
+import androidx.annotation.NonNull;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.INavigationLayout;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackgroundGradientDrawable;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.MotionBackgroundDrawable;
+
+import xyz.nextalone.nagram.NaConfig;
+
+@SuppressLint("ViewConstructor")
+public class MessageSettingsPreviewCell extends FrameLayout {
+
+    private final MessagePreviewCard previewCell;
+
+    public MessageSettingsPreviewCell(Context context, INavigationLayout parentLayout) {
+        super(context);
+        setClipChildren(false);
+        setClipToPadding(false);
+
+        previewCell = new MessagePreviewCard(context, parentLayout);
+        previewCell.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        addView(previewCell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+    }
+
+    public void refresh() {
+        previewCell.refresh();
+    }
+
+    private static class MessagePreviewCard extends LinearLayout {
+
+        private final ChatMessageCell cell;
+        private final MessageObject messageObject;
+        private final Drawable monetBackgroundDrawable;
+        private final Drawable shadowDrawable;
+        private final INavigationLayout parentLayout;
+        private BackgroundGradientDrawable.Disposable backgroundGradientDisposable;
+        private BackgroundGradientDrawable.Disposable oldBackgroundGradientDisposable;
+        private Drawable backgroundDrawable;
+        private Drawable oldBackgroundDrawable;
+
+        public MessagePreviewCard(Context context, INavigationLayout parentLayout) {
+            super(context);
+            this.parentLayout = parentLayout;
+
+            setWillNotDraw(false);
+            setOrientation(VERTICAL);
+            setPadding(0, dp(11), 0, dp(11));
+
+            monetBackgroundDrawable = new ColorDrawable(Theme.getColor(Theme.key_windowBackgroundGray));
+            shadowDrawable = Theme.getThemedDrawable(context, R.drawable.greydivider_bottom, Theme.getColor(Theme.key_windowBackgroundGrayShadow));
+
+            int currentAccount = UserConfig.selectedAccount;
+            int now = ConnectionsManager.getInstance(currentAccount).getCurrentTime();
+            long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
+
+            TLRPC.TL_message message = new TLRPC.TL_message();
+            message.message = getString(R.string.MessagePreviewDialogMessage);
+            message.date = now - 3540;
+            message.edit_date = now - 3480;
+            message.dialog_id = 1L;
+            message.flags = 33027;
+            message.from_id = new TLRPC.TL_peerUser();
+            message.from_id.user_id = clientUserId;
+            message.id = 1;
+            message.media = new TLRPC.TL_messageMediaEmpty();
+            message.out = false;
+            message.peer_id = new TLRPC.TL_peerUser();
+            message.peer_id.user_id = 0;
+
+            messageObject = new MessageObject(currentAccount, message, true, false);
+            messageObject.skipAyuFiltering = true;
+            messageObject.forceAvatar = true;
+            messageObject.eventId = 1;
+            messageObject.resetLayout();
+
+            TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
+            if (currentUser != null) {
+                messageObject.customName = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
+                if (currentUser.photo == null) {
+                    messageObject.customAvatarDrawable = new AvatarDrawable(currentUser, false);
+                }
+            }
+
+            cell = new ChatMessageCell(context, currentAccount) {
+                private final Paint onlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                private boolean lastOnlineEnabled = NaConfig.INSTANCE.getShowOnlineStatus().Bool();
+                private float onlineProgress = lastOnlineEnabled ? 1f : 0f;
+                private long onlineAnimationStart = 0;
+
+                @Override
+                protected void dispatchDraw(Canvas canvas) {
+                    if (getAvatarImage() != null && getAvatarImage().getImageHeight() != 0) {
+                        getAvatarImage().setImageCoords(
+                                getAvatarImage().getImageX(),
+                                getMeasuredHeight() - getAvatarImage().getImageHeight() - dp(4),
+                                getAvatarImage().getImageWidth(),
+                                getAvatarImage().getImageHeight()
+                        );
+                        getAvatarImage().setRoundRadius((int) (getAvatarImage().getImageHeight() / 2f));
+                        getAvatarImage().draw(canvas);
+
+                        boolean onlineEnabled = NaConfig.INSTANCE.getShowOnlineStatus().Bool();
+                        if (onlineEnabled != lastOnlineEnabled) {
+                            lastOnlineEnabled = onlineEnabled;
+                            onlineAnimationStart = SystemClock.elapsedRealtime();
+                        }
+                        if (onlineAnimationStart != 0) {
+                            float t = Math.min(1f, (SystemClock.elapsedRealtime() - onlineAnimationStart) / 180f);
+                            onlineProgress = onlineEnabled ? t : 1f - t;
+                            if (t >= 1f) {
+                                onlineAnimationStart = 0;
+                                onlineProgress = onlineEnabled ? 1f : 0f;
+                            } else {
+                                invalidate();
+                            }
+                        }
+
+                        float cx = getAvatarImage().getImageX2() - dp(7);
+                        float cy = getAvatarImage().getImageY2() - dp(7);
+                        float outerRadius = dp(7) * onlineProgress;
+                        float innerRadius = dp(5) * onlineProgress;
+                        if (outerRadius > 0) {
+                            onlinePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                            canvas.drawCircle(cx, cy, outerRadius, onlinePaint);
+                            onlinePaint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
+                            canvas.drawCircle(cx, cy, innerRadius, onlinePaint);
+                        }
+                    }
+                    super.dispatchDraw(canvas);
+                }
+            };
+            cell.setDelegate(new ChatMessageCell.ChatMessageCellDelegate() {
+                @Override
+                public boolean canPerformActions() {
+                    return false;
+                }
+            });
+            cell.isChat = true;
+            cell.setFullyDraw(true);
+            cell.setMessageObject(messageObject, null, false, false, false);
+            addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        }
+
+        public void refresh() {
+            messageObject.forceUpdate = true;
+            cell.setMessageObject(messageObject, null, false, false, false);
+            cell.invalidate();
+        }
+
+        @Override
+        protected void onDraw(@NonNull Canvas canvas) {
+            boolean isMonetTheme = Theme.getActiveTheme() != null && Theme.getActiveTheme().isMonet();
+            Drawable newBackground = isMonetTheme ? monetBackgroundDrawable : Theme.getCachedWallpaperNonBlocking();
+            if (newBackground != backgroundDrawable && newBackground != null) {
+                if (Theme.isAnimatingColor()) {
+                    oldBackgroundDrawable = backgroundDrawable;
+                    oldBackgroundGradientDisposable = backgroundGradientDisposable;
+                } else if (backgroundGradientDisposable != null) {
+                    backgroundGradientDisposable.dispose();
+                    backgroundGradientDisposable = null;
+                }
+                backgroundDrawable = newBackground;
+            }
+            if (backgroundDrawable == null && oldBackgroundDrawable == null) {
+                canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            } else {
+                float themeAnimationValue = parentLayout != null ? parentLayout.getThemeAnimationValue() : 1f;
+                for (int i = 0; i < 2; i++) {
+                    Drawable drawable = i == 0 ? oldBackgroundDrawable : backgroundDrawable;
+                    if (drawable == null) {
+                        continue;
+                    }
+                    int baseAlpha = drawable == monetBackgroundDrawable ? 150 : 255;
+                    if (i == 1 && oldBackgroundDrawable != null) {
+                        drawable.setAlpha((int) (baseAlpha * themeAnimationValue));
+                    } else {
+                        drawable.setAlpha(baseAlpha);
+                    }
+                    if (drawable instanceof ColorDrawable || drawable instanceof GradientDrawable || drawable instanceof MotionBackgroundDrawable) {
+                        drawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+                        if (drawable instanceof BackgroundGradientDrawable backgroundGradientDrawable) {
+                            backgroundGradientDisposable = backgroundGradientDrawable.drawExactBoundsSize(canvas, this);
+                        } else {
+                            drawable.draw(canvas);
+                        }
+                    } else if (drawable instanceof BitmapDrawable bitmapDrawable) {
+                        if (bitmapDrawable.getTileModeX() == Shader.TileMode.REPEAT) {
+                            canvas.save();
+                            float scale = 2.0f / AndroidUtilities.density;
+                            canvas.scale(scale, scale);
+                            drawable.setBounds(0, 0, (int) Math.ceil(getMeasuredWidth() / scale), (int) Math.ceil(getMeasuredHeight() / scale));
+                        } else {
+                            int viewHeight = getMeasuredHeight();
+                            float scaleX = (float) getMeasuredWidth() / drawable.getIntrinsicWidth();
+                            float scaleY = (float) viewHeight / drawable.getIntrinsicHeight();
+                            float scale = Math.max(scaleX, scaleY);
+                            int width = (int) Math.ceil(drawable.getIntrinsicWidth() * scale);
+                            int height = (int) Math.ceil(drawable.getIntrinsicHeight() * scale);
+                            int x = (getMeasuredWidth() - width) / 2;
+                            int y = (viewHeight - height) / 2;
+                            canvas.save();
+                            canvas.clipRect(0, 0, width, getMeasuredHeight());
+                            drawable.setBounds(x, y, x + width, y + height);
+                        }
+                        drawable.draw(canvas);
+                        canvas.restore();
+                    }
+                    if (i == 0 && oldBackgroundDrawable != null && themeAnimationValue >= 1f) {
+                        if (oldBackgroundGradientDisposable != null) {
+                            oldBackgroundGradientDisposable.dispose();
+                            oldBackgroundGradientDisposable = null;
+                        }
+                        oldBackgroundDrawable = null;
+                        invalidate();
+                    }
+                }
+            }
+
+            shadowDrawable.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+            shadowDrawable.draw(canvas);
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            if (backgroundGradientDisposable != null) {
+                backgroundGradientDisposable.dispose();
+                backgroundGradientDisposable = null;
+            }
+            if (oldBackgroundGradientDisposable != null) {
+                oldBackgroundGradientDisposable.dispose();
+                oldBackgroundGradientDisposable = null;
+            }
+        }
+
+        @Override
+        protected void dispatchSetPressed(boolean pressed) {
+        }
+    }
+}

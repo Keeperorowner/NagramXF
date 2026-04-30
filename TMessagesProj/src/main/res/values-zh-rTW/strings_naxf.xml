@@ -43,6 +43,7 @@
     <string name="RegexFiltersImportPeers">**%1$d** 個未知對話待解析</string>
     <string name="MessageSavingSaveMediaHint">設定聊天與限制</string>
     <string name="AppWillRestartInSeconds">應用程式將在 %1$d 秒後重新啟動。</string>
+    <string name="MessagePreviewDialogMessage">我能吞下玻璃而不傷身體。</string>
     <string name="RemoveMessageTail">移除訊息氣泡尾巴</string>
     <string name="BlurOptions">模糊選項</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>
