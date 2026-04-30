@@ -105,6 +105,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.peer_id.user_id = 0;
         messageObjects[0] = new MessageObject(UserConfig.selectedAccount, message, true, false);
         messageObjects[0].useCustomPhoto = true;
+        messageObjects[0].skipAyuFiltering = true;
 
         message = new TLRPC.TL_message();
         message.message = getString(R.string.StickerSizeDialogMessageReplyTo);
@@ -118,6 +119,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.peer_id.user_id = 1;
         messageObjects[0].customReplyName = getString(R.string.StickerSizeDialogName);
         messageObjects[0].replyMessageObject = new MessageObject(UserConfig.selectedAccount, message, true, false);
+        messageObjects[0].replyMessageObject.skipAyuFiltering = true;
 
         message = new TLRPC.TL_message();
         message.message = NekoConfig.stickerSize.Float() < 9 ? getString(R.string.StickerSizeDialogMessageSmallOne) : getString(R.string.StickerSizeDialogMessageBigOne);
@@ -133,6 +135,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.peer_id = new TLRPC.TL_peerUser();
         message.peer_id.user_id = 1;
         messageObjects[1] = new MessageObject(UserConfig.selectedAccount, message, true, false);
+        messageObjects[1].skipAyuFiltering = true;
         messageObjects[1].replyMessageObject = messageObjects[0];
 
         for (int a = 0; a < cells.length; a++) {

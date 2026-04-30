@@ -100,6 +100,7 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
             message.ayuDeleted = true;
 
             messageObject = new MessageObject(currentAccount, message, true, false);
+            messageObject.skipAyuFiltering = true;
             messageObject.forceAvatar = true;
             messageObject.eventId = 1;
             messageObject.resetLayout();
