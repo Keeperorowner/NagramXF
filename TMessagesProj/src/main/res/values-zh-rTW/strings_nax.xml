@@ -113,8 +113,6 @@
     <string name="ResetSettingsAlert">您確定要重置所有 N-設定 嗎？</string>
     <string name="DontAutoPlayNextVoice">停用自動播放下一條語音訊息</string>
     <string name="SaveToChatSubfolder">按聊天名稱儲存附件</string>
-    <string name="MessageColoredBackground">多彩訊息背景</string>
-    <string name="ColoredBackgroundNotice">回覆，引用，連結預覽的背景色和 Emoji。</string>
     <string name="ChatMenu">聊天選單</string>
     <string name="MediaViewerMenu">媒體檢視器選單</string>
     <string name="MenuAndButtons">菜單和按鈕</string>
