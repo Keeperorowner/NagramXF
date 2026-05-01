@@ -2,6 +2,7 @@
 package org.telegram.ui.Adapters;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -130,7 +131,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                 view = new EmptyCell(mContext, 0);
                 break;
             case 2:
-                view = new EmptyCell(mContext, AndroidUtilities.dp(8));
+                view = new DrawerDividerCell(mContext);
                 break;
             case 3:
                 view = new DrawerActionCell(mContext);
@@ -448,6 +449,24 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         public Item withError() {
             this.error = true;
             return this;
+        }
+    }
+
+    private static class DrawerDividerCell extends View {
+
+        public DrawerDividerCell(Context context) {
+            super(context);
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(8));
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            int y = getMeasuredHeight() / 2;
+            canvas.drawLine(0, y, getMeasuredWidth(), y, Theme.dividerPaint);
         }
     }
 
