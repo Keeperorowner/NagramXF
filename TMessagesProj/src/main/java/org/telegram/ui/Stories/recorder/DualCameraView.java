@@ -36,7 +36,6 @@ import org.telegram.ui.ActionBar.AlertDialog;
 
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.Objects;
 
 import tw.nekomimi.nekogram.NekoConfig;
 
@@ -577,7 +576,6 @@ public class DualCameraView extends CameraView {
     public static boolean dualAvailableDefault(Context context, boolean withWhitelist) {
         boolean def = (
             SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
-            Objects.equals(AndroidUtilities.getSystemProperty("persist.camera.disabled"), "0") &&
             Camera.getNumberOfCameras() > 1 &&
             SharedConfig.allowPreparingHevcPlayers()
         );
@@ -615,7 +613,7 @@ public class DualCameraView extends CameraView {
 
     public static boolean roundDualAvailableDefault(Context context) {
         return (
-            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH &&
+            SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_AVERAGE &&
             Camera.getNumberOfCameras() > 1 &&
             SharedConfig.allowPreparingHevcPlayers() &&
             context != null && context.getPackageManager().hasSystemFeature("android.hardware.camera.concurrent")

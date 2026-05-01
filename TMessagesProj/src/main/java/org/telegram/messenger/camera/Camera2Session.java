@@ -2,10 +2,7 @@ package org.telegram.messenger.camera;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCaptureSession;
@@ -471,14 +468,6 @@ public class Camera2Session {
         }
     }
 
-    private boolean flipFront = xyz.nextalone.nagram.NaConfig.INSTANCE.getCameraMirrorMode().Bool();
-    public void setFlipFront(boolean value) {
-        flipFront = value;
-    }
-    public boolean isFlipFront() {
-        return flipFront;
-    }
-
     private void updateCaptureRequest() {
         if (cameraDevice == null || surface == null || captureSession == null) return;
         try {
@@ -501,8 +490,15 @@ public class Camera2Session {
             captureRequestBuilder.set(CaptureRequest.FLASH_MODE, flashing ? (recordingVideo ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_SINGLE) : CaptureRequest.FLASH_MODE_OFF);
 
             if (recordingVideo) {
-                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));
-                captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
+                captureRequestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON);
+                if (xyz.nextalone.nagram.NaConfig.INSTANCE.getExtendedFramesPerSecond().Bool()) {
+                    captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<Integer>(30, 60));
+                    captureRequestBuilder.set(CaptureRequest.CONTROL_CAPTURE_INTENT, CaptureRequest.CONTROL_CAPTURE_INTENT_VIDEO_RECORD);
+                }
+                if (xyz.nextalone.nagram.NaConfig.INSTANCE.getCameraStabilization().Bool()) {
+                    chooseStabilizationMode(captureRequestBuilder);
+                }
+                chooseFocusMode(captureRequestBuilder);
             }
 
             if (sensorSize != null && Math.abs(currentZoom - 1f) >= 0.01f) {
@@ -519,29 +515,6 @@ public class Camera2Session {
                 captureRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, cropRegion);
             }
 
-            try {
-                if (xyz.nextalone.nagram.NaConfig.INSTANCE.getCameraStabilization().Bool() && cameraCharacteristics != null) {
-                    int[] availableOis = cameraCharacteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION);
-                    if (availableOis != null) {
-                        for (int mode : availableOis) {
-                            if (mode == CameraMetadata.LENS_OPTICAL_STABILIZATION_MODE_ON) {
-                                captureRequestBuilder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON);
-                                break;
-                            }
-                        }
-                    }
-                    int[] availableVs = cameraCharacteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES);
-                    if (availableVs != null) {
-                        for (int mode : availableVs) {
-                            if (mode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON) {
-                                captureRequestBuilder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON);
-                                break;
-                            }
-                        }
-                    }
-                }
-            } catch (Throwable ignore) {}
-
             captureRequestBuilder.addTarget(surface);
             captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, handler);
         } catch (Exception e) {
@@ -555,7 +528,6 @@ public class Camera2Session {
             CaptureRequest.Builder captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
             final int orientation = getJpegOrientation();
             captureRequestBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation);
-            final boolean shouldMirror = isFront && flipFront;
             imageReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -568,64 +540,25 @@ public class Camera2Session {
                         byte[] bytes = new byte[buffer.remaining()];
                         buffer.get(bytes);
 
-                        int finalOrientation = orientation;
-                        boolean wroteMirroredBitmap = false;
-                        if (shouldMirror) {
-                            try {
-                                BitmapFactory.Options options = new BitmapFactory.Options();
-                                options.inPurgeable = true;
-                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length, options);
-                                if (bitmap != null) {
-                                    Matrix matrix = new Matrix();
-                                    if (orientation != 0) {
-                                        matrix.setRotate(orientation);
-                                    }
-                                    matrix.postScale(-1f, 1f);
-                                    Bitmap scaled = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                                    if (scaled != null) {
-                                        if (scaled != bitmap) {
-                                            bitmap.recycle();
-                                        }
-                                        FileOutputStream out = new FileOutputStream(file);
-                                        try {
-                                            scaled.compress(Bitmap.CompressFormat.JPEG, 90, out);
-                                            out.flush();
-                                            out.getFD().sync();
-                                        } finally {
-                                            out.close();
-                                        }
-                                        scaled.recycle();
-                                        finalOrientation = 0;
-                                        wroteMirroredBitmap = true;
-                                    }
-                                }
-                            } catch (Throwable e) {
-                                FileLog.e("Camera2Sessions takePicture mirror error", e);
-                            }
-                        }
-
-                        if (!wroteMirroredBitmap) {
-                            FileOutputStream output = null;
-                            try {
-                                output = new FileOutputStream(file);
-                                output.write(bytes);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            } finally {
-                                if (null != output) {
-                                    try {
-                                        output.close();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
+                        FileOutputStream output = null;
+                        try {
+                            output = new FileOutputStream(file);
+                            output.write(bytes);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        } finally {
+                            if (null != output) {
+                                try {
+                                    output.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
                                 }
                             }
                         }
 
-                        final int reportOrientation = finalOrientation;
                         AndroidUtilities.runOnUIThread(() -> {
                             if (whenDone != null) {
-                                whenDone.run(reportOrientation);
+                                whenDone.run(orientation);
                             }
                         });
                     } finally {
@@ -642,6 +575,60 @@ public class Camera2Session {
         } catch (Exception e) {
             FileLog.e("Camera2Sessions takePicture error", e);
             return false;
+        }
+    }
+
+    private void chooseStabilizationMode(CaptureRequest.Builder builder) {
+        try {
+            if (cameraCharacteristics == null) {
+                return;
+            }
+            int[] availableOis = cameraCharacteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION);
+            if (availableOis != null) {
+                for (int mode : availableOis) {
+                    if (mode == CameraMetadata.LENS_OPTICAL_STABILIZATION_MODE_ON) {
+                        builder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON);
+                        builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
+                        FileLog.d("Using optical stabilization.");
+                        return;
+                    }
+                }
+            }
+            int[] availableVs = cameraCharacteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES);
+            if (availableVs != null) {
+                for (int mode : availableVs) {
+                    if (mode == CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_ON) {
+                        builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON);
+                        builder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF);
+                        FileLog.d("Using video stabilization.");
+                        return;
+                    }
+                }
+            }
+            FileLog.d("Stabilization not available.");
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
+    }
+
+    private void chooseFocusMode(CaptureRequest.Builder builder) {
+        try {
+            if (cameraCharacteristics == null) {
+                return;
+            }
+            int[] availableAf = cameraCharacteristics.get(CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+            if (availableAf != null) {
+                for (int mode : availableAf) {
+                    if (mode == CameraMetadata.CONTROL_AF_MODE_CONTINUOUS_VIDEO) {
+                        builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_VIDEO);
+                        FileLog.d("Using continuous video auto-focus.");
+                        return;
+                    }
+                }
+            }
+            FileLog.d("Continuous video auto-focus not available.");
+        } catch (Throwable e) {
+            FileLog.e(e);
         }
     }
 
