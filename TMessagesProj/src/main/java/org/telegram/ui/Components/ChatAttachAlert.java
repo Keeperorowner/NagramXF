@@ -3064,7 +3064,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         aiButton.setContentDescription(getString(R.string.AIEditor));
         ScaleStateListAnimator.apply(aiButton);
         aiButton.setOnClickListener(v -> {
-            if (commentTextView == null) return;
+            if (commentTextView == null || !MessagesController.getInstance(currentAccount).aiEditorAvailable()) {
+                showAiButton(false);
+                return;
+            }
             MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
             new AIEditorAlert(getContext(), resourcesProvider)
                 .setText(commentTextView.getText())
@@ -3477,7 +3480,10 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         topAiButton.setContentDescription(getString(R.string.AIEditor));
         ScaleStateListAnimator.apply(topAiButton);
         topAiButton.setOnClickListener(v -> {
-            if (topCommentTextView == null) return;
+            if (topCommentTextView == null || !MessagesController.getInstance(currentAccount).aiEditorAvailable()) {
+                showAiButton(false);
+                return;
+            }
             MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
             new AIEditorAlert(getContext(), resourcesProvider)
                 .setText(topCommentTextView.getText())

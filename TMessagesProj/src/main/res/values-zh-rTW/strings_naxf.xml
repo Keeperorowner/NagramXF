@@ -9,6 +9,8 @@
     <string name="RegexFiltersMaskMessagesAbout">過濾或被屏蔽的消息會以遮罩占位形式保留在聊天中，而不是直接隱藏。</string>
     <string name="UseSystemAiService">使用系統 AI 服務</string>
     <string name="UseSystemAiServiceDesc">當前僅支持 HyperOS 和 ColorOS</string>
+    <string name="DisableAiFeatures">停用 AI 功能</string>
+    <string name="DisableAiFeaturesNotice">隱藏訊息 AI 摘要按鈕和輸入框中的 AI 編輯器。</string>
     <string name="RegexFiltersListEmpty">還沒有過濾器，點擊 + 新增一個。</string>
     <string name="RegexFiltersShadowBanEmpty">還沒有靜默屏蔽對象，點擊 + 新增一個。</string>
     <string name="RegexFiltersFilterEnabled">啟用過濾器</string>
