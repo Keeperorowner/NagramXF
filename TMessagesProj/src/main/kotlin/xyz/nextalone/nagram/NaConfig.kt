@@ -1421,7 +1421,7 @@ object NaConfig {
         )
     val sendHighQualityPhoto =
         addConfig(
-            "SendHighQualityPhoto",
+            "alwaysSendInHD",
             ConfigItem.configTypeBool,
             true
         )
@@ -1589,51 +1589,39 @@ object NaConfig {
         )
     val cameraInVideoMessages =
         addConfig(
-            "CameraInVideoMessages",
+            "videoMessagesCamera",
             ConfigItem.configTypeInt,
-            1 // 0: front; 1: rear; 2: ask
+            0
+        )
+    val extendedFramesPerSecond =
+        addConfig(
+            "extendedFramesPerSecond",
+            ConfigItem.configTypeBool,
+            false
         )
     val cameraStabilization =
         addConfig(
-            "CameraStabilization",
+            "cameraStabilization",
             ConfigItem.configTypeBool,
             false
-        )
-    val cameraMirrorMode =
-        addConfig(
-            "CameraMirrorMode",
-            ConfigItem.configTypeBool,
-            true
         )
     val rememberLastUsedCamera =
         addConfig(
-            "RememberLastUsedCamera",
+            "rememberLastUsedCamera",
             ConfigItem.configTypeBool,
             false
         )
-    val hideCameraTile =
-        addConfig(
-            "HideCameraTile",
-            ConfigItem.configTypeBool,
-            true
-        )
     val staticZoom =
         addConfig(
-            "StaticZoom",
+            "staticZoom",
             ConfigItem.configTypeBool,
             false
         )
     val hidePhotoCounter =
         addConfig(
-            "HidePhotoCounter",
+            "hidePhotoCounter",
             ConfigItem.configTypeBool,
-            false
-        )
-    val hideMediaViewerShareButton =
-        addConfig(
-            "HideMediaViewerShareButton",
-            ConfigItem.configTypeBool,
-            false
+            true
         )
     val showCopyFrame =
         addConfig(
@@ -1717,9 +1705,16 @@ object NaConfig {
             idDcType.setConfigInt(0)
         }
         if (!getPreferences().contains(cameraInVideoMessages.key)) {
+            val legacyNagramValue = getPreferences().takeIf { it.contains("CameraInVideoMessages") }
+                ?.getInt("CameraInVideoMessages", 0)
             val legacyRear = getPreferences().getBoolean("RearVideoMessages", false)
-            cameraInVideoMessages.setConfigInt(if (legacyRear) 1 else 0)
+            cameraInVideoMessages.setConfigInt(legacyNagramValue ?: if (legacyRear) 1 else 0)
         }
+        migrateBoolConfig("SendHighQualityPhoto", sendHighQualityPhoto)
+        migrateBoolConfig("CameraStabilization", cameraStabilization)
+        migrateBoolConfig("RememberLastUsedCamera", rememberLastUsedCamera)
+        migrateBoolConfig("StaticZoom", staticZoom)
+        migrateBoolConfig("HidePhotoCounter", hidePhotoCounter)
         if (!getPreferences().contains(backAnimationStyle.key) &&
             getPreferences().contains("SpringAnimation")
         ) {
@@ -1883,6 +1878,15 @@ object NaConfig {
     fun getAllKeys(): Set<String> {
         synchronized(sync) {
             return configs.map { it.key }.toSet()
+        }
+    }
+
+    private fun migrateBoolConfig(
+        legacyKey: String,
+        config: ConfigItem
+    ) {
+        if (!getPreferences().contains(config.key) && getPreferences().contains(legacyKey)) {
+            config.setConfigBool(getPreferences().getBoolean(legacyKey, config.defaultValue as Boolean))
         }
     }
 

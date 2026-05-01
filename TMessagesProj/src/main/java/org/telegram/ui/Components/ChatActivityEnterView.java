@@ -16223,7 +16223,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
 
         // front camera option
         ActionBarMenuSubItem frontItem = new ActionBarMenuSubItem(getContext(), true, false);
-        frontItem.setTextAndIcon(getString(R.string.CameraInVideoMessagesFront), R.drawable.msg_openprofile_solar);
+        frontItem.setTextAndIcon(getString(R.string.VideoMessagesCameraFront), R.drawable.msg_openprofile_solar);
         frontItem.setOnClickListener(v -> {
             cameraSelected[0] = true;
             if (cameraSelectionPopup != null && cameraSelectionPopup.isShowing()) {
@@ -16235,7 +16235,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         popupLayout.addView(frontItem, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 0, 0, 0));
         // rear camera option
         ActionBarMenuSubItem rearItem = new ActionBarMenuSubItem(getContext(), false, true);
-        rearItem.setTextAndIcon(getString(R.string.CameraInVideoMessagesRear), R.drawable.msg_rear_camera_solar);
+        rearItem.setTextAndIcon(getString(R.string.VideoMessagesCameraRear), R.drawable.msg_rear_camera_solar);
         rearItem.setOnClickListener(v -> {
             cameraSelected[0] = true;
             if (cameraSelectionPopup != null && cameraSelectionPopup.isShowing()) {

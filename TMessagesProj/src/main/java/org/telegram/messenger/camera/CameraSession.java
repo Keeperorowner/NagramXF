@@ -47,7 +47,7 @@ public class CameraSession {
     private int diffOrientation;
     private int jpegOrientation;
     private boolean sameTakePictureOrientation;
-    private boolean flipFront = xyz.nextalone.nagram.NaConfig.INSTANCE.getCameraMirrorMode().Bool();
+    private boolean flipFront = true;
     private float currentZoom;
     private boolean optimizeForBarcode;
     private boolean useTorch;
@@ -281,11 +281,6 @@ public class CameraSession {
                     params.setFlashMode(currentFlashMode);
                     params.setZoom((int) (currentZoom * maxZoom));
                     try {
-                        if (xyz.nextalone.nagram.NaConfig.INSTANCE.getCameraStabilization().Bool() && params.isVideoStabilizationSupported()) {
-                            params.setVideoStabilization(true);
-                        }
-                    } catch (Throwable ignore) {}
-                    try {
                         camera.setParameters(params);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -425,12 +420,6 @@ public class CameraSession {
                         //
                     }
                     params.setFlashMode(useTorch ? Camera.Parameters.FLASH_MODE_TORCH : currentFlashMode);
-
-                    try {
-                        if (xyz.nextalone.nagram.NaConfig.INSTANCE.getCameraStabilization().Bool() && params.isVideoStabilizationSupported()) {
-                            params.setVideoStabilization(true);
-                        }
-                    } catch (Throwable ignore) {}
 
                     try {
                         camera.setParameters(params);

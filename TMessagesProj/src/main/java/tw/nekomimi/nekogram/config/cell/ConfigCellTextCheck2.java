@@ -74,9 +74,23 @@ public class ConfigCellTextCheck2 extends AbstractConfigCell implements WithKey 
         return checkBox;
     }
 
+    public ArrayList<ConfigCellCheckBox> getVisibleCheckBox() {
+        ArrayList<ConfigCellCheckBox> visible = new ArrayList<>();
+        for (ConfigCellCheckBox item : checkBox) {
+            if (isCheckBoxVisible(item)) {
+                visible.add(item);
+            }
+        }
+        return visible;
+    }
+
+    protected boolean isCheckBoxVisible(ConfigCellCheckBox item) {
+        return true;
+    }
+
     public int getSelectedCount() {
         int count = 0;
-        for (ConfigCellCheckBox item : checkBox) {
+        for (ConfigCellCheckBox item : getVisibleCheckBox()) {
             if (item != null && item.getBindConfig().Bool()) {
                 count++;
             }
@@ -86,7 +100,7 @@ public class ConfigCellTextCheck2 extends AbstractConfigCell implements WithKey 
 
     public boolean toggleFullChecked() {
         boolean newValue = getSelectedCount() == 0;
-        for (ConfigCellCheckBox item : checkBox) {
+        for (ConfigCellCheckBox item : getVisibleCheckBox()) {
             item.getBindConfig().setConfigBool(newValue);
             if (item.cell != null) {
                 item.cell.setChecked(newValue, true);
@@ -106,7 +120,7 @@ public class ConfigCellTextCheck2 extends AbstractConfigCell implements WithKey 
         this.cell = cell;
         cell.setEnabled(enabled);
         cell.setTextAndCheck(title, getSelectedCount() != 0, cellGroup.needSetDivider(this), true);
-        cell.setCollapseArrow(String.format(Locale.US, "%d/" + checkBox.size(), getSelectedCount()), collapsed, this::onCheckClick);
+        cell.setCollapseArrow(String.format(Locale.US, "%d/" + getVisibleCheckBox().size(), getSelectedCount()), collapsed, this::onCheckClick);
         cell.getCheckBox().setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
         cell.getCheckBox().setDrawIconType(0);
     }
@@ -131,19 +145,20 @@ public class ConfigCellTextCheck2 extends AbstractConfigCell implements WithKey 
 
         RecyclerListView.SelectionAdapter listAdapter = cellGroup.getListAdapter();
         int toggleRowIndex = cellGroup.rows.indexOf(this);
+        ArrayList<ConfigCellCheckBox> visibleCheckBox = getVisibleCheckBox();
         if (!collapsed) {
-            List<AbstractConfigCell> boundNewRows = new ArrayList<>(getCheckBox().size());
-            for (AbstractConfigCell checkBoxItem : getCheckBox()) {
+            List<AbstractConfigCell> boundNewRows = new ArrayList<>(visibleCheckBox.size());
+            for (AbstractConfigCell checkBoxItem : visibleCheckBox) {
                 checkBoxItem.bindCellGroup(cellGroup);
                 boundNewRows.add(checkBoxItem);
             }
             cellGroup.rows.addAll(toggleRowIndex + 1 , boundNewRows);
-            listAdapter.notifyItemRangeInserted(toggleRowIndex + 1, getCheckBox().size());
+            listAdapter.notifyItemRangeInserted(toggleRowIndex + 1, visibleCheckBox.size());
         } else {
             cellGroup.rows.removeAll(getCheckBox());
-            listAdapter.notifyItemRangeRemoved(toggleRowIndex + 1, getCheckBox().size());
+            listAdapter.notifyItemRangeRemoved(toggleRowIndex + 1, visibleCheckBox.size());
         }
-        listAdapter.notifyItemRangeChanged(toggleRowIndex, getCheckBox().size());
+        listAdapter.notifyItemChanged(toggleRowIndex);
 
         cellGroup.runCallback(getKey(), collapsed);
     }
