@@ -5893,7 +5893,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean shouldHideHomeSearchField() {
-        return (NaConfig.INSTANCE.getHideHomeSearchField().Bool() || shouldReplaceHomeSearchFieldWithMainTabsButton())
+        return NaConfig.INSTANCE.getHideHomeSearchField().Bool()
                 && initialDialogsType == DIALOGS_TYPE_DEFAULT
                 && !onlySelect
                 && folderId == 0
