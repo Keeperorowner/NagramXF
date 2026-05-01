@@ -509,6 +509,7 @@ public class ThemeColors {
         defaultColors[key_chat_gifSaveHintText] = 0xffffffff;
         defaultColors[key_chat_gifSaveHintBackground] = 0xE21f2b38;
         defaultColors[key_chat_goDownButton] = 0xffffffff;
+        defaultColors[key_chat_recentDialogsSidebarBackground] = 0xffffffff;
         defaultColors[key_chat_goDownButtonCounter] = 0xffffffff;
         defaultColors[key_chat_goDownButtonCounterBackground] = TELEGRAM_COLOR;
         defaultColors[key_chat_messagePanelCancelInlineBot] = 0xffadadad;
@@ -1364,6 +1365,7 @@ public class ThemeColors {
         colorKeysMap.put(key_chat_gifSaveHintText, "chat_gifSaveHintText");
         colorKeysMap.put(key_chat_gifSaveHintBackground, "chat_gifSaveHintBackground");
         colorKeysMap.put(key_chat_goDownButton, "chat_goDownButton");
+        colorKeysMap.put(key_chat_recentDialogsSidebarBackground, "chat_recentDialogsSidebarBackground");
         colorKeysMap.put(key_chat_goDownButtonCounter, "chat_goDownButtonCounter");
         colorKeysMap.put(key_chat_goDownButtonCounterBackground, "chat_goDownButtonCounterBackground");
         colorKeysMap.put(key_chat_outTextSelectionHighlight, "chat_outTextSelectionHighlight");

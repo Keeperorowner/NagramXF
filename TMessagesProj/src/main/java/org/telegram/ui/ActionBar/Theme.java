@@ -3972,6 +3972,7 @@ public class Theme {
     public static final int key_chat_gifSaveHintText = colorsCount++;
     public static final int key_chat_gifSaveHintBackground = colorsCount++;
     public static final int key_chat_goDownButton = colorsCount++;
+    public static final int key_chat_recentDialogsSidebarBackground = colorsCount++;
     public static final int key_chat_goDownButtonCounter = colorsCount++;
     public static final int key_chat_goDownButtonCounterBackground = colorsCount++;
     public static final int key_chat_inTextSelectionHighlight = colorsCount++;

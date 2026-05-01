@@ -87,7 +87,7 @@ public class RecentDialogsSidebarView extends FrameLayout implements Notificatio
         setClipChildren(false);
         setClipToPadding(false);
 
-        panelColor = Theme.getColor(Theme.key_chat_goDownButton, resourcesProvider);
+        panelColor = Theme.getColor(Theme.key_chat_recentDialogsSidebarBackground, resourcesProvider);
         pressedColor = ColorUtils.blendARGB(panelColor, Theme.getColor(Theme.key_listSelector, resourcesProvider), 0.25f);
 
         panelView = new FrameLayout(context);
