@@ -2869,7 +2869,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         aiButton.setContentDescription(getString(R.string.AIEditor));
         ScaleStateListAnimator.apply(aiButton);
         aiButton.setOnClickListener(v -> {
-            if (messageEditText == null) return;
+            if (messageEditText == null || !MessagesController.getInstance(currentAccount).aiEditorAvailable()) {
+                showAiButton(false);
+                return;
+            }
             MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
             final long dialogId = parentFragment != null ? parentFragment.getDialogId() : dialog_id;
             new AIEditorAlert(getContext(), resourcesProvider)

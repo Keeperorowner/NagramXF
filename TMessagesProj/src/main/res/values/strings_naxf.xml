@@ -18,6 +18,8 @@
     <string name="RegexFiltersShadowBannedGroup">Group</string>
     <string name="UseSystemAiService">Use System Ai Service</string>
     <string name="UseSystemAiServiceDesc">Only support HyperOS and ColorOS</string>
+    <string name="DisableAiFeatures">Disable AI Features</string>
+    <string name="DisableAiFeaturesNotice">Hide AI summary buttons and the AI editor in message input fields.</string>
     <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">Deleted Mark</string>
     <string name="DeletedMarkNothing">Nothing</string>

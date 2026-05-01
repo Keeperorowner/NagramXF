@@ -577,6 +577,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    val disableAiFeatures =
+        addConfig(
+            "DisableAiFeatures",
+            ConfigItem.configTypeBool,
+            false
+        )
     val ActionBarButtonReply =
         addConfig(
             "Reply",
