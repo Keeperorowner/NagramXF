@@ -1,6 +1,7 @@
 # Nagram XF
 
 A fork of [Nagram X](https://github.com/risin42/NagramX) with additional features.
+Includes most features from exteraGram and AyuGram.
 
 ## Download
 
