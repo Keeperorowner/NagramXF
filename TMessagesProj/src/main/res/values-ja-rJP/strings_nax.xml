@@ -120,6 +120,7 @@
     <string name="HideReactions">リアクションを非表示</string>
     <string name="DoubleTapIncoming">受信メッセージ</string>
     <string name="DoubleTapOutgoing">送信メッセージ</string>
+    <string name="doubleTapSeekDuration">ダブルタップのスキップ時間</string>
     <string name="TgBrowserOpenFail">内蔵ブラウザは利用できません</string>
     <string name="TgBrowserOpenFail_Desc">内蔵ブラウザが無効化されているため、選択した操作は利用できません。</string>
     <string name="MapPreviewProviderYandexNax">Yandex</string>
