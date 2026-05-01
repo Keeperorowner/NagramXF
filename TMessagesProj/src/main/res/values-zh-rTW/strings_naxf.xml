@@ -48,6 +48,8 @@
     <string name="MessagePreviewDialogMessage">我能吞下玻璃而不傷身體。</string>
     <string name="RemoveMessageTail">移除訊息氣泡尾巴</string>
     <string name="BlurOptions">模糊選項</string>
+    <string name="AyuSpySettings">間諜設定</string>
+    <string name="AyuMomentsCustomHeader">自定義</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>
     <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
     <string name="PeekOnlineMenuText">在線預覽</string>

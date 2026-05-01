@@ -34,24 +34,34 @@ import org.telegram.ui.MainTabsConfigManager;
 
 import java.util.ArrayList;
 
-import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.config.CellGroup;
+import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
+import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
+import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
+import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import xyz.nextalone.nagram.NaConfig;
 
-public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
+public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
 
     private static final int VIEW_TYPE_PREVIEW = 100;
 
-    private int headerRow;
-    private int previewRow;
-    private int previewInfoRow;
-    private int showTabTitlesRow;
-    private int bottomBarDisplayModeRow;
-    private int shadowRow;
-
     private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
     private MainTabsPreviewCell previewCell;
+    private ListAdapter listAdapter;
+
+    private final CellGroup cellGroup = new CellGroup(this);
+    private final AbstractConfigCell headerRow = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.MainTabsCustomize)));
+    private final AbstractConfigCell previewRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsPreview", VIEW_TYPE_PREVIEW, false));
+    private final AbstractConfigCell previewInfoRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsCustomizeDesc", CellGroup.ITEM_TYPE_TEXT, false));
+    private final AbstractConfigCell showTabTitlesRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsShowTitles", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
+    private final AbstractConfigCell bottomBarDisplayModeRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsDisplayMode", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell shadowRow = cellGroup.appendCell(new ConfigCellDivider());
+
+    public MainTabsCustomizeActivity() {
+        addRowsToMap(cellGroup);
+    }
 
     @Override
     public boolean onFragmentCreate() {
@@ -60,14 +70,22 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
     }
 
     @Override
-    protected void updateRows() {
-        super.updateRows();
-        headerRow = addRow();
-        previewRow = addRow();
-        previewInfoRow = addRow();
-        showTabTitlesRow = addRow();
-        bottomBarDisplayModeRow = addRow("MainTabsDisplayMode");
-        shadowRow = addRow();
+    protected RecyclerListView.SelectionAdapter getListAdapter() {
+        return listAdapter;
+    }
+
+    @Override
+    protected CellGroup getCellGroup() {
+        return cellGroup;
+    }
+
+    @Override
+    public View createView(Context context) {
+        View view = super.createView(context);
+        listAdapter = new ListAdapter(context);
+        listView.setAdapter(listAdapter);
+        setupDefaultListeners();
+        return view;
     }
 
     @Override
@@ -83,8 +101,9 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
     }
 
     @Override
-    protected void onItemClick(View view, int position, float x, float y) {
-        if (position == showTabTitlesRow) {
+    protected void onCustomCellClick(View view, int position, float x, float y) {
+        AbstractConfigCell row = cellGroup.rows.get(position);
+        if (row == showTabTitlesRow) {
             boolean checked = !NaConfig.INSTANCE.getMainTabsHideTitles().toggleConfigBool();
             if (view instanceof TextCheckCell textCheckCell) {
                 textCheckCell.setChecked(checked);
@@ -93,19 +112,24 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                 previewCell.refreshTabs(getContext());
             }
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
-        } else if (position == bottomBarDisplayModeRow) {
+        } else if (row == bottomBarDisplayModeRow) {
             showBottomBarDisplayModeDialog();
         }
     }
 
     @Override
-    protected BaseListAdapter createAdapter(Context context) {
-        return new ListAdapter(context);
+    public String getTitle() {
+        return getString(R.string.MainTabsCustomize);
     }
 
     @Override
-    protected String getActionBarTitle() {
-        return getString(R.string.MainTabsCustomize);
+    protected String getSettingsPrefix() {
+        return "maintabs";
+    }
+
+    @Override
+    protected void styleTextInfoPrivacyCell(TextInfoPrivacyCell cell) {
+        cell.setBackground(Theme.getThemedDrawable(cell.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
     }
 
     private String getBottomBarDisplayModeTitle() {
@@ -144,7 +168,10 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
                     MainTabsHelper.setBottomBarDisplayMode(mode);
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
                     if (listAdapter != null) {
-                        listAdapter.notifyItemChanged(bottomBarDisplayModeRow);
+                        int rowIndex = cellGroup.rows.indexOf(bottomBarDisplayModeRow);
+                        if (rowIndex >= 0) {
+                            listAdapter.notifyItemChanged(rowIndex);
+                        }
                     }
                 }
                 if (dialog[0] != null) {
@@ -186,71 +213,36 @@ public class MainTabsCustomizeActivity extends BaseNekoSettingsActivity {
         }
 
         @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean partial) {
-            switch (holder.getItemViewType()) {
-                case TYPE_HEADER: {
-                    HeaderCell cell = (HeaderCell) holder.itemView;
-                    cell.setText(getString(R.string.MainTabsCustomize));
-                    break;
+        protected void onBindCustomViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            AbstractConfigCell row = cellGroup.rows.get(position);
+            if (row == previewRow) {
+                PreviewRowCell cell = (PreviewRowCell) holder.itemView;
+                cell.bind();
+            } else if (row == previewInfoRow) {
+                TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                StringBuilder desc = new StringBuilder(getString(R.string.MainTabsCustomizeDesc));
+                if (NekoConfig.navigationDrawerEnabled.Bool()) {
+                    desc.append("\n\n").append(getString(R.string.MainTabsCustomizeDrawerLocked));
                 }
-                case VIEW_TYPE_PREVIEW: {
-                    PreviewRowCell cell = (PreviewRowCell) holder.itemView;
-                    cell.bind();
-                    break;
-                }
-                case TYPE_INFO_PRIVACY: {
-                    TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    StringBuilder desc = new StringBuilder(getString(R.string.MainTabsCustomizeDesc));
-                    if (NekoConfig.navigationDrawerEnabled.Bool()) {
-                        desc.append("\n\n").append(getString(R.string.MainTabsCustomizeDrawerLocked));
-                    }
-                    cell.setText(desc);
-                    cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    break;
-                }
-                case TYPE_SETTINGS: {
-                    TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                    cell.setTextAndValue(getString(R.string.MainTabsDisplayMode), getBottomBarDisplayModeTitle(), false);
-                    break;
-                }
-                case TYPE_CHECK: {
-                    TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == showTabTitlesRow) {
-                        cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
-                    }
-                    break;
-                }
-                case TYPE_SHADOW:
-                    holder.itemView.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    break;
+                cell.setText(desc);
+                cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            } else if (row == bottomBarDisplayModeRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.MainTabsDisplayMode), getBottomBarDisplayModeTitle(), false);
+            } else if (row == showTabTitlesRow) {
+                TextCheckCell cell = (TextCheckCell) holder.itemView;
+                cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
             }
         }
 
-        @NonNull
         @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        protected View onCreateCustomViewHolder(@NonNull ViewGroup parent, int viewType) {
             if (viewType == VIEW_TYPE_PREVIEW) {
                 View view = new PreviewRowCell(mContext);
                 view.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
-                return new RecyclerListView.Holder(view);
+                return view;
             }
-            return super.onCreateViewHolder(parent, viewType);
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == headerRow) {
-                return TYPE_HEADER;
-            } else if (position == previewRow) {
-                return VIEW_TYPE_PREVIEW;
-            } else if (position == previewInfoRow) {
-                return TYPE_INFO_PRIVACY;
-            } else if (position == bottomBarDisplayModeRow) {
-                return TYPE_SETTINGS;
-            } else if (position == shadowRow) {
-                return TYPE_SHADOW;
-            }
-            return TYPE_CHECK;
+            return null;
         }
     }
 

@@ -37,13 +37,11 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
@@ -55,14 +53,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
+import tw.nekomimi.nekogram.config.CellGroup;
+import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
+import tw.nekomimi.nekogram.config.cell.ConfigCellCheckBox;
+import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
+import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
+import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
+import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
+import tw.nekomimi.nekogram.settings.BaseNekoXSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.FiltersChatCell;
-import tw.nekomimi.nekogram.ui.cells.HeaderCell;
-import tw.nekomimi.nekogram.utils.AlertUtil;
 import tw.nekomimi.nekogram.utils.HttpClient;
 import xyz.nextalone.nagram.NaConfig;
 
-public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
+public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
+
+    private static final int VIEW_TYPE_CHAT_FILTER = 100;
 
     private static class DialogFilterItem {
         long dialogId;
@@ -70,166 +75,158 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         int excludedSharedCount;
     }
 
-    private int filtersOptionHeaderRow;
-    private int regexFiltersEnabledRow;
-    private int regexFiltersEnableInChatsRow;
-    private int regexFiltersMaskMessagesRow;
-    private int regexFiltersMaskMessagesInfoRow;
-    private int ignoreBlockedRow;
-    private int filtersOptionDividerRow;
-    private int filtersHeaderRow;
-    private int sharedFiltersPageRow;
-    private int userFiltersPageRow;
-    private int dividerRow;
-    private int chatFiltersHeaderRow;
-    private int chatFiltersStartRow;
-    private int chatFiltersEndRow;
+    private static class DialogFilterCell extends ConfigCellCustom {
+        final DialogFilterItem item;
 
-    public RegexFiltersSettingActivity() {
+        DialogFilterCell(DialogFilterItem item) {
+            super("RegexFiltersChat_" + item.dialogId, VIEW_TYPE_CHAT_FILTER, true);
+            this.item = item;
+        }
     }
 
-    @Override
-    protected void updateRows() {
-        super.updateRows();
+    private ListAdapter listAdapter;
+    private final CellGroup cellGroup = new CellGroup(this);
+    private final AbstractConfigCell filtersOptionHeaderRow = new ConfigCellHeader(getString(R.string.General));
+    private final AbstractConfigCell regexFiltersEnabledRow = new ConfigCellTextCheck(NaConfig.INSTANCE.getRegexFiltersEnabled(), null, getString(R.string.RegexFiltersEnabled));
+    private final AbstractConfigCell regexFiltersEnableInChatsRow = new ConfigCellTextCheck(NaConfig.INSTANCE.getRegexFiltersEnableInChats(), null, getString(R.string.RegexFiltersEnableInChats));
+    private final AbstractConfigCell ignoreBlockedRow = new ConfigCellTextCheck(NekoConfig.ignoreBlocked, null, getString(R.string.IgnoreBlocked));
+    private final AbstractConfigCell filtersOptionDividerRow = new ConfigCellDivider();
+    private final AbstractConfigCell regexFiltersMaskMessagesRow = new ConfigCellCustom("RegexFiltersMaskMessagesShort", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
+    private final AbstractConfigCell regexFiltersMaskMessagesInfoRow = new ConfigCellCustom("RegexFiltersMaskMessagesAbout", CellGroup.ITEM_TYPE_TEXT, false);
+    private final AbstractConfigCell filtersHeaderRow = new ConfigCellHeader(getString(R.string.RegexFiltersGlobalHeader));
+    private final AbstractConfigCell sharedFiltersPageRow = new ConfigCellCustom("RegexFiltersSharedHeader", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true);
+    private final AbstractConfigCell userFiltersPageRow = new ConfigCellCustom("ShadowBan", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true);
+    private final AbstractConfigCell dividerRow = new ConfigCellDivider();
+    private final AbstractConfigCell chatFiltersHeaderRow = new ConfigCellHeader(getString(R.string.RegexFiltersChatHeader));
 
-        filtersOptionHeaderRow = -1;
-        regexFiltersEnabledRow = -1;
-        regexFiltersEnableInChatsRow = -1;
-        regexFiltersMaskMessagesRow = -1;
-        regexFiltersMaskMessagesInfoRow = -1;
-        ignoreBlockedRow = -1;
-        filtersOptionDividerRow = -1;
-        filtersHeaderRow = -1;
-        sharedFiltersPageRow = -1;
-        userFiltersPageRow = -1;
-        dividerRow = -1;
-        chatFiltersHeaderRow = -1;
-        chatFiltersStartRow = -1;
-        chatFiltersEndRow = -1;
-        filtersOptionHeaderRow = rowCount++;
-        regexFiltersEnabledRow = rowCount++;
-        regexFiltersEnableInChatsRow = rowCount++;
-        ignoreBlockedRow = rowCount++;
-        filtersOptionDividerRow = rowCount++;
-        regexFiltersMaskMessagesRow = rowCount++;
-        regexFiltersMaskMessagesInfoRow = rowCount++;
+    public RegexFiltersSettingActivity() {
+        rebuildRows();
+    }
 
-        filtersHeaderRow = rowCount++;
-        sharedFiltersPageRow = rowCount++;
-        userFiltersPageRow = rowCount++;
-        dividerRow = rowCount++;
+    private void addCell(AbstractConfigCell cell) {
+        cell.bindCellGroup(cellGroup);
+        cellGroup.rows.add(cell);
+    }
+
+    private void rebuildRows() {
+        cellGroup.rows.clear();
+        addCell(filtersOptionHeaderRow);
+        addCell(regexFiltersEnabledRow);
+        addCell(regexFiltersEnableInChatsRow);
+        addCell(ignoreBlockedRow);
+        addCell(filtersOptionDividerRow);
+        addCell(regexFiltersMaskMessagesRow);
+        addCell(regexFiltersMaskMessagesInfoRow);
+        addCell(filtersHeaderRow);
+        addCell(sharedFiltersPageRow);
+        addCell(userFiltersPageRow);
+        addCell(dividerRow);
         var chatEntries = getDialogFilterItems();
         if (!chatEntries.isEmpty()) {
-            chatFiltersHeaderRow = rowCount++;
-            chatFiltersStartRow = rowCount;
-            rowCount += chatEntries.size();
-            chatFiltersEndRow = rowCount;
+            addCell(chatFiltersHeaderRow);
+            for (DialogFilterItem item : chatEntries) {
+                addCell(new DialogFilterCell(item));
+            }
         }
+        addRowsToMap(cellGroup);
     }
 
     @SuppressLint("NotifyDataSetChanged")
     @Override
     public void onResume() {
+        rebuildRows();
         super.onResume();
+    }
 
-        updateRows();
+    @Override
+    protected RecyclerListView.SelectionAdapter getListAdapter() {
+        return listAdapter;
+    }
 
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
-        }
+    @Override
+    protected CellGroup getCellGroup() {
+        return cellGroup;
     }
 
     @SuppressWarnings("NewApi")
     @Override
     public View createView(Context context) {
         View v = super.createView(context);
+        listAdapter = new ListAdapter(context);
+        listView.setAdapter(listAdapter);
+        setupDefaultListeners();
+        setupLongClickListener();
+
+        cellGroup.callBackSettingsChanged = (key, newValue) -> {
+            if (key.equals(NekoConfig.ignoreBlocked.getKey())) {
+                if ((boolean) newValue && !NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()) {
+                    NaConfig.INSTANCE.getRegexFiltersEnabled().setConfigBool(true);
+                    if (listAdapter != null) {
+                        listAdapter.notifyDataSetChanged();
+                    }
+                }
+            }
+            AyuFilter.invalidateFilteredCache();
+        };
 
         ActionBarMenu menu = actionBar.createMenu();
         ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.addSubItem(1, R.drawable.msg_user_search, getString(R.string.SelectChat));
         menuItem.addColoredGap();
-        menuItem.addSubItem(2, R.drawable.msg_photo_settings_solar, getString(R.string.RegexFiltersImport));
-        menuItem.addSubItem(3, R.drawable.msg_instant_link_solar, getString(R.string.RegexFiltersExport));
+        menuItem.addSubItem(2, R.drawable.msg_archive_solar, getString(R.string.RegexFiltersImport));
+        menuItem.addSubItem(3, R.drawable.msg_unarchive_solar, getString(R.string.RegexFiltersExport));
         menuItem.addColoredGap();
-        ActionBarMenuSubItem clearSub = menuItem.addSubItem(4, R.drawable.msg_clear, getString(R.string.ClearRegexFilters));
+        ActionBarMenuSubItem clearSub = menuItem.addSubItem(4, R.drawable.msg_clear_solar, getString(R.string.ClearRegexFilters));
         int red = Theme.getColor(Theme.key_text_RedRegular);
         clearSub.setColors(red, red);
         clearSub.setSelectorColor(Theme.multAlpha(red, .12f));
 
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @SuppressLint("NotifyDataSetChanged")
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
-                    finishFragment();
-                }
-                if (id == 1) {
-                    presentFragment(createSelectChatActivity());
-                }
-                if (id == 2) {
-                    showImportSourceChooser(context);
-                } else if (id == 3) {
-                    showExportSourceChooser(context);
-                } else if (id == 4) {
-                    new AlertDialog.Builder(getContext(), getResourceProvider())
-                        .setTitle(getString(R.string.ClearRegexFilters))
-                        .setMessage(getString(R.string.ClearRegexFiltersAlertMessage))
-                        .setNegativeButton(getString(R.string.Cancel), null)
-                        .setPositiveButton(getString(R.string.Clear), (dialog, which) -> {
-                            AyuFilter.clearAllFilters();
-                            refreshRows();
-                        })
-                        .makeRed(AlertDialog.BUTTON_POSITIVE)
-                        .show();
-                }
-            }
-        });
         return v;
     }
 
     @Override
-    protected void onItemClick(View view, int position, float x, float y) {
-        if (position == regexFiltersEnabledRow) {
-            TextCheckCell cell = (TextCheckCell) view;
-            boolean enabled = !cell.isChecked();
-            cell.setChecked(enabled);
-            NaConfig.INSTANCE.getRegexFiltersEnabled().setConfigBool(enabled);
-            AyuFilter.invalidateFilteredCache();
-        } else if (position == regexFiltersEnableInChatsRow) {
-            TextCheckCell cell = (TextCheckCell) view;
-            boolean enabled = !cell.isChecked();
-            cell.setChecked(enabled);
-            NaConfig.INSTANCE.getRegexFiltersEnableInChats().setConfigBool(enabled);
-            AyuFilter.invalidateFilteredCache();
-        } else if (position == regexFiltersMaskMessagesRow) {
+    protected void onActionBarItemClick(int id) {
+        if (id == 1) {
+            presentFragment(createSelectChatActivity());
+        } else if (id == 2) {
+            Context context = getContext();
+            if (context != null) {
+                showImportSourceChooser(context);
+            }
+        } else if (id == 3) {
+            Context context = getContext();
+            if (context != null) {
+                showExportSourceChooser(context);
+            }
+        } else if (id == 4) {
+            new AlertDialog.Builder(getContext(), getResourceProvider())
+                    .setTitle(getString(R.string.ClearRegexFilters))
+                    .setMessage(getString(R.string.ClearRegexFiltersAlertMessage))
+                    .setNegativeButton(getString(R.string.Cancel), null)
+                    .setPositiveButton(getString(R.string.Clear), (dialog, which) -> {
+                        AyuFilter.clearAllFilters();
+                        refreshRows();
+                    })
+                    .makeRed(AlertDialog.BUTTON_POSITIVE)
+                    .show();
+        }
+    }
+
+    @Override
+    protected void onCustomCellClick(View view, int position, float x, float y) {
+        AbstractConfigCell row = cellGroup.rows.get(position);
+        if (row == regexFiltersMaskMessagesRow) {
             TextCheckCell cell = (TextCheckCell) view;
             boolean enabled = !cell.isChecked();
             cell.setChecked(enabled);
             NaConfig.INSTANCE.getRegexFiltersMaskMessages().setConfigBool(enabled);
             AyuFilter.invalidateFilteredCache();
-        } else if (position == ignoreBlockedRow) {
-            TextCheckCell cell = (TextCheckCell) view;
-            boolean enabled = !cell.isChecked();
-            cell.setChecked(enabled);
-            NekoConfig.ignoreBlocked.setConfigBool(enabled);
-            if (enabled && !NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()) {
-                NaConfig.INSTANCE.getRegexFiltersEnabled().setConfigBool(true);
-                if (listAdapter != null) {
-                    listAdapter.notifyDataSetChanged();
-                }
-            }
-            AyuFilter.invalidateFilteredCache();
-        } else if (position == sharedFiltersPageRow) {
+        } else if (row == sharedFiltersPageRow) {
             presentFragment(new RegexSharedFiltersListActivity());
-        } else if (position == userFiltersPageRow) {
+        } else if (row == userFiltersPageRow) {
             presentFragment(new ShadowBanListActivity());
-        } else if (position >= chatFiltersStartRow && position < chatFiltersEndRow) {
-            int idx = position - chatFiltersStartRow;
-            var chatEntries = getDialogFilterItems();
-            if (idx >= 0 && idx < chatEntries.size()) {
-                long did = chatEntries.get(idx).dialogId;
-                presentFragment(new RegexChatFiltersListActivity(did));
-            }
+        } else if (row instanceof DialogFilterCell dialogFilterCell) {
+            presentFragment(new RegexChatFiltersListActivity(dialogFilterCell.item.dialogId));
         }
     }
 
@@ -944,7 +941,7 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
 
     @SuppressLint("NotifyDataSetChanged")
     private void refreshRows() {
-        updateRows();
+        rebuildRows();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
@@ -955,14 +952,50 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
         return super.onItemLongClick(view, position, x, y);
     }
 
-    @Override
-    protected BaseListAdapter createAdapter(Context context) {
-        return new ListAdapter(context);
+    private void setupLongClickListener() {
+        listView.setOnItemLongClickListener((view, position, x, y) -> {
+            if (isDialogFilterRow(position)) {
+                return false;
+            }
+            if (onItemLongClick(view, position, x, y)) {
+                return true;
+            }
+            if (position < 0 || position >= cellGroup.rows.size()) {
+                return false;
+            }
+            if (cellGroup.rows.get(position) instanceof ConfigCellCheckBox) {
+                return true;
+            }
+            String prefix = getSettingsPrefix();
+            if (prefix == null || listAdapter == null) {
+                return false;
+            }
+            RecyclerView.ViewHolder holder = listView.findViewHolderForAdapterPosition(position);
+            if (holder != null && listAdapter.isEnabled(holder)) {
+                showDefaultLongClickOptions(view, prefix, position);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private boolean isDialogFilterRow(int position) {
+        return position >= 0 && position < cellGroup.rows.size() && cellGroup.rows.get(position) instanceof DialogFilterCell;
     }
 
     @Override
-    protected String getActionBarTitle() {
+    public String getTitle() {
         return getString(R.string.RegexFilters);
+    }
+
+    @Override
+    protected String getSettingsPrefix() {
+        return "regexfilters";
+    }
+
+    @Override
+    protected void styleTextInfoPrivacyCell(TextInfoPrivacyCell cell) {
+        cell.setBackground(Theme.getThemedDrawable(cell.getContext(), R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
     }
 
     private static BackupFilter buildBackupFilter(AyuFilter.FilterModel model, Long dialogId) {
@@ -1017,92 +1050,38 @@ public class RegexFiltersSettingActivity extends BaseNekoSettingsActivity {
             super(context);
         }
 
-        @NonNull
         @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            if (viewType == TYPE_ACCOUNT) {
+        protected View onCreateCustomViewHolder(@NonNull ViewGroup parent, int viewType) {
+            if (viewType == VIEW_TYPE_CHAT_FILTER) {
                 FiltersChatCell chatCell = new FiltersChatCell(mContext);
                 chatCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                 chatCell.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-                return new RecyclerListView.Holder(chatCell);
+                return chatCell;
             }
-            return super.onCreateViewHolder(parent, viewType);
+            return null;
         }
 
         @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean payload) {
-            switch (holder.getItemViewType()) {
-                case TYPE_SHADOW:
-                    holder.itemView.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    break;
-                case TYPE_CHECK:
-                    TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
-                    if (position == regexFiltersEnabledRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersEnabled), NaConfig.INSTANCE.getRegexFiltersEnabled().Bool(), true);
-                    } else if (position == regexFiltersEnableInChatsRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersEnableInChats), NaConfig.INSTANCE.getRegexFiltersEnableInChats().Bool(), true);
-                    } else if (position == regexFiltersMaskMessagesRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersMaskMessagesShort), NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool(), false);
-                    } else if (position == ignoreBlockedRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.IgnoreBlocked), NekoConfig.ignoreBlocked.Bool(), false);
-                    }
-                    break;
-                case TYPE_INFO_PRIVACY:
-                    TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
-                    infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    if (position == regexFiltersMaskMessagesInfoRow) {
-                        infoCell.setText(getString(R.string.RegexFiltersMaskMessagesAbout));
-                    }
-                    break;
-                case TYPE_TEXT:
-                    break;
-                case TYPE_SETTINGS:
-                    TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
-                    if (position == sharedFiltersPageRow) {
-                        settingsCell.setTextAndValue(getString(R.string.RegexFiltersSharedHeader), String.valueOf(AyuFilter.getRegexFilters().size()), true);
-                    } else if (position == userFiltersPageRow) {
-                        settingsCell.setTextAndValue(getString(R.string.ShadowBan), String.valueOf(getShadowBanCount()), false);
-                    }
-                    break;
-                case TYPE_ACCOUNT:
-                    if (position >= chatFiltersStartRow && position < chatFiltersEndRow) {
-                        int idx = position - chatFiltersStartRow;
-                        var chatEntries = getDialogFilterItems();
-                        if (idx >= 0 && idx < chatEntries.size()) {
-                            var entry = chatEntries.get(idx);
-                            long did = entry.dialogId;
-                            FiltersChatCell chatCell = (FiltersChatCell) holder.itemView;
-                            chatCell.setDialog(did, entry.chatFiltersCount, entry.excludedSharedCount);
-                        }
-                    }
-                    break;
-                case TYPE_HEADER:
-                    HeaderCell headerCell = (HeaderCell) holder.itemView;
-                    if (position == filtersOptionHeaderRow) {
-                        headerCell.setText(getString(R.string.General));
-                    } else if (position == filtersHeaderRow) {
-                        headerCell.setText(getString(R.string.RegexFiltersGlobalHeader));
-                    } else if (position == chatFiltersHeaderRow) {
-                        headerCell.setText(getString(R.string.RegexFiltersChatHeader));
-                    }
-                    break;
+        protected void onBindCustomViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            AbstractConfigCell row = cellGroup.rows.get(position);
+            if (row == regexFiltersMaskMessagesRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersMaskMessagesShort), NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool(), false);
+            } else if (row == regexFiltersMaskMessagesInfoRow) {
+                TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
+                infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                infoCell.setText(getString(R.string.RegexFiltersMaskMessagesAbout));
+            } else if (row == sharedFiltersPageRow) {
+                TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
+                settingsCell.setTextAndValue(getString(R.string.RegexFiltersSharedHeader), String.valueOf(AyuFilter.getRegexFilters().size()), true);
+            } else if (row == userFiltersPageRow) {
+                TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
+                settingsCell.setTextAndValue(getString(R.string.ShadowBan), String.valueOf(getShadowBanCount()), false);
+            } else if (row instanceof DialogFilterCell dialogFilterCell) {
+                DialogFilterItem entry = dialogFilterCell.item;
+                FiltersChatCell chatCell = (FiltersChatCell) holder.itemView;
+                chatCell.setDialog(entry.dialogId, entry.chatFiltersCount, entry.excludedSharedCount);
             }
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-            if (position == filtersOptionDividerRow || position == dividerRow) {
-                return TYPE_SHADOW;
-            } else if (position == regexFiltersMaskMessagesInfoRow) {
-                return TYPE_INFO_PRIVACY;
-            } else if (position == filtersHeaderRow || position == filtersOptionHeaderRow || position == chatFiltersHeaderRow) {
-                return TYPE_HEADER;
-            } else if (position == sharedFiltersPageRow || position == userFiltersPageRow) {
-                return TYPE_SETTINGS;
-            } else if (position >= chatFiltersStartRow && position < chatFiltersEndRow) {
-                return TYPE_ACCOUNT;
-            }
-            return TYPE_CHECK;
         }
     }
 }
