@@ -14,10 +14,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.ui.ActionBar.ActionBarLayout;
@@ -81,7 +79,6 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
                     getString(R.string.BackAnimationSpring),
             }, null));
     private final AbstractConfigCell springAnimationCrossfadeRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSpringAnimationCrossfade()));
-    private final AbstractConfigCell localPremiumRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.localPremium));
     private final AbstractConfigCell sendLockedCustomEmojiAsStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker(), getString(R.string.SendLockedCustomEmojiAsStickerInfo)));
     private final AbstractConfigCell unlimitedPinnedDialogsRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.unlimitedPinnedDialogs, getString(R.string.UnlimitedPinnedDialogsAbout)));
     private final AbstractConfigCell unlimitedFavedStickersRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.unlimitedFavedStickers, getString(R.string.UnlimitedFavoredStickersAbout)));
@@ -110,8 +107,6 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
     // N-Config
     private final AbstractConfigCell headerNConfig = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.N_Config)));
     private final AbstractConfigCell showRPCErrorRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowRPCError()));
-    private final AbstractConfigCell hideProxySponsorChannelRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideProxySponsorChannel));
-    private final AbstractConfigCell hideSponsoredMessageRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideSponsoredMessage));
     private final AbstractConfigCell disableChoosingStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableChoosingSticker));
     private final AbstractConfigCell disableFilteringRow = cellGroup.appendCell(new ConfigCellCustom("SensitiveDisableFiltering", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell devicePerformanceClassRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getPerformanceClass(), new String[]{
@@ -157,9 +152,6 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
             if (key.equals(NaConfig.INSTANCE.getDisableStories().getKey())) {
                 checkStoriesRows();
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
-            } else if (key.equals(NekoConfig.localPremium.getKey())) {
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
             } else if (key.equals(NaConfig.INSTANCE.getBackAnimationStyle().getKey())) {
                 final int style = (int) newValue;
                 if (style != ActionBarLayout.BACK_ANIMATION_SPRING) {
@@ -184,14 +176,6 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getHideStoriesFromHeader().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
-            } else if (key.equals(NekoConfig.hideSponsoredMessage.getKey())) {
-                tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
-            } else if (key.equals(NekoConfig.hideProxySponsorChannel.getKey())) {
-                for (int account = 0; account < UserConfig.MAX_ACCOUNT_COUNT; account++) {
-                    if (UserConfig.getInstance(account).isClientActivated()) {
-                        org.telegram.messenger.MessagesController.getInstance(account).checkPromoInfo(true);
-                    }
-                }
             }
         };
 

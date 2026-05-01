@@ -105,6 +105,8 @@
     <string name="SingleCornerRadiusInfo">Topic groups will use the same avatar shape as chat messages.</string>
     <string name="BlurOptions">Blur Options</string>
     <string name="AyuMoments" translatable="false">AyuMoments</string>
+    <string name="AyuSpySettings">Spy Settings</string>
+    <string name="AyuMomentsCustomHeader">Custom</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>
     <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>
     <string name="MaximumMediaSizeCellular">Media size limit (cellular data)</string>

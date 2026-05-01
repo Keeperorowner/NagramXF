@@ -21,65 +21,71 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.Locale;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.ConfigItem;
-import tw.nekomimi.nekogram.ui.cells.HeaderCell;
+import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
+import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
+import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import xyz.nextalone.nagram.NaConfig;
 
-public class GhostModeActivity extends BaseNekoSettingsActivity {
+public class GhostModeActivity extends BaseNekoXSettingsActivity {
 
-    private int ghostEssentialsHeaderRow;
-    private int ghostModeToggleRow;
+    private ListAdapter listAdapter;
+    private final CellGroup cellGroup = new CellGroup(this);
 
-    private int sendReadMessagePacketsRow;
-    private int sendReadStoriesPacketsRow;
-    private int sendOnlinePacketsRow;
-    private int sendUploadProgressRow;
-    private int sendOfflinePacketAfterOnlineRow;
-    private int ghostModeNoticeRow;
-    private int markReadAfterSendRow;
-    private int markReadAfterSendNoticeRow;
-    private int useScheduledMessagesRow;
-    private int useScheduledMessagesNoticeRow;
-
-    private int sendWithoutSoundRow;
-    private int sendWithoutSoundNoticeRow;
-    private int showGhostInDrawerRow;
-    private int showGhostModeStatusRow;
+    private final AbstractConfigCell ghostEssentialsHeaderRow = new ConfigCellHeader(getString(R.string.GhostEssentialsHeader));
+    private final AbstractConfigCell ghostModeToggleRow = new ConfigCellCustom("GhostMode", CellGroup.ITEM_TYPE_CHECK2, true);
+    private final AbstractConfigCell sendReadMessagePacketsRow = new ConfigCellCustom("DontSendReadMessagePackets", CellGroup.ITEM_TYPE_CHECK_BOX, true);
+    private final AbstractConfigCell sendReadStoriesPacketsRow = new ConfigCellCustom("DontReadStoriesPackets", CellGroup.ITEM_TYPE_CHECK_BOX, true);
+    private final AbstractConfigCell sendOnlinePacketsRow = new ConfigCellCustom("DontSendOnlinePackets", CellGroup.ITEM_TYPE_CHECK_BOX, true);
+    private final AbstractConfigCell sendUploadProgressRow = new ConfigCellCustom("DontSendUploadProgress", CellGroup.ITEM_TYPE_CHECK_BOX, true);
+    private final AbstractConfigCell sendOfflinePacketAfterOnlineRow = new ConfigCellCustom("SendOfflinePacketAfterOnline", CellGroup.ITEM_TYPE_CHECK_BOX, true);
+    private final AbstractConfigCell ghostModeNoticeRow = new ConfigCellCustom("GhostModeNotice", CellGroup.ITEM_TYPE_TEXT, false);
+    private final AbstractConfigCell markReadAfterSendRow = new ConfigCellCustom("MarkReadAfterSend", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
+    private final AbstractConfigCell markReadAfterSendNoticeRow = new ConfigCellCustom("MarkReadAfterSendNotice", CellGroup.ITEM_TYPE_TEXT, false);
+    private final AbstractConfigCell useScheduledMessagesRow = new ConfigCellCustom("UseScheduledMessages", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
+    private final AbstractConfigCell useScheduledMessagesNoticeRow = new ConfigCellCustom("UseScheduledMessagesDescription", CellGroup.ITEM_TYPE_TEXT, false);
+    private final AbstractConfigCell sendWithoutSoundRow = new ConfigCellCustom("SilentMessageByDefault", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
+    private final AbstractConfigCell sendWithoutSoundNoticeRow = new ConfigCellCustom("SendWithoutSoundRowNotice", CellGroup.ITEM_TYPE_TEXT, false);
+    private final AbstractConfigCell showGhostInDrawerRow = new ConfigCellCustom("GhostModeInDrawer", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
+    private final AbstractConfigCell showGhostModeStatusRow = new ConfigCellCustom("GhostModeStatusIndicator", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
     private boolean ghostModeMenuExpanded;
 
-    @Override
-    protected void updateRows() {
-        super.updateRows();
+    public GhostModeActivity() {
+        rebuildRows();
+    }
 
-        ghostEssentialsHeaderRow = addRow();
-        ghostModeToggleRow = addRow();
+    private void addCell(AbstractConfigCell cell) {
+        cell.bindCellGroup(cellGroup);
+        cellGroup.rows.add(cell);
+    }
+
+    private void rebuildRows() {
+        cellGroup.rows.clear();
+        addCell(ghostEssentialsHeaderRow);
+        addCell(ghostModeToggleRow);
         if (ghostModeMenuExpanded) {
-            sendReadMessagePacketsRow = addRow();
-            sendReadStoriesPacketsRow = addRow();
-            sendOnlinePacketsRow = addRow();
-            sendUploadProgressRow = addRow();
-            sendOfflinePacketAfterOnlineRow = addRow();
-            ghostModeNoticeRow = addRow();
-        } else {
-            sendReadMessagePacketsRow = -1;
-            sendReadStoriesPacketsRow = -1;
-            sendOnlinePacketsRow = -1;
-            sendUploadProgressRow = -1;
-            sendOfflinePacketAfterOnlineRow = -1;
-            ghostModeNoticeRow = -1;
+            addCell(sendReadMessagePacketsRow);
+            addCell(sendReadStoriesPacketsRow);
+            addCell(sendOnlinePacketsRow);
+            addCell(sendUploadProgressRow);
+            addCell(sendOfflinePacketAfterOnlineRow);
+            addCell(ghostModeNoticeRow);
         }
-        markReadAfterSendRow = addRow();
-        markReadAfterSendNoticeRow = addRow();
-        useScheduledMessagesRow = addRow();
-        useScheduledMessagesNoticeRow = addRow();
-        sendWithoutSoundRow = addRow();
-        sendWithoutSoundNoticeRow = addRow();
-        showGhostInDrawerRow = addRow();
-        showGhostModeStatusRow = addRow();
+        addCell(markReadAfterSendRow);
+        addCell(markReadAfterSendNoticeRow);
+        addCell(useScheduledMessagesRow);
+        addCell(useScheduledMessagesNoticeRow);
+        addCell(sendWithoutSoundRow);
+        addCell(sendWithoutSoundNoticeRow);
+        addCell(showGhostInDrawerRow);
+        addCell(showGhostModeStatusRow);
+        addRowsToMap(cellGroup);
     }
 
     @Override
@@ -89,76 +95,153 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
     }
 
     @Override
+    protected RecyclerListView.SelectionAdapter getListAdapter() {
+        return listAdapter;
+    }
+
+    @Override
+    protected CellGroup getCellGroup() {
+        return cellGroup;
+    }
+
+    @Override
+    public View createView(Context context) {
+        View view = super.createView(context);
+        listAdapter = new ListAdapter(context);
+        listView.setAdapter(listAdapter);
+        setupDefaultListeners();
+        return view;
+    }
+
+    @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
     }
 
-    private void updateGhostViews() {
-        var isActive = NekoConfig.isGhostModeActive();
+    private int rowIndex(AbstractConfigCell row) {
+        return cellGroup.rows.indexOf(row);
+    }
 
-        listAdapter.notifyItemChanged(ghostModeToggleRow, PARTIAL);
-        listAdapter.notifyItemChanged(sendReadMessagePacketsRow, !isActive);
-        listAdapter.notifyItemChanged(sendOnlinePacketsRow, !isActive);
-        listAdapter.notifyItemChanged(sendUploadProgressRow, !isActive);
-        listAdapter.notifyItemChanged(sendReadStoriesPacketsRow, !isActive);
-        listAdapter.notifyItemChanged(sendOfflinePacketAfterOnlineRow, isActive);
+    private void notifyRow(AbstractConfigCell row) {
+        int index = rowIndex(row);
+        if (listAdapter != null && index >= 0) {
+            listAdapter.notifyItemChanged(index);
+        }
+    }
+
+    private void insertCell(int index, AbstractConfigCell cell) {
+        cell.bindCellGroup(cellGroup);
+        cellGroup.rows.add(index, cell);
+    }
+
+    private void setGhostModeMenuExpanded(boolean expanded) {
+        if (ghostModeMenuExpanded == expanded) {
+            return;
+        }
+        int toggleIndex = rowIndex(ghostModeToggleRow);
+        ghostModeMenuExpanded = expanded;
+        if (listAdapter == null || toggleIndex < 0) {
+            rebuildRows();
+            return;
+        }
+        if (expanded) {
+            int insertIndex = toggleIndex + 1;
+            insertCell(insertIndex++, sendReadMessagePacketsRow);
+            insertCell(insertIndex++, sendReadStoriesPacketsRow);
+            insertCell(insertIndex++, sendOnlinePacketsRow);
+            insertCell(insertIndex++, sendUploadProgressRow);
+            insertCell(insertIndex++, sendOfflinePacketAfterOnlineRow);
+            insertCell(insertIndex, ghostModeNoticeRow);
+            addRowsToMap(cellGroup);
+            listAdapter.notifyItemChanged(toggleIndex);
+            listAdapter.notifyItemRangeInserted(toggleIndex + 1, 6);
+        } else {
+            int removeIndex = toggleIndex + 1;
+            cellGroup.rows.remove(sendReadMessagePacketsRow);
+            cellGroup.rows.remove(sendReadStoriesPacketsRow);
+            cellGroup.rows.remove(sendOnlinePacketsRow);
+            cellGroup.rows.remove(sendUploadProgressRow);
+            cellGroup.rows.remove(sendOfflinePacketAfterOnlineRow);
+            cellGroup.rows.remove(ghostModeNoticeRow);
+            addRowsToMap(cellGroup);
+            listAdapter.notifyItemChanged(toggleIndex);
+            listAdapter.notifyItemRangeRemoved(removeIndex, 6);
+        }
+    }
+
+    private void updateGhostViews() {
+        notifyRow(ghostModeToggleRow);
+        notifyRow(sendReadMessagePacketsRow);
+        notifyRow(sendOnlinePacketsRow);
+        notifyRow(sendUploadProgressRow);
+        notifyRow(sendReadStoriesPacketsRow);
+        notifyRow(sendOfflinePacketAfterOnlineRow);
 
         NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
+    private ConfigItem getGhostModeLockedItem(AbstractConfigCell row) {
+        if (row == sendReadMessagePacketsRow) {
+            return NekoConfig.sendReadMessagePacketsLocked;
+        } else if (row == sendReadStoriesPacketsRow) {
+            return NekoConfig.sendReadStoriesPacketsLocked;
+        } else if (row == sendOnlinePacketsRow) {
+            return NekoConfig.sendOnlinePacketsLocked;
+        } else if (row == sendUploadProgressRow) {
+            return NekoConfig.sendUploadProgressLocked;
+        } else if (row == sendOfflinePacketAfterOnlineRow) {
+            return NekoConfig.sendOfflinePacketAfterOnlineLocked;
+        }
+        return null;
+    }
+
 
     @Override
-    protected void onItemClick(View view, int position, float x, float y) {
-        if (position == ghostModeToggleRow) {
-            ghostModeMenuExpanded ^= true;
-            updateRows();
-            listAdapter.notifyItemChanged(ghostModeToggleRow, PARTIAL);
-            if (ghostModeMenuExpanded) {
-                listAdapter.notifyItemRangeInserted(ghostModeToggleRow + 1, 6);
-            } else {
-                listAdapter.notifyItemRangeRemoved(ghostModeToggleRow + 1, 6);
-            }
-        } else if (position == sendReadMessagePacketsRow) {
+    protected void onCustomCellClick(View view, int position, float x, float y) {
+        AbstractConfigCell row = cellGroup.rows.get(position);
+        if (row == ghostModeToggleRow) {
+            setGhostModeMenuExpanded(!ghostModeMenuExpanded);
+        } else if (row == sendReadMessagePacketsRow) {
             if (!view.isEnabled()) return;
             NekoConfig.sendReadMessagePackets.toggleConfigBool();
             ((CheckBoxCell) view).setChecked(NekoConfig.sendReadMessagePackets.Bool(), true);
             AyuState.setAllowReadPacket(false, -1);
             updateGhostViews();
-        } else if (position == sendReadStoriesPacketsRow) {
+        } else if (row == sendReadStoriesPacketsRow) {
             if (!view.isEnabled()) return;
             NekoConfig.sendReadStoriesPackets.toggleConfigBool();
             ((CheckBoxCell) view).setChecked(NekoConfig.sendReadStoriesPackets.Bool(), true);
             updateGhostViews();
-        } else if (position == sendOnlinePacketsRow) {
+        } else if (row == sendOnlinePacketsRow) {
             if (!view.isEnabled()) return;
             NekoConfig.sendOnlinePackets.toggleConfigBool();
             ((CheckBoxCell) view).setChecked(NekoConfig.sendOnlinePackets.Bool(), true);
             updateGhostViews();
-        } else if (position == sendUploadProgressRow) {
+        } else if (row == sendUploadProgressRow) {
             if (!view.isEnabled()) return;
             NekoConfig.sendUploadProgress.toggleConfigBool();
             ((CheckBoxCell) view).setChecked(NekoConfig.sendUploadProgress.Bool(), true);
             updateGhostViews();
-        } else if (position == sendOfflinePacketAfterOnlineRow) {
+        } else if (row == sendOfflinePacketAfterOnlineRow) {
             if (!view.isEnabled()) return;
             NekoConfig.sendOfflinePacketAfterOnline.toggleConfigBool();
             ((CheckBoxCell) view).setChecked(NekoConfig.sendOfflinePacketAfterOnline.Bool(), true);
             updateGhostViews();
-        } else if (position == markReadAfterSendRow) {
+        } else if (row == markReadAfterSendRow) {
             NekoConfig.markReadAfterSend.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.markReadAfterSend.Bool());
             AyuState.setAllowReadPacket(false, -1);
-        } else if (position == useScheduledMessagesRow) {
+        } else if (row == useScheduledMessagesRow) {
             NekoConfig.useScheduledMessages.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.useScheduledMessages.Bool());
-        } else if (position == sendWithoutSoundRow) {
+        } else if (row == sendWithoutSoundRow) {
             NaConfig.INSTANCE.getSilentMessageByDefault().toggleConfigBool();
             ((TextCheckCell) view).setChecked(NaConfig.INSTANCE.getSilentMessageByDefault().Bool());
-        } else if (position == showGhostInDrawerRow) {
+        } else if (row == showGhostInDrawerRow) {
             NekoConfig.showGhostInDrawer.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.showGhostInDrawer.Bool());
             NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
-        } else if (position == showGhostModeStatusRow) {
+        } else if (row == showGhostModeStatusRow) {
             NekoConfig.showGhostModeStatus.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.showGhostModeStatus.Bool());
             NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
@@ -167,27 +250,10 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected boolean onItemLongClick(View view, int position, float x, float y) {
-        ConfigItem targetItem = null;
-        ConfigItem lockedItem = null;
+        AbstractConfigCell row = position >= 0 && position < cellGroup.rows.size() ? cellGroup.rows.get(position) : null;
+        ConfigItem lockedItem = getGhostModeLockedItem(row);
 
-        if (position == sendReadMessagePacketsRow) {
-            targetItem = NekoConfig.sendReadMessagePackets;
-            lockedItem = NekoConfig.sendReadMessagePacketsLocked;
-        } else if (position == sendReadStoriesPacketsRow) {
-            targetItem = NekoConfig.sendReadStoriesPackets;
-            lockedItem = NekoConfig.sendReadStoriesPacketsLocked;
-        } else if (position == sendOnlinePacketsRow) {
-            targetItem = NekoConfig.sendOnlinePackets;
-            lockedItem = NekoConfig.sendOnlinePacketsLocked;
-        } else if (position == sendUploadProgressRow) {
-            targetItem = NekoConfig.sendUploadProgress;
-            lockedItem = NekoConfig.sendUploadProgressLocked;
-        } else if (position == sendOfflinePacketAfterOnlineRow) {
-            targetItem = NekoConfig.sendOfflinePacketAfterOnline;
-            lockedItem = NekoConfig.sendOfflinePacketAfterOnlineLocked;
-        }
-
-        if (lockedItem != null && targetItem != null) {
+        if (lockedItem != null) {
             boolean currentLocked = lockedItem.Bool();
             if (!currentLocked && getGhostModeLockedCount() >= 4) {
                 AndroidUtilities.shakeViewSpring(view, -4);
@@ -195,20 +261,20 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
             }
             lockedItem.setConfigBool(!currentLocked);
             view.setEnabled(currentLocked);
-            listAdapter.notifyItemChanged(ghostModeToggleRow, PARTIAL);
+            notifyRow(ghostModeToggleRow);
             return true;
         }
         return super.onItemLongClick(view, position, x, y);
     }
 
     @Override
-    protected String getActionBarTitle() {
+    public String getTitle() {
         return getString(R.string.GhostMode);
     }
 
     @Override
-    protected BaseListAdapter createAdapter(Context context) {
-        return new ListAdapter(context);
+    protected String getSettingsPrefix() {
+        return "ghostmode";
     }
 
     private int getGhostModeSelectedCount() {
@@ -239,127 +305,84 @@ public class GhostModeActivity extends BaseNekoSettingsActivity {
 
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            int type = holder.getItemViewType();
-            if (type == TYPE_CHECKBOX2) {
-                return holder.itemView.isEnabled();
+            int position = holder.getAdapterPosition();
+            AbstractConfigCell row = position >= 0 && position < cellGroup.rows.size() ? cellGroup.rows.get(position) : null;
+            ConfigItem lockedItem = getGhostModeLockedItem(row);
+            if (lockedItem != null) {
+                return !lockedItem.Bool();
             }
-            return type == TYPE_CHECK || type == TYPE_CHECK2;
+            return super.isEnabled(holder);
         }
 
         @Override
-        public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean payload) {
-            switch (holder.getItemViewType()) {
-                case TYPE_SHADOW:
-                    holder.itemView.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    break;
-                case TYPE_CHECK:
-                    TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
-                    textCheckCell.setEnabled(true, null);
-                    if (position == markReadAfterSendRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.MarkReadAfterSend), NekoConfig.markReadAfterSend.Bool(), true);
-                    } else if (position == useScheduledMessagesRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.UseScheduledMessages), NekoConfig.useScheduledMessages.Bool(), true);
-                    } else if (position == sendWithoutSoundRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.SilentMessageByDefault), NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), true);
-                    } else if (position == showGhostInDrawerRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.GhostModeInDrawer), NekoConfig.showGhostInDrawer.Bool(), true);
-                    } else if (position == showGhostModeStatusRow) {
-                        textCheckCell.setTextAndCheck(getString(R.string.GhostModeStatusIndicator), NekoConfig.showGhostModeStatus.Bool(), false);
-                    }
-                    break;
-                case TYPE_HEADER:
-                    HeaderCell headerCell = (HeaderCell) holder.itemView;
-                    if (position == ghostEssentialsHeaderRow) {
-                        headerCell.setText(getString(R.string.GhostEssentialsHeader));
-                    }
-                    break;
-                case TYPE_INFO_PRIVACY:
-                    TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
-                    if (position == ghostModeNoticeRow) {
-                        cell.setText(getString(R.string.GhostModeNotice));
-                    } else if (position == markReadAfterSendNoticeRow) {
-                        cell.setText(getString(R.string.MarkReadAfterSendNotice));
-                    } else if (position == useScheduledMessagesNoticeRow) {
-                        cell.setText(getString(R.string.UseScheduledMessagesDescription));
-                    } else if (position == sendWithoutSoundNoticeRow) {
-                        cell.setText(getString(R.string.SendWithoutSoundRowNotice));
-                    }
-                    break;
-                case TYPE_CHECK2:
-                    TextCheckCell2 checkCell = (TextCheckCell2) holder.itemView;
-                    if (position == ghostModeToggleRow) {
-                        int selectedCount = getGhostModeSelectedCount();
-                        boolean isActive = NekoConfig.isGhostModeActive();
-                        checkCell.setTextAndCheck(getString(R.string.GhostMode), isActive, true, true);
-                        checkCell.setCollapseArrow(String.format(Locale.US, "%d/5", selectedCount), !ghostModeMenuExpanded, () -> {
-                            NekoConfig.toggleGhostMode();
-                            String msg = isActive
-                                    ? getString(R.string.GhostModeDisabled)
-                                    : getString(R.string.GhostModeEnabled);
-                            BulletinFactory.of(getLastFragment()).createSuccessBulletin(msg).show();
-                            updateGhostViews();
-                        });
-                    }
-                    checkCell.getCheckBox().setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
-                    checkCell.getCheckBox().setDrawIconType(0);
-                    break;
-                case TYPE_CHECKBOX2:
-                    CheckBoxCell checkBoxCell = (CheckBoxCell) holder.itemView;
-                    ConfigItem item = null;
-                    ConfigItem lockedItem = null;
-                    boolean checkValue = false;
-                    String title = "";
-
-                    if (position == sendReadMessagePacketsRow) {
-                        item = NekoConfig.sendReadMessagePackets;
-                        lockedItem = NekoConfig.sendReadMessagePacketsLocked;
-                        checkValue = !item.Bool();
-                        title = getString(R.string.DontSendReadMessagePackets);
-                    } else if (position == sendReadStoriesPacketsRow) {
-                        item = NekoConfig.sendReadStoriesPackets;
-                        lockedItem = NekoConfig.sendReadStoriesPacketsLocked;
-                        checkValue = !item.Bool();
-                        title = getString(R.string.DontReadStoriesPackets);
-                    } else if (position == sendOnlinePacketsRow) {
-                        item = NekoConfig.sendOnlinePackets;
-                        lockedItem = NekoConfig.sendOnlinePacketsLocked;
-                        checkValue = !item.Bool();
-                        title = getString(R.string.DontSendOnlinePackets);
-                    } else if (position == sendUploadProgressRow) {
-                        item = NekoConfig.sendUploadProgress;
-                        lockedItem = NekoConfig.sendUploadProgressLocked;
-                        checkValue = !item.Bool();
-                        title = getString(R.string.DontSendUploadProgress);
-                    } else if (position == sendOfflinePacketAfterOnlineRow) {
-                        item = NekoConfig.sendOfflinePacketAfterOnline;
-                        lockedItem = NekoConfig.sendOfflinePacketAfterOnlineLocked;
-                        checkValue = item.Bool();
-                        title = getString(R.string.SendOfflinePacketAfterOnline);
-                    }
-
-                    if (item != null && lockedItem != null) {
-                        boolean isLocked = lockedItem.Bool();
-                        checkBoxCell.setText(title, "", checkValue, true, true);
-                        checkBoxCell.setEnabled(!isLocked);
-                    }
-                    checkBoxCell.setPad(1);
-                    break;
+        protected void onBindCustomViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+            AbstractConfigCell row = cellGroup.rows.get(position);
+            if (row == ghostModeToggleRow) {
+                TextCheckCell2 checkCell = (TextCheckCell2) holder.itemView;
+                int selectedCount = getGhostModeSelectedCount();
+                boolean isActive = NekoConfig.isGhostModeActive();
+                checkCell.setTextAndCheck(getString(R.string.GhostMode), isActive, true, true);
+                checkCell.setCollapseArrow(String.format(Locale.US, "%d/5", selectedCount), !ghostModeMenuExpanded, () -> {
+                    NekoConfig.toggleGhostMode();
+                    String msg = isActive
+                            ? getString(R.string.GhostModeDisabled)
+                            : getString(R.string.GhostModeEnabled);
+                    BulletinFactory.of(getLastFragment()).createSuccessBulletin(msg).show();
+                    updateGhostViews();
+                });
+                checkCell.getCheckBox().setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
+                checkCell.getCheckBox().setDrawIconType(0);
+            } else if (row == sendReadMessagePacketsRow) {
+                bindPacketCell((CheckBoxCell) holder.itemView, NekoConfig.sendReadMessagePacketsLocked, !NekoConfig.sendReadMessagePackets.Bool(), getString(R.string.DontSendReadMessagePackets));
+            } else if (row == sendReadStoriesPacketsRow) {
+                bindPacketCell((CheckBoxCell) holder.itemView, NekoConfig.sendReadStoriesPacketsLocked, !NekoConfig.sendReadStoriesPackets.Bool(), getString(R.string.DontReadStoriesPackets));
+            } else if (row == sendOnlinePacketsRow) {
+                bindPacketCell((CheckBoxCell) holder.itemView, NekoConfig.sendOnlinePacketsLocked, !NekoConfig.sendOnlinePackets.Bool(), getString(R.string.DontSendOnlinePackets));
+            } else if (row == sendUploadProgressRow) {
+                bindPacketCell((CheckBoxCell) holder.itemView, NekoConfig.sendUploadProgressLocked, !NekoConfig.sendUploadProgress.Bool(), getString(R.string.DontSendUploadProgress));
+            } else if (row == sendOfflinePacketAfterOnlineRow) {
+                bindPacketCell((CheckBoxCell) holder.itemView, NekoConfig.sendOfflinePacketAfterOnlineLocked, NekoConfig.sendOfflinePacketAfterOnline.Bool(), getString(R.string.SendOfflinePacketAfterOnline));
+            } else if (row == ghostModeNoticeRow) {
+                bindInfoCell((TextInfoPrivacyCell) holder.itemView, getString(R.string.GhostModeNotice));
+            } else if (row == markReadAfterSendNoticeRow) {
+                bindInfoCell((TextInfoPrivacyCell) holder.itemView, getString(R.string.MarkReadAfterSendNotice));
+            } else if (row == useScheduledMessagesNoticeRow) {
+                bindInfoCell((TextInfoPrivacyCell) holder.itemView, getString(R.string.UseScheduledMessagesDescription));
+            } else if (row == sendWithoutSoundNoticeRow) {
+                bindInfoCell((TextInfoPrivacyCell) holder.itemView, getString(R.string.SendWithoutSoundRowNotice));
+            } else if (row == markReadAfterSendRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setEnabled(true, null);
+                textCheckCell.setTextAndCheck(getString(R.string.MarkReadAfterSend), NekoConfig.markReadAfterSend.Bool(), true);
+            } else if (row == useScheduledMessagesRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setEnabled(true, null);
+                textCheckCell.setTextAndCheck(getString(R.string.UseScheduledMessages), NekoConfig.useScheduledMessages.Bool(), true);
+            } else if (row == sendWithoutSoundRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setEnabled(true, null);
+                textCheckCell.setTextAndCheck(getString(R.string.SilentMessageByDefault), NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), true);
+            } else if (row == showGhostInDrawerRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setEnabled(true, null);
+                textCheckCell.setTextAndCheck(getString(R.string.GhostModeInDrawer), NekoConfig.showGhostInDrawer.Bool(), true);
+            } else if (row == showGhostModeStatusRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setEnabled(true, null);
+                textCheckCell.setTextAndCheck(getString(R.string.GhostModeStatusIndicator), NekoConfig.showGhostModeStatus.Bool(), false);
             }
         }
 
-        @Override
-        public int getItemViewType(int position) {
-            if (position == ghostEssentialsHeaderRow) {
-                return TYPE_HEADER;
-            } else if (position == ghostModeNoticeRow || position == markReadAfterSendNoticeRow || position == useScheduledMessagesNoticeRow || position == sendWithoutSoundNoticeRow) {
-                return TYPE_INFO_PRIVACY;
-            } else if (position == ghostModeToggleRow) {
-                return TYPE_CHECK2;
-            } else if (position >= sendReadMessagePacketsRow && position <= sendOfflinePacketAfterOnlineRow) {
-                return TYPE_CHECKBOX2;
-            }
-            return TYPE_CHECK;
+        private void bindPacketCell(CheckBoxCell checkBoxCell, ConfigItem lockedItem, boolean checkValue, String title) {
+            boolean isLocked = lockedItem.Bool();
+            checkBoxCell.setText(title, "", checkValue, true, true);
+            checkBoxCell.setEnabled(!isLocked);
+            checkBoxCell.setPad(1);
+        }
+
+        private void bindInfoCell(TextInfoPrivacyCell cell, String text) {
+            cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+            cell.setText(text);
         }
     }
 }

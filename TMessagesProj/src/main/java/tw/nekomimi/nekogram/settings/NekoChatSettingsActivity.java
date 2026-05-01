@@ -979,16 +979,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 case ConfigCellCustom.CUSTOM_ITEM_DoubleTapPreview:
                     view = doubleTapPreviewCell = new DoubleTapPreviewCell(mContext);
                     break;
-                case CellGroup.ITEM_TYPE_CHECK2:
-                    view = new TextCheckCell2(mContext);
-                    break;
-                case CellGroup.ITEM_TYPE_CHECK_BOX:
-                    CheckBoxCell checkBoxCell = new CheckBoxCell(mContext, CheckBoxCell.TYPE_CHECK_BOX_ROUND, 21, getResourceProvider());
-                    checkBoxCell.getCheckBoxRound().setDrawBackgroundAsArc(14);
-                    checkBoxCell.getCheckBoxRound().setColor(Theme.key_switch2TrackChecked, Theme.key_radioBackground, Theme.key_checkboxCheck);
-                    checkBoxCell.setEnabled(true);
-                    view = checkBoxCell;
-                    break;
             }
             return view;
         }
