@@ -60,6 +60,8 @@ import org.telegram.ui.PhotoViewer;
 import java.util.ArrayList;
 import java.util.List;
 
+import xyz.nextalone.nagram.NaConfig;
+
 public class PipVideoOverlay implements IPipSourceDelegate {
     public final static boolean IS_TRANSITION_ANIMATION_SUPPORTED = true;
     public final static float ROUNDED_CORNERS_DP = 10;
@@ -238,6 +240,11 @@ public class PipVideoOverlay implements IPipSourceDelegate {
             }
             return player.getDuration();
         }
+    }
+
+    private boolean canDoubleTapSeekVideo(long current, long total, boolean forward) {
+        long seekDuration = NaConfig.getDoubleTapSeekDurationMs();
+        return current != C.TIME_UNSET && total > 0 && (forward ? total - current > seekDuration : seekDuration <= 9000 || current >= seekDuration - 9000);
     }
 
     protected void onLongClick() {
@@ -754,15 +761,16 @@ public class PipVideoOverlay implements IPipSourceDelegate {
 
                 long current = getCurrentPosition();
                 long total = getDuration();
-                if (current == C.TIME_UNSET || total < 15 * 1000) {
+                if (!canDoubleTapSeekVideo(current, total, forward)) {
                     return false;
                 }
 
                 long old = current;
+                long seekDuration = NaConfig.getDoubleTapSeekDurationMs();
                 if (forward) {
-                    current += 10000;
+                    current += seekDuration;
                 } else {
-                    current -= 10000;
+                    current -= seekDuration;
                 }
                 if (old != current) {
                     boolean apply = true;
@@ -777,9 +785,9 @@ public class PipVideoOverlay implements IPipSourceDelegate {
                     if (apply) {
                         videoForwardDrawable.setOneShootAnimation(true);
                         videoForwardDrawable.setLeftSide(!forward);
-                        videoForwardDrawable.addTime(10000);
+                        videoForwardDrawable.addTime(seekDuration);
                         seekTo(current);
-                        onUpdateRewindProgressUiInternal(forward ? 10000 : -10000, current / (float) total, true);
+                        onUpdateRewindProgressUiInternal(forward ? seekDuration : -seekDuration, current / (float) total, true);
                         if (!isShowingControls) {
                             toggleControls(isShowingControls = true);
                             if (!postedDismissControls) {
@@ -810,7 +818,8 @@ public class PipVideoOverlay implements IPipSourceDelegate {
 
                 long current = getCurrentPosition();
                 long total = getDuration();
-                return current != C.TIME_UNSET && total >= 15 * 1000;
+                boolean forward = e.getX() >= getSuggestedWidth() * scaleFactor * 0.5f;
+                return canDoubleTapSeekVideo(current, total, forward);
             }
 
             @Override

@@ -159,6 +159,12 @@ object NaConfig {
             ConfigItem.configTypeInt,
             8
         )
+    val doubleTapSeekDuration =
+        addConfig(
+            "doubleTapSeekDuration",
+            ConfigItem.configTypeInt,
+            1
+        )
     val showCopyPhoto =
         addConfig(
             "CopyPhoto",
@@ -1877,6 +1883,16 @@ object NaConfig {
     fun getAllKeys(): Set<String> {
         synchronized(sync) {
             return configs.map { it.key }.toSet()
+        }
+    }
+
+    @JvmStatic
+    fun getDoubleTapSeekDurationMs(): Int {
+        val value = doubleTapSeekDuration.Int()
+        return if (value in 0..2) {
+            (value + 1) * 5000
+        } else {
+            30000
         }
     }
 

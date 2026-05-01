@@ -120,6 +120,7 @@
     <string name="HideReactions">Скрыть реакции</string>
     <string name="DoubleTapIncoming">Входящие сообщения</string>
     <string name="DoubleTapOutgoing">Исходящие сообщения</string>
+    <string name="doubleTapSeekDuration">Перемотка двойным нажатием</string>
     <string name="TgBrowserOpenFail">Встроенный браузер недоступен</string>
     <string name="TgBrowserOpenFail_Desc">Выбранная операция недоступна, поскольку встроенный браузер отключён.</string>
     <string name="MapPreviewProviderYandexNax">Яндекс</string>

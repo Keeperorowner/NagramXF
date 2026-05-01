@@ -123,6 +123,7 @@
     <string name="HideReactions">隐藏表情回应</string>
     <string name="DoubleTapIncoming">收到的消息</string>
     <string name="DoubleTapOutgoing">发送的消息</string>
+    <string name="doubleTapSeekDuration">双击快进时长</string>
     <string name="TgBrowserOpenFail">应用内浏览器不可用</string>
     <string name="TgBrowserOpenFail_Desc">由于应用内浏览器已被禁用，所选操作不可用。</string>
     <string name="MapPreviewProviderYandexNax">Yandex</string>
