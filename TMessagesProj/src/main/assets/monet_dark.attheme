@@ -172,6 +172,7 @@ chat_fieldOverlayText=a1_100
 chat_gifSaveHintBackground=n2_900
 chat_gifSaveHintText=a1_100
 chat_goDownButton=n2_800
+chat_recentDialogsSidebarBackground=n2_800
 chat_goDownButtonCounter=n1_50
 chat_goDownButtonCounterBackground=n2_800
 chat_goDownButtonIcon=n1_50
