@@ -7,10 +7,12 @@ import android.text.TextUtils;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.tgnet.TLRPC;
@@ -140,6 +142,9 @@ public class AyuFilter {
             excludedSharedFilterIdsByDialog = null;
             AyuFilterCache.clearAll();
         }
+        AndroidUtilities.runOnUIThread(() -> {
+            NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.regexFiltersUpdated);
+        });
     }
 
     public static void invalidateFilteredCache() {
