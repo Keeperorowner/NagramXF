@@ -4361,6 +4361,7 @@ public class Theme {
         fallbackKeys.put(key_featuredStickers_addButton2, key_featuredStickers_addButton);
         fallbackKeys.put(key_dialogGiftsBackground, key_windowBackgroundGray);
         fallbackKeys.put(key_dialogGiftsTabText, key_windowBackgroundWhiteGrayText2);
+        fallbackKeys.put(key_chat_recentDialogsSidebarBackground, key_chat_goDownButton);
         fallbackKeys.put(key_chat_inQuote, key_featuredStickers_addButtonPressed);
         fallbackKeys.put(key_chat_outQuote, key_chat_outReplyLine);
         fallbackKeys.put(key_chat_outReplyLine2, key_chat_outReplyLine);
