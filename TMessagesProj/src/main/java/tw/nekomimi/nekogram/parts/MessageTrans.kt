@@ -135,7 +135,9 @@ private suspend fun ChatActivity.translateSingleMessage(
     // Translate original content if needed
     if (needsOriginal) {
         val success = if (msg.isPoll) {
-            translatePoll(msg, targetLocale, provider)
+            translatePoll(msg, targetLocale, provider) &&
+                    (msg.messageOwner.message.isNullOrEmpty() ||
+                            translateMessageContent(msg, targetLocale, provider, translatorMode, llmContext))
         } else {
             translateMessageContent(
                 msg,
