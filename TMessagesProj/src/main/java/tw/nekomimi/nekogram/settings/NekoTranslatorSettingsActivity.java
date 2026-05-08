@@ -1001,12 +1001,12 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
         String initialText = LlmConfig.getEffectiveModelName(preset);
         final boolean pinDefaultModel;
 
-        if (preset == 0) {
+        if (preset == LlmPresetRegistry.CUSTOM) {
             String userUrl = NaConfig.INSTANCE.getLlmApiUrl().String();
             boolean hasCustomUrl = userUrl != null && !userUrl.trim().isEmpty();
-            pinDefaultModel = !hasCustomUrl;
+            pinDefaultModel = !hasCustomUrl && !TextUtils.isEmpty(defaultModel);
         } else {
-            pinDefaultModel = true;
+            pinDefaultModel = !TextUtils.isEmpty(defaultModel);
         }
 
         LinearLayout container = new LinearLayout(context);
