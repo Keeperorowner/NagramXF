@@ -25,12 +25,12 @@
     <string name="LlmProviderOpenAIModel" translatable="false">gpt-5.4-nano</string>
     <string name="LlmProviderGeminiModel" translatable="false">gemini-flash-lite-latest</string>
     <string name="LlmProviderGroqModel" translatable="false">openai/gpt-oss-120b</string>
-    <string name="LlmProviderDeepSeekModel" translatable="false">deepseek-chat</string>
-    <string name="LlmProviderXAIModel" translatable="false">grok-4-1-fast-non-reasoning</string>
-    <string name="LlmProviderCerebrasModel" translatable="false">gpt-oss-120b</string>
-    <string name="LlmProviderOllamaCloudModel" translatable="false">gemma3:27b</string>
+    <string name="LlmProviderDeepSeekModel" translatable="false">deepseek-v4-flash</string>
+    <string name="LlmProviderXAIModel" translatable="false"></string>
+    <string name="LlmProviderCerebrasModel" translatable="false">qwen-3-235b-a22b-instruct-2507</string>
+    <string name="LlmProviderOllamaCloudModel" translatable="false">gemma4:31b</string>
     <string name="LlmProviderOpenRouterModel" translatable="false">openrouter/free</string>
-    <string name="LlmProviderVercelAIGatewayModel" translatable="false">xai/grok-4-1-fast-non-reasoning</string>
+    <string name="LlmProviderVercelAIGatewayModel" translatable="false">deepseek/deepseek-v4-flash</string>
     <string name="LlmProviderPreset">Model Provider</string>
     <string name="LlmProviderCustom">Custom</string>
     <string name="LlmProviderOpenAIKey">OpenAI API Key</string>
