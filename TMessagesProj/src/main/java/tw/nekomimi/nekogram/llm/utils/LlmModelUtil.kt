@@ -35,6 +35,7 @@ object LlmModelUtil {
     fun isReasoning(model: String?): Boolean {
         val base = getBaseModelName(model).lowercase()
         return base.contains("gemini") && base.contains("flash")
+                || base.startsWith("grok-4.3")
                 || base.startsWith("gpt-oss")
                 || (base.startsWith("gpt-5") && !base.contains("instant") && !base.contains("chat"))
     }
