@@ -21,7 +21,8 @@ import tw.nekomimi.nekogram.utils.AppScope
 import tw.nekomimi.nekogram.utils.receiveLazy
 import xyz.nextalone.nagram.NaConfig
 import java.io.IOException
-import java.util.*
+import java.util.Arrays
+import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -166,7 +167,14 @@ interface Translator {
             context: String?,
             translateCallBack: TranslateCallBack2
         ) {
-            translateWithContext(to, query, entities, context, 0, translateCallBack)
+            translateWithContext(
+                to,
+                query,
+                entities,
+                context,
+                getBulkTranslateProvider(NekoConfig.translationProvider.Int()),
+                translateCallBack
+            )
         }
 
         @JvmStatic
@@ -203,26 +211,26 @@ interface Translator {
             query: TranslateController.PollText,
             translateCallBack: TranslateCallBack3
         ) {
-
             AppScope.io.launch {
                 runCatching {
+                    val effectiveProvider = getBulkTranslateProvider(NekoConfig.translationProvider.Int())
                     var translatedPoll = TranslateController.PollText()
                     if (query.question != null) {
                         translatedPoll.question = translateBase(
-                            to, query.question.text, ArrayList(), NekoConfig.translationProvider.Int()
+                            to, query.question.text, ArrayList(), effectiveProvider
                         )
                     }
                     for (answer in query.answers) {
                         var translatedAnswer = TLRPC.TL_pollAnswer()
                         translatedAnswer.text = translateBase(
-                            to, answer.text.text, ArrayList(), NekoConfig.translationProvider.Int()
+                            to, answer.text.text, ArrayList(), effectiveProvider
                         )
                         translatedAnswer.option = answer.option
                         translatedPoll.answers.add(translatedAnswer)
                     }
                     if (query.solution != null) {
                         translatedPoll.solution = translateBase(
-                            to, query.solution.text, ArrayList(), NekoConfig.translationProvider.Int()
+                            to, query.solution.text, ArrayList(), effectiveProvider
                         )
                     }
 
@@ -237,7 +245,7 @@ interface Translator {
                 }
             }
         }
- 
+
         @Throws(Exception::class)
         suspend fun translateArticle(query: String) = translateArticle(
             NekoConfig.translateToLang.String()?.code2Locale
@@ -251,8 +259,20 @@ interface Translator {
             } else {
                 NekoConfig.translationProvider.Int()
             }
-            val result: TLRPC.TL_textWithEntities = translateBase(to, query, ArrayList(), provider)
+            val result: TLRPC.TL_textWithEntities = translateBase(
+                to,
+                query,
+                ArrayList(),
+                getBulkTranslateProvider(provider)
+            )
             return result.text.toString()
+        }
+
+        private fun getBulkTranslateProvider(provider: Int): Int {
+            return when (provider) {
+                providerDeepL -> providerGoogle
+                else -> provider
+            }
         }
 
         @Throws(Exception::class)
