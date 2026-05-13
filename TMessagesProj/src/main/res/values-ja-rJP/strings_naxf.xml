@@ -1,5 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Pillstack -->
+    <string name="PillStackPills">カプセルスタック</string>
+    <string name="PillStackPillsInfo">検索フィールドにインタラクティブカプセルを表示</string>
+    <string name="PillStackActivePills">有効なカプセル</string>
+    <string name="PillStackHiddenPills">非表示のカプセル</string>
+    <string name="PillStackPillsSettingsInfo">タップで表示切替。長押しドラッグで並び替え。</string>
+    <string name="PillStackInfiniteScrolling">無限スクロール</string>
+    <string name="WeatherPill">天気</string>
+    <string name="WeatherPillTopInfo">検索バーの横に天気カプセルを表示し、現在地の気温と天気を表示します。</string>
+    <string name="WeatherLocation">位置情報</string>
+    <string name="WeatherSettingsInfo">ダイアログリストを開くと天気が更新されます。カプセルをタップでクイック操作。</string>
+    <string name="WeatherLocationPermissionGrant">位置情報の権限を許可</string>
+    <string name="WeatherLocationPermissionNo">現在地の天気を取得するには位置情報へのアクセスを許可してください。</string>
+    <string name="WeatherLocationServicesEnable">位置情報サービスを有効にする</string>
+    <string name="CurrentLocation">現在地</string>
+    <string name="SelectLocation">位置を選択</string>
+    <string name="CryptoPillTargetCurrency">表示通貨</string>
+    <string name="CryptoCurrencyUsd">米ドル</string>
+    <string name="CryptoCurrencyEur">ユーロ</string>
+    <string name="CryptoCurrencyRub">ロシア・ルーブル</string>
+    <string name="CryptoCurrencyGbp">英ポンド</string>
+    <string name="CryptoCurrencyKzt">カザフスタン・テンゲ</string>
+    <string name="CryptoCurrencyTry">トルコ・リラ</string>
+    <string name="CryptoCurrencyUah">ウクライナ・フリヴニャ</string>
+    <string name="CryptoCurrencyPln">ポーランド・ズウォティ</string>
+    <string name="CryptoCurrencyAed">UAE ディルハム</string>
+    <string name="CryptoCurrencyCny">中国元</string>
+    <string name="CryptoCurrencyJpy">日本円</string>
+    <string name="CryptoCurrencyByn">ベラルーシ・ルーブル</string>
+    <string name="CryptoCurrencyIls">イスラエル・新シェケル</string>
+    <string name="CryptoCurrencyCzk">チェコ・コルナ</string>
+    <string name="CryptoCurrencyInr">インド・ルピー</string>
+
     <string name="SquareFloatingButton">四角いフローティングボタン</string>
     <string name="SeparateHeaders">セクションヘッダーを分離</string>
     <string name="PushServiceTypeUnifiedGateway">Unified Push ゲートウェイ</string>

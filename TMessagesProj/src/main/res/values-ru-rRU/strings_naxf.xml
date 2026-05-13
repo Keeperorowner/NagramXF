@@ -1,5 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Pillstack -->
+    <string name="PillStackPills">Панель капсул</string>
+    <string name="PillStackPillsInfo">Интерактивные виджеты в поле поиска</string>
+    <string name="PillStackActivePills">Активные капсулы</string>
+    <string name="PillStackHiddenPills">Скрытые капсулы</string>
+    <string name="PillStackPillsSettingsInfo">Нажмите на капсулу, чтобы переключить видимость. Удерживайте для перетаскивания.</string>
+    <string name="PillStackInfiniteScrolling">Бесконечная прокрутка</string>
+    <string name="WeatherPill">Погода</string>
+    <string name="WeatherPillTopInfo">Показывать капсулу погоды рядом с поиском с температурой и условиями в вашем местоположении.</string>
+    <string name="WeatherLocation">Местоположение</string>
+    <string name="WeatherSettingsInfo">Капсула обновляется при открытии списка диалогов. Нажмите для быстрых действий.</string>
+    <string name="WeatherLocationPermissionGrant">Предоставить разрешение на местоположение</string>
+    <string name="WeatherLocationPermissionNo">Разрешите доступ к местоположению для получения погоды.</string>
+    <string name="WeatherLocationServicesEnable">Включить службы геолокации</string>
+    <string name="CurrentLocation">Текущее местоположение</string>
+    <string name="SelectLocation">Выбрать местоположение</string>
+    <string name="CryptoPillTargetCurrency">Целевая валюта</string>
+    <string name="CryptoCurrencyUsd">Доллар США</string>
+    <string name="CryptoCurrencyEur">Евро</string>
+    <string name="CryptoCurrencyRub">Российский рубль</string>
+    <string name="CryptoCurrencyGbp">Британский фунт</string>
+    <string name="CryptoCurrencyKzt">Казахстанский тенге</string>
+    <string name="CryptoCurrencyTry">Турецкая лира</string>
+    <string name="CryptoCurrencyUah">Украинская гривна</string>
+    <string name="CryptoCurrencyPln">Польский злотый</string>
+    <string name="CryptoCurrencyAed">Дирхам ОАЭ</string>
+    <string name="CryptoCurrencyCny">Китайский юань</string>
+    <string name="CryptoCurrencyJpy">Японская иена</string>
+    <string name="CryptoCurrencyByn">Белорусский рубль</string>
+    <string name="CryptoCurrencyIls">Израильский шекель</string>
+    <string name="CryptoCurrencyCzk">Чешская крона</string>
+    <string name="CryptoCurrencyInr">Индийская рупия</string>
+
     <string name="SquareFloatingButton">Квадратная плавающая кнопка</string>
     <string name="SeparateHeaders">Разделять заголовки разделов</string>
     <string name="RegexFiltersEnabled">Включить фильтры сообщений</string>

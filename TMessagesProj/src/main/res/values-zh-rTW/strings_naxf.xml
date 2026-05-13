@@ -1,5 +1,38 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Pillstack -->
+    <string name="PillStackPills">膠囊棧</string>
+    <string name="PillStackPillsInfo">在搜尋欄中顯示互動式膠囊</string>
+    <string name="PillStackActivePills">已啟用的膠囊</string>
+    <string name="PillStackHiddenPills">已隱藏的膠囊</string>
+    <string name="PillStackPillsSettingsInfo">點擊膠囊切換顯示狀態。長按拖拽可排序。</string>
+    <string name="PillStackInfiniteScrolling">無限捲動</string>
+    <string name="WeatherPill">天氣</string>
+    <string name="WeatherPillTopInfo">在搜尋欄旁顯示天氣膠囊，展示當前位置的溫度和天氣狀況。</string>
+    <string name="WeatherLocation">位置</string>
+    <string name="WeatherSettingsInfo">開啟對話列表時重新整理天氣。點擊膠囊可快速操作。</string>
+    <string name="WeatherLocationPermissionGrant">授予位置權限</string>
+    <string name="WeatherLocationPermissionNo">允許位置存取以取得當前位置的天氣。</string>
+    <string name="WeatherLocationServicesEnable">啟用位置服務</string>
+    <string name="CurrentLocation">目前位置</string>
+    <string name="SelectLocation">選擇位置</string>
+    <string name="CryptoPillTargetCurrency">目標貨幣</string>
+    <string name="CryptoCurrencyUsd">美元</string>
+    <string name="CryptoCurrencyEur">歐元</string>
+    <string name="CryptoCurrencyRub">盧布</string>
+    <string name="CryptoCurrencyGbp">英鎊</string>
+    <string name="CryptoCurrencyKzt">堅戈</string>
+    <string name="CryptoCurrencyTry">里拉</string>
+    <string name="CryptoCurrencyUah">格里夫納</string>
+    <string name="CryptoCurrencyPln">茲羅提</string>
+    <string name="CryptoCurrencyAed">迪拉姆</string>
+    <string name="CryptoCurrencyCny">人民幣</string>
+    <string name="CryptoCurrencyJpy">日圓</string>
+    <string name="CryptoCurrencyByn">白俄羅斯盧布</string>
+    <string name="CryptoCurrencyIls">新謝克爾</string>
+    <string name="CryptoCurrencyCzk">克朗</string>
+    <string name="CryptoCurrencyInr">印度盧比</string>
+
     <string name="RegexFiltersMaskMessages">將過濾或被封鎖的訊息遮罩而不是隱藏</string>
     <string name="SquareFloatingButton">方形浮動按鈕</string>
     <string name="SeparateHeaders">分離標題</string>

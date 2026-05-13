@@ -126,6 +126,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     private OnScrollListener onScrollListener;
     private OnInterceptTouchListener onInterceptTouchListener;
     private View emptyView;
+    private View draggingChild;
     private FrameLayout overlayContainer;
     private Runnable selectChildRunnable;
     private FastScroll fastScroll;
@@ -2066,6 +2067,11 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         return emptyView;
     }
 
+    public void setDraggingChild(View view) {
+        draggingChild = view;
+        invalidate();
+    }
+
     public void invalidateViews() {
         int count = getChildCount();
         for (int a = 0; a < count; a++) {
@@ -3515,7 +3521,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             for (int i = 0; i < getChildCount(); ++i) {
                 final View child = getChildAt(i);
                 if (
-                    child == emptyView ||
+                    child == emptyView || child == draggingChild ||
                     child.getVisibility() != View.VISIBLE || child.getAlpha() <= 0 ||
                     !sectionsItemDecoration.isSectionItem.run(child)
                 ) continue;
@@ -3561,7 +3567,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             for (int i = 0; i < getChildCount(); ++i) {
                 final View child = getChildAt(i);
                 if (
-                    child == emptyView ||
+                    child == emptyView || child == draggingChild ||
                     child.getVisibility() != View.VISIBLE || child.getAlpha() <= 0 ||
                     !sectionsItemDecoration.isSectionItem.run(child) ||
                     isInsideForcedSection(getChildAdapterPosition(child))
@@ -3597,7 +3603,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                     final View child = getChildAt(i);
                     final int position = getChildAdapterPosition(child);
 
-                    if (position >= beginPosition && position <= endPosition) {
+                    if (child != draggingChild && position >= beginPosition && position <= endPosition) {
                         from = Math.min(from, child.getY());
                         to = Math.max(to, child.getY() + child.getHeight());
                     }

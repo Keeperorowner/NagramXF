@@ -32,9 +32,15 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
 
+import com.exteragram.messenger.pillstack.core.PillRegistry;
+import com.exteragram.messenger.pillstack.core.PillStackConfig;
+import com.exteragram.messenger.pillstack.ui.PillStackView;
+import com.exteragram.messenger.pillstack.ui.pills.BasePill;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
@@ -48,7 +54,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
 @SuppressLint("ViewConstructor")
-public class FragmentSearchField extends FrameLayout implements FactorAnimator.Target, Theme.Colorable {
+public class FragmentSearchField extends FrameLayout implements FactorAnimator.Target, Theme.Colorable, NotificationCenter.NotificationCenterDelegate {
     private static final int ANIMATOR_ID_CLOSE_BUTTON_VISIBLE = 0;
     private static final int ANIMATOR_ID_SEARCH_ICON_VISIBLE = 1;
     private static final int ANIMATOR_ID_SEARCH_FILTERS_WIDTH = 2;
@@ -65,6 +71,9 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     private boolean closeButtonForcedVisible;
     public final EditTextBoldCursor editText;
     private BlurredBackgroundDrawable blurredBackgroundDrawable;
+
+    private PillStackView pillStackView;
+    private boolean showPillStack;
 
     public FragmentSearchField(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
@@ -280,6 +289,9 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         if (blurredBackgroundDrawable != null) {
             blurredBackgroundDrawable.updateColors();
         }
+        if (pillStackView != null) {
+            pillStackView.updateColors();
+        }
 
         for (int i = 0, N = additionalIconsLayout.getChildCount(); i < N; i++) {
             final View view = additionalIconsLayout.getChildAt(i);
@@ -329,10 +341,95 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
         if (id == ANIMATOR_ID_CLOSE_BUTTON_VISIBLE) {
             FragmentFloatingButton.setAnimatedVisibility(closeIcon, factor);
             closeIcon.setRotation((1 - factor) * 90);
+            if (pillStackView != null) {
+                pillStackView.setVisibilityFactor(1f - factor);
+            }
         } else if (id == ANIMATOR_ID_SEARCH_ICON_VISIBLE) {
             FragmentFloatingButton.setAnimatedVisibility(searchIcon, factor);
         } else if (id == ANIMATOR_ID_SEARCH_FILTERS_WIDTH) {
             checkUi_editTextPaddings();
+        }
+    }
+
+    public void setShowPillStack(boolean show) {
+        if (this.showPillStack == show) return;
+        this.showPillStack = show;
+        updatePillStack(false);
+    }
+
+    public void updatePillStack(boolean animate) {
+        if (showPillStack && !PillStackConfig.activePills.isEmpty()) {
+            if (pillStackView == null) {
+                pillStackView = new PillStackView(getContext());
+                addView(pillStackView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT,
+                        (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 6, 0, 6, 0));
+            }
+            final PillStackView view = pillStackView;
+            if (animate) {
+                view.setAlpha(0f);
+                view.setScaleX(0.6f);
+                view.setScaleY(0.6f);
+                view.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(250)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).withEndAction(() -> {
+                            if (pillStackView == view) {
+                                view.setVisibilityFactor(1f - animatorCloseIconVisible.getFloatValue());
+                            }
+                        }).start();
+            } else {
+                view.setVisibilityFactor(1f - animatorCloseIconVisible.getFloatValue());
+            }
+            view.clearPills();
+            int targetIndex = 0;
+            for (int i = 0; i < PillStackConfig.activePills.size(); i++) {
+                Integer pillId = PillStackConfig.activePills.get(i);
+                PillRegistry.PillInfo info = PillRegistry.getPillInfo(pillId);
+                if (info == null) continue;
+                BasePill pill = info.creator().create(getContext(), resourcesProvider);
+                view.addPill(pill);
+                if (pillId == PillStackConfig.lastActivePillId) {
+                    targetIndex = view.getPillsCount() - 1;
+                }
+            }
+            if (view.getPillsCount() == 0) {
+                if (pillStackView == view) {
+                    pillStackView = null;
+                }
+                removeView(view);
+                return;
+            }
+            view.setCurrentIndex(targetIndex);
+        } else if (pillStackView != null) {
+            final PillStackView view = pillStackView;
+            pillStackView = null;
+            if (animate && view.getVisibility() == VISIBLE && view.getAlpha() > 0f) {
+                view.animate().alpha(0f).scaleX(0.6f).scaleY(0.6f).setDuration(250)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .withEndAction(() -> removeView(view)).start();
+            } else {
+                removeView(view);
+            }
+        }
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pillStackLayoutChanged);
+        if (showPillStack) {
+            updatePillStack(false);
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pillStackLayoutChanged);
+    }
+
+    @Override
+    public void didReceivedNotification(int id, int account, Object... args) {
+        if (id == NotificationCenter.pillStackLayoutChanged) {
+            updatePillStack(true);
         }
     }
 

@@ -179,6 +179,10 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             new ConfigCellTextCheckIcon(null, "MainTabsCustomize", getString(R.string.MainTabsCustomize), R.drawable.tabs_reorder, false, () ->
                     presentFragment(new MainTabsCustomizeActivity()))
     );
+    private final AbstractConfigCell pillStackRow = cellGroup.appendCell(
+            new ConfigCellTextCheckIcon(null, "PillStack", getString(R.string.PillStackPills), R.drawable.ic_ab_search, false, () ->
+                    presentFragment(new com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity()))
+    );
     private final AbstractConfigCell dividerFolder = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerBlurOptions = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.BlurOptions)));
     private final AbstractConfigCell forceBlurInChatRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceBlurInChat));
