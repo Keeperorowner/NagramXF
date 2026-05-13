@@ -44,6 +44,19 @@ import java.util.TimeZone;
 
 public class Weather {
 
+    static {
+        org.telegram.messenger.NotificationCenter.getGlobalInstance().addObserver(
+            (id, account, args) -> {
+                if (id == org.telegram.messenger.NotificationCenter.pillStackSettingsChanged
+                    && com.exteragram.messenger.pillstack.core.PillStackConfig.shouldUpdatePill(
+                        args, com.exteragram.messenger.pillstack.core.PillStackConfig.PillType.WEATHER.id)) {
+                    clearCache();
+                }
+            },
+            org.telegram.messenger.NotificationCenter.pillStackSettingsChanged
+        );
+    }
+
 //    public static String[] emojis = new String[] {
 //        "☀", // Clear sky
 //        "🌤", // Mainly clear
@@ -257,6 +270,58 @@ public class Weather {
         );
     }
 
+    public static boolean isLocationPermissionGranted() {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return true;
+        return ctx.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+            || ctx.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public static boolean isLocationEnabled() {
+        try {
+            LocationManager lm = (LocationManager) ApplicationLoader.applicationContext.getSystemService(Context.LOCATION_SERVICE);
+            if (lm == null) return false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                return lm.isLocationEnabled();
+            }
+            return lm.isProviderEnabled(LocationManager.GPS_PROVIDER)
+                || lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+                || lm.isProviderEnabled(LocationManager.PASSIVE_PROVIDER);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static void fetchExtera(Utilities.Callback<State> callback) {
+        if (callback == null) return;
+        if (com.exteragram.messenger.pillstack.core.PillStackConfig.useCurrentLocation) {
+            if (!isLocationPermissionGranted()) {
+                callback.run(null);
+                return;
+            }
+            fetch(false, callback);
+            return;
+        }
+        double lat = 55.7558d;
+        double lng = 37.6173d;
+        if (com.exteragram.messenger.pillstack.core.PillStackConfig.customWeatherLocation != null) {
+            try {
+                TLRPC.GeoPoint geo = new com.google.gson.Gson().fromJson(
+                    com.exteragram.messenger.pillstack.core.PillStackConfig.customWeatherLocation,
+                    TLRPC.TL_geoPoint.class);
+                lat = geo.lat;
+                lng = geo._long;
+            } catch (Exception ignored) {
+            }
+        }
+        fetch(lat, lng, callback);
+    }
+
+    public static void clearCache() {
+        cacheKey = null;
+    }
+
     public static class State extends TLObject {
         public double lat, lng;
 
@@ -334,7 +399,36 @@ public class Weather {
     private static State cacheValue;
 
     public static State getCached() {
+        if (cacheValue == null) {
+            try {
+                if (com.exteragram.messenger.pillstack.core.PillStackConfig.preferences != null) {
+                    String key = com.exteragram.messenger.pillstack.core.PillStackConfig.preferences.getString("weatherCacheKey", null);
+                    String json = com.exteragram.messenger.pillstack.core.PillStackConfig.preferences.getString("weatherCacheValue", null);
+                    if (json != null) {
+                        cacheKey = key;
+                        cacheValue = new com.google.gson.Gson().fromJson(json, State.class);
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+        }
         return cacheValue;
+    }
+
+    private static void saveCache(String key, State state) {
+        if (state == null) return;
+        try {
+            cacheKey = key;
+            cacheValue = state;
+            if (com.exteragram.messenger.pillstack.core.PillStackConfig.editor != null) {
+                String json = new com.google.gson.Gson().toJson(state);
+                com.exteragram.messenger.pillstack.core.PillStackConfig.editor.putString("weatherCacheKey", key).apply();
+                com.exteragram.messenger.pillstack.core.PillStackConfig.editor.putString("weatherCacheValue", json).apply();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
     }
 
 //    public static Runnable fetch(double lat, double lng, Utilities.Callback<State> whenFetched) {
@@ -424,7 +518,7 @@ public class Weather {
                         try {
                             temp = Float.parseFloat(rr.description);
                         } catch (Exception e) {
-                            whenFetched.run(null);
+                            whenFetched.run(getCached());
                             return;
                         }
                         final State state = new State();
@@ -433,14 +527,13 @@ public class Weather {
                         state.emoji = emoji;
                         state.temperature = temp;
 
-                        cacheKey = key;
-                        cacheValue = state;
+                        saveCache(key, state);
 
                         whenFetched.run(state);
                         return;
                     }
                 }
-                whenFetched.run(null);
+                whenFetched.run(getCached());
             }));
         };
 
@@ -460,7 +553,7 @@ public class Weather {
                         return;
                     }
                 }
-                whenFetched.run(null);
+                whenFetched.run(getCached());
             }));
         } else {
             request.run();

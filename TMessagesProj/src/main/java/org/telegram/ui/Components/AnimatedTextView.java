@@ -1180,7 +1180,7 @@ public class AnimatedTextView extends View {
         }
         lastMaxWidth = width;
         if (adaptWidth && MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.AT_MOST) {
-            width = getPaddingLeft() + (int) Math.ceil(drawable.getWidth()) + getPaddingRight();
+            width = getPaddingLeft() + (int) Math.ceil(drawable.getAnimateToWidth()) + getPaddingRight();
         }
         setMeasuredDimension(width, height);
     }
@@ -1236,12 +1236,13 @@ public class AnimatedTextView extends View {
                 return;
             }
         }
-        int wasWidth = (int) drawable.getWidth();
+        int wasWidth = (int) drawable.getAnimateToWidth();
         drawable.setBounds(getPaddingLeft(), getPaddingTop(), lastMaxWidth - getPaddingRight(), getMeasuredHeight() - getPaddingBottom());
         drawable.setText(text, animated, moveDown);
-        if (wasWidth < drawable.getWidth() || !animated && wasWidth != drawable.getWidth()) {
-            requestLayout();
+        if (wasWidth == (int) drawable.getAnimateToWidth() && animated) {
+            return;
         }
+        requestLayout();
     }
 
     public void setSizeableBackground(Drawable drawable) {
