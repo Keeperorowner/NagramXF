@@ -358,4 +358,17 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Shows notification content even when passcode lock is active.</string>
     <string name="StickerSavedHint">Sticker saved to gallery.</string>
     <string name="StickerCopied">Sticker copied to clipboard.</string>
+    <string name="StrokeOnViews">Glare effects</string>
+    <string name="HideBottomNavigationBar">Hide Bottom Navigation Bar</string>
+    <string name="TranslatorMode">With Original Text</string>
+    <string name="TranslatorWithOriginalTextOff">Off</string>
+    <string name="TranslatorWithOriginalTextManualOnly">Manual Only</string>
+    <string name="TranslatorWithOriginalTextOn">On</string>
+    <string name="CenterActionBarTitleOn">On</string>
+    <string name="CenterActionBarTitleOff">Off</string>
+    <string name="TabletModeOn">On</string>
+    <string name="TabletModeOff">Off</string>
+    <string name="HideDialogsSearchField">Hide Search Box</string>
+    <string name="DeepLTranslateKey">DeepL API Key</string>
+    <string name="DeepLTranslateKeyNotice">Configure DeepL API Key, leave blank to use built-in credentials.</string>
 </resources>

@@ -1659,6 +1659,30 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val strokeOnViews =
+        addConfig(
+            "StrokeOnViews",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val hideBottomNavigationBar =
+        addConfig(
+            "HideBottomNavigationBar",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideDialogsSearchField =
+        addConfig(
+            "HideDialogsSearchField",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val deepLTranslateKey =
+        addConfig(
+            "DeepLTranslateKey",
+            ConfigItem.configTypeString,
+            ""
+        )
 
     val preferredTranslateTargetLangList = ArrayList<String>()
     fun updatePreferredTranslateTargetLangList() {
