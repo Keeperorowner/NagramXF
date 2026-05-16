@@ -96,6 +96,14 @@ object LlmModelUtil {
         val routerProvider = getRouterModelProvider(model) ?: return false
         return when (providerPreset) {
             LlmPresetRegistry.OPENROUTER -> {
+                when (routerProvider) {
+                    "openai" -> {
+                        if (model?.contains("gpt-oss") ?: return false) {
+                            requestJson.put("reasoning", JSONObject().put("effort", "minimal"))
+                            return true
+                        }
+                    }
+                }
                 requestJson.put("reasoning", JSONObject().put("effort", "none"))
                 true
             }
