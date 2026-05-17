@@ -141,6 +141,7 @@ public class TextCell extends FrameLayout {
         }
 
         setFocusable(true);
+        setClipChildren(false);
     }
 
     public boolean isChecked() {
