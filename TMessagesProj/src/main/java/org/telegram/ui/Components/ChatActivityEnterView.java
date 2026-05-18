@@ -4919,111 +4919,6 @@ public class ChatActivityEnterView extends FrameLayout implements
                 cell.setMinimumWidth(AndroidUtilities.dp(196));
                 menuPopupLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a++, 0, 0));
             }
-        } else {
-            long chatId = ChatsHelper.getChatId();
-            String languageText = Translator.getInputTranslateLangForChat(chatId).toUpperCase();
-
-            // LinkPreview toggle
-            if (disableLinkPreviewStatus > 0) {
-                cell.setTextAndIcon(disableLinkPreviewStatus != 1 ?
-                        getString(R.string.ChatAttachEnterMenuEnableLinkPreview) :
-                        getString(R.string.ChatAttachEnterMenuDisableLinkPreview), R.drawable.msg_link);
-                final ActionBarMenuSubItem linkPreviewCell = cell;
-                cell.setOnClickListener(v -> {
-                    if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                        menuPopupWindow.dismiss();
-                    }
-                    delegate.toggleDisableLinkPreview();
-                    messageWebPageSearch = delegate.getDisableLinkPreviewStatus() == 1;
-
-                    linkPreviewCell.setTextAndIcon(delegate.getDisableLinkPreviewStatus() != 1 ?
-                            getString(R.string.ChatAttachEnterMenuEnableLinkPreview) :
-                            getString(R.string.ChatAttachEnterMenuDisableLinkPreview), R.drawable.msg_link);
-                });
-                cell.setMinimumWidth(AndroidUtilities.dp(196));
-                menuPopupLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a++, 0, 0));
-                cell = new ActionBarMenuSubItem(getContext(), true, false);
-            }
-
-            // AI Translate
-            if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
-                cell.setTextAndIcon(getString(R.string.TranslateMessageLLM) + " (" + languageText + ")", R.drawable.magic_stick_solar);
-                cell.setOnClickListener(v -> {
-                    if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                        menuPopupWindow.dismiss();
-                    }
-                    translateComment(Translator.getInputTranslateLangLocaleForChat(chatId), Translator.providerLLMTranslator);
-                });
-                final ActionBarMenuSubItem llmTranslateCell = cell;
-                cell.setOnLongClickListener(v -> {
-                    Translator.showTargetLangSelect(llmTranslateCell, true, (locale) -> {
-                        if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                            menuPopupWindow.dismiss();
-                        }
-                        translateComment(locale, Translator.providerLLMTranslator);
-                        Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                        return Unit.INSTANCE;
-                    });
-                    return true;
-                });
-                cell.setMinimumWidth(AndroidUtilities.dp(196));
-                menuPopupLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a++, 0, 0));
-                cell = new ActionBarMenuSubItem(getContext(), false, false);
-            }
-
-            // Normal Translate
-            cell.setTextAndIcon(getString(R.string.TranslateMessage) + " (" + languageText + ")", LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate);
-            cell.setOnClickListener(v -> {
-                if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                    menuPopupWindow.dismiss();
-                }
-                translateComment(Translator.getInputTranslateLangLocaleForChat(chatId));
-            });
-            final ActionBarMenuSubItem translateCell = cell;
-            cell.setOnLongClickListener(v -> {
-                Translator.showTargetLangSelect(translateCell, true, (locale) -> {
-                    if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                        menuPopupWindow.dismiss();
-                    }
-                    translateComment(locale);
-                    Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                    return Unit.INSTANCE;
-                });
-                return true;
-            });
-            cell.setMinimumWidth(AndroidUtilities.dp(196));
-            menuPopupLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a++, 0, 0));
-
-            // Replace Text
-            cell = new ActionBarMenuSubItem(getContext(), false, false);
-            cell.setTextAndIcon(getString(R.string.ReplaceText), R.drawable.msg_edit);
-            cell.setOnClickListener(v -> {
-                if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                    menuPopupWindow.dismiss();
-                }
-                showReplace();
-            });
-            cell.setMinimumWidth(AndroidUtilities.dp(196));
-            menuPopupLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a++, 0, 0));
-
-            // Attach
-            if (attachButton != null) {
-                cell = new ActionBarMenuSubItem(getContext(), false, true);
-                cell.setTextAndIcon(getString(R.string.AttachMenu), R.drawable.input_attach);
-                cell.setOnClickListener(v -> {
-                    if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                        menuPopupWindow.dismiss();
-                    }
-                    if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
-                        return;
-                    }
-                    if (delegate != null) {
-                        delegate.didPressAttachButton();
-                    }
-                });
-                cell.setMinimumWidth(AndroidUtilities.dp(196));
-                menuPopupLayout.addView(cell, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48 * a++, 0, 0));
-            }
         }
 
         menuPopupLayout.updateRadialSelectors();
@@ -5053,9 +4948,6 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         y += AndroidUtilities.dp(48);
         int x = location[0] + view.getMeasuredWidth() - menuPopupLayout.getMeasuredWidth() + AndroidUtilities.dp(8);
-        if (isInInput) {
-            x += view.getMeasuredWidth();
-        }
         menuPopupWindow.showAtLocation(view, Gravity.LEFT | Gravity.TOP, x, y);
         menuPopupWindow.dimBehind();
 
@@ -5202,6 +5094,20 @@ public class ChatActivityEnterView extends FrameLayout implements
                         return true;
                     });
                     sendPopupLayout.addView(preSendTranslateButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                }
+                {
+                    ActionBarMenuSubItem attachMenuItem = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
+                    attachMenuItem.setTextAndIcon(getString(R.string.AttachMenu), R.drawable.input_attach);
+                    attachMenuItem.setMinimumWidth(AndroidUtilities.dp(196));
+                    attachMenuItem.setOnClickListener(v -> {
+                        if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
+                            sendPopupWindow.dismiss();
+                        }
+                        if (delegate != null) {
+                            delegate.didPressAttachButton();
+                        }
+                    });
+                    sendPopupLayout.addView(attachMenuItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
                 }
                 sendPopupLayout.setupRadialSelectors(getThemedColor(Theme.key_dialogButtonSelector));
 
@@ -5566,6 +5472,15 @@ public class ChatActivityEnterView extends FrameLayout implements
                     }
             );
         }
+        options.add(R.drawable.input_attach, getString(R.string.AttachMenu), () -> {
+            if (messageSendPreview != null) {
+                messageSendPreview.dismiss(false);
+                messageSendPreview = null;
+            }
+            if (delegate != null) {
+                delegate.didPressAttachButton();
+            }
+        });
         options.setupSelectors();
         if (sendWhenOnlineButton != null) {
             TLRPC.User user = parentFragment == null ? null : parentFragment.getCurrentUser();
@@ -7573,9 +7488,6 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
     }
 
     private void checkAttachButton(boolean use, int duration) {
-        int fromRes;
-        int targetRes;
-
         Object oldStatus = attachButton.getTag();
         if (oldStatus != null) {
             int osi = (int) oldStatus;
@@ -7585,7 +7497,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
 
         isInInput = use;
 
-        if (duration == 0 && botButton != null) {
+        if (botButton != null) {
             if (use) {
                 botButton.setVisibility(View.GONE);
             } else if (checkBotButton()) {
@@ -7599,20 +7511,25 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
 
         if (use) {
             attachButton.setTag(1);
-
-            fromRes = R.drawable.input_attach;
-            targetRes = R.drawable.ic_ab_other;
-
-            attachButton.setOnClickListener(this::onMenuClick);
-            attachButton.setContentDescription(LocaleController.getString("AccDescrAttachButton", R.string.AccDescrChatAttachEnterMenu));
+            attachButton.setVisibility(GONE);
             if (delegate != null)
                 delegate.onAttachButtonHidden();
 
         } else {
             attachButton.setTag(2);
+            attachButton.setVisibility(VISIBLE);
+            attachButton.setAlpha(attachButtonAlpha = 1.0f);
+            attachButton.setScaleX(1.0f);
+            attachButton.setScaleY(1.0f);
 
-            fromRes = R.drawable.ic_ab_other;
-            targetRes = R.drawable.input_attach;
+            int fromRes = R.drawable.ic_ab_other;
+            int targetRes = R.drawable.input_attach;
+
+            if (duration == 0) {
+                attachButton.setImageResource(targetRes);
+            } else {
+                setImageDrawableWithAnimation(attachButton, fromRes, targetRes, duration);
+            }
 
             attachButton.setOnClickListener(v -> {
                 if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
@@ -7621,11 +7538,6 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 delegate.didPressAttachButton();
             });
             attachButton.setContentDescription(LocaleController.getString("AccDescrAttachButton", R.string.AccDescrAttachButton));
-        }
-        if (duration == 0) {
-            attachButton.setImageResource(targetRes);
-        } else {
-            setImageDrawableWithAnimation(attachButton, fromRes, targetRes, duration);
         }
         if (this.paidMessagesPrice > 0 && attachLayout != null) {
             attachLayout.setTranslationX(-dp(24));
@@ -8712,33 +8624,63 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                                     scheduledButton.setScaleX(1.0f);
                                 }
                             }
-                            runningAnimation2.playTogether(animators);
-                            runningAnimation2.setDuration(100);
-                            runningAnimation2.addListener(new AnimatorListenerAdapter() {
-                                @Override
-                                public void onAnimationEnd(Animator animation) {
-                                    if (animation.equals(runningAnimation2)) {
-                                        attachLayout.setVisibility(GONE);
-                                        runningAnimation2 = null;
-                                    }
-                                }
+                             runningAnimation2.playTogether(animators);
+                             runningAnimation2.setDuration(100);
+                             runningAnimation2.addListener(new AnimatorListenerAdapter() {
+                                 @Override
+                                 public void onAnimationEnd(Animator animation) {
+                                     if (animation.equals(runningAnimation2)) {
+                                         attachLayout.setVisibility(GONE);
+                                         runningAnimation2 = null;
+                                     }
+                                 }
 
-                                @Override
-                                public void onAnimationCancel(Animator animation) {
-                                    if (animation.equals(runningAnimation2)) {
-                                        runningAnimation2 = null;
-                                    }
-                                }
-                            });
-                            runningAnimation2.start();
-                            updateFieldRight(0);
-                            if (delegate != null && getVisibility() == VISIBLE) {
-                                delegate.onAttachButtonHidden();
-                            }
-                        } else {
-                            checkAttachButton(true, 150);
-                            updateFieldRight(1);
-                        }
+                                 @Override
+                                 public void onAnimationCancel(Animator animation) {
+                                     if (animation.equals(runningAnimation2)) {
+                                         runningAnimation2 = null;
+                                     }
+                                 }
+                             });
+                             runningAnimation2.start();
+                             updateFieldRight(0);
+                             if (delegate != null && getVisibility() == VISIBLE) {
+                                 delegate.onAttachButtonHidden();
+                             }
+                         } else {
+                             checkAttachButton(true, 150);
+                             if (attachLayout != null) {
+                                 runningAnimation2 = new AnimatorSet();
+                                 ArrayList<Animator> attachAnimators = new ArrayList<>();
+                                 attachAnimators.add(ObjectAnimator.ofFloat(attachLayout, ATTACH_LAYOUT_ALPHA, 0.0f));
+                                 attachAnimators.add(ObjectAnimator.ofFloat(attachLayout, View.SCALE_X, 0.5f));
+                                 if (attachButton != null) {
+                                     attachAnimators.add(ObjectAnimator.ofFloat(attachButton, View.ALPHA, attachButtonAlpha = 0.0f));
+                                     attachAnimators.add(ObjectAnimator.ofFloat(attachButton, View.SCALE_X, 0.5f));
+                                     attachAnimators.add(ObjectAnimator.ofFloat(attachButton, View.SCALE_Y, 0.5f));
+                                 }
+                                 runningAnimation2.playTogether(attachAnimators);
+                                 runningAnimation2.setDuration(100);
+                                 runningAnimation2.addListener(new AnimatorListenerAdapter() {
+                                     @Override
+                                     public void onAnimationEnd(Animator animation) {
+                                         if (animation.equals(runningAnimation2)) {
+                                             attachLayout.setVisibility(GONE);
+                                             runningAnimation2 = null;
+                                         }
+                                     }
+
+                                     @Override
+                                     public void onAnimationCancel(Animator animation) {
+                                         if (animation.equals(runningAnimation2)) {
+                                             runningAnimation2 = null;
+                                         }
+                                     }
+                                 });
+                                 runningAnimation2.start();
+                             }
+                             updateFieldRight(1);
+                         }
 
                         runningAnimationType = 5;
                         runningAnimation = new AnimatorSet();
@@ -8840,10 +8782,13 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                                     attachButton.setScaleX(0.5f);
                                     attachButton.setScaleY(0.5f);
                                 }
-                            } else {
-                                checkAttachButton(true, 0);
-                                updateFieldRight(1);
-                            }
+                             } else {
+                                 if (attachLayout != null) {
+                                     attachLayout.setVisibility(GONE);
+                                 }
+                                 checkAttachButton(true, 0);
+                                 updateFieldRight(1);
+                             }
                         }
                         scheduleButtonHidden = false;
                         final boolean hasScheduled = delegate != null && delegate.hasScheduledMessages();
@@ -8961,6 +8906,37 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                             }
                         } else {
                             checkAttachButton(true, 150);
+                            if (attachLayout != null) {
+                                runningAnimation2 = new AnimatorSet();
+                                ArrayList<Animator> attachAnimators = new ArrayList<>();
+                                attachAnimators.add(ObjectAnimator.ofFloat(attachLayout, ATTACH_LAYOUT_ALPHA, 0.0f));
+                                attachAnimators.add(ObjectAnimator.ofFloat(attachLayout, View.SCALE_X, 0.5f));
+                                if (attachButton != null) {
+                                    attachAnimators.add(ObjectAnimator.ofFloat(attachButton, View.ALPHA, attachButtonAlpha = 0.0f));
+                                    attachAnimators.add(ObjectAnimator.ofFloat(attachButton, View.SCALE_X, 0.5f));
+                                    attachAnimators.add(ObjectAnimator.ofFloat(attachButton, View.SCALE_Y, 0.5f));
+                                }
+                                runningAnimation2.playTogether(attachAnimators);
+                                runningAnimation2.setDuration(100);
+                                runningAnimation2.addListener(new AnimatorListenerAdapter() {
+                                    @Override
+                                    public void onAnimationEnd(Animator animation) {
+                                        if (animation.equals(runningAnimation2)) {
+                                            attachLayout.setVisibility(GONE);
+                                            runningAnimation2 = null;
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onAnimationCancel(Animator animation) {
+                                        if (animation.equals(runningAnimation2)) {
+                                            runningAnimation2 = null;
+                                        }
+                                    }
+                                });
+                                runningAnimation2.start();
+                            }
+                            updateFieldRight(1);
                         }
                     }
 
@@ -9012,11 +8988,11 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                     runningAnimation.addListener(new AnimatorListenerAdapter() {
                         @Override
                         public void onAnimationEnd(Animator animation) {
-                            if (animation.equals(runningAnimation)) {
-                                if (NekoConfig.useChatAttachMediaMenu.Bool() && !isStories && botButton != null) {
-                                    botButton.setVisibility(View.GONE);
-                                    updateFieldRight(1);
-                                }
+                             if (animation.equals(runningAnimation)) {
+                                 if (NekoConfig.useChatAttachMediaMenu.Bool() && !isStories && botButton != null) {
+                                     botButton.setVisibility(View.GONE);
+                                 }
+                                 updateFieldRight(1);
                                 if (caption != null) {
                                     cancelBotButton.setVisibility(VISIBLE);
                                     getSendButtonInternal().setVisibility(GONE);
@@ -9099,9 +9075,12 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                                 attachButton.setScaleY(0.5f);
                             }
                         } else {
-                            checkAttachButton(true, 0);
-                            updateFieldRight(1);
-                        }
+                             if (attachLayout != null) {
+                                 attachLayout.setVisibility(GONE);
+                             }
+                             checkAttachButton(true, 0);
+                             updateFieldRight(1);
+                         }
                     }
                     scheduleButtonHidden = true;
                     if (scheduledButton != null) {
@@ -9290,6 +9269,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                     }
                     attachLayout.setVisibility(VISIBLE);
                     checkAttachButton(false, 0);
+                    updateScheduleButton(true);
                     updateFieldRight(1);
                 }
                 scheduleButtonHidden = false;
@@ -9389,8 +9369,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                             }
                             if (NekoConfig.useChatAttachMediaMenu.Bool() && !isStories && checkBotButton()) {
                                 updateBotButton(true);
-                                updateFieldRight(1);
                             }
+                            updateScheduleButton(true);
+                            updateFieldRight(1);
                         }
 
                         @Override
@@ -9500,6 +9481,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                     attachLayout.setScaleX(1.0f);
                     attachLayout.setVisibility(VISIBLE);
                     checkAttachButton(false, 0);
+                    updateScheduleButton(true);
                     updateFieldRight(1);
                 }
                 scheduleButtonHidden = false;
@@ -9547,12 +9529,20 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         if (isStories && isLiveComment) {
             layoutParams.rightMargin = dp(suggestButtonVisible ? 50 : 2) + Math.max(0, sendButton.width() - dp(DEFAULT_HEIGHT));
         } else if (attachVisible == 1 || attachVisible == 2/* && layoutParams.rightMargin != dp(2)*/) {
-            if (botButton != null && botButton.getVisibility() == VISIBLE && scheduledButton != null && scheduledButton.getVisibility() == VISIBLE && attachButton != null && attachButton.getVisibility() == VISIBLE) {
-                layoutParams.rightMargin = dp(146);
-            } else if (botButton != null && botButton.getVisibility() == VISIBLE || notifyButton != null && notifyButton.getVisibility() == VISIBLE || scheduledButton != null && scheduledButton.getTag() != null) {
-                layoutParams.rightMargin = dp(98);
+            if (attachButton != null && attachButton.getVisibility() != GONE) {
+                if (botButton != null && botButton.getVisibility() == VISIBLE && scheduledButton != null && scheduledButton.getVisibility() == VISIBLE) {
+                    layoutParams.rightMargin = dp(146);
+                } else if (botButton != null && botButton.getVisibility() == VISIBLE || notifyButton != null && notifyButton.getVisibility() == VISIBLE || scheduledButton != null && scheduledButton.getTag() != null) {
+                    layoutParams.rightMargin = dp(98);
+                } else {
+                    layoutParams.rightMargin = dp(50);
+                }
             } else {
-                layoutParams.rightMargin = dp(50);
+                if (scheduledButton != null && scheduledButton.getTag() != null) {
+                    layoutParams.rightMargin = dp(50);
+                } else {
+                    layoutParams.rightMargin = dp(2);
+                }
             }
         } else {
             if (scheduledButton != null && scheduledButton.getTag() != null) {
@@ -11208,6 +11198,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 ? getThemedColor(Theme.key_glass_defaultIcon)
                 : Color.WHITE;
         audioVideoSendButton.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
+        audioVideoButtonContainer.setBackground(isMenuState
+                ? Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector))
+                : null);
     }
 
     private void updateRecordedDeleteIconColors() {
@@ -11761,10 +11754,16 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         return botMenuButtonType == BotMenuButtonType.WEB_VIEW;
     }
 
-    private void updateBotButton(boolean animated) {
-        if (!isChat) {
-            return;
-        }
+     private void updateBotButton(boolean animated) {
+         if (!isChat) {
+             return;
+         }
+         if (messageEditText != null && !TextUtils.isEmpty(messageEditText.getText())) {
+             if (botButton != null && botButton.getVisibility() != GONE) {
+                 botButton.setVisibility(GONE);
+             }
+             return;
+         }
         if (parentFragment != null && !parentFragment.openAnimationEnded) {
             animated = false;
         }
