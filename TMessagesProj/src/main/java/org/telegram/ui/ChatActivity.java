@@ -712,7 +712,6 @@ public class ChatActivity extends BaseFragment implements
     private FrameLayout searchContainer;
     private ImageView searchCalendarButton;
     private ImageView searchUserButton;
-    private ImageView searchFilterButton;
     private AnimatedTextView searchCountText;
     private AnimatedTextView searchExpandList;
     private AnimatedTextView searchOtherButton;
@@ -11262,17 +11261,6 @@ public class ChatActivity extends BaseFragment implements
         tagSelector.setTranslationY(contentPanTranslation + (actionBarSearchTags != null ? actionBarSearchTags.getCurrentHeight() : 0));
     }
 
-    private ArrayList<Pair<String, TLRPC.MessagesFilter>> searchFilters = new ArrayList<>() {{
-        add(Pair.create(LocaleController.getString(R.string.FilterAllChatsShort), null));
-        add(Pair.create(LocaleController.getString(R.string.SharedMediaTab2), new TLRPC.TL_inputMessagesFilterPhotoVideo()));
-        add(Pair.create(LocaleController.getString(R.string.SharedVoiceTab2), new TLRPC.TL_inputMessagesFilterVoice()));
-        add(Pair.create(LocaleController.getString(R.string.SharedFilesTab2), new TLRPC.TL_inputMessagesFilterDocument()));
-        add(Pair.create(LocaleController.getString(R.string.SharedMusicTab2), new TLRPC.TL_inputMessagesFilterMusic()));
-        add(Pair.create(LocaleController.getString(R.string.SharedGIFsTab2), new TLRPC.TL_inputMessagesFilterGif()));
-        add(Pair.create(LocaleController.getString(R.string.ChatLocation), new TLRPC.TL_inputMessagesFilterGeo()));
-        add(Pair.create(LocaleController.getString(R.string.Mention), new TLRPC.TL_inputMessagesFilterMyMentions()));
-    }};
-
     private void createSearchContainer() {
         if (searchContainer != null || getContext() == null) {
             return;
@@ -11288,9 +11276,6 @@ public class ChatActivity extends BaseFragment implements
                         leftMargin += 48;
                     }
                     if (searchUserButton != null && searchUserButton.getVisibility() != GONE) {
-                        leftMargin += 48;
-                    }
-                    if (searchFilterButton != null && searchFilterButton.getVisibility() != GONE) {
                         leftMargin += 48;
                     }
                     ((MarginLayoutParams) child.getLayoutParams()).leftMargin = AndroidUtilities.dp(leftMargin);
@@ -11362,7 +11347,6 @@ public class ChatActivity extends BaseFragment implements
                 }
                 searchCalendarButton.setVisibility(View.GONE);
                 searchUserButton.setVisibility(View.GONE);
-                searchFilterButton.setVisibility(View.GONE);
                 searchingForUser = true;
                 searchingUserMessages = null;
                 searchingChatMessages = null;
@@ -11396,39 +11380,6 @@ public class ChatActivity extends BaseFragment implements
                 }, themeDelegate).create());
             });
             searchCalendarButton.setContentDescription(LocaleController.getString(R.string.JumpToDate));
-
-            searchFilterButton = new ImageView(getContext());
-            searchFilterButton.setScaleType(ImageView.ScaleType.CENTER);
-            searchFilterButton.setImageResource(R.drawable.ic_filter_list);
-            searchFilterButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_searchPanelIcons), PorterDuff.Mode.MULTIPLY));
-            searchFilterButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_actionBarActionModeDefaultSelector), 1));
-            searchContainer.addView(searchFilterButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP, searchUserButton != null ? (96 - 2.66f) : 48, 0, 0, 0));
-            searchFilterButton.setOnClickListener(view -> {
-                if (getParentActivity() == null) {
-                    return;
-                }
-
-                var filterPopup = ItemOptions.makeOptions(contentView, themeDelegate, searchFilterButton);
-                filterPopup.setDimAlpha(0);
-                for (var filter : searchFilters) {
-                    filterPopup.add(0, filter.first, () -> {
-                        if (searchingType == filter.second) {
-                            return;
-                        }
-                        searchingType = filter.second;
-                        getMediaDataController().clearFoundMessageObjects();
-                        updateSearchButtons(0, 0, -1);
-                        updateSearchUpDownButtonVisibility(true);
-                        updatePagedownButtonVisibility(true);
-                        searchingQuery = searchItem.getSearchField().getText().toString();
-                        getMediaDataController().searchMessagesInChat(searchingQuery, dialog_id, mergeDialogId, classGuid, 0, threadMessageId, searchingUserMessages, searchingChatMessages, searchingReaction, searchingType);
-                    });
-                    if (searchingType == filter.second) {
-                        filterPopup.putCheck();
-                    }
-                }
-                filterPopup.show();
-            });
         }
     }
 
@@ -36534,9 +36485,6 @@ public class ChatActivity extends BaseFragment implements
         if (searchUserButton != null) {
             searchUserButton.setVisibility(View.GONE);
         }
-        if (searchFilterButton != null) {
-            searchFilterButton.setVisibility(View.GONE);
-        }
         if (channelHashtags || forcePublic || ChatObject.isChannelAndNotMegaGroup(currentChat) && ChatObject.isPublic(currentChat) && searchingHashtag != null) {
             defaultSearchPage = 2;
             defaultSearchPage = NaConfig.INSTANCE.getSearchHashtagDefaultPageChannel().Int();
@@ -36631,9 +36579,6 @@ public class ChatActivity extends BaseFragment implements
             if (searchUserButton != null) {
                 searchUserButton.setVisibility(View.GONE);
             }
-            if (searchFilterButton != null) {
-                searchFilterButton.setVisibility(View.GONE);
-            }
         }
         if (searchItem != null) {
             preventReopenSearchWithText = true;
@@ -36689,9 +36634,6 @@ public class ChatActivity extends BaseFragment implements
             }
             if (searchUserButton != null) {
                 searchUserButton.setVisibility(View.GONE);
-            }
-            if (searchFilterButton != null) {
-                searchFilterButton.setVisibility(View.GONE);
             }
         }
         if (searchItem != null) {
@@ -39895,9 +39837,6 @@ public class ChatActivity extends BaseFragment implements
             if (searchUserButton != null) {
                 searchUserButton.setVisibility(View.VISIBLE);
             }
-            if (searchFilterButton != null) {
-                searchFilterButton.setVisibility(View.VISIBLE);
-            }
             if (searchingForUser) {
                 mentionContainer.getAdapter().searchUsernameOrHashtag(null, 0, null, false, true);
                 searchingForUser = false;
@@ -40196,9 +40135,6 @@ public class ChatActivity extends BaseFragment implements
                 searchCalendarButton.setVisibility(View.VISIBLE);
                 if (searchUserButton != null) {
                     searchUserButton.setVisibility(View.VISIBLE);
-                }
-                if (searchFilterButton != null) {
-                    searchFilterButton.setVisibility(View.VISIBLE);
                 }
                 searchingUserMessages = null;
                 searchingChatMessages = null;
@@ -44272,8 +44208,6 @@ public class ChatActivity extends BaseFragment implements
         themeDescriptions.add(new ThemeDescription(replyCloseImageView, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_glass_defaultIcon));
         themeDescriptions.add(new ThemeDescription(null, 0, null, null, null, selectedBackgroundDelegate, Theme.key_chat_replyPanelName));
 
-        themeDescriptions.add(new ThemeDescription(searchFilterButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_searchPanelIcons));
-        themeDescriptions.add(new ThemeDescription(searchFilterButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector));
         themeDescriptions.add(new ThemeDescription(searchCalendarButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_searchPanelIcons));
         themeDescriptions.add(new ThemeDescription(searchCalendarButton, ThemeDescription.FLAG_BACKGROUNDFILTER | ThemeDescription.FLAG_DRAWABLESELECTEDSTATE, null, null, null, null, Theme.key_actionBarActionModeDefaultSelector));
         themeDescriptions.add(new ThemeDescription(searchUserButton, ThemeDescription.FLAG_IMAGECOLOR, null, null, null, null, Theme.key_chat_searchPanelIcons));
@@ -46124,9 +46058,6 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case nkbtn_view_history: {
-                if (searchFilterButton != null) {
-                    searchFilterButton.setVisibility(View.GONE);
-                }
                 // same as "search_from_user_id"
                 TLRPC.Peer peer = selectedObject.messageOwner.from_id;
                 if ((threadMessageId == 0 || isTopic) && !UserObject.isReplyUser(currentUser)) {
