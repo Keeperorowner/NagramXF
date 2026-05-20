@@ -28,6 +28,7 @@ import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.NotificationsCheckCell;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -541,6 +542,9 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
                     checkBoxCell.setEnabled(true);
                     view = checkBoxCell;
                     break;
+                case CellGroup.ITEM_TYPE_TEXT_DETAIL_ICON:
+                    view = new TextDetailSettingsCell(mContext);
+                    break;
             }
             return view;
         }
@@ -611,5 +615,45 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         builder.setPositiveButton(getString(R.string.OK), null);
         builder.setView(linearLayout);
         return builder.create();
+    }
+
+    public interface RunnableInt {
+        void run(int index);
+    }
+
+    public AlertDialog showSingleChoiceDialog(Context context, int titleResId, String[] items, int selectedIndex, Theme.ResourcesProvider resourcesProvider, RunnableInt onSelected) {
+        return showSingleChoiceDialog(context, getString(titleResId), items, selectedIndex, resourcesProvider, onSelected);
+    }
+
+    public AlertDialog showSingleChoiceDialog(Context context, String title, String[] items, int selectedIndex, Theme.ResourcesProvider resourcesProvider, RunnableInt onSelected) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, resourcesProvider);
+        builder.setTitle(title);
+
+        LinearLayout linearLayout = new LinearLayout(context);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+        builder.setView(linearLayout);
+
+        for (int i = 0; i < items.length; i++) {
+            RadioColorCell cell = new RadioColorCell(context, resourcesProvider);
+            cell.setPadding(AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4), 0);
+            cell.setTag(i);
+            cell.setCheckColor(
+                    Theme.getColor(Theme.key_radioBackground, resourcesProvider),
+                    Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider)
+            );
+            cell.setTextAndValue(items[i], i == selectedIndex);
+            cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), 2));
+            linearLayout.addView(cell);
+            cell.setOnClickListener(v -> {
+                int index = (Integer) v.getTag();
+                onSelected.run(index);
+                builder.getDismissRunnable().run();
+            });
+        }
+
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+        return dialog;
     }
 }

@@ -13,7 +13,7 @@ import org.telegram.ui.Cells.TextSettingsCell;
 import kotlin.Unit;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.ConfigItem;
-import tw.nekomimi.nekogram.ui.PopupBuilder;
+import tw.nekomimi.nekogram.settings.BaseNekoXSettingsActivity;
 
 // TextSettingsCell, select from a list
 // Can be used without select list（custom）
@@ -81,22 +81,19 @@ public class ConfigCellSelectBox extends AbstractConfigCell implements WithBindC
             return;
         }
 
-        PopupBuilder builder = new PopupBuilder(view);
-
-        builder.setItems(this.selectList, (i, __) -> {
-            bindConfig.setConfigInt(i);
-
-            if (cellGroup.listAdapter != null)
-                cellGroup.listAdapter.notifyItemChanged(cellGroup.rows.indexOf(this));
-            if (cellGroup.thisFragment != null)
-                cellGroup.thisFragment.getParentLayout().rebuildAllFragmentViews(false, false);
-
-            cellGroup.runCallback(bindConfig.getKey(), i);
-
-            return Unit.INSTANCE;
-        });
-        builder.show();
-
-
+        if (cellGroup.thisFragment instanceof BaseNekoXSettingsActivity activity) {
+            int current = bindConfig.Int();
+            activity.showSingleChoiceDialog(context, title, selectList, current, activity.getResourceProvider(), new BaseNekoXSettingsActivity.RunnableInt() {
+                @Override
+                public void run(int index) {
+                    bindConfig.setConfigInt(index);
+                    if (cellGroup.listAdapter != null)
+                        cellGroup.listAdapter.notifyItemChanged(cellGroup.rows.indexOf(ConfigCellSelectBox.this));
+                    if (cellGroup.thisFragment != null)
+                        cellGroup.thisFragment.getParentLayout().rebuildAllFragmentViews(false, false);
+                    cellGroup.runCallback(bindConfig.getKey(), index);
+                }
+            });
+        }
     }
 }

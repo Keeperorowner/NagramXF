@@ -16,7 +16,7 @@ import org.telegram.messenger.TranslateController
 import org.telegram.tgnet.TLRPC
 import tw.nekomimi.nekogram.NekoConfig
 import tw.nekomimi.nekogram.translate.source.*
-import tw.nekomimi.nekogram.ui.PopupBuilder
+import org.telegram.ui.ActionBar.AlertDialog
 import tw.nekomimi.nekogram.utils.AppScope
 import tw.nekomimi.nekogram.utils.receiveLazy
 import xyz.nextalone.nagram.NaConfig
@@ -318,30 +318,13 @@ interface Translator {
         }
 
         @JvmStatic
-        fun showProviderSelect(anchor: View, callback: (Int) -> Unit) {
-            val builder = PopupBuilder(anchor)
-            val itemNames = ProviderInfo.PROVIDERS.map { getString(it.nameResId) }.toTypedArray()
-            builder.setItems(itemNames.map { it as CharSequence }.toTypedArray()) { index, _ ->
-                callback(ProviderInfo.PROVIDERS[index].providerConstant)
-            }
-            builder.show()
-        }
-
-        @JvmStatic
         @JvmOverloads
         fun showTargetLangSelect(
             anchor: View, input: Boolean = false, full: Boolean = false, callback: (Locale) -> Unit
         ) {
-            val builder = PopupBuilder(anchor)
+            val context = anchor.context
 
-            // Get built-in language list
-            val locales: MutableList<Locale> = if (full) {
-                availableLocaleList.filter { it.variant.isBlank() }.toMutableList()
-            } else {
-                LocaleController.getInstance().languages.asSequence().map { it.pluralLangCode }.toSet()
-                    .filter { !it.lowercase().contains("duang") }.map { it.code2Locale }
-                    .toMutableList()
-            }
+            val locales: MutableList<Locale> = availableLocaleList.filter { it.variant.isBlank() }.toMutableList()
 
             val firstLocale = if (!input) {
                 LocaleController.getInstance().currentLocale
@@ -352,7 +335,6 @@ interface Translator {
             locales.remove(firstLocale)
             locales.add(0, firstLocale)
 
-            // Get preferred languages and insert after first position
             val preferredLocales = NaConfig.preferredTranslateTargetLangList.mapNotNull { lang ->
                 try {
                     lang.code2Locale
@@ -362,39 +344,90 @@ interface Translator {
             }
 
             if (preferredLocales.isNotEmpty()) {
-                // Remove existing preferred languages to avoid duplicates
                 locales.removeAll(preferredLocales.toSet())
-                // Add preferred languages starting from position 1
                 locales.addAll(1, preferredLocales)
             }
 
             val currLocale = LocaleController.getInstance().currentLocale
-            val localeNames = arrayOfNulls<String>(if (full) locales.size else locales.size + 1)
+            val currentLang = NekoConfig.translateToLang.String() ?: ""
+
+            val builder = AlertDialog.Builder(context)
+            builder.setTitle(getString(R.string.Language))
+
+            val linearLayout = android.widget.LinearLayout(context)
+            linearLayout.orientation = android.widget.LinearLayout.VERTICAL
+            builder.setView(linearLayout)
 
             for (i in locales.indices) {
-                localeNames[i] = if (i == 0) {
+                val name = if (i == 0) {
                     getString(R.string.Default) + " ( " + locales[i].getDisplayName(currLocale) + " )"
                 } else if (i <= preferredLocales.size) {
-                    "⭐ " + locales[i].getDisplayName(currLocale)
+                    "\u2B50 " + locales[i].getDisplayName(currLocale)
                 } else {
                     locales[i].getDisplayName(currLocale)
                 }
-            }
-
-            if (!full) {
-                localeNames[localeNames.size - 1] = getString(R.string.More)
-            }
-
-            builder.setItems(
-                localeNames.filterIsInstance<CharSequence>().toTypedArray()
-            ) { index: Int, _ ->
-                if (index == locales.size) {
-                    showTargetLangSelect(anchor, input, true, callback)
-                } else {
+                val isChecked = (i == 0 && currentLang.isEmpty()) || locales[i].toLanguageTag() == currentLang
+                val cell = org.telegram.ui.Cells.RadioColorCell(context)
+                cell.setPadding(AndroidUtilities.dp(4f), 0, AndroidUtilities.dp(4f), 0)
+                cell.setTag(i)
+                cell.setCheckColor(
+                    org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_radioBackground),
+                    org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogRadioBackgroundChecked)
+                )
+                cell.setTextAndValue(name, isChecked)
+                cell.background = org.telegram.ui.ActionBar.Theme.createSelectorDrawable(
+                    org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_listSelector), 2
+                )
+                cell.setOnClickListener {
+                    val index = it.tag as Int
                     callback(locales[index])
+                    builder.dismissRunnable.run()
                 }
+                linearLayout.addView(cell)
             }
 
+            builder.setNegativeButton(getString(R.string.Cancel), null)
+            builder.show()
+        }
+
+        @JvmStatic
+        fun showProviderSelect(anchor: View, callback: (Int) -> Unit) {
+            showProviderSelect(anchor, NekoConfig.translationProvider.Int(), ProviderInfo.PROVIDERS.toList(), callback)
+        }
+
+        @JvmStatic
+        fun showProviderSelect(anchor: View, currentProvider: Int, providers: List<ProviderInfo>, callback: (Int) -> Unit) {
+            val context = anchor.context
+
+            val builder = AlertDialog.Builder(context)
+            builder.setTitle(getString(R.string.TranslationProvider))
+
+            val linearLayout = android.widget.LinearLayout(context).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+            }
+            builder.setView(linearLayout)
+
+            for (i in providers.indices) {
+                val cell = org.telegram.ui.Cells.RadioColorCell(context)
+                cell.setPadding(AndroidUtilities.dp(4f), 0, AndroidUtilities.dp(4f), 0)
+                cell.setTag(i)
+                cell.setCheckColor(
+                    org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_radioBackground),
+                    org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_dialogRadioBackgroundChecked)
+                )
+                cell.setTextAndValue(getString(providers[i].nameResId), providers[i].providerConstant == currentProvider)
+                cell.background = org.telegram.ui.ActionBar.Theme.createSelectorDrawable(
+                    org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_listSelector), 2
+                )
+                cell.setOnClickListener {
+                    val index = it.tag as Int
+                    callback(providers[index].providerConstant)
+                    builder.dismissRunnable.run()
+                }
+                linearLayout.addView(cell)
+            }
+
+            builder.setNegativeButton(getString(R.string.Cancel), null)
             builder.show()
         }
 
