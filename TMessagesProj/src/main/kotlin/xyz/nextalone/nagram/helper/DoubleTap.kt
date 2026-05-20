@@ -32,6 +32,8 @@ object DoubleTap {
         9
     const val DOUBLE_TAP_ACTION_DELETE =
         10
+    const val DOUBLE_TAP_ACTION_READ =
+        11
 
     init {
         doubleTapActionMap[DOUBLE_TAP_ACTION_NONE] =
@@ -78,6 +80,10 @@ object DoubleTap {
             getString(
                 R.string.Delete
             )
+        doubleTapActionMap[DOUBLE_TAP_ACTION_READ] =
+            getString(
+                R.string.GhostReadMessage
+            )
 
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_NONE] = R.drawable.msg_block
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_SEND_REACTIONS] = R.drawable.msg_reactions2
@@ -88,7 +94,8 @@ object DoubleTap {
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPEAT] = R.drawable.msg_repeat
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPEAT_AS_COPY] = R.drawable.msg_repeat
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_EDIT] = R.drawable.msg_edit
-        doubleTapActionIconMap[DOUBLE_TAP_ACTION_TRANSLATE_LLM] = R.drawable.msg_translate
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_TRANSLATE_LLM] = R.drawable.magic_stick_solar
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_DELETE] = R.drawable.msg_delete
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_READ] = R.drawable.msg_view_file
     }
 }

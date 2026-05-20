@@ -379,6 +379,11 @@ import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import tw.nekomimi.nekogram.helpers.remote.PagePreviewRulesHelper;
 import tw.nekomimi.nekogram.llm.LlmConfig;
+import com.exteragram.messenger.ai.AiConfig;
+import com.exteragram.messenger.ai.AiController;
+import com.exteragram.messenger.ai.network.Client;
+import com.exteragram.messenger.ai.ui.GenerateFromMessageBottomSheet;
+import com.exteragram.messenger.ai.ui.ResponseAlert;
 import tw.nekomimi.nekogram.menu.copy.CopyPopupWrapper;
 import tw.nekomimi.nekogram.menu.forward.ForwardPopupWrapper;
 import tw.nekomimi.nekogram.menu.ghostmode.GhostModeExclusionPopupWrapper;
@@ -470,6 +475,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int nkbtn_bookmark = 2039;
     private final static int nkbtn_bookmarks_manager = 2040;
     private final static int nkbtn_report = 2041;
+    private final static int nkbtn_ai_chat = 2042;
     private final static int nkbtn_clearDeleted = 2100;
     private final static int nkbtn_viewDeleted = 2101;
 
@@ -2139,6 +2145,10 @@ public class ChatActivity extends BaseFragment implements
                         break;
                     case DoubleTap.DOUBLE_TAP_ACTION_DELETE:
                         processSelectedOption(OPTION_DELETE);
+                        break;
+                    case DoubleTap.DOUBLE_TAP_ACTION_READ:
+                        AyuGhostUtils.markReadOnServer(selectedObject, false);
+                        BotWebViewVibrationEffect.SELECTION_CHANGE.vibrate();
                         break;
                 }
             }
@@ -46025,6 +46035,10 @@ public class ChatActivity extends BaseFragment implements
                 }
                 break;
             }
+            case nkbtn_ai_chat: {
+                handleAiChat(selectedObject, selectedObjectGroup);
+                break;
+            }
             case nkbtn_stickerdl: {
                 if ((Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && getParentActivity().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                     getParentActivity().requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
@@ -46161,6 +46175,56 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
         }
+    }
+
+    private void handleAiChat(MessageObject selectedObject, MessageObject.GroupedMessages selectedObjectGroup) {
+        if (selectedObject == null) return;
+
+        String messageText = "";
+        if (selectedObjectGroup != null) {
+            for (MessageObject msg : selectedObjectGroup.messages) {
+                if (msg.caption != null && msg.caption.length() > 0) {
+                    messageText = msg.caption.toString();
+                    break;
+                } else if (msg.messageOwner != null && !TextUtils.isEmpty(msg.messageOwner.message)) {
+                    messageText = msg.messageOwner.message;
+                    break;
+                }
+            }
+        } else {
+            if (selectedObject.caption != null && selectedObject.caption.length() > 0) {
+                messageText = selectedObject.caption.toString();
+            } else if (selectedObject.messageOwner != null && !TextUtils.isEmpty(selectedObject.messageOwner.message)) {
+                messageText = selectedObject.messageOwner.message;
+            }
+        }
+
+        String imagePath = AiController.getPathToMessage(selectedObject);
+        new GenerateFromMessageBottomSheet(messageText, imagePath, ChatActivity.this, getParentActivity(), data -> {
+            Client aiClient = new Client.Builder().build();
+            boolean noForwards = getMessagesController().isPeerNoForwards(getDialogId())
+                    || (selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards);
+            ResponseAlert.showAlert(ChatActivity.this, aiClient, data.prompt(), data.imagePath(), data.useHistory(), noForwards,
+                    urlSpan -> {
+                        didPressMessageUrl(urlSpan, false, selectedObject, null);
+                        return Boolean.TRUE;
+                    },
+                    null,
+                    chatActivityEnterView != null && currentChat != null && ChatObject.canSendMessages(currentChat) ? (prompt, response) -> {
+                        if (TextUtils.isEmpty(response)) return;
+                        if (AiConfig.insertAsQuote) {
+                            chatActivityEnterView.getEditField().setText(response);
+                            chatActivityEnterView.getEditField().append("\n");
+                            int start = AiConfig.showResponseOnly ? 0 : prompt.length() + 4;
+                            int end = chatActivityEnterView.getEditText().length() - 1;
+                            org.telegram.ui.Components.QuoteSpan.putQuoteToEditable(chatActivityEnterView.getEditText(), start, end, true);
+                        } else {
+                            chatActivityEnterView.getEditField().setText(response);
+                        }
+                        chatActivityEnterView.getEditField().setSelection(chatActivityEnterView.getEditField().length());
+                        chatActivityEnterView.openKeyboard();
+                    } : null);
+        }).show();
     }
 
     private void repeatMessage(boolean isLongClick, boolean isRepeatasCopy) {
@@ -48324,6 +48388,11 @@ public class ChatActivity extends BaseFragment implements
                         items.add(LocaleController.getString(R.string.ShareMessages));
                         options.add(nkbtn_sharemessage);
                         icons.add(R.drawable.msg_shareout);
+                    }
+                    if (AiController.canUseAI() && selectedObject != null) {
+                        items.add(LocaleController.getString(R.string.AIChatGenerateFromMessage));
+                        options.add(nkbtn_ai_chat);
+                        icons.add(R.drawable.ai_chat_solar);
                     }
                 }
                 if (NekoConfig.showMessageHide.Bool()) {

@@ -207,39 +207,27 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
                 }
             }));
         } else if (position == cellGroup.rows.indexOf(customAudioBitrateRow)) {
-            PopupBuilder builder = new PopupBuilder(view);
-            builder.setItems(new String[]{
+            final int[] bitrates = {32, 64, 128, 192, 256, 320};
+            String[] bitrateNames = new String[]{
                     "32 (" + getString(R.string.Default) + ")",
                     "64",
                     "128",
                     "192",
                     "256",
                     "320"
-            }, (i, __) -> {
-                switch (i) {
-                    case 0:
-                        NekoConfig.customAudioBitrate.setConfigInt(32);
-                        break;
-                    case 1:
-                        NekoConfig.customAudioBitrate.setConfigInt(64);
-                        break;
-                    case 2:
-                        NekoConfig.customAudioBitrate.setConfigInt(128);
-                        break;
-                    case 3:
-                        NekoConfig.customAudioBitrate.setConfigInt(192);
-                        break;
-                    case 4:
-                        NekoConfig.customAudioBitrate.setConfigInt(256);
-                        break;
-                    case 5:
-                        NekoConfig.customAudioBitrate.setConfigInt(320);
-                        break;
+            };
+            int currentBitrate = NekoConfig.customAudioBitrate.Int();
+            int selectedIdx = -1;
+            for (int i = 0; i < bitrates.length; i++) {
+                if (bitrates[i] == currentBitrate) {
+                    selectedIdx = i;
+                    break;
                 }
+            }
+            showSingleChoiceDialog(getParentActivity(), R.string.customGroupVoipAudioBitrate, bitrateNames, selectedIdx, getResourceProvider(), i -> {
+                NekoConfig.customAudioBitrate.setConfigInt(bitrates[i]);
                 listAdapter.notifyItemChanged(position);
-                return Unit.INSTANCE;
             });
-            builder.show();
         }
     }
 
