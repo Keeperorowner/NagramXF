@@ -386,6 +386,8 @@ public class NotificationCenter {
     public static final int pillStackSettingsChanged = totalEvents++;
     public static final int pillStackLayoutChanged = totalEvents++;
 
+    public static final int servicesUpdated = totalEvents++;
+
     public static boolean alreadyLogged;
 
     // custom

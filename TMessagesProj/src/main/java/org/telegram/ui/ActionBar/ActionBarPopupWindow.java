@@ -129,7 +129,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         private PopupSwipeBackLayout swipeBackLayout;
         @Nullable
         private ScrollView scrollView;
-        protected LinearLayout linearLayout;
+        public LinearLayout linearLayout;
 
         private int backgroundColor = Color.WHITE;
         protected Drawable backgroundDrawable;

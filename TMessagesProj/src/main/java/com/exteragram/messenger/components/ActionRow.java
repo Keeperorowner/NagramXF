@@ -3,6 +3,7 @@ package com.exteragram.messenger.components;
 import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -73,14 +74,16 @@ public class ActionRow extends FrameLayout {
                 int divider = Math.max(1, childCount - 1);
                 for (int i = 0; i < childCount; i++) {
                     int childLeft = AndroidUtilities.dp(i * ITEM_SIZE_DP + HORIZONTAL_PADDING_DP) + extraSpace * i / divider;
-                    int childTop = AndroidUtilities.dp(8);
                     View child = getChildAt(i);
+                    int childTop = (bottom - top - child.getMeasuredHeight()) / 2;
                     child.layout(childLeft, childTop, childLeft + child.getMeasuredWidth(), childTop + child.getMeasuredHeight());
                 }
             }
         };
-        addView(buttonsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        updateItems(items, resourcesProvider);
+        addView(buttonsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER_VERTICAL));
+        if (items != null) {
+            updateItems(items, resourcesProvider);
+        }
     }
 
     public void updateItems(List<ActionItem> items, Theme.ResourcesProvider resourcesProvider) {
