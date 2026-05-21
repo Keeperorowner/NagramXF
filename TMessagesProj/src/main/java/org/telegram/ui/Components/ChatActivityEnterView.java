@@ -237,6 +237,14 @@ import tw.nekomimi.nekogram.ui.BottomBuilder;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import xyz.nextalone.nagram.NaConfig;
 
+import com.exteragram.messenger.ai.AiConfig;
+import com.exteragram.messenger.ai.AiController;
+import com.exteragram.messenger.ai.network.Client;
+import com.exteragram.messenger.ai.ui.ResponseAlert;
+import com.exteragram.messenger.ai.ui.activities.AiPreferencesActivity;
+import com.exteragram.messenger.ai.ui.activities.EditServiceActivity;
+import com.exteragram.messenger.components.ActionRow;
+
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
@@ -5296,6 +5304,63 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         ItemOptions options = ItemOptions.makeOptions(this, resourcesProvider, sendButton);
 
+        if (messageEditText != null && messageEditText.getText().length() > 0 && AiController.canUseAI()) {
+            ArrayList<ActionRow.ActionItem> aiItems = new ArrayList<>();
+            aiItems.add(new ActionRow.ActionItem(R.drawable.ai_chat_solar, true, v -> {
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+                if (keyboardVisible) closeKeyboard();
+                else if (isPopupShowing()) hidePopup(false);
+                Client aiClient = new Client.Builder().build();
+                ResponseAlert.showAlert(parentFragment, aiClient, getEditField().getText().toString(), AiConfig.saveHistory, false, null, () -> {}, (prompt, response) -> {
+                    if (TextUtils.isEmpty(response)) return;
+                    if (AiConfig.insertAsQuote) {
+                        getEditField().setText(response + "\n");
+                        QuoteSpan.putQuoteToEditable(getEditText(), AiConfig.showResponseOnly ? 0 : prompt.length() + 4, getEditText().length() - 1, true);
+                    } else {
+                        getEditField().setText(response);
+                    }
+                    getEditField().setSelection(getEditField().length());
+                    openKeyboard();
+                }).setDimBehind(true);
+            }));
+            if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
+                long chatId = ChatsHelper.getChatId();
+                aiItems.add(new ActionRow.ActionItem(R.drawable.magic_stick_solar, true, v -> {
+                    if (messageSendPreview != null) {
+                        messageSendPreview.dismiss(false);
+                        messageSendPreview = null;
+                    }
+                    translateComment(Translator.getInputTranslateLangLocaleForChat(chatId), Translator.providerLLMTranslator);
+                }, v -> {
+                    Translator.showTargetLangSelect(v, true, (locale) -> {
+                        Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
+                        return Unit.INSTANCE;
+                    });
+                    return true;
+                }));
+            }
+            aiItems.add(new ActionRow.ActionItem(R.drawable.msg_settings, true, v -> {
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+                parentFragment.presentFragment(new AiPreferencesActivity());
+            }));
+            aiItems.add(new ActionRow.ActionItem(R.drawable.msg_delete, AiConfig.saveHistory, v -> {
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+                AiController.clearHistory(parentFragment, resourcesProvider, true);
+            }));
+            ActionRow actionRow = new ActionRow(getContext(), resourcesProvider, aiItems);
+            options.addView(actionRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
+            options.addGap();
+        }
+
         final boolean self = parentFragment != null && UserObject.isUserSelf(parentFragment.getCurrentUser());
         boolean scheduleButtonValue = parentFragment != null && parentFragment.canScheduleMessage();
         boolean sendWithoutSoundButtonValue = !(self || slowModeTimer > 0 && !isInScheduleMode());
@@ -5415,73 +5480,47 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
 
             long chatId = ChatsHelper.getChatId();
-            String languageText = Translator.getInputTranslateLangForChat(chatId).toUpperCase();
-            StringBuilder sb;
-            if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
-                sb = new StringBuilder();
-                sb.append(getString(R.string.TranslateMessageLLM));
-                sb.append(' ').append("(").append(languageText).append(")");
-                options.add(R.drawable.magic_stick_solar, sb,
-                    () -> {
-                        if (messageSendPreview != null) {
-                            messageSendPreview.dismiss(false);
-                            messageSendPreview = null;
-                        }
-                        Translator.showTargetLangSelect(view, true, (locale) -> {
-                            if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                                menuPopupWindow.dismiss();
-                            }
-                            translateComment(locale, Translator.providerLLMTranslator);
-                            Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                            return Unit.INSTANCE;
-                        });
-                    },
-                    () -> {
-                        translateComment(Translator.getInputTranslateLangLocaleForChat(chatId), Translator.providerLLMTranslator);
-                        if (messageSendPreview != null) {
-                            messageSendPreview.dismiss(false);
-                            messageSendPreview = null;
-                        }
-                    }
-                );
-            }
-            sb = new StringBuilder();
-            sb.append(getString(R.string.TranslateMessage));
-            sb.append(' ').append("(").append(languageText).append(")");
-            options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, sb,
-                    () -> {
-                        if (messageSendPreview != null) {
-                            messageSendPreview.dismiss(false);
-                            messageSendPreview = null;
-                        }
-                       Translator.showTargetLangSelect(view, true, (locale) -> {
-                            if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                                menuPopupWindow.dismiss();
-                            }
-                            translateComment(locale);
-                            Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                            return Unit.INSTANCE;
-                        });
-                    },
-                    () -> {
-                        translateComment(Translator.getInputTranslateLangLocaleForChat(chatId));
-                        if (messageSendPreview != null) {
-                            messageSendPreview.dismiss(false);
-                            messageSendPreview = null;
-                        }
-                    }
-            );
+            Locale targetLocale = Translator.getInputTranslateLangLocaleForChat(chatId);
+            options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, getString(R.string.TranslateMessage), () -> {
+                translateComment(targetLocale);
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+            });
+            ActionBarMenuSubItem translateItem = options.getLast();
+            translateItem.setSubtext(targetLocale.getDisplayName(LocaleController.getInstance().currentLocale));
+            translateItem.setRightIcon(R.drawable.msg_arrowright, v -> {
+                Translator.showTargetLangSelect(translateItem, true, (locale) -> {
+                    Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
+                    translateItem.setSubtext(locale.getDisplayName(LocaleController.getInstance().currentLocale));
+                    return Unit.INSTANCE;
+                });
+            });
+            translateItem.setOnLongClickListener(v -> {
+                Translator.showTargetLangSelect(translateItem, true, (locale) -> {
+                    Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
+                    translateItem.setSubtext(locale.getDisplayName(LocaleController.getInstance().currentLocale));
+                    return Unit.INSTANCE;
+                });
+                return true;
+            });
         }
-        options.add(R.drawable.input_attach, getString(R.string.AttachMenu), () -> {
-            if (messageSendPreview != null) {
-                messageSendPreview.dismiss(false);
-                messageSendPreview = null;
-            }
-            if (delegate != null) {
-                delegate.didPressAttachButton();
-            }
-        });
+        int disableLinkPreviewStatus = delegate.getDisableLinkPreviewStatus();
+        if (disableLinkPreviewStatus > 0) {
+            options.add(R.drawable.msg_link, disableLinkPreviewStatus != 1 ?
+                    getString(R.string.ChatAttachEnterMenuEnableLinkPreview) :
+                    getString(R.string.ChatAttachEnterMenuDisableLinkPreview), () -> {
+                delegate.toggleDisableLinkPreview();
+                messageWebPageSearch = delegate.getDisableLinkPreviewStatus() == 1;
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+            });
+        }
         options.setupSelectors();
+        options.fitToContent();
         if (sendWhenOnlineButton != null) {
             TLRPC.User user = parentFragment == null ? null : parentFragment.getCurrentUser();
             if (user != null && !user.bot && !(user.status instanceof TLRPC.TL_userStatusEmpty) && !(user.status instanceof TLRPC.TL_userStatusOnline) && !(user.status instanceof TLRPC.TL_userStatusRecently) && !(user.status instanceof TLRPC.TL_userStatusLastMonth) && !(user.status instanceof TLRPC.TL_userStatusLastWeek)) {
@@ -10785,7 +10824,8 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                     sendPreview.scrollTo(!captionAbove);
                 });
                 options.addView(button);
-                options.setupSelectors();
+        options.setupSelectors();
+        options.fitToContent();
                 sendPreview.setItemOptions(options);
                 sendPreview.setSendButton(doneButton, false, v2 -> {
                     if (groupedMessages != null) {

@@ -19,6 +19,7 @@ public class CellGroup {
     public static final int ITEM_TYPE_TEXT_CHECK_ICON = 7;
     public static final int ITEM_TYPE_CHECK2 = 8;
     public static final int ITEM_TYPE_CHECK_BOX = 9;
+    public static final int ITEM_TYPE_TEXT_DETAIL_ICON = 10;
 
     public BaseFragment thisFragment;
     public RecyclerListView listView;
