@@ -13634,6 +13634,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     private int additionalPaddingHeight;
 
+    public int getAdditionalPaddingHeight() {
+        return additionalPaddingHeight;
+    }
+
 
     public void forceResetMessageObject() {
         MessageObject messageObject = messageObjectToSet != null ? messageObjectToSet : currentMessageObject;
