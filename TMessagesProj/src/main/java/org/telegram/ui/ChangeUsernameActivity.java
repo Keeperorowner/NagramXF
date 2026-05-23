@@ -521,8 +521,21 @@ public class ChangeUsernameActivity extends BaseFragment {
             }
         }
 
+        public void updateSections() {
+            if (listView == null) return;
+            if (listView.forcedSections != null) {
+                listView.forcedSections.clear();
+            } else {
+                listView.forcedSections = new ArrayList<>();
+            }
+            if (usernames.size() > 0) {
+                listView.forcedSections.add(AndroidUtilities.pack(3, 3 + usernames.size()));
+            }
+        }
+
         @Override
         public int getItemCount() {
+            updateSections();
             return 3 + (usernames.size() > 0 ? 1 + usernames.size() + 1 : 0);
         }
 
@@ -1143,6 +1156,9 @@ public class ChangeUsernameActivity extends BaseFragment {
                 viewHolder.itemView.setPressed(true);
             }
             super.onSelectedChanged(viewHolder, actionState);
+            if (viewHolder != null) {
+                viewHolder.itemView.setTag(R.id.dragging, actionState == ItemTouchHelper.ACTION_STATE_DRAG ? true : null);
+            }
         }
 
         @Override
@@ -1153,6 +1169,7 @@ public class ChangeUsernameActivity extends BaseFragment {
         public void clearView(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder) {
             super.clearView(recyclerView, viewHolder);
             viewHolder.itemView.setPressed(false);
+            viewHolder.itemView.setTag(R.id.dragging, null);
         }
     }
 

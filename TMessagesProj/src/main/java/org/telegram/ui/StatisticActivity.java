@@ -27,6 +27,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -120,8 +121,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-
-import xyz.nextalone.nagram.NaConfig;
 
 public class StatisticActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
@@ -258,7 +257,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().addObserver(this, NotificationCenter.boostByChannelCreated);
         getNotificationCenter().addObserver(this, NotificationCenter.storiesListUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.mainTabsLayoutChanged);
         StoriesController storiesController = getMessagesController().getStoriesController();
         storiesList = storiesController.getStoriesList(-chatId, StoriesController.StoriesList.TYPE_STATISTICS);
         if (storiesList != null) {
@@ -492,7 +490,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         getNotificationCenter().removeObserver(this, NotificationCenter.messagesDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.chatInfoDidLoad);
         getNotificationCenter().removeObserver(this, NotificationCenter.storiesListUpdated);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.mainTabsLayoutChanged);
 
         if (progressDialog[0] != null) {
             progressDialog[0].dismiss();
@@ -501,7 +498,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         if (storiesList != null) {
             storiesList.unlink(storiesListId);
         }
-        Bulletin.removeDelegate(this);
         super.onFragmentDestroy();
     }
 
@@ -606,8 +602,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                     loadStatistic();
                 }
             }
-        } else if (id == NotificationCenter.mainTabsLayoutChanged) {
-            applyMainTabsAppearanceConfig();
         }
     }
 
@@ -630,8 +624,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
 
         tabs = tabViews.toArray(new GlassTabView[0]);
-        tabsView = new MainTabsLayout(context);
-        tabsView.setEqualWidthWhenTitlesVisible(true);
+        tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setPadding(dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4), dp(DialogsActivity.MAIN_TABS_MARGIN + 4));
 
         for (int index = 0; index < tabs.length; index++) {
@@ -646,7 +639,6 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
             tabsView.addView(tabs[index]);
             tabsView.setViewVisible(view, true, false);
         }
-        applyMainTabsAppearanceConfig();
 
         viewPagerFixed = new ViewPagerFixed(getContext()) {
             @Override
@@ -1793,6 +1785,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
     }
 
     public static abstract class BaseChartCell extends FrameLayout {
+        final @Nullable Window window;
         BaseChartView chartView;
         BaseChartView zoomedChartView;
         ChartHeaderView chartHeaderView;
@@ -1814,6 +1807,13 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         public BaseChartCell(@NonNull Context context, int type, BaseChartView.SharedUiComponents sharedUi, Theme.ResourcesProvider resourcesProvider) {
             super(context);
             setWillNotDraw(false);
+
+            if (context instanceof Activity) {
+                window = ((Activity) context).getWindow();
+            } else {
+                window = null;
+            }
+
             chartType = type;
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -1926,7 +1926,7 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
 
             linearLayout.addView(chartHeaderView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52));
             linearLayout.addView(frameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-            linearLayout.addView(checkboxContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 16, 0, 16, 0));
+            linearLayout.addView(checkboxContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.FILL_HORIZONTAL, 10, 0, 10, 0));
 
             if (chartType == 4) {
                 frameLayout.setClipChildren(false);
@@ -2024,7 +2024,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                         zoomedChartView.enabled = true;
                         chartView.transitionMode = BaseChartView.TRANSITION_MODE_NONE;
                         zoomedChartView.transitionMode = BaseChartView.TRANSITION_MODE_NONE;
-                        ((Activity) getContext()).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        if (window != null) {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        }
                     }
                 });
                 animator.start();
@@ -2053,7 +2055,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                 chartView.enabled = true;
                 zoomedChartView.enabled = false;
                 chartView.invalidate();
-                ((Activity) getContext()).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                if (window != null) {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                }
 
                 for (CheckBoxHolder checkbox : checkBoxes) {
                     checkbox.checkBox.setAlpha(1);
@@ -2081,7 +2085,9 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
                             chartView.legendShowing = false;
                             chartView.clearSelection();
                         }
-                        ((Activity) getContext()).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        if (window != null) {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                        }
                     }
                 });
                 for (CheckBoxHolder checkbox : checkBoxes) {
@@ -2095,8 +2101,10 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
 
         private ValueAnimator createTransitionAnimator(long d, boolean in) {
-            ((Activity) getContext()).getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            if (window != null) {
+                window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                     WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
 
             chartView.enabled = false;
             zoomedChartView.enabled = false;
@@ -3591,28 +3599,11 @@ public class StatisticActivity extends BaseFragment implements NotificationCente
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        applyMainTabsAppearanceConfig();
-    }
-
     public void selectTab(int position, boolean animated) {
         for (int a = 0; a < tabs.length; a++) {
             GlassTabView tab = tabs[a];
             tab.setSelected(a == position, animated);
         }
-    }
-
-    private void applyMainTabsAppearanceConfig() {
-        if (tabsView == null || tabs == null) {
-            return;
-        }
-        final boolean showTitles = NaConfig.INSTANCE.getMainTabsShowTitles().Bool();
-        for (GlassTabView tab : tabs) {
-            tab.setTitleVisible(showTitles);
-        }
-        tabsView.requestLayout();
     }
 
     public void setGestureSelectedOverride(float animatedPosition, boolean allow) {

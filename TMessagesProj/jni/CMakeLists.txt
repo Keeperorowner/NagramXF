@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.10.2)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -DANDROID -g")
-set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g")
+set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g -Wno-error=implicit-function-declaration")
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-Bsymbolic,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libflac.a,librlottie.a,libsqlite.a,
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -flto=full")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -flto=full")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto=full -Wl,--gc-sections -Wl,--icf=safe -Wl,-Bsymbolic -Wl,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libflac.a,librlottie.a,libsqlite.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswscale.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavformat.a,
 ${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,
@@ -206,7 +206,7 @@ add_library(tgnet STATIC
         tgnet/Handshake.cpp
         tgnet/Config.cpp)
 target_compile_options(tgnet PUBLIC
-        -Wall -frtti -finline-functions -ffast-math -Os)
+        -Wall -frtti -finline-functions -ffast-math -Oz)
 set_target_properties(tgnet PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(tgnet PUBLIC
@@ -250,7 +250,7 @@ add_library(rlottie STATIC
         rlottie/src/vector/vrect.cpp
         rlottie/src/vector/vrle.cpp)
 target_compile_options(rlottie PUBLIC
-        -Wall -fno-rtti -finline-functions -ffast-math -Os -fno-unwind-tables -fno-asynchronous-unwind-tables -Wnon-virtual-dtor -Woverloaded-virtual -Wno-unused-parameter -fvisibility=hidden)
+        -Wall -fno-rtti -finline-functions -ffast-math -Oz -fno-unwind-tables -fno-asynchronous-unwind-tables -Wnon-virtual-dtor -Woverloaded-virtual -Wno-unused-parameter -fvisibility=hidden)
 set_target_properties(rlottie PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(rlottie PUBLIC
@@ -305,7 +305,7 @@ add_library(flac STATIC
         exoplayer/libFLAC/stream_encoder_intrin_ssse3.c
         exoplayer/libFLAC/window.c)
 target_compile_options(flac PUBLIC
-        -O3 -funroll-loops -finline-functions -fPIC -frtti)
+        -Oz -finline-functions -fPIC -frtti)
 set_target_properties(flac PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(flac PUBLIC
@@ -317,19 +317,45 @@ target_include_directories(flac PUBLIC
 add_library(sqlite STATIC
         sqlite/sqlite3.c)
 target_compile_options(sqlite PUBLIC
-        -fno-strict-aliasing -Os)
+        -fno-strict-aliasing -Oz)
 set_target_properties(sqlite PROPERTIES
         ANDROID_ARM_MODE arm)
 target_compile_definitions(sqlite PUBLIC
         NULL=0 SOCKLEN_T=socklen_t LOCALE_NOT_USED ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE HAVE_STRCHRNUL=0 ANDROID_ARMV6_IDCT)
 
+#breakpad
+add_library(breakpad STATIC
+        third_party/breakpad/src/client/linux/crash_generation/crash_generation_client.cc
+        third_party/breakpad/src/client/linux/handler/exception_handler.cc
+        third_party/breakpad/src/client/linux/handler/minidump_descriptor.cc
+        third_party/breakpad/src/client/linux/log/log.cc
+        third_party/breakpad/src/client/linux/dump_writer_common/thread_info.cc
+        third_party/breakpad/src/client/linux/dump_writer_common/seccomp_unwinder.cc
+        third_party/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
+        third_party/breakpad/src/client/linux/microdump_writer/microdump_writer.cc
+        third_party/breakpad/src/client/linux/minidump_writer/linux_dumper.cc
+        third_party/breakpad/src/client/linux/minidump_writer/linux_ptrace_dumper.cc
+        third_party/breakpad/src/client/linux/minidump_writer/minidump_writer.cc
+        third_party/breakpad/src/client/minidump_file_writer.cc
+        third_party/breakpad/src/common/android/breakpad_getcontext.S
+        third_party/breakpad/src/common/convert_UTF.c
+        third_party/breakpad/src/common/md5.cc
+        third_party/breakpad/src/common/string_conversion.cc
+        third_party/breakpad/src/common/linux/elfutils.cc
+        third_party/breakpad/src/common/linux/file_id.cc
+        third_party/breakpad/src/common/linux/guid_creator.cc
+        third_party/breakpad/src/common/linux/linux_libc_support.cc
+        third_party/breakpad/src/common/linux/memory_mapped_file.cc
+        third_party/breakpad/src/common/linux/safe_readlink.cc)
+set_target_properties(breakpad PROPERTIES ANDROID_ARM_MODE arm)
+set_property(SOURCE third_party/breakpad/src/common/android/breakpad_getcontext.S PROPERTY LANGUAGE C)
+target_include_directories(breakpad PUBLIC
+        third_party/breakpad/src/common/android/include
+        third_party/breakpad/src)
+
 
 #voip
 include(${CMAKE_HOME_DIRECTORY}/voip/CMakeLists.txt)
-
-# cpu features
-include_directories(${ANDROID_NDK}/sources/android/cpufeatures)
-add_library(cpufeatures ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
 
 set(NATIVE_LIB "tmessages.49")
 
@@ -358,7 +384,7 @@ add_library(${NATIVE_LIB} SHARED
 )
 
 target_compile_options(${NATIVE_LIB} PUBLIC
-        -ffast-math -Os -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)
+        -ffast-math -Oz -funroll-loops -ffast-math -fno-strict-aliasing -fno-math-errno)
 
 target_compile_definitions(${NATIVE_LIB} PUBLIC
         BSD=1 NULL=0 SOCKLEN_T=socklen_t ANDROID_NDK DISABLE_IMPORTGL AVOID_TABLES ANDROID_TILE_BASED_DECODE __STDC_CONSTANT_MACROS ANDROID_ARMV6_IDCT OPUS_BUILD FIXED_POINT USE_ALLOCA restrict= __EMX__ LOCALE_NOT_USED HAVE_LRINT HAVE_LRINTF)
@@ -640,7 +666,8 @@ target_link_libraries(${NATIVE_LIB}
         EGL
         android
         OpenSLES
-        cpufeatures)
+        cpufeatures
+        breakpad)
 
 #if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
 #    target_link_libraries(${NATIVE_LIB}
@@ -648,5 +675,5 @@ target_link_libraries(${NATIVE_LIB}
 #            c)
 #endif()
 
-#include(AndroidNdkModules)
-#android_ndk_import_module_cpufeatures()
+include(AndroidNdkModules)
+android_ndk_import_module_cpufeatures()

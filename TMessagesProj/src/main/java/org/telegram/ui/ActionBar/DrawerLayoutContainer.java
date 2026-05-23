@@ -113,6 +113,7 @@ public class DrawerLayoutContainer extends FrameLayout {
         setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
         setFocusableInTouchMode(true);
 
+
         ViewCompat.setOnApplyWindowInsetsListener(this, (v, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
                 boolean newKeyboardVisibility = insets.isVisible(WindowInsetsCompat.Type.ime());
@@ -577,6 +578,16 @@ public class DrawerLayoutContainer extends FrameLayout {
     @SuppressLint("NewApi")
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (!BuildVars.USE_LEGACY_SYSTEM_INSETS) {
+            final WindowInsetsCompat insetsCompat = ViewCompat.getRootWindowInsets(this);
+            if (insetsCompat != null) {
+                final Insets systemInsets = insetsCompat.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.systemBars());
+
+                AndroidUtilities.statusBarHeight = systemInsets.top;
+                AndroidUtilities.navigationBarHeight = systemInsets.bottom;
+            }
+        }
+
         int widthSize = MeasureSpec.getSize(widthMeasureSpec);
         int heightSize = MeasureSpec.getSize(heightMeasureSpec);
 

@@ -75,38 +75,38 @@
 
 .macro pixldst1 op, elem_size, reg1, mem_operand, abits
 .if \abits > 0
-    \op\().\()\elem_size {d\()\reg1}, [\()\mem_operand\(), :\()\abits\()]!
+    \op\().\()\elem_size {d\()\reg1}, [\()\mem_operand, :\()\abits]!
 .else
-    \op\().\()\elem_size {d\()\reg1}, [\()\mem_operand\()]!
+    \op\().\()\elem_size {d\()\reg1}, [\()\mem_operand]!
 .endif
 .endm
 
 .macro pixldst2 op, elem_size, reg1, reg2, mem_operand, abits
 .if \abits > 0
-    \op\().\()\elem_size {d\()\reg1, d\()\reg2}, [\()\mem_operand\(), :\()\abits\()]!
+    \op\().\()\elem_size {d\()\reg1, d\()\reg2}, [\()\mem_operand, :\()\abits]!
 .else
-    \op\().\()\elem_size {d\()\reg1, d\()\reg2}, [\()\mem_operand\()]!
+    \op\().\()\elem_size {d\()\reg1, d\()\reg2}, [\()\mem_operand]!
 .endif
 .endm
 
 .macro pixldst4 op, elem_size, reg1, reg2, reg3, reg4, mem_operand, abits
 .if \abits > 0
-    \op\().\()\elem_size {d\()\reg1, d\()\reg2, d\()\reg3, d\()\reg4}, [\()\mem_operand\(), :\()\abits\()]!
+    \op\().\()\elem_size {d\()\reg1, d\()\reg2, d\()\reg3, d\()\reg4}, [\()\mem_operand, :\()\abits]!
 .else
-    \op\().\()\elem_size {d\()\reg1, d\()\reg2, d\()\reg3, d\()\reg4}, [\()\mem_operand\()]!
+    \op\().\()\elem_size {d\()\reg1, d\()\reg2, d\()\reg3, d\()\reg4}, [\()\mem_operand]!
 .endif
 .endm
 
 .macro pixldst0 op, elem_size, reg1, idx, mem_operand, abits
-    \op\().\()\elem_size {d\()\reg1[\idx]}, [\()\mem_operand\()]!
+    \op\().\()\elem_size {d\()\reg1\()[\idx]}, [\()\mem_operand]!
 .endm
 
 .macro pixldst3 op, elem_size, reg1, reg2, reg3, mem_operand
-    \op\().\()\elem_size {d\()\reg1, d\()\reg2, d\()\reg3}, [\()\mem_operand\()]!
+    \op\().\()\elem_size {d\()\reg1, d\()\reg2, d\()\reg3}, [\()\mem_operand]!
 .endm
 
 .macro pixldst30 op, elem_size, reg1, reg2, reg3, idx, mem_operand
-    \op\().\()\elem_size {d\()\reg1[\idx], d\()\reg2[\idx], d\()\reg3[\idx]}, [\()\mem_operand\()]!
+    \op\().\()\elem_size {d\()\reg1\()[\idx], d\()\reg2\()[\idx], d\()\reg3\()[\idx]}, [\()\mem_operand]!
 .endm
 
 .macro pixldst numbytes, op, elem_size, basereg, mem_operand, abits
@@ -213,24 +213,24 @@
 .if \elem_size == 16
     mov     TMP1, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP1, \mem_operand, TMP1, asl #1
     mov     TMP2, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP2, \mem_operand, TMP2, asl #1
     vld1.16 {d\()\reg1\()[0]}, [TMP1, :16]
     mov     TMP1, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP1, \mem_operand, TMP1, asl #1
     vld1.16 {d\()\reg1\()[1]}, [TMP2, :16]
     mov     TMP2, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP2, \mem_operand, TMP2, asl #1
     vld1.16 {d\()\reg1\()[2]}, [TMP1, :16]
@@ -238,12 +238,12 @@
 .elseif \elem_size == 32
     mov     TMP1, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP1, \mem_operand, TMP1, asl #2
     mov     TMP2, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP2, \mem_operand, TMP2, asl #2
     vld1.32 {d\()\reg1\()[0]}, [TMP1, :32]
@@ -281,14 +281,14 @@
 .if \elem_size == 16
     mov     TMP1, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP1, \mem_operand, TMP1, asl #1
     vld1.16 {d\()\reg1\()[\idx]}, [TMP1, :16]
 .elseif \elem_size == 32
     mov     TMP1, VX, asr #16
     adds    VX, VX, UNIT_X
-5:  subspl  VX, VX, SRC_WIDTH_FIXED
+5:  subpls  VX, VX, SRC_WIDTH_FIXED
     bpl     5b
     add     TMP1, \mem_operand, TMP1, asl #2
     vld1.32 {d\()\reg1\()[\idx]}, [TMP1, :32]
@@ -365,32 +365,7 @@
 .endm
 
 /*
- * This is a macro for implementing cache preload. The main idea is that
- * cache preload logic is mostly independent from the rest of pixels
- * processing code. It starts at the top left pixel and moves forward
- * across pixels and can jump across scanlines. Prefetch distance is
- * handled in an 'incremental' way: it starts from 0 and advances to the
- * optimal distance over time. After reaching optimal prefetch distance,
- * it is kept constant. There are some checks which prevent prefetching
- * unneeded pixel lines below the image (but it still can prefetch a bit
- * more data on the right side of the image - not a big issue and may
- * be actually helpful when rendering text glyphs). Additional trick is
- * the use of LDR instruction for prefetch instead of PLD when moving to
- * the next line, the point is that we have a high chance of getting TLB
- * miss in this case, and PLD would be useless.
- *
- * This sounds like it may introduce a noticeable overhead (when working with
- * fully cached data). But in reality, due to having a separate pipeline and
- * instruction queue for NEON unit in ARM Cortex-A8, normal ARM code can
- * execute simultaneously with NEON and be completely shadowed by it. Thus
- * we get no performance overhead at all (*). This looks like a very nice
- * feature of Cortex-A8, if used wisely. We don't have a hardware prefetcher,
- * but still can implement some rather advanced prefetch logic in software
- * for almost zero cost!
- *
- * (*) The overhead of the prefetcher is visible when running some trivial
- * pixels processing like simple copy. Anyway, having prefetch is a must
- * when working with the graphics data.
+ * Cache preload macro.
  */
 .macro PF a, x:vararg
 .if (PREFETCH_TYPE_CURRENT == PREFETCH_TYPE_ADVANCED)
@@ -401,15 +376,15 @@
 .macro cache_preload std_increment, boost_increment
 .if (src_bpp_shift >= 0) || (dst_r_bpp != 0) || (mask_bpp_shift >= 0)
 .if regs_shortage
-    PF ldr, ORIG_W, [sp] /* If we are short on regs, ORIG_W is kept on stack */
+    PF ldr ORIG_W, [sp] /* If we are short on regs, ORIG_W is kept on stack */
 .endif
 .if \std_increment != 0
-    PF add, PF_X, PF_X, #\std_increment
+    PF add PF_X, PF_X, #\std_increment
 .endif
-    PF tst, PF_CTL, #0xF
-    PF addne, PF_X, PF_X, #\boost_increment
-    PF subne, PF_CTL, PF_CTL, #1
-    PF cmp, PF_X, ORIG_W
+    PF tst PF_CTL, #0xF
+    PF addne PF_X, PF_X, #\boost_increment
+    PF subne PF_CTL, PF_CTL, #1
+    PF cmp PF_X, ORIG_W
 .if src_bpp_shift >= 0
     PF pld, [PF_SRC, PF_X, lsl #src_bpp_shift]
 .endif
@@ -419,16 +394,16 @@
 .if mask_bpp_shift >= 0
     PF pld, [PF_MASK, PF_X, lsl #mask_bpp_shift]
 .endif
-    PF subge, PF_X, PF_X, ORIG_W
-    PF subsge, PF_CTL, PF_CTL, #0x10
+    PF subge PF_X, PF_X, ORIG_W
+    PF subsge PF_CTL, PF_CTL, #0x10
 .if src_bpp_shift >= 0
-    PF ldrbge, DUMMY, [PF_SRC, SRC_STRIDE, lsl #src_bpp_shift]!
+    PF ldrbge DUMMY, [PF_SRC, SRC_STRIDE, lsl #src_bpp_shift]!
 .endif
 .if dst_r_bpp != 0
-    PF ldrbge, DUMMY, [PF_DST, DST_STRIDE, lsl #dst_bpp_shift]!
+    PF ldrbge DUMMY, [PF_DST, DST_STRIDE, lsl #dst_bpp_shift]!
 .endif
 .if mask_bpp_shift >= 0
-    PF ldrbge, DUMMY, [PF_MASK, MASK_STRIDE, lsl #mask_bpp_shift]!
+    PF ldrbge DUMMY, [PF_MASK, MASK_STRIDE, lsl #mask_bpp_shift]!
 .endif
 .endif
 .endm
@@ -477,7 +452,7 @@
 .else
     add         DST_R, DST_R, #\lowbit
 .endif
-    PF add,     PF_X, PF_X, #(\lowbit * 8 / dst_w_bpp)
+    PF add      PF_X, PF_X, #(\lowbit * 8 / dst_w_bpp)
     sub         W, W, #(\lowbit * 8 / dst_w_bpp)
 1:
 .endif
@@ -507,19 +482,7 @@
 .endm
 
 /*
- * Special code for processing up to (pixblock_size - 1) remaining
- * trailing pixels. As SIMD processing performs operation on
- * pixblock_size pixels, anything smaller than this has to be loaded
- * and stored in a special way. Loading and storing of pixel data is
- * performed in such a way that we fill some 'slots' in the NEON
- * registers (some slots naturally are unused), then perform compositing
- * operation as usual. In the end, the data is taken from these 'slots'
- * and saved to memory.
- *
- * cache_preload_flag - allows to suppress prefetch if
- *                      set to 0
- * dst_aligned_flag   - selects whether destination buffer
- *                      is aligned
+ * Trailing pixels processing.
  */
 .macro process_trailing_pixels cache_preload_flag, \
                                dst_aligned_flag, \
@@ -540,7 +503,7 @@
     pixld       \chunk_size, dst_r_bpp, dst_r_basereg, DST_R
 .endif
 .if \cache_preload_flag != 0
-    PF add,     PF_X, PF_X, #\chunk_size
+    PF add      PF_X, PF_X, #\chunk_size
 .endif
 1:
 .endif
@@ -571,14 +534,9 @@
 2:
 .endm
 
-/*
- * Macro, which performs all the needed operations to switch to the next
- * scanline and start the next loop iteration unless all the scanlines
- * are already processed.
- */
 .macro advance_to_next_scanline start_of_loop_label
 .if regs_shortage
-    ldrd        W, [sp] /* load W and H (width and height) from stack */
+    ldrd        W, [sp]
 .else
     mov         W, ORIG_W
 .endif
@@ -601,7 +559,7 @@
     subs        H, H, #1
     mov         DST_R, DST_W
 .if regs_shortage
-    str         H, [sp, #4] /* save updated height to stack */
+    str         H, [sp, #4]
 .endif
     bge         \start_of_loop_label
 .endm
@@ -632,13 +590,8 @@
 
     pixman_asm_function \fname
 
-    push        {r4-r12, lr}        /* save all registers */
+    push        {r4-r12, lr}
 
-/*
- * Select prefetch type for this function. If prefetch distance is
- * set to 0 or one of the color formats is 24bpp, SIMPLE prefetch
- * has to be used instead of ADVANCED.
- */
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_DEFAULT
 .if \prefetch_distance == 0
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_NONE
@@ -647,10 +600,6 @@
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_SIMPLE
 .endif
 
-/*
- * Make some macro arguments globally visible and accessible
- * from other macros
- */
     .set src_bpp, \src_bpp_
     .set mask_bpp, \mask_bpp_
     .set dst_w_bpp, \dst_w_bpp_
@@ -766,7 +715,7 @@
 .endif
 
 .if \prefetch_distance < 0 || \prefetch_distance > 15
-    .error "invalid prefetch distance (\prefetch_distance)"
+    .error "invalid prefetch distance (prefetch_distance)"
 .endif
 
 .if src_bpp > 0
@@ -775,7 +724,7 @@
 .if mask_bpp > 0
     ldr         MASK, [sp, #48]
 .endif
-    PF mov,     PF_X, #0
+    PF mov      PF_X, #0
 .if src_bpp > 0
     ldr         SRC_STRIDE, [sp, #44]
 .endif
@@ -797,15 +746,11 @@
     sub         DST_STRIDE, DST_STRIDE, W, lsl #1
 .endif
 
-/*
- * Setup advanced prefetcher initial state
- */
-    PF mov,     PF_SRC, SRC
-    PF mov,     PF_DST, DST_R
-    PF mov,     PF_MASK, MASK
-    /* PF_CTL = prefetch_distance | ((h - 1) << 4) */
-    PF mov,     PF_CTL, H, lsl #4
-    PF add,     PF_CTL, #(\prefetch_distance - 0x10)
+    PF mov      PF_SRC, SRC
+    PF mov      PF_DST, DST_R
+    PF mov      PF_MASK, MASK
+    PF mov      PF_CTL, H, lsl #4
+    PF add      PF_CTL, #(\prefetch_distance - 0x10)
 
     \init
 .if regs_shortage
@@ -829,13 +774,12 @@
                                      \process_pixblock_tail, \
                                      \process_pixblock_tail_head
 
-    /* Implement "head (tail_head) ... (tail_head) tail" loop pattern */
     pixld_a     pixblock_size, dst_r_bpp, \
                 (dst_r_basereg - pixblock_size * dst_r_bpp / 64), DST_R
     fetch_src_pixblock
     pixld       pixblock_size, mask_bpp, \
                 (mask_basereg - pixblock_size * mask_bpp / 64), MASK
-    PF add,     PF_X, PF_X, #pixblock_size
+    PF add      PF_X, PF_X, #pixblock_size
     \process_pixblock_head
     cache_preload 0, pixblock_size
     cache_preload_simple
@@ -851,7 +795,6 @@
     pixst_a     pixblock_size, dst_w_bpp, \
                 (dst_w_basereg - pixblock_size * dst_w_bpp / 64), DST_W
 
-    /* Process the remaining trailing pixels in the scanline */
     process_trailing_pixels 1, 1, \
                             \process_pixblock_head, \
                             \process_pixblock_tail, \
@@ -862,14 +805,8 @@
     pop         {r0, r1}
 .endif
     \cleanup
-    pop         {r4-r12, pc}  /* exit */
-/*
- * This is the start of the loop, designed to process images with small width
- * (less than pixblock_size * 2 pixels). In this case neither pipelining
- * nor prefetch are used.
- */
+    pop         {r4-r12, pc}
 8:
-    /* Process exactly pixblock_size pixels if needed */
     tst         W, #pixblock_size
     beq         1f
     pixld       pixblock_size, dst_r_bpp, \
@@ -882,7 +819,6 @@
     pixst       pixblock_size, dst_w_bpp, \
                 (dst_w_basereg - pixblock_size * dst_w_bpp / 64), DST_W
 1:
-    /* Process the remaining trailing pixels in the scanline */
     process_trailing_pixels 0, 0, \
                             \process_pixblock_head, \
                             \process_pixblock_tail, \
@@ -893,7 +829,7 @@
     pop         {r0, r1}
 .endif
     \cleanup
-    pop         {r4-r12, pc}  /* exit */
+    pop         {r4-r12, pc}
 
     .purgem     fetch_src_pixblock
     .purgem     pixld_src
@@ -940,10 +876,7 @@
     pixman_asm_function \fname
 
     .set PREFETCH_TYPE_CURRENT, PREFETCH_TYPE_NONE
-/*
- * Make some macro arguments globally visible and accessible
- * from other macros
- */
+
     .set src_bpp, \src_bpp_
     .set mask_bpp, \mask_bpp_
     .set dst_w_bpp, \dst_w_bpp_
@@ -1022,7 +955,6 @@
     subs        W, W, #pixblock_size
     blt         7f
 
-    /* Implement "head (tail_head) ... (tail_head) tail" loop pattern */
     pixld_a     pixblock_size, dst_r_bpp, \
                 (dst_r_basereg - pixblock_size * dst_r_bpp / 64), DST_R
     fetch_src_pixblock
@@ -1040,7 +972,6 @@
     pixst_a     pixblock_size, dst_w_bpp, \
                 (dst_w_basereg - pixblock_size * dst_w_bpp / 64), DST_W
 7:
-    /* Process the remaining trailing pixels in the scanline (dst aligned) */
     process_trailing_pixels 0, 1, \
                             \process_pixblock_head, \
                             \process_pixblock_tail, \
@@ -1048,12 +979,11 @@
 
     \cleanup
 .if \use_nearest_scaling != 0
-    pop         {r4-r8, pc}  /* exit */
+    pop         {r4-r8, pc}
 .else
-    bx          lr  /* exit */
+    bx          lr
 .endif
 8:
-    /* Process the remaining trailing pixels in the scanline (dst unaligned) */
     process_trailing_pixels 0, 0, \
                             \process_pixblock_head, \
                             \process_pixblock_tail, \
@@ -1062,7 +992,7 @@
     \cleanup
 
 .if \use_nearest_scaling != 0
-    pop         {r4-r8, pc}  /* exit */
+    pop         {r4-r8, pc}
 
     .unreq      DST_R
     .unreq      SRC
@@ -1076,7 +1006,7 @@
     .unreq      SRC_WIDTH_FIXED
 
 .else
-    bx          lr  /* exit */
+    bx          lr
 
     .unreq      SRC
     .unreq      MASK
