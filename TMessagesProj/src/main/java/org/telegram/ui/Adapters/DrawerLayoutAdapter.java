@@ -271,7 +271,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                     me.getEmojiStatus() != null
                             ? LocaleController.getString(R.string.ChangeEmojiStatus)
                             : LocaleController.getString(R.string.SetEmojiStatus),
-                    me.getEmojiStatus() != null ? R.drawable.msg_status_edit : R.drawable.msg_status_set
+                    me.getEmojiStatus() != null ? R.drawable.msg_status_edit_solar : R.drawable.msg_status_set_solar
             ));
         }
         boolean showArchivedChats = NaConfig.INSTANCE.getDrawerItemArchivedChats().Bool();
