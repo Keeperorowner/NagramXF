@@ -2854,12 +2854,6 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             attachButton = new ImageView(context) {
                 @Override
-                public ViewPropertyAnimator animate() {
-                    AndroidUtilities.printStackTrace("WTF_DEBUG");
-                    return super.animate();
-                }
-
-                @Override
                 public boolean dispatchTouchEvent(MotionEvent event) {
                     if (getAlpha() < 0.5f) return false;
                     return super.dispatchTouchEvent(event);
