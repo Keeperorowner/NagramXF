@@ -369,6 +369,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
                 tabView.setGestureSelectedOverride(0, false);
                 applyEnabledVisual(tabView, state);
 
+                addTabToIgnoreClick(tabView);
                 tabView.setOnClickListener(v -> {
                     MainTabsConfigManager.TabState clicked = tabs.get(index);
                     if (clicked.type == MainTabsConfigManager.TabType.CHATS) {
@@ -394,6 +395,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             }
 
             GlassTabView searchTab = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.Search);
+            addTabToIgnoreClick(searchTab);
             searchTab.setIcon(R.drawable.outline_header_search);
             searchTab.setTitleVisible(!NaConfig.INSTANCE.getMainTabsHideTitles().Bool());
             boolean searchEnabled = NaConfig.INSTANCE.getMainTabsShowSearchButton().Bool();
