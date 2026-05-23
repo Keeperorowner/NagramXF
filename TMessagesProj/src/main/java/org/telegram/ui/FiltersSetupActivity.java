@@ -547,6 +547,14 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     private void updateRows(boolean animated) {
         showTagsRow = -1;
 
+        if (listView != null) {
+            if (listView.forcedSections == null) {
+                listView.forcedSections = new ArrayList<>();
+            } else {
+                listView.forcedSections.clear();
+            }
+        }
+
         oldItems.clear();
         oldItems.addAll(items);
         items.clear();
@@ -556,10 +564,12 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         items.add(ItemInner.asHint());
         items.add(ItemInner.asHintInfo(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CreateNewFilterInfo))));
         if (!suggestedFilters.isEmpty() && dialogFilters.size() < 10) {
+            int start = items.size();
             items.add(ItemInner.asHeader(LocaleController.getString(R.string.FilterRecommended)));
             for (int i = 0; i < suggestedFilters.size(); ++i) {
                 items.add(ItemInner.asSuggested(suggestedFilters.get(i)));
             }
+            if (listView != null) listView.forcedSections.add(AndroidUtilities.pack(start, items.size() - 1));
             items.add(ItemInner.asShadow(null));
         }
         if (!dialogFilters.isEmpty()) {
@@ -573,6 +583,8 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 }
             }
             filtersSectionEnd = items.size();
+
+            if (listView != null) listView.forcedSections.add(AndroidUtilities.pack(filtersSectionStart, filtersSectionEnd - 1 + (dialogFilters.size() < getMessagesController().dialogFiltersLimitPremium ? 1 : 0)));
         } else {
             filtersSectionStart = filtersSectionEnd = -1;
         }
@@ -1198,6 +1210,9 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 AndroidUtilities.runOnUIThread(this::resetDefaultPosition, 320);
             }
             super.onSelectedChanged(viewHolder, actionState);
+            if (viewHolder != null) {
+                viewHolder.itemView.setTag(R.id.dragging, actionState == ItemTouchHelper.ACTION_STATE_DRAG ? true : null);
+            }
         }
 
         @Override
@@ -1209,6 +1224,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         public void clearView(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder) {
             super.clearView(recyclerView, viewHolder);
             viewHolder.itemView.setPressed(false);
+            viewHolder.itemView.setTag(R.id.dragging, null);
         }
     }
 

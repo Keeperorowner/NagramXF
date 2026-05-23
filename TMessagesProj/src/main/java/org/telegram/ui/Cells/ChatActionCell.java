@@ -314,6 +314,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     public boolean isAllChats;
     public boolean isForum;
     public boolean isMonoForum;
+    public boolean isBotForum;
     public boolean isSideMenued;
     public boolean isSideMenuEnabled;
     public float sideMenuAlpha;
@@ -1025,7 +1026,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             imageReceiver.setDelegate(null);
             imageReceiver.setImageBitmap((Bitmap) null);
         }
-        if (firstInChat && isAllChats && isSideMenued && (isForum || isMonoForum)) {
+        if (firstInChat && isAllChats && isSideMenued && (isForum || isMonoForum || isBotForum)) {
             topicSeparatorTopPadding = dp(33);
             if (topicSeparator == null) {
                 topicSeparator = new TopicSeparator(currentAccount, this, themeDelegate, true);
@@ -3435,7 +3436,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         }
         if (currentMessageObject == null || !currentMessageObject.isRepostPreview) {
             canvas.drawPath(backgroundPath, backgroundPaint);
-            if (hasGradientService()) {
+            if (hasGradientService() && darkenBackgroundPaint.getAlpha() > 0) {
                 canvas.drawPath(backgroundPath, darkenBackgroundPaint);
             }
             if (dimAmount > 0) {
@@ -3746,6 +3747,9 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
 
     public void drawReactionsLayout(Canvas canvas, boolean fromParent, Integer only) {
         final float alpha = fromParent ? getAlpha() : 1.0f;
+        if (alpha <= 0) {
+            return;
+        }
         if (themeDelegate != null) {
             themeDelegate.applyServiceShaderMatrix(getMeasuredWidth(), backgroundHeight, viewTranslationX, viewTop + dp(4));
         } else {

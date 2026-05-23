@@ -50,6 +50,7 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.Bulletin;
+import org.telegram.ui.Components.ChatSearchTabs;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CheckBoxSquare;
 import org.telegram.ui.Components.LayoutHelper;
@@ -93,6 +94,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
     private boolean selfAsSavedMessages;
 
+    private String query;
     private String lastName;
     private int lastStatus;
     private TLRPC.FileLocation lastAvatar;
@@ -148,7 +150,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
             addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addButton.setTypeface(AndroidUtilities.bold());
-            addButton.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 4));
+            addButton.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 14));
             addButton.setText(getString(R.string.Add));
             addButton.setPadding(dp(17), 0, dp(17), 0);
             addView(addButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 28, Gravity.TOP | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT), LocaleController.isRTL ? 14 : 0, 15, LocaleController.isRTL ? 0 : 14, 0));
@@ -231,6 +233,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             ScaleStateListAnimator.apply(adminTextView, .05f, 1.2f);
             adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon, resourcesProvider));
+            adminTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 10, LocaleController.isRTL ? 0 : 23, 0));
         }
 
@@ -343,6 +346,11 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
     public void setData(Object object, CharSequence name, CharSequence status, int resId, boolean divider) {
         setData(object, null, name, status, resId, divider);
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
+        update(0);
     }
 
     public void setData(Object object, TLRPC.EncryptedChat ec, CharSequence name, CharSequence status, int resId, boolean divider) {
@@ -636,7 +644,16 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
         if (currentName != null) {
             lastName = null;
-            nameTextView.setText(currentName);
+            CharSequence name = currentName;
+            if (query != null) {
+                name = AndroidUtilities.highlightText(name, query, resourcesProvider);
+            }
+            if (name != null) {
+                try {
+                    name = Emoji.replaceEmoji(name, nameTextView.getPaint().getFontMetricsInt(), false);
+                } catch (Exception ignore) {}
+            }
+            nameTextView.setText(name);
         } else {
             if (currentUser != null) {
                 lastName = newName == null ? UserObject.getUserName(currentUser) : AndroidUtilities.removeRTL(AndroidUtilities.removeDiacritics(newName));
@@ -646,9 +663,12 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 lastName = "";
             }
             CharSequence name = lastName;
+            if (query != null) {
+                name = AndroidUtilities.highlightText(name, query, resourcesProvider);
+            }
             if (name != null) {
                 try {
-                    name = Emoji.replaceEmoji(lastName, nameTextView.getPaint().getFontMetricsInt(), false);
+                    name = Emoji.replaceEmoji(name, nameTextView.getPaint().getFontMetricsInt(), false);
                 } catch (Exception ignore) {}
             }
             nameTextView.setText(name);
@@ -695,7 +715,11 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
         if (currentStatus != null) {
             statusTextView.setTextColor(statusColor);
-            statusTextView.setText(currentStatus);
+            CharSequence status = currentStatus;
+            if (query != null) {
+                status = AndroidUtilities.highlightText(status, query, resourcesProvider);
+            }
+            statusTextView.setText(status);
         } else if (currentUser != null) {
             if (currentUser.bot) {
                 statusTextView.setTextColor(statusColor);
@@ -773,6 +797,30 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             info.setChecked(checkBox.isChecked());
             info.setClassName("android.widget.CheckBox");
         }
+        StringBuilder sb = new StringBuilder();
+        if (nameTextView != null) {
+            CharSequence name = nameTextView.getText();
+            if (!TextUtils.isEmpty(name)) {
+                sb.append(name);
+            }
+        }
+        if (adminTextView != null && adminTextView.getVisibility() == VISIBLE) {
+            CharSequence admin = adminTextView.getText();
+            if (!TextUtils.isEmpty(admin)) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(admin);
+            }
+        }
+        if (statusTextView != null) {
+            CharSequence status = statusTextView.getText();
+            if (!TextUtils.isEmpty(status)) {
+                if (sb.length() > 0) sb.append(", ");
+                sb.append(status);
+            }
+        }
+        if (sb.length() > 0) {
+            info.setContentDescription(sb);
+        }
     }
 
     @Override
@@ -810,10 +858,13 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
         long id = item.dialogId;
         if (id > 0) {
-            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(id);
+            final TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(id);
+            final String username = UserObject.getPublicUsername(user);
             if (user != null) {
                 String status;
-                if (user.bot) {
+                if (!TextUtils.isEmpty(username)) {
+                    status = "@" + username;
+                } else if (user.bot) {
                     status = getString(R.string.Bot);
                 } else if (user.contact) {
                     status = getString(R.string.FilterContact);

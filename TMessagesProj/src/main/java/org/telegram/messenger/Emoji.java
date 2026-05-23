@@ -712,7 +712,7 @@ public class Emoji {
         if (!createNew && cs instanceof Spannable) {
             s = (Spannable) cs;
         } else {
-            s = Spannable.Factory.getInstance().newSpannable(cs.toString());
+            s = Spannable.Factory.getInstance().newSpannable(cs);
         }
         ArrayList<EmojiSpanRange> emojis = parseEmojis(s, emojiOnly);
         if (emojis.isEmpty()) {
@@ -778,6 +778,13 @@ public class Emoji {
         if (NekoConfig.useSystemEmoji.Bool() || cs == null || cs.length() == 0) {
             return cs;
         }
+        return replaceWithRestrictedEmoji(cs, fontMetrics, AnimatedEmojiDrawable.CACHE_TYPE_STANDARD_EMOJI, update);
+    }
+
+    public static CharSequence replaceWithRestrictedEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, int cacheType, Runnable update) {
+        if (SharedConfig.useSystemEmoji || cs == null || cs.length() == 0) {
+            return cs;
+        }
 
         final int currentAccount = UserConfig.selectedAccount;
         TLRPC.InputStickerSet inputStickerSet = new TLRPC.TL_inputStickerSetShortName();
@@ -831,7 +838,7 @@ public class Emoji {
                     animatedSpan = new AnimatedEmojiSpan(0, fontMetrics);
                 }
                 animatedSpan.emoji = (emojiRange.code).toString();
-                animatedSpan.cacheType = AnimatedEmojiDrawable.CACHE_TYPE_STANDARD_EMOJI;
+                animatedSpan.cacheType = cacheType;
                 s.setSpan(animatedSpan, emojiRange.start, emojiRange.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             } catch (Exception e) {
                 FileLog.e(e);

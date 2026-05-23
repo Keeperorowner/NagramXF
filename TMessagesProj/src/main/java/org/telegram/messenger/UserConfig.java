@@ -44,6 +44,7 @@ public class UserConfig extends BaseController {
     public TL_account.tmpPassword tmpPassword;
     public int ratingLoadTime;
     public int botRatingLoadTime;
+    public int botGuestRatingLoadTime;
     public int webappRatingLoadTime;
     public boolean contactsReimported;
     public boolean hasValidDialogLoadIds;
@@ -156,6 +157,7 @@ public class UserConfig extends BaseController {
                     editor.putBoolean("unreadDialogsLoaded", unreadDialogsLoaded);
                     editor.putInt("ratingLoadTime", ratingLoadTime);
                     editor.putInt("botRatingLoadTime", botRatingLoadTime);
+                    editor.putInt("botGuestRatingLoadTime", botGuestRatingLoadTime);
                     editor.putInt("webappRatingLoadTime", webappRatingLoadTime);
                     editor.putBoolean("contactsReimported", contactsReimported);
                     editor.putInt("loginTime", loginTime);
@@ -308,6 +310,7 @@ public class UserConfig extends BaseController {
             contactsReimported = preferences.getBoolean("contactsReimported", false);
             ratingLoadTime = preferences.getInt("ratingLoadTime", 0);
             botRatingLoadTime = preferences.getInt("botRatingLoadTime", 0);
+            botGuestRatingLoadTime = preferences.getInt("botGuestRatingLoadTime", 0);
             webappRatingLoadTime = preferences.getInt("webappRatingLoadTime", 0);
             loginTime = preferences.getInt("loginTime", currentAccount);
             syncContacts = preferences.getBoolean("syncContacts", true);
@@ -478,6 +481,7 @@ public class UserConfig extends BaseController {
         migrateOffsetAccess = -1;
         ratingLoadTime = 0;
         botRatingLoadTime = 0;
+        botGuestRatingLoadTime = 0;
         webappRatingLoadTime = 0;
         draftsLoaded = false;
         contactsReimported = true;

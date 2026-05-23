@@ -102,6 +102,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FragmentFloatingButton;
+import org.telegram.ui.Components.HintsController;
 import org.telegram.ui.Components.IconBackgroundColors;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.InstantCameraView;
@@ -760,7 +761,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
         if (menuBots != null && menuBots.bots != null && !menuBots.bots.isEmpty()) {
             for (TLRPC.TL_attachMenuBot attachMenuBot : menuBots.bots) {
-                final int WALLET_BOT_ID = 1985737506;
+                final long WALLET_BOT_ID = 1985737506L;
                 if (attachMenuBot.show_in_side_menu && attachMenuBot.bot_id == WALLET_BOT_ID) {
                     UItem item = SettingCell.Factory.ofBot(attachMenuBot, 0xFF1BA4ED, 0xFF1488E1, R.drawable.settings_wallet);
                     item.object = attachMenuBot;
@@ -770,15 +771,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         }
 
 //            items.add(SettingCell.Factory.of(14, 0, "Wallet"));
-            if (!getMessagesController().premiumFeaturesBlocked()) {
-                items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
-            }
-            if (!getMessagesController().premiumPurchaseBlocked()) {
-                items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
-            }
-            if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW && !hideHelp) {
-                items.add(UItem.asShadow(null));
-            }
+        if (!getMessagesController().premiumFeaturesBlocked()) {
+            items.add(SettingCell.Factory.of(15, 0xFFF45255, 0xFFDF3955, R.drawable.settings_business, getString(R.string.TelegramBusiness)));
+        }
+        if (!getMessagesController().premiumPurchaseBlocked()) {
+            items.add(SettingCell.Factory.of(16, 0xFFF38B31, 0xFFE26314, R.drawable.settings_gift, getString(R.string.SendAGift)));
+        }
+        if (items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW && !hideHelp) {
+            items.add(UItem.asShadow(null));
+        }
         }
 
         if (!hideHelp) {
@@ -1149,6 +1150,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         private final Theme.ResourcesProvider resourcesProvider;
         private final Background iconBackground;
+        private final FrameLayout iconLayout;
         private final ImageView iconView;
         private final LinearLayout textLayout;
         private final TextView titleView;
@@ -1161,9 +1163,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             this.resourcesProvider = resourcesProvider;
             setOrientation(HORIZONTAL);
 
+            iconLayout = new FrameLayout(context);
+            iconLayout.setBackground(iconBackground = new Background());
+
             iconView = new ImageView(context);
-            iconView.setScaleType(ImageView.ScaleType.CENTER);
-            iconView.setBackground(iconBackground = new Background());
+            iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            iconLayout.addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
 
             textLayout = new LinearLayout(context);
             textLayout.setOrientation(VERTICAL);
@@ -1181,9 +1186,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             if (LocaleController.isRTL) {
                 addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
                 addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 20, 0, 18, 0));
-                addView(iconView, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 18, 0));
+                addView(iconLayout, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 18, 0));
             } else {
-                addView(iconView, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.LEFT, 18, 0, 0, 0));
+                addView(iconLayout, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.LEFT, 18, 0, 0, 0));
                 addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 18, 0, 20, 0));
                 addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 20, 0));
             }
@@ -1211,7 +1216,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             CharSequence subtitle,
             CharSequence value
         ) {
-            iconView.setVisibility(icon != 0 ? View.VISIBLE : View.GONE);
+            iconLayout.setVisibility(icon != 0 ? View.VISIBLE : View.GONE);
             titleView.setTranslationX(icon == 0 ? dp(2) : 0);
             subtitleView.setTranslationX(icon == 0 ? dp(2) : 0);
 
@@ -1586,9 +1591,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 getMessagesStorage().clearSentMedia();
                 SharedConfig.setNoSoundHintShowed(false);
                 SharedPreferences.Editor editor = MessagesController.getGlobalMainSettings().edit();
-                editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("searchpostsnew").remove("speedhint").remove("gifhint").remove("reminderhint").remove("soundHint").remove("themehint").remove("bganimationhint").remove("filterhint").remove("n_0").remove("storyprvhint").remove("storyhint").remove("storyhint2").remove("storydualhint").remove("storysvddualhint").remove("stories_camera").remove("dualcam").remove("dualmatrix").remove("dual_available").remove("archivehint").remove("askNotificationsAfter").remove("askNotificationsDuration").remove("viewoncehint").remove("voicepausehint").remove("taptostorysoundhint").remove("nothanos").remove("voiceoncehint").remove("savedhint").remove("savedsearchhint").remove("savedsearchtaghint").remove("groupEmojiPackHintShown").remove("newppsms").remove("monetizationadshint").remove("seekSpeedHintShowed").remove("unsupport_video/av01").remove("channelgifthint").remove("statusgiftpage").remove("multistorieshint").remove("channelsuggesthint").remove("trimvoicehint").remove("taptostoryhighlighthint").remove("proxycheckstatusip").remove("callmiconstart").remove("showchattagsinfo").remove("language_showed2").remove("aihintshown").apply();
+                editor.remove("archivehint").remove("proximityhint").remove("archivehint_l").remove("searchpostsnew").remove("speedhint").remove("gifhint").remove("reminderhint").remove("soundHint").remove("themehint").remove("bganimationhint").remove("filterhint").remove("n_0").remove("storyprvhint").remove("storyhint").remove("storyhint2").remove("storydualhint").remove("storysvddualhint").remove("stories_camera").remove("dualcam").remove("dualmatrix").remove("dual_available").remove("archivehint").remove("askNotificationsAfter").remove("askNotificationsDuration").remove("viewoncehint").remove("voicepausehint").remove("taptostorysoundhint").remove("nothanos").remove("voiceoncehint").remove("savedhint").remove("savedsearchhint").remove("savedsearchtaghint").remove("newppsms").remove("monetizationadshint").remove("seekSpeedHintShowed").remove("unsupport_video/av01").remove("statusgiftpage").remove("multistorieshint").remove("trimvoicehint").remove("taptostoryhighlighthint").remove("proxycheckstatusip").remove("callmiconstart").remove("showchattagsinfo").remove("language_showed2").remove("aihintshown").remove("savedmsgschatshint").apply();
+                HintsController.resetAll();
                 MessagesController.getEmojiSettings(currentAccount).edit().remove("featured_hidden").remove("emoji_featured_hidden").commit();
-                MessagesController.getGlobalNotificationsSettings().edit().remove("disable_sharing_learn").apply();
+                MessagesController.getGlobalNotificationsSettings().edit().remove("disable_sharing_learn").remove("askedAboutFSILockscreen").apply();
                 SharedConfig.textSelectionHintShows = 0;
                 SharedConfig.lockRecordAudioVideoHint = 0;
                 SharedConfig.stickersReorderingHintUsed = false;
@@ -2009,7 +2015,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                             src.renameTo(destFile);
                             final String oldKey = avatar.volume_id + "_" + avatar.local_id + "@90_90";
                             final String newKey = small.location.volume_id + "_" + small.location.local_id + "@90_90";
-                            ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), false);
+                            ImageLoader.getInstance().replaceImageInCache(oldKey, newKey, ImageLocation.getForUserOrChat(currentAccount, user, ImageLocation.TYPE_SMALL), false);
                         }
 
                         if (videoSize != null && videoPath != null) {
@@ -2172,14 +2178,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         listView.smoothScrollToPosition(0);
     }
 
-    @Override
     public void onSearchButtonClicked() {
         if (searchItem != null) {
             searchItem.openSearch(true);
         }
     }
 
-    @Override
     public boolean hasSearch() {
         return true;
     }
