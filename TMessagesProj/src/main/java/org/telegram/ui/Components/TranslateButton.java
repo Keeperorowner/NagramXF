@@ -334,7 +334,7 @@ public class TranslateButton extends FrameLayout implements Theme.Colorable {
         }
 
         final ActionBarMenuSubItem minimizeButton = new ActionBarMenuSubItem(getContext(), true, false, resourcesProvider);
-        minimizeButton.setTextAndIcon(getString(R.string.PipMinimize), R.drawable.msg_call_minimize);
+        minimizeButton.setTextAndIcon(getString(R.string.PipMinimize), R.drawable.msg_calls_minimize);
         minimizeButton.setOnClickListener(e -> {
             translateController.setHideTranslateWithMinimize(dialogId, true);
             TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);

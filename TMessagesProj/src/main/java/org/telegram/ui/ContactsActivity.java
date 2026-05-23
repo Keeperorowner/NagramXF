@@ -1731,7 +1731,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         animatorSearchFieldVisible.setValue(true, true);
     }
 
-    @Override
     public void onSearchButtonClicked() {
         listView.smoothScrollToPosition(0);
         AndroidUtilities.doOnPreDraw(searchField.editText, () -> {
@@ -1740,7 +1739,6 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         });
     }
 
-    @Override
     public boolean hasSearch() {
         return true;
     }
