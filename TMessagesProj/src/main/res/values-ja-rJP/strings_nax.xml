@@ -209,6 +209,9 @@
     <string name="GroupedMessageMenu">メッセージメニューをグループ化</string>
     <string name="GroupedMessageMenuNotice">グループ化すると、メインアクションがメッセージメニューの下部に移動します。</string>
     <string name="CopySticker">ステッカーをコピー</string>
+    <string name="NaxAboutInfo">情報</string>
+    <string name="NaxLinks">リンク</string>
+    <string name="NaxAboutDesc">追加機能を備えた Nagram X のフォーク。exteraGram と AyuGram の大部分の機能を含みます。</string>
     <string name="CheckUpdate">アップデートを確認</string>
     <string name="AutoCheckUpdateOFF">オフ</string>
     <string name="AutoCheckUpdateSwitch">更新チャネル</string>

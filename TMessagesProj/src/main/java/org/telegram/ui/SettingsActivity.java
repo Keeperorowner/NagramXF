@@ -497,7 +497,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         versionView.setPadding(dp(21), dp(10), dp(21), dp(10));
         versionView.setGravity(Gravity.CENTER);
         versionView.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
-        versionView.setOnClickListener(v -> showVersionMenu());
+        versionView.setOnClickListener(v -> {});
         versionView.setOnLongClickListener(v -> {
             versionViewPressCount++;
             if (versionViewPressCount < 2 && !BuildVars.DEBUG_PRIVATE_VERSION) {

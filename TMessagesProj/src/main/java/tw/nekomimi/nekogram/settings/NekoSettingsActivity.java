@@ -423,7 +423,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == appRestartRow) {
                         textCell.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry_solar, true);
                     } else if (position == aboutRow) {
-                        textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info, true);
+                        textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info_solar, true);
                     }
                     break;
                 }

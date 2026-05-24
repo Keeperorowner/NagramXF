@@ -228,6 +228,9 @@
     <string name="GroupedMessageMenu">Group Message Menu</string>
     <string name="GroupedMessageMenuNotice">Grouping moves the main actions to the bottom of the message menu.</string>
     <string name="CopySticker">Copy Sticker</string>
+    <string name="NaxAboutInfo">Info</string>
+    <string name="NaxLinks">Links</string>
+    <string name="NaxAboutDesc">A fork of Nagram X with additional features. Includes most features from exteraGram and AyuGram.</string>
     <string name="CheckUpdate">Check for Updates</string>
     <string name="AutoCheckUpdateOFF">OFF</string>
     <string name="AutoCheckUpdateSwitch">Update Channel</string>
