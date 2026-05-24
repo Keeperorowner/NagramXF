@@ -210,6 +210,9 @@
     <string name="GroupedMessageMenu">分組訊息選單</string>
     <string name="GroupedMessageMenuNotice">將主要操作選項移至訊息選單的底部。</string>
     <string name="CopySticker">複製貼圖</string>
+    <string name="NaxAboutInfo">資訊</string>
+    <string name="NaxLinks">連結</string>
+    <string name="NaxAboutDesc">Nagram X 的分支，包含額外功能。融合了 exteraGram 和 AyuGram 的大部分特性。</string>
     <string name="CheckUpdate">檢查更新</string>
     <string name="AutoCheckUpdateOFF">停用</string>
     <string name="AutoCheckUpdateSwitch">更新通道</string>
