@@ -96,8 +96,7 @@ public class FilterTabsPreviewCell extends FrameLayout implements NotificationCe
 
             @Override
             public int getTabCounter(int tabId) {
-                if (NaConfig.INSTANCE.getIgnoreUnreadCount().Int()
-                        == NekoConfig.DIALOG_FILTER_EXCLUDE_ALL) {
+                if (NaConfig.INSTANCE.getIgnoreUnreadCount().Bool()) {
                     return 0;
                 }
                 Integer c = idsWithCounters.get(tabId);
