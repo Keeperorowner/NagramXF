@@ -141,16 +141,12 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell doNotUnarchiveBySwipeRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDoNotUnarchiveBySwipe()));
     private final AbstractConfigCell openArchiveOnPullRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.openArchiveOnPull));
     private final AbstractConfigCell hideArchiveRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideArchive()));
-    private final AbstractConfigCell ignoreUnreadCountRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getIgnoreUnreadCount(), new String[]{
-            getString(R.string.Disable),
-            getString(R.string.FilterMuted),
-            getString(R.string.FilterAllChatsShort)
-    }, null));
     private final AbstractConfigCell tabsTitleTypeRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NekoConfig.tabsTitleType, new String[]{
             getString(R.string.TabTitleTypeText),
             getString(R.string.TabTitleTypeIcon),
             getString(R.string.TabTitleTypeMix)
     }, null));
+    private final AbstractConfigCell ignoreUnreadCountRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getIgnoreUnreadCount()));
     private final AbstractConfigCell dividerNavigationTop = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerNavigation = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AppNavigation)));
     private final AbstractConfigCell navigationDrawerRow = cellGroup.appendCell(
@@ -245,8 +241,8 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.rows.remove(tabsTitleTypeRow);
         int hideAllTabIdx = cellGroup.rows.indexOf(hideAllTabRow);
         if (hideAllTabIdx >= 0) {
-            cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
             cellGroup.rows.add(hideAllTabIdx, ignoreUnreadCountRow);
+            cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
         }
         wasCentered = isCentered();
         wasCenteredAtBeginning = wasCentered;

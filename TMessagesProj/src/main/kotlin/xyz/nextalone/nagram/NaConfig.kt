@@ -30,6 +30,18 @@ object NaConfig {
             if (initialized) return
             if (ApplicationLoader.applicationContext == null) return
 
+            if (getPreferences().contains("IgnoreUnreadCount")) {
+                try {
+                    getPreferences().getBoolean("IgnoreUnreadCount", false)
+                } catch (_: Exception) {
+                    val legacyInt = getPreferences().getInt("IgnoreUnreadCount", 0)
+                    getPreferences().edit {
+                        remove("IgnoreUnreadCount")
+                        putBoolean("IgnoreUnreadCount", legacyInt == NekoConfig.DIALOG_FILTER_EXCLUDE_ALL)
+                    }
+                }
+            }
+
             loadConfig(false)
             updatePreferredTranslateTargetLangList()
             fixConfig()
@@ -1506,8 +1518,8 @@ object NaConfig {
     val ignoreUnreadCount =
         addConfig(
             "IgnoreUnreadCount",
-            ConfigItem.configTypeInt,
-            getIgnoreMutedCountLegacy()
+            ConfigItem.configTypeBool,
+            false
         )
     val markdownParser =
         addConfig(
@@ -1701,19 +1713,7 @@ object NaConfig {
         }, 1000)
     }
 
-    private fun getIgnoreMutedCountLegacy(): Int {
-        return when {
-            getPreferences().getBoolean(
-                "IgnoreFolderCount", false
-            ) -> NekoConfig.DIALOG_FILTER_EXCLUDE_ALL
 
-            getPreferences().getBoolean(
-                "IgnoreMutedCount", true
-            ) -> NekoConfig.DIALOG_FILTER_EXCLUDE_MUTED
-
-            else -> NekoConfig.DIALOG_FILTER_EXCLUDE_NONE
-        }
-    }
 
     private fun fixConfig() {
         if (ApplicationLoader.applicationContext == null) {
