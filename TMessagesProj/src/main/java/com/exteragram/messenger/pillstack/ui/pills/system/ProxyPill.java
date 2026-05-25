@@ -111,6 +111,7 @@ public class ProxyPill extends BasePill implements NotificationCenter.Notificati
         super.onAttachedToWindow();
         onUpdateData(true);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxySettingsChanged);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.proxyPingUpdated);
         NotificationCenter.getInstance(UserConfig.selectedAccount).addObserver(this, NotificationCenter.didUpdateConnectionState);
     }
 
@@ -118,12 +119,13 @@ public class ProxyPill extends BasePill implements NotificationCenter.Notificati
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxySettingsChanged);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.proxyPingUpdated);
         NotificationCenter.getInstance(UserConfig.selectedAccount).removeObserver(this, NotificationCenter.didUpdateConnectionState);
     }
 
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
-        if (id == NotificationCenter.proxySettingsChanged || id == NotificationCenter.didUpdateConnectionState) {
+        if (id == NotificationCenter.proxySettingsChanged || id == NotificationCenter.proxyPingUpdated || id == NotificationCenter.didUpdateConnectionState) {
             onUpdateData(true);
         }
     }
@@ -156,6 +158,15 @@ public class ProxyPill extends BasePill implements NotificationCenter.Notificati
         }
         super.setPressed(pressed);
         layout.setPressed(pressed);
+    }
+
+    @Override
+    public void drawableHotspotChanged(float x, float y) {
+        if (loading) {
+            return;
+        }
+        super.drawableHotspotChanged(x, y);
+        layout.drawableHotspotChanged(x - layout.getLeft(), y - layout.getTop());
     }
 
     @Override
