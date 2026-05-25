@@ -378,6 +378,7 @@ public class ApplicationLoader extends Application {
 
         LauncherIconController.tryFixLauncherIconIfNeeded();
         ProxyRotationController.init();
+        ProxyPingController.init();
     }
 
     // Local Push Service, TFoss implementation
