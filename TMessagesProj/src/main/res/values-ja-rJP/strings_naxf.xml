@@ -286,4 +286,7 @@
     <string name="AIError502Info">サーバーが一時的に利用できません。</string>
     <string name="AIError503">サービス利用不可</string>
     <string name="AIError503Info">サービスが過負荷です。後で再試行してください。</string>
+    <string name="HideAiEditor">AIエディタを非表示</string>
+    <string name="HideAiSummary">AI要約を非表示</string>
+    <string name="AiHideHeader">AI機能を非表示</string>
 </resources>

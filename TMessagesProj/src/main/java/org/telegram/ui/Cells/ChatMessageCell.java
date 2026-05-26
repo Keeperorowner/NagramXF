@@ -1835,6 +1835,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private AnimatedFloat roundVideoPlayPipFloat = new AnimatedFloat(this, 200, CubicBezierInterpolator.EASE_OUT);
     private Paint roundVideoPipPaint;
 
+    private AnimatedFloat summaryCollapseAnimatedFloat = new AnimatedFloat(this, 350, CubicBezierInterpolator.EASE_OUT_QUINT);
+    private Paint summaryCollapseGradientPaint;
+    private boolean summaryCollapsed = true;
+    private long lastSummaryMessageId = 0;
+
     private FlagSecureReason flagSecure;
 
     public boolean makeVisibleAfterChange;
@@ -4772,7 +4777,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
             if (summaryBounce.isPressed()) {
-                delegate.didPressSummarize(this, true);
+                summaryCollapsed = !summaryCollapsed;
+                requestLayout();
             }
             summaryBounce.setPressed(false);
             if (summaryReplySelector != null) {
@@ -6907,7 +6913,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     drawSideButton = 2;
                 }
             }
-            drawSummarizeButton = !NaConfig.INSTANCE.getDisableAiFeatures().Bool() && TranslateController.isSummarizable(messageObject);
+            drawSummarizeButton = !NaConfig.INSTANCE.getHideAiSummary().Bool() && TranslateController.isSummarizable(messageObject);
             hasReplyQuote = false;
             isReplyQuote = false;
             isReplyTaskOrPollOption = false;
@@ -19777,7 +19783,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             }
             summaryTitle.multiline(3).setMaxWidth(getMaxNameWidth() - dp(25));
             summarySubtitle.multiline(3).setMaxWidth(getMaxNameWidth() - dp(25));
-            namesOffset += dp(8) + summaryTitle.getHeight() + summarySubtitle.getHeight() + dp(6);
+            if (lastSummaryMessageId != messageObject.getId()) {
+                lastSummaryMessageId = messageObject.getId();
+                summaryCollapsed = true;
+                summaryCollapseAnimatedFloat.set(1f, true);
+            }
+            float collapseProgress = summaryCollapseAnimatedFloat.set(summaryCollapsed ? 1f : 0f);
+            if (summaryCollapsed) {
+                namesOffset += dp(8) + summaryTitle.getHeight() + dp(6);
+            } else {
+                namesOffset += dp(8) + summaryTitle.getHeight() + summarySubtitle.getHeight() + dp(6);
+            }
         } else {
             drawSummaryReply = false;
         }
@@ -22892,7 +22908,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (summaryTitle != null && summarySubtitle != null) {
             final float summaryAlpha = transitionParams.animateSummaryReply ? (drawSummaryReply ? transitionParams.animateChangeProgress : 1.0f - transitionParams.animateChangeProgress) : (drawSummaryReply ? 1.0f : 0.0f);
             if (summaryAlpha > 0) {
-                final float height = dp(4) + summaryTitle.getHeight() + summarySubtitle.getHeight();
+                float collapseProgress = summaryCollapseAnimatedFloat.set(summaryCollapsed ? 1f : 0f);
+                float collapsedHeight = dp(4) + summaryTitle.getHeight();
+                float expandedHeight = dp(4) + summaryTitle.getHeight() + summarySubtitle.getHeight();
+                final float height = lerp(expandedHeight, collapsedHeight, collapseProgress);
                 float right;
                 if (currentMessagesGroup == null || currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_LEFT) != 0 && (currentPosition.flags & MessageObject.POSITION_FLAG_RIGHT) != 0) {
                     right = getBackgroundDrawableRight() + transitionParams.deltaRight;
@@ -22957,9 +22976,42 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
                 summaryLine.drawLine(canvas, summarySelectorRect, alpha * summaryAlpha);
 
+                float arrowX = summarySelectorRect.right - dp(16);
+                float arrowY = summaryStartY + summaryTitle.getHeight() / 2f;
+                float arrowSize = dp(5);
+                canvas.save();
+                canvas.rotate(lerp(0, 180, collapseProgress), arrowX, arrowY);
+                Path arrowPath = new Path();
+                arrowPath.moveTo(arrowX - arrowSize, arrowY - arrowSize / 2f);
+                arrowPath.lineTo(arrowX, arrowY + arrowSize / 2f);
+                arrowPath.lineTo(arrowX + arrowSize, arrowY - arrowSize / 2f);
+                arrowPath.close();
+                Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                arrowPaint.setColor(textColor);
+                arrowPaint.setAlpha((int) (0xFF * summaryAlpha));
+                canvas.drawPath(arrowPath, arrowPaint);
+                canvas.restore();
+
                 summaryTitle.draw(canvas, summaryStartX + dp(10), summaryStartY + dp(2), textColor, summaryAlpha);
-                if (summarySubtitle != null) {
-                    summarySubtitle.draw(canvas, summaryStartX + dp(10), summaryStartY + summaryTitle.getHeight(), textColor, summaryAlpha);
+                if (summarySubtitle != null && collapseProgress < 1f) {
+                    canvas.save();
+                    float subtitleTop = summaryStartY + summaryTitle.getHeight();
+                    float clipBottom = summaryStartY + lerp(expandedHeight - dp(4), collapsedHeight, collapseProgress);
+                    canvas.clipRect(summarySelectorRect.left, subtitleTop, summarySelectorRect.right, clipBottom);
+                    summarySubtitle.draw(canvas, summaryStartX + dp(10), subtitleTop, textColor, summaryAlpha * (1f - collapseProgress));
+                    if (collapseProgress > 0f) {
+                        if (summaryCollapseGradientPaint == null) {
+                            summaryCollapseGradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        }
+                        int bgColor = getThemedColor(Theme.key_chat_inBubble);
+                        if (currentMessageObject.isOutOwner()) {
+                            bgColor = getThemedColor(Theme.key_chat_outBubble);
+                        }
+                        summaryCollapseGradientPaint.setShader(new LinearGradient(0, clipBottom - dp(16), 0, clipBottom, bgColor, Color.TRANSPARENT, Shader.TileMode.CLAMP));
+                        summaryCollapseGradientPaint.setAlpha((int) (0xFF * summaryAlpha * collapseProgress));
+                        canvas.drawRect(summarySelectorRect.left, clipBottom - dp(16), summarySelectorRect.right, clipBottom, summaryCollapseGradientPaint);
+                    }
+                    canvas.restore();
                 }
                 canvas.restore();
             }
