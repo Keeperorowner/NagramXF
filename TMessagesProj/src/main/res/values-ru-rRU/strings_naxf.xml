@@ -118,6 +118,7 @@
     <string name="ClearSavedMessageDataDescription">Выберите, что хотите очистить.</string>
     <string name="ClearSavedMessageDataConfirm">Это удалит локальную базу данных и все сохраненные вложения.</string>
     <string name="AyuAttachments">Сохраненные вложения</string>
+    <string name="AyuMomentsPreviewMessage">Делай что можешь, остальное — судьба</string>
     <string name="AyuDatabase">База данных</string>
     <string name="TelegramLocalDatabase">База данных Telegram</string>
     <string name="NagramXForkChannel">Канал Nagram XF</string>

@@ -132,6 +132,7 @@
     <string name="BlurOptions">模糊选项</string>
     <string name="AyuSpySettings">间谍设置</string>
     <string name="AyuMomentsCustomHeader">自定义</string>
+    <string name="AyuMomentsPreviewMessage">尽人事，听天命</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>
     <string name="SaveAttachmentsCardSubtitle">配置聊天和限制</string>
     <string name="MaximumMediaSizeCellular">媒体大小限制 (移动数据)</string>
