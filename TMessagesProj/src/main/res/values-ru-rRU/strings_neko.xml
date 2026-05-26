@@ -110,8 +110,7 @@
     <string name="DatacenterStatusAbout">Проверьте состояние **дата-центров** Telegram.</string>
     <string name="DatacenterStatus">Состояние дата-центров</string>
     <string name="enhancedFileLoader">Увеличить скорость загрузки</string>
-    <string name="mapDriftingFixForGoogleMaps">Исправить дрейф Google Карт в Китае</string>
-    <string name="useOSMDroidMap">Использовать карту OSMDroid</string>
+    <string name="MapProviderOpenFreeMap">Использовать OpenFreeMap вместо Google Карт</string>
     <string name="UnknownNekoSettingsOption">В «Настройках N» нет такой опции.</string>
     <string name="PasscodeNeeded">Сначала необходимо включить блокировку паролем</string>
     <string name="PasscodeNeko">Пароль</string>

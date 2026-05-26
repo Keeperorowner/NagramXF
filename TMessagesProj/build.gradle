@@ -242,7 +242,7 @@ dependencies {
     // kotlin
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     // utilities
-    implementation 'org.osmdroid:osmdroid-android:6.1.20'
+    implementation 'org.maplibre.gl:android-sdk:13.1.0'
     // network
     implementation 'com.squareup.okhttp3:okhttp:5.3.2'
     implementation 'dnsjava:dnsjava:3.6.4'

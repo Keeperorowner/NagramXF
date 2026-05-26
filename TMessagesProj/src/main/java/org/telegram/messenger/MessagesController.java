@@ -1588,6 +1588,17 @@ public class MessagesController extends BaseController implements NotificationCe
         maxMessageLength = mainPreferences.getInt("maxMessageLength", 4096);
         maxCaptionLength = mainPreferences.getInt("maxCaptionLength", 1024);
         mapProvider = mainPreferences.getInt("mapProvider", 0);
+        int mapPreviewOverride = NekoConfig.mapPreviewProvider.Int();
+        if (mapPreviewOverride == 0) {
+            mapProvider = 2;
+        } else if (mapPreviewOverride == 1) {
+            mapProvider = 1;
+        } else if (mapPreviewOverride == 2) {
+            mapProvider = 4;
+            mapKey = "AIzaSyB0y3zA4LbA04ZPaHKsr_Xt5ZQWbMftj8I";
+        } else if (mapPreviewOverride == 3) {
+            mapProvider = -1;
+        }
         availableMapProviders = mainPreferences.getInt("availableMapProviders", 3);
         mapKey = mainPreferences.getString("pk", null);
         installReferer = mainPreferences.getString("installReferer", null);

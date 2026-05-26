@@ -81,8 +81,9 @@ import org.telegram.messenger.LocationController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
-import org.telegram.messenger.OSMDroidMapsProvider;
+import org.telegram.messenger.MapLibreMapsProvider;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 import org.telegram.tgnet.TLRPC;
@@ -98,6 +99,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.LocationActivityAdapter;
 import org.telegram.ui.Adapters.LocationActivitySearchAdapter;
+import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.HeaderCell;
 import org.telegram.ui.Cells.LocationCell;
@@ -107,6 +109,7 @@ import org.telegram.ui.Cells.LocationPoweredCell;
 import org.telegram.ui.Cells.SendLocationCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.SharingLiveLocationCell;
+import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -121,17 +124,20 @@ import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.SharedMediaLayout;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.UndoView;
+import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 import org.telegram.ui.Stories.recorder.HintView2;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.location.NekoLocation;
+import kotlin.Unit;
 
 public class LocationActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -773,10 +779,9 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
         mapTypeButton.setSubMenuOpenSide(2);
         mapTypeButton.setAdditionalXOffset(dp(10));
         mapTypeButton.setAdditionalYOffset(-dp(10));
-        if (ApplicationLoader.getMapsProvider() instanceof OSMDroidMapsProvider) {
-            mapTypeButton.addSubItem(map_list_menu_map, R.drawable.msg_map, "Standard OSM", getResourceProvider());
-            mapTypeButton.addSubItem(map_list_menu_satellite, R.drawable.msg_map, "Wikimedia", getResourceProvider());
-            mapTypeButton.addSubItem(map_list_menu_hybrid, R.drawable.msg_map, "Carto Dark", getResourceProvider());
+        if (ApplicationLoader.getMapsProvider() instanceof MapLibreMapsProvider) {
+            mapTypeButton.addSubItem(map_list_menu_map, R.drawable.msg_map, LocaleController.getString(R.string.Map), getResourceProvider());
+            mapTypeButton.addSubItem(map_list_menu_satellite, R.drawable.msg_satellite, LocaleController.getString(R.string.Satellite), getResourceProvider());
         } else {
             mapTypeButton.addSubItem(map_list_menu_map, R.drawable.msg_map, LocaleController.getString(R.string.Map), getResourceProvider());
             mapTypeButton.addSubItem(map_list_menu_satellite, R.drawable.msg_satellite, LocaleController.getString(R.string.Satellite), getResourceProvider());
@@ -803,9 +808,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
                 map.setMapType(IMapsProvider.MAP_TYPE_HYBRID);
             }
         });
-        if (ApplicationLoader.getMapsProvider() instanceof OSMDroidMapsProvider) {
-            mapViewClip.addView(getAttributionOverlay(context), LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM, LocaleController.isRTL ? 0 : 4, 0, LocaleController.isRTL ? 4 : 0, 20));
-        }
 
         locationButton = new ImageView(context);
         drawable = Theme.createSimpleSelectorCircleDrawable(dp(40), getThemedColor(Theme.key_location_actionBackground), getThemedColor(Theme.key_location_actionPressedBackground));
@@ -2520,9 +2522,6 @@ public class LocationActivity extends BaseFragment implements NotificationCenter
             for (int i = providers.size() - 1; i >= 0; i--) {
                 l = lm.getLastKnownLocation(providers.get(i));
                 if (l != null) {
-                    if (NekoConfig.fixDriftingForGoogleMaps()) {
-                        NekoLocation.transform(l);
-                    }
                     break;
                 }
             }

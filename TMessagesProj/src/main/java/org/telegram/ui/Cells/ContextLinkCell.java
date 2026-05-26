@@ -284,6 +284,8 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                     double lon = inlineResult.send_message.geo._long;
                     if (NekoConfig.mapPreviewProvider.Int() == 0) {
                         webFile = WebFile.createWithGeoPoint(inlineResult.send_message.geo, 72, 72, 15, Math.min(2, (int) Math.ceil(AndroidUtilities.density)));
+                    } else if (NekoConfig.mapPreviewProvider.Int() == 3) {
+                        webFile = null;
                     } else {
                         urlLocation = AndroidUtilities.formapMapUrl(false, lat, lon, 72, 72, true, 15);
                     }

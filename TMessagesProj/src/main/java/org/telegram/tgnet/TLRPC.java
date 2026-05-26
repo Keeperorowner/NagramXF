@@ -15,7 +15,6 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.SparseArray;
 
-import org.osmdroid.util.TileSystemWebMercator;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 

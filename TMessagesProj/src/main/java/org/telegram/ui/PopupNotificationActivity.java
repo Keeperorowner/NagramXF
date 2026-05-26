@@ -945,6 +945,7 @@ public class PopupNotificationActivity extends Activity implements NotificationC
 
                 if (NekoConfig.mapPreviewProvider.Int() == 0) {
                     imageView.setImage(ImageLocation.getForWebFile(WebFile.createWithGeoPoint(geoPoint, 100, 100, 15, Math.min(2, (int) Math.ceil(AndroidUtilities.density)))), null, null, null, messageObject);
+                } else if (NekoConfig.mapPreviewProvider.Int() == 3) {
                 } else {
                     String currentUrl = AndroidUtilities.formapMapUrl(false, lat, lon, 100, 100, true, 15);
                     imageView.setImage(currentUrl, null, null);
