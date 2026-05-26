@@ -86,7 +86,7 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
             long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
 
             TLRPC.TL_message message = new TLRPC.TL_message();
-            message.message = getString(R.string.FontSizePreviewLine2);
+            message.message = getString(R.string.AyuMomentsPreviewMessage);
             message.date = date;
             message.dialog_id = 1L;
             message.flags = 259;

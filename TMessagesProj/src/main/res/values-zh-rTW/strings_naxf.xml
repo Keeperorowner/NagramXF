@@ -83,6 +83,7 @@
     <string name="BlurOptions">模糊選項</string>
     <string name="AyuSpySettings">間諜設定</string>
     <string name="AyuMomentsCustomHeader">自定義</string>
+    <string name="AyuMomentsPreviewMessage">盡人事，聽天命</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>
     <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
     <string name="PeekOnlineMenuText">在線預覽</string>
