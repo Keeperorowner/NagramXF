@@ -28888,10 +28888,7 @@ public class ChatActivity extends BaseFragment implements
         if (!isGesture()) {
             return false;
         }
-        if (bottomChannelButtonsLayout == null || bottomChannelButtonsLayout.getVisibility() != View.VISIBLE) {
-            return false;
-        }
-        if (bottomOverlayChatText == null || bottomOverlayChatText.getVisibility() != View.VISIBLE) {
+        if (bottomOverlayChatText == null) {
             return false;
         }
         if (bottomOverlayStartButton != null && bottomOverlayStartButton.getVisibility() == View.VISIBLE) {
@@ -29304,11 +29301,41 @@ public class ChatActivity extends BaseFragment implements
         final boolean hideBottomInputContainer = shouldHideBottomFor3ButtonNav() || shouldHideBottomForGesture();
         if (hideBottomInputContainer) {
             bottomOverlayChatText.setText("");
-            chatInputViewsContainer.setVisibility(View.INVISIBLE);
+            bottomChannelButtonsLayout.setVisibility(View.GONE);
+            chatActivityEnterView.setVisibility(View.GONE);
+        } else if (isReport()) {
+            bottomChannelButtonsLayout.setVisibility(View.VISIBLE);
+            chatActivityEnterView.setVisibility(View.INVISIBLE);
+        } else if (chatMode == MODE_PINNED ||
+                currentChat != null && (!ChatObject.isMonoForum(currentChat) || !isSubscriberSuggestions) && ((ChatObject.isNotInChat(currentChat) && !UserObject.isBotForum(currentUser) || !ChatObject.canWriteToChat(currentChat)) && (currentChat.join_to_send || !isThreadChat() || ChatObject.isForum(currentChat)) || forumTopic != null && forumTopic.closed && !ChatObject.canManageTopic(currentAccount, currentChat, forumTopic) || shouldDisplaySwipeToLeftToReplyInForum()) ||
+                currentUser != null && (UserObject.isDeleted(currentUser) || userBlocked || UserObject.isReplyUser(currentUser))) {
+            if (chatActivityEnterView.isEditingMessage()) {
+                chatActivityEnterView.setVisibility(View.VISIBLE);
+                bottomChannelButtonsLayout.setVisibility(View.INVISIBLE);
+                chatActivityEnterView.setFieldFocused();
+                AndroidUtilities.runOnUIThread(() -> chatActivityEnterView.openKeyboard(), 100);
+            } else {
+                bottomChannelButtonsLayout.setVisibility(View.VISIBLE);
+                chatActivityEnterView.setFieldFocused(false);
+                chatActivityEnterView.setVisibility(View.INVISIBLE);
+                chatActivityEnterView.closeKeyboard();
+                if (suggestEmojiPanel != null) {
+                    suggestEmojiPanel.forceClose();
+                }
+            }
+        } else {
+            chatActivityEnterView.setVisibility(View.VISIBLE);
+            chatActivityEnterView.setFieldFocused(false);
+            bottomChannelButtonsLayout.setVisibility(View.INVISIBLE);
+        }
+
+        if (shouldHideBottomForGesture()) {
+            chatInputViewsContainer.setVisibility(View.GONE);
+            chatInputViewsContainer.setBackgroundWithFadeDrawable(null);
         } else {
             chatInputViewsContainer.setVisibility(View.VISIBLE);
+            chatInputViewsContainer.setBackgroundWithFadeDrawable(fadeDrawable);
         }
-        chatInputViewsContainer.setBackgroundWithFadeDrawable(fadeDrawable);
         chatInputViewsContainer.getFadeView().invalidate();
 
         checkRaiseSensors();
