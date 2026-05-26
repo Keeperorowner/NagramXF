@@ -38,9 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
-import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.location.NekoLocation;
-
 @SuppressLint("MissingPermission")
 public class LocationController extends BaseController implements NotificationCenter.NotificationCenterDelegate, ILocationServiceProvider.IAPIConnectionCallbacks, ILocationServiceProvider.IAPIOnConnectionFailedListener {
 
@@ -527,9 +524,6 @@ public class LocationController extends BaseController implements NotificationCe
     private void setLastKnownLocation(Location location) {
         if (location != null && (SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()) / 1000000000 > 60 * 5) {
             return;
-        }
-        if (NekoConfig.fixDriftingForGoogleMaps() && location != null) {
-            NekoLocation.transform(location);
         }
         lastKnownLocation = location;
         if (lastKnownLocation != null) {

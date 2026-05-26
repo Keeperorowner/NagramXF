@@ -12003,6 +12003,8 @@ public class ArticleViewer implements NotificationCenter.NotificationCenterDeleg
                     currentMapProvider = 2;
                 } else if (NekoConfig.mapPreviewProvider.Int() == 1) {
                     currentMapProvider = 1;
+                } else if (NekoConfig.mapPreviewProvider.Int() == 2) {
+                    currentMapProvider = 4;
                 } else {
                     currentMapProvider = -1;
                 }

@@ -110,8 +110,7 @@
     <string name="DatacenterStatusAbout">检查 Telegram 的**数据中心**的状态。</string>
     <string name="DatacenterStatus">数据中心状态</string>
     <string name="enhancedFileLoader">下载加速</string>
-    <string name="mapDriftingFixForGoogleMaps">修复 Google 地图在中国的漂移问题</string>
-    <string name="useOSMDroidMap">使用 OSMDroid 地图</string>
+    <string name="MapProviderOpenFreeMap">使用 OpenFreeMap 替代 Google 地图</string>
     <string name="UnknownNekoSettingsOption">找不到这个 N-设置 选项。</string>
     <string name="PasscodeNeeded">您必须先启用密码锁</string>
     <string name="PasscodeNeko">锁定码</string>

@@ -170,8 +170,7 @@ public class NekoConfig {
     public static ConfigItem customAudioBitrate = addConfig("customAudioBitrate", configTypeInt, 32);
     public static ConfigItem enhancedFileLoader = addConfig("enhancedFileLoader", configTypeBool, false);
     public static ConfigItem uploadBoost = addConfig("uploadBoost", configTypeBool, false);
-    public static ConfigItem useOSMDroidMap = addConfig("useOSMDroidMap", configTypeBool, false);
-    public static ConfigItem mapDriftingFixForGoogleMaps = addConfig("mapDriftingFixForGoogleMaps", configTypeBool, true);
+    public static ConfigItem useOpenFreeMap = addConfig("useOpenFreeMap", configTypeBool, true);
 
     public static ConfigItem localPremium = addConfig("localPremium", configTypeBool, false);
 
@@ -290,10 +289,6 @@ public class NekoConfig {
         public DatacenterInfo(int i) {
             id = i;
         }
-    }
-
-    public static boolean fixDriftingForGoogleMaps() {
-        return !useOSMDroidMap.Bool() && mapDriftingFixForGoogleMaps.Bool();
     }
 
     // --- Ghost Mode ---

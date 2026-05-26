@@ -118,11 +118,11 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
 
     // Map
     private final AbstractConfigCell headerMap = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Map)));
-    private final AbstractConfigCell useOSMDroidMapRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.useOSMDroidMap));
-    private final AbstractConfigCell mapDriftingFixForGoogleMapsRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.mapDriftingFixForGoogleMaps));
+    private final AbstractConfigCell mapProviderRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.useOpenFreeMap, null, getString(R.string.MapProviderOpenFreeMap)));
     private final AbstractConfigCell mapPreviewRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NekoConfig.mapPreviewProvider, new String[]{
             getString(R.string.MapPreviewProviderTelegram),
             getString(R.string.MapPreviewProviderYandexNax),
+            getString(R.string.MapPreviewProviderGoogle),
             getString(R.string.MapPreviewProviderNobody)
     }, null));
     private final AbstractConfigCell dividerMap = cellGroup.appendCell(new ConfigCellDivider());
@@ -161,7 +161,6 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
         }
 
         checkCustomDoHRows();
-        checkMapDriftingFixRows();
         checkPushServiceTypeRows();
         addRowsToMap(cellGroup);
     }
@@ -187,8 +186,10 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
                         ContactsController.getInstance(a).checkAppAccount();
                     }
                 }
-            } else if (key.equals(NekoConfig.useOSMDroidMap.getKey())) {
-                checkMapDriftingFixRows();
+            } else if (key.equals(NekoConfig.useOpenFreeMap.getKey())) {
+                tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
+            } else if (key.equals(NekoConfig.mapPreviewProvider.getKey())) {
+                tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getPushServiceType().getKey())) {
                 if ((int) newValue == 0) {
                     AndroidUtil.setPushService(false);
@@ -301,30 +302,6 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
                 listAdapter.notifyItemRemoved(customDoHRowIndex);
             }
         }
-    }
-
-    private void checkMapDriftingFixRows() {
-        boolean useOSMDroid = NekoConfig.useOSMDroidMap.Bool();
-        if (listAdapter == null) {
-            if (useOSMDroid) {
-                cellGroup.rows.remove(mapDriftingFixForGoogleMapsRow);
-            }
-            return;
-        }
-        if (!useOSMDroid) {
-            final int index = cellGroup.rows.indexOf(useOSMDroidMapRow);
-            if (!cellGroup.rows.contains(mapDriftingFixForGoogleMapsRow)) {
-                cellGroup.rows.add(index + 1, mapDriftingFixForGoogleMapsRow);
-                listAdapter.notifyItemInserted(index + 1);
-            }
-        } else {
-            int rowIndex = cellGroup.rows.indexOf(mapDriftingFixForGoogleMapsRow);
-            if (rowIndex != -1) {
-                cellGroup.rows.remove(mapDriftingFixForGoogleMapsRow);
-                listAdapter.notifyItemRemoved(rowIndex);
-            }
-        }
-        addRowsToMap(cellGroup);
     }
 
     private void checkPushServiceTypeRows() {
