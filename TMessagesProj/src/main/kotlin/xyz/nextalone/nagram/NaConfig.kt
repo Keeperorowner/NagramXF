@@ -595,9 +595,15 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
-    val disableAiFeatures =
+    val hideAiEditor =
         addConfig(
-            "DisableAiFeatures",
+            "HideAiEditor",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideAiSummary =
+        addConfig(
+            "HideAiSummary",
             ConfigItem.configTypeBool,
             false
         )

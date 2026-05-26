@@ -41164,7 +41164,7 @@ public class ChatActivity extends BaseFragment implements
         public void didPressSummarize(ChatMessageCell cell, boolean byReply) {
             final MessageObject msg = cell.getMessageObject();
             final boolean opening = msg == null || msg.messageOwner == null || !msg.messageOwner.summarizedOpen;
-            if (!TranslateController.isSummarizable(msg) || (opening && NaConfig.INSTANCE.getDisableAiFeatures().Bool())) {
+            if (!TranslateController.isSummarizable(msg) || (opening && NaConfig.INSTANCE.getHideAiSummary().Bool())) {
                 return;
             }
             msg.messageOwner.summarizedOpen = !msg.messageOwner.summarizedOpen;

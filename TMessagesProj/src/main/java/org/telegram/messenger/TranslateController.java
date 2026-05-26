@@ -967,7 +967,7 @@ public class TranslateController extends BaseController {
         @Nullable String language,
         Utilities.Callback<TLRPC.TL_textWithEntities> callback
     ) {
-        if (NaConfig.INSTANCE.getDisableAiFeatures().Bool()) {
+        if (NaConfig.INSTANCE.getHideAiSummary().Bool()) {
             callback.run(null);
             return;
         }

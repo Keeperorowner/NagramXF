@@ -284,4 +284,7 @@
     <string name="AIError502Info">Сервер временно недоступен.</string>
     <string name="AIError503">Сервис недоступен</string>
     <string name="AIError503Info">Сервис перегружен. Повторите позже.</string>
+    <string name="HideAiEditor">Скрыть AI-редактор</string>
+    <string name="HideAiSummary">Скрыть AI-сводку</string>
+    <string name="AiHideHeader">Скрыть AI-функции</string>
 </resources>

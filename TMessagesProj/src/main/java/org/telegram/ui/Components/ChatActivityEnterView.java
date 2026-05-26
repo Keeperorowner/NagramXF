@@ -6431,7 +6431,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
 
     private boolean shownAiButton;
     private void showAiButton(boolean show_) {
-        final boolean show = show_ && parentFragment != null && !parentFragment.isSecretChat();
+        final boolean show = show_ && parentFragment != null && !parentFragment.isSecretChat() && !NaConfig.INSTANCE.getHideAiEditor().Bool();
 
         if (shownAiButton == show) return;
         if (show) {
