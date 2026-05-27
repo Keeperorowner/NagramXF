@@ -130,7 +130,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
         } else if (position == channelRow) {
             MessagesController.getInstance(currentAccount).openByUserName("nagram_channel", NekoAboutActivity.this, 1);
         } else if (position == channelTipsRow) {
-            MessagesController.getInstance(currentAccount).openByUserName("NagramTips", NekoAboutActivity.this, 1);
+            MessagesController.getInstance(currentAccount).openByUserName("NagramXF_Chat", NekoAboutActivity.this, 1);
         } else if (position == sourceCodeRow) {
             Browser.openUrl(getParentActivity(), "https://github.com/Keeperorowner/NagramXF");
         } else if (position == datacenterStatusRow) {
@@ -267,7 +267,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                     } else if (position == channelRow) {
                         textCell.setTextAndValueAndIcon(getString(R.string.OfficialChannel), "@nagram_channel", R.drawable.msg_channel_solar, true);
                     } else if (position == channelTipsRow) {
-                        textCell.setTextAndValueAndIcon(getString(R.string.TipsChannel), "@NagramTips", R.drawable.msg_discuss_solar, true);
+                        textCell.setTextAndValueAndIcon(getString(R.string.OfficialGroupChat), "@NagramXF_Chat", R.drawable.msg_discuss_solar, true);
                     } else if (position == sourceCodeRow) {
                         textCell.setTextAndValueAndIcon(getString(R.string.SourceCode), "GitHub", R.drawable.github_logo_white, true);
                     } else if (position == datacenterStatusRow) {

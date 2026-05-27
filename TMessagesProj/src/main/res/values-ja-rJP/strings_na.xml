@@ -57,7 +57,7 @@
     <string name="ProviderTranSmartTranslate">TransSmart 翻訳</string>
     <string name="DisableMarkdown">Markdown を無効化</string>
     <string name="SendWithMarkdown">Markdown で送信</string>
-    <string name="TipsChannel">機能紹介チャンネル</string>
+    <string name="OfficialGroupChat">公式グループチャット</string>
     <string name="ShowSmallGIF">GIF を小さく表示</string>
     <string name="DisableClickCommandToSend">ボットコマンドを送信する前に確認</string>
     <string name="DisableDialogsFloatingButton">フローティングボタンを非表示</string>

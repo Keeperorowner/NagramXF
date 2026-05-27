@@ -59,7 +59,7 @@
     <string name="ProviderTranSmartTranslate">TranSmart Translator</string>
     <string name="DisableMarkdown">Disable Markdown</string>
     <string name="SendWithMarkdown">Send with Markdown</string>
-    <string name="TipsChannel">Features Tips Channel</string>
+    <string name="OfficialGroupChat">Official Group Chat</string>
     <string name="ShowSmallGIF">Show Small GIF</string>
     <string name="DisableClickCommandToSend">Ask Before Sending Bot Command</string>
     <string name="DisableDialogsFloatingButton">Hide Floating Button</string>
