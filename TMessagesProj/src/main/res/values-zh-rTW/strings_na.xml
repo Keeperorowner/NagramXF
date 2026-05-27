@@ -57,7 +57,7 @@
     <string name="ProviderTranSmartTranslate">騰訊翻譯</string>
     <string name="DisableMarkdown">禁用 Markdown</string>
     <string name="SendWithMarkdown">傳送時禁用 Markdown</string>
-    <string name="TipsChannel">功能介紹頻道</string>
+    <string name="OfficialGroupChat">官方群聊</string>
     <string name="ShowSmallGIF">GIF 顯示得更小</string>
     <string name="DisableClickCommandToSend">在傳送指令前確認</string>
     <string name="DisableDialogsFloatingButton">隱藏浮動按鈕</string>
