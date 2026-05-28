@@ -5060,39 +5060,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                     sendPopupLayout.addView(sendWithoutSoundButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT));
                 }
                 if (messageEditText != null && messageEditText.getText().length() > 0) {
-                    ActionBarMenuSubItem preSendTranslateLlmButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
-                    long chatId = ChatsHelper.getChatId();
-                    String languageText = Translator.getInputTranslateLangForChat(chatId).toUpperCase();
-                    preSendTranslateLlmButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessageLLM) + " (" + languageText + ")", R.drawable.magic_stick_solar);
-                    preSendTranslateLlmButton.setMinimumWidth(AndroidUtilities.dp(196));
-                    preSendTranslateLlmButton.setOnClickListener(v -> {
-                        if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
-                            sendPopupWindow.dismiss();
-                        }
-                        translateComment(Translator.getInputTranslateLangLocaleForChat(chatId), Translator.providerLLMTranslator);
-                    });
-                    preSendTranslateLlmButton.setOnLongClickListener(view1 -> {
-                        if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
-                            sendPopupWindow.dismiss();
-                        }
-                        Translator.showTargetLangSelect(view, true, (locale) -> {
-                            if (menuPopupWindow != null && menuPopupWindow.isShowing()) {
-                                menuPopupWindow.dismiss();
-                            }
-                            translateComment(locale, Translator.providerLLMTranslator);
-                            Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                            return Unit.INSTANCE;
-                        });
-                        return true;
-                    });
-                    preSendTranslateLlmButton.setVisibility(LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider());
-                    sendPopupLayout.addView(preSendTranslateLlmButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
-                }
-                if (messageEditText != null && messageEditText.getText().length() > 0) {
                     ActionBarMenuSubItem preSendTranslateButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
                     long chatId = ChatsHelper.getChatId();
                     String languageText = Translator.getInputTranslateLangForChat(chatId).toUpperCase();
-                    preSendTranslateButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessage) + " (" + languageText + ")", LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate);
+                    preSendTranslateButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessage) + " (" + languageText + ")", R.drawable.ic_translate);
                     preSendTranslateButton.setMinimumWidth(AndroidUtilities.dp(196));
                     preSendTranslateButton.setOnClickListener(v -> {
                         if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
@@ -5339,7 +5310,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     openKeyboard();
                 }).setDimBehind(true);
             }));
-            if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
+            if (LlmConfig.isLLMTranslatorAvailable()) {
                 long chatId = ChatsHelper.getChatId();
                 aiItems.add(new ActionRow.ActionItem(R.drawable.magic_stick_solar, true, v -> {
                     if (messageSendPreview != null) {

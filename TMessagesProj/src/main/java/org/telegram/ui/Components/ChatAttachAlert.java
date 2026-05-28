@@ -6516,7 +6516,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 }
             } else if (!(baseFragment instanceof ChatActivity)) {
                 galleryButton = buttonsCount++;
-                cameraButton = buttonsCount++;
+                if (NekoConfig.moveAttachCameraToBottom.Bool()) {
+                    cameraButton = buttonsCount++;
+                }
                 documentButton = buttonsCount++;
                 if (allowEnterCaption) {
                     musicButton = buttonsCount++;
@@ -6524,13 +6526,17 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             } else if (editingMessageObject != null) {
                 if (editType == EDITMEDIA_TYPE_ANY) {
                     galleryButton = buttonsCount++;
-                    cameraButton = buttonsCount++;
+                    if (NekoConfig.moveAttachCameraToBottom.Bool()) {
+                        cameraButton = buttonsCount++;
+                    }
                     documentButton = buttonsCount++;
                     musicButton = buttonsCount++;
                 } else {
                     if (editType == EDITMEDIA_TYPE_PHOTOVIDEO) {
                         galleryButton = buttonsCount++;
-                        cameraButton = buttonsCount++;
+                        if (NekoConfig.moveAttachCameraToBottom.Bool()) {
+                            cameraButton = buttonsCount++;
+                        }
                     }
                     if (editType == EDITMEDIA_TYPE_FILE) {
                         documentButton = buttonsCount++;
@@ -6544,7 +6550,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 TLRPC.Chat chat = baseFragment instanceof ChatActivity ? ((ChatActivity) baseFragment).getCurrentChat() : null;
                 final boolean paidUser = user != null && ((ChatActivity) baseFragment).getMessagesController().getSendPaidMessagesStars(user.id) > 0;
                 galleryButton = buttonsCount++;
-                cameraButton = buttonsCount++;
+                if (NekoConfig.moveAttachCameraToBottom.Bool()) {
+                    cameraButton = buttonsCount++;
+                }
                 if ((photosEnabled || videosEnabled) && !paidUser && (chat == null || !ChatObject.isMonoForum(chat))) {
                     if (baseFragment instanceof ChatActivity && !((ChatActivity) baseFragment).isInScheduleMode() && !((ChatActivity) baseFragment).isSecretChat() && ((ChatActivity) baseFragment).getChatMode() != ChatActivity.MODE_QUICK_REPLIES) {
                         ChatActivity chatActivity = (ChatActivity) baseFragment;

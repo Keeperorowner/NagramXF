@@ -219,6 +219,8 @@
     <string name="VideoMessagesCameraFront">Фронтальная</string>
     <string name="VideoMessagesCameraRear">Основная</string>
     <string name="VideoMessagesCameraAsk">Спрашивать</string>
+    <string name="MoveAttachCameraToBottom">Камера в нижней панели</string>
+    <string name="MoveAttachCameraToBottomNotice">Показывать камеру на нижней панели вложений вместо сетки галереи.</string>
 
     <!-- AI Chat -->
     <string name="AIChat">ИИ-чат</string>

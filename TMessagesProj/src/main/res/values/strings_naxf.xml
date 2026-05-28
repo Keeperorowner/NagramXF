@@ -203,6 +203,8 @@
     <string name="VideoMessagesCameraFront">Front</string>
     <string name="VideoMessagesCameraRear">Rear</string>
     <string name="VideoMessagesCameraAsk">Ask</string>
+    <string name="MoveAttachCameraToBottom">Bottom Camera Shortcut</string>
+    <string name="MoveAttachCameraToBottomNotice">Show the camera in the bottom attachment bar instead of the gallery grid.</string>
 
     <!-- AI Chat -->
     <string name="AIChat">AI Chat</string>

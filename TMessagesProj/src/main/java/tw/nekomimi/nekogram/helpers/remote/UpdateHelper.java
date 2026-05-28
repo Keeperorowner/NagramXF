@@ -67,16 +67,30 @@ public class UpdateHelper extends BaseRemoteHelper {
                 return files.get(abi);
             }
         }
-        return files.get("arm64-v8a");
+        if (files.containsKey("arm64-v8a")) {
+            return files.get("arm64-v8a");
+        }
+        if (files.containsKey("x86_64")) {
+            return files.get("x86_64");
+        }
+        if (files.containsKey("armeabi-v7a")) {
+            return files.get("armeabi-v7a");
+        }
+        return files.get("universal");
     }
 
     private Map<String, Integer> jsonToMap(JSONObject obj) {
         Map<String, Integer> map = new HashMap<>();
         List<String> abis = new ArrayList<>();
         abis.add("arm64-v8a");
+        abis.add("x86_64");
+        abis.add("armeabi-v7a");
+        abis.add("universal");
         try {
             for (var abi : abis) {
-                map.put(abi, obj.getInt(abi));
+                if (obj.has(abi)) {
+                    map.put(abi, obj.getInt(abi));
+                }
             }
         } catch (JSONException ignored) {
         }

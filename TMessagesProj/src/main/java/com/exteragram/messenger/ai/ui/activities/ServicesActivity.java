@@ -34,12 +34,11 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
     private static final int VIEW_TYPE_RADIO = 100;
     private static final int VIEW_TYPE_CREATION = 101;
 
-    private int infoRow;
     private int addServiceRow;
+    private int infoRow;
     private int servicesHeaderRow;
     private int servicesStartRow;
     private int servicesEndRow;
-    private int servicesDividerRow;
     private int rowCount;
 
     private List<Service> services = new ArrayList<>();
@@ -90,7 +89,13 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
                 Service service = services.get(idx);
                 if (!service.isSelected()) {
                     AiConfig.setSelectedServices(service);
-                    if (listAdapter != null) listAdapter.notifyDataSetChanged();
+                    for (int i = 0; i < listView.getChildCount(); i++) {
+                        View child = listView.getChildAt(i);
+                        int pos = listView.getChildAdapterPosition(child);
+                        if (pos >= servicesStartRow && pos < servicesEndRow && child instanceof RadioColorCell) {
+                            ((RadioColorCell) child).setChecked(pos == position, true);
+                        }
+                    }
                 }
             }
         }
@@ -149,12 +154,10 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
             servicesStartRow = rowCount;
             rowCount += services.size();
             servicesEndRow = rowCount;
-            servicesDividerRow = rowCount++;
         } else {
             servicesHeaderRow = -1;
             servicesStartRow = -1;
             servicesEndRow = -1;
-            servicesDividerRow = -1;
         }
     }
 
@@ -162,6 +165,12 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
 
         public ListAdapter(Context context) {
             super(context);
+        }
+
+        @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int type = holder.getItemViewType();
+            return type == VIEW_TYPE_RADIO || type == VIEW_TYPE_CREATION;
         }
 
         @Override
@@ -174,6 +183,7 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
                 view = cell;
             } else if (viewType == VIEW_TYPE_RADIO) {
                 RadioColorCell cell = new RadioColorCell(mContext);
+                cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
                 view = cell;
             } else {
                 return super.onCreateViewHolder(parent, viewType);
@@ -207,13 +217,15 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
                 if (position == infoRow) {
                     cell.setText(LocaleController.getString(R.string.AIChatServicesInfo));
                 }
+                cell.setFixedSize(0);
+                cell.setBackground(null);
             }
         }
 
         @Override
         public int getItemViewType(int position) {
             if (position == addServiceRow) return VIEW_TYPE_CREATION;
-            if (position == infoRow || position == servicesDividerRow) return TYPE_INFO_PRIVACY;
+            if (position == infoRow) return TYPE_INFO_PRIVACY;
             if (position == servicesHeaderRow) return TYPE_HEADER;
             return VIEW_TYPE_RADIO;
         }

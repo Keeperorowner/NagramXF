@@ -149,6 +149,7 @@ public class NekoConfig {
 
     public static ConfigItem ignoreContentRestrictions = addConfig("ignoreContentRestrictions", configTypeBool, true);
     public static ConfigItem useChatAttachMediaMenu = addConfig("UseChatAttachEnterMenu", configTypeBool, true);
+    public static ConfigItem moveAttachCameraToBottom = addConfig("MoveAttachCameraToBottom", configTypeBool, true);
     public static ConfigItem disableLinkPreviewByDefault = addConfig("DisableLinkPreviewByDefault", configTypeBool, false);
     public static ConfigItem sendCommentAfterForward = addConfig("SendCommentAfterForward", configTypeBool, true);
     public static ConfigItem disableTrending = addConfig("DisableTrending", configTypeBool, true);

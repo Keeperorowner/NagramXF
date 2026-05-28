@@ -22,7 +22,6 @@ import java.net.URL;
 
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
-import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
@@ -39,13 +38,11 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
     private final ConfigCellTextCheckIcon servicesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatServices", getString(R.string.AIChatServices), R.drawable.msg_language, true, () -> presentFragment(new ServicesActivity())));
     private final ConfigCellTextCheckIcon rolesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatRoles", getString(R.string.AIChatRoles), R.drawable.msg_openprofile, true, () -> presentFragment(new RolesActivity())));
     private final AbstractConfigCell saveHistoryRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.saveHistoryConfig, getString(R.string.AIChatMessageHistory), R.drawable.msg_discuss, false));
-    private final AbstractConfigCell dividerGeneral = cellGroup.appendCell(new ConfigCellDivider());
 
     private final AbstractConfigCell headerOther = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIChatOther)));
     private final AbstractConfigCell responseStreamingRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.responseStreamingConfig, null, getString(R.string.AIChatResponseStreaming)));
     private final AbstractConfigCell showResponseOnlyRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.showResponseOnlyConfig, null, getString(R.string.AIChatShowResponseOnly)));
     private final AbstractConfigCell insertAsQuoteRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.insertAsQuoteConfig, null, getString(R.string.AIChatInsertAsQuote)));
-    private final AbstractConfigCell dividerOther = cellGroup.appendCell(new ConfigCellDivider());
 
     public AiPreferencesActivity() {
         addRowsToMap(cellGroup);

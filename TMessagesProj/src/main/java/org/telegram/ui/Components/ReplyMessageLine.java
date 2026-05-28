@@ -442,6 +442,10 @@ public class ReplyMessageLine {
         if (!NaConfig.INSTANCE.getPremiumItemEmojiInReplies().Bool()) {
             emojiDocumentId = 0;
         }
+        if (!NaConfig.INSTANCE.getMessageColoredBackground().Bool()) {
+            backgroundColor = Color.TRANSPARENT;
+            emojiDocumentId = 0;
+        }
         if (emojiDocumentId != 0 && emoji == null) {
             emoji = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(parentView, false, dp(20), AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_STATIC);
             if (parentView instanceof ChatMessageCell ? ((ChatMessageCell) parentView).isCellAttachedToWindow() : parentView.isAttachedToWindow()) {

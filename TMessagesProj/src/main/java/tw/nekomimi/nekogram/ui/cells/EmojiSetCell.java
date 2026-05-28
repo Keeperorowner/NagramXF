@@ -121,6 +121,7 @@ public class EmojiSetCell extends FrameLayout {
 
     public void setData(EmojiHelper.EmojiPackBase emojiPackInfo, boolean animated, boolean divider) {
         needDivider = divider;
+        setWillNotDraw(!needDivider);
         if (selection) {
             textView.setText(emojiPackInfo.getPackName());
             pack = emojiPackInfo;

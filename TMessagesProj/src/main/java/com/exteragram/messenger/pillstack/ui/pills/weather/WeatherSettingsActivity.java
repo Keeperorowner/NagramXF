@@ -36,7 +36,6 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
 
     private int topViewRow;
     private int pillStackRow;
-    private int topDividerRow;
 
     private int locationHeaderRow;
     private int useCurrentRow;
@@ -73,7 +72,6 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
         super.updateRows();
         topViewRow = -1;
         pillStackRow = addRow();
-        topDividerRow = addRow();
 
         locationHeaderRow = -1;
         useCurrentRow = -1;
@@ -193,7 +191,7 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
             if (position == useCurrentRow || position == pickLocationRow) {
                 return TYPE_RADIO;
             }
-            if (position == topDividerRow || position == locationNoticeRow || position == locationActionNoticeRow) {
+            if (position == locationNoticeRow || position == locationActionNoticeRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_SHADOW;
@@ -251,22 +249,17 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    if (position == topDividerRow) {
-                        cell.setText(getString(R.string.WeatherPillTopInfo));
-                        cell.setFixedSize(0);
-                    } else if (position == locationNoticeRow) {
+                    if (position == locationNoticeRow) {
                         cell.setText(getString(R.string.WeatherSettingsInfo));
-                        cell.setFixedSize(0);
                     } else if (position == locationActionNoticeRow) {
                         if (!Weather.isLocationPermissionGranted()) {
                             cell.setText(getString(R.string.WeatherLocationPermissionNo));
                         } else {
                             cell.setText(getString(R.string.GpsDisabledAlertText));
                         }
-                        cell.setFixedSize(0);
                     }
-                    cell.setBackground(Theme.getThemedDrawable(mContext,
-                            R.drawable.greydivider, getThemedColor(Theme.key_windowBackgroundGrayShadow)));
+                    cell.setFixedSize(0);
+                    cell.setBackground(null);
                     break;
                 }
             }

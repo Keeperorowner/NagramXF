@@ -221,6 +221,8 @@
     <string name="VideoMessagesCameraFront">前面</string>
     <string name="VideoMessagesCameraRear">メイン</string>
     <string name="VideoMessagesCameraAsk">尋ねる</string>
+    <string name="MoveAttachCameraToBottom">下部カメラショートカット</string>
+    <string name="MoveAttachCameraToBottomNotice">ギャラリーグリッドの代わりに、下部の添付バーにカメラを表示します。</string>
 
     <!-- AI Chat -->
     <string name="AIChat">AI チャット</string>
@@ -288,5 +290,5 @@
     <string name="AIError503Info">サービスが過負荷です。後で再試行してください。</string>
     <string name="HideAiEditor">AIエディタを非表示</string>
     <string name="HideAiSummary">AI要約を非表示</string>
-    <string name="AiHideHeader">AI機能を非表示</string>
+    <string name="AiHideHeader">AI機能を非表示</string> 
 </resources>

@@ -147,7 +147,6 @@ import org.telegram.messenger.FlagSecureReason;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.ImageReceiver;
-import org.telegram.messenger.LanguageDetector;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
@@ -279,8 +278,6 @@ import org.telegram.ui.Components.StarRatingView;
 import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.TagEditCell;
 import org.telegram.ui.Components.TimerDrawable;
-import org.telegram.ui.Components.TranslateAlert2;
-import org.telegram.ui.Components.TranslateAlert3;
 import org.telegram.ui.Components.TypefaceSpan;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UndoView;
@@ -7774,77 +7771,37 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             if (TextUtils.isEmpty(finalText)) {
                 return false;
             }
-            final String[] fromLanguage = new String[1];
-            fromLanguage[0] = "und";
-            final boolean translateButtonEnabled = MessagesController.getInstance(currentAccount).getTranslateController().isContextTranslateEnabled();
-            final boolean[] withTranslate = new boolean[1];
-            withTranslate[0] = position == bioRow || position == channelInfoRow || position == userInfoRow;
-            final String toLang = TranslateAlert2.getToLanguage();
-            Runnable showMenu = () -> {
-                if (getParentActivity() == null) {
-                    return;
-                }
-                BottomBuilder builder = new BottomBuilder(getParentActivity());
-                builder.addItem(getString(R.string.Copy), R.drawable.msg_copy, __ -> {
-                    try {
-                        AlertUtil.copyAndAlert(finalText, this);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    return Unit.INSTANCE;
-                });
-                builder.addItem(getString(R.string.Translate), LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, __ -> {
-                    try {
-                        DialogTransKt.startTrans(getParentActivity(), finalText);
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    }
-                    return Unit.INSTANCE;
-                });
-                if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
-                    builder.addItem(getString(R.string.TranslateMessageLLM), R.drawable.magic_stick_solar, __ -> {
-                        try {
-                            DialogTransKt.startTrans(getParentActivity(), finalText, NekoConfig.translateToLang.String(), Translator.providerLLMTranslator);
-                        } catch (Exception e) {
-                            FileLog.e(e);
-                        }
-                        return Unit.INSTANCE;
-                    });
-                }
-                if (withTranslate[0]) {
-                    builder.addItem(getString(R.string.TranslateMessage), R.drawable.msg_translate, __ -> {
-                        if (AndroidUtilities.isContextSafe(getContext())) {
-                            TranslateAlert2.showAlert(getContext(), this, currentAccount, fromLanguage[0], toLang, finalText, null, false, span -> {
-                                if (span != null) {
-                                    openUrl(span.getURL(), null);
-                                    return true;
-                                }
-                                return false;
-                            }, null);
-                        }
-                        return Unit.INSTANCE;
-                    });
-                }
-                builder.show();
-            };
-            if (withTranslate[0]) {
-                if (LanguageDetector.hasSupport()) {
-                    LanguageDetector.detectLanguage(finalText, (fromLang) -> {
-                        fromLanguage[0] = fromLang;
-                        withTranslate[0] = fromLang != null && (!fromLang.equals(toLang) || fromLang.equals("und")) && (
-                                translateButtonEnabled && !RestrictedLanguagesSelectActivity.getRestrictedLanguages().contains(fromLang) ||
-                                        (currentChat != null && (currentChat.has_link || ChatObject.isPublic(currentChat))) && ("uk".equals(fromLang) || "ru".equals(fromLang)));
-                        showMenu.run();
-                    }, (error) -> {
-                        FileLog.e("mlkit: failed to detect language in selection", error);
-                        showMenu.run();
-                    });
-                } else {
-                    showMenu.run();
-                }
-            } else {
-                showMenu.run();
+            if (getParentActivity() == null) {
+                return true;
             }
+            BottomBuilder builder = new BottomBuilder(getParentActivity());
+            builder.addItem(getString(R.string.Copy), R.drawable.msg_copy, __ -> {
+                try {
+                    AlertUtil.copyAndAlert(finalText, this);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                return Unit.INSTANCE;
+            });
+            builder.addItem(getString(R.string.Translate), LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, __ -> {
+                try {
+                    DialogTransKt.startTrans(getParentActivity(), finalText);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                }
+                return Unit.INSTANCE;
+            });
+            if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
+                builder.addItem(getString(R.string.TranslateMessageLLM), R.drawable.magic_stick_solar, __ -> {
+                    try {
+                        DialogTransKt.startTrans(getParentActivity(), finalText, NekoConfig.translateToLang.String(), Translator.providerLLMTranslator);
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                    return Unit.INSTANCE;
+                });
+            }
+            builder.show();
             return true;
         } else if (position == bizHoursRow || position == bizLocationRow) {
             if (getParentActivity() == null || userInfo == null) {
