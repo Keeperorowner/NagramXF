@@ -593,7 +593,7 @@ object NaConfig {
         addConfig(
             "UseSystemAiService",
             ConfigItem.configTypeBool,
-            true
+            false
         )
     val hideAiEditor =
         addConfig(
@@ -1161,6 +1161,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val messageColoredBackground =
+        addConfig(
+            "MessageColoredBackground",
+            ConfigItem.configTypeBool,
+            true
+        )
     val removeMessageTail =
         addConfig(
             "RemoveMessageTail",
@@ -1333,7 +1339,7 @@ object NaConfig {
         addConfig(
             "IconReplacements",
             ConfigItem.configTypeInt,
-            0
+            1
         )
     val showCopyAsSticker =
         addConfig(
@@ -1513,13 +1519,13 @@ object NaConfig {
         addConfig(
             "SwitchStyle",
             ConfigItem.configTypeInt,
-            0
+            1
         )
     val sliderStyle =
         addConfig(
             "SliderStyle",
             ConfigItem.configTypeInt,
-            0 // 0: default; 1: Modern; 2: MD3
+            2
         )
     val ignoreUnreadCount =
         addConfig(

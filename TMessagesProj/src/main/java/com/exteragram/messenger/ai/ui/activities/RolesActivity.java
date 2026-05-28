@@ -39,7 +39,6 @@ public class RolesActivity extends BaseNekoSettingsActivity {
     private int customHeaderRow;
     private int customStartRow;
     private int customEndRow;
-    private int endDividerRow;
     private int rowCount;
 
     private List<Role> suggestedRoles = new ArrayList<>();
@@ -85,7 +84,7 @@ public class RolesActivity extends BaseNekoSettingsActivity {
                 Role role = suggestedRoles.get(idx);
                 if (!role.isSelected()) {
                     AiConfig.setSelectedRole(role);
-                    if (listAdapter != null) listAdapter.notifyDataSetChanged();
+                    updateRadioCells(position);
                 }
             }
         } else if (customStartRow >= 0 && position >= customStartRow && position < customEndRow) {
@@ -94,8 +93,18 @@ public class RolesActivity extends BaseNekoSettingsActivity {
                 Role role = customRoles.get(idx);
                 if (!role.isSelected()) {
                     AiConfig.setSelectedRole(role);
-                    if (listAdapter != null) listAdapter.notifyDataSetChanged();
+                    updateRadioCells(position);
                 }
+            }
+        }
+    }
+
+    private void updateRadioCells(int selectedPosition) {
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View child = listView.getChildAt(i);
+            int pos = listView.getChildAdapterPosition(child);
+            if (child instanceof RadioColorCell) {
+                ((RadioColorCell) child).setChecked(pos == selectedPosition, true);
             }
         }
     }
@@ -160,7 +169,6 @@ public class RolesActivity extends BaseNekoSettingsActivity {
             customStartRow = -1;
             customEndRow = -1;
         }
-        endDividerRow = rowCount++;
     }
 
     private class ListAdapter extends BaseListAdapter {
@@ -170,9 +178,16 @@ public class RolesActivity extends BaseNekoSettingsActivity {
         }
 
         @Override
+        public boolean isEnabled(RecyclerView.ViewHolder holder) {
+            int type = holder.getItemViewType();
+            return type == VIEW_TYPE_RADIO;
+        }
+
+        @Override
         public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             if (viewType == VIEW_TYPE_RADIO) {
                 RadioColorCell cell = new RadioColorCell(mContext);
+                cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ALL));
                 cell.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(cell);
             }
@@ -200,13 +215,11 @@ public class RolesActivity extends BaseNekoSettingsActivity {
                 } else if (position == customHeaderRow) {
                     cell.setText(LocaleController.getString(R.string.AIChatCustomRoles));
                 }
-            } else if (type == TYPE_INFO_PRIVACY) {
             }
         }
 
         @Override
         public int getItemViewType(int position) {
-            if (position == endDividerRow) return TYPE_INFO_PRIVACY;
             if (position == suggestedHeaderRow || position == customHeaderRow) return TYPE_HEADER;
             return VIEW_TYPE_RADIO;
         }

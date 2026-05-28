@@ -26,7 +26,6 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
-import org.telegram.ui.Cells.TextInfoPrivacyCell;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,17 +43,14 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
 
     private int settingsHeaderRow;
     private int infiniteScrollingRow;
-    private int settingsDividerRow;
 
     private int activeHeaderRow;
     private int activeRowStart;
     private int activeRowEnd;
-    private int activeDividerRow;
 
     private int hiddenHeaderRow;
     private int hiddenRowStart;
     private int hiddenRowEnd;
-    private int hiddenDividerRow;
 
     private final HashMap<Integer, ItemInfo> itemDetails = new HashMap<>();
 
@@ -117,17 +113,14 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
 
         settingsHeaderRow = addRow();
         infiniteScrollingRow = addRow("pillStackInfiniteScrolling");
-        settingsDividerRow = addRow();
 
         activeHeaderRow = -1;
         activeRowStart = -1;
         activeRowEnd = -1;
-        activeDividerRow = -1;
 
         hiddenHeaderRow = -1;
         hiddenRowStart = -1;
         hiddenRowEnd = -1;
-        hiddenDividerRow = -1;
 
         if (!PillStackConfig.activePills.isEmpty()) {
             activeHeaderRow = addRow();
@@ -136,7 +129,6 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
                 addRow("active_" + PillStackConfig.activePills.get(i));
             }
             activeRowEnd = rowCount - 1;
-            activeDividerRow = addRow();
         }
 
         if (!PillStackConfig.hiddenPills.isEmpty()) {
@@ -146,9 +138,6 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
                 addRow("hidden_" + PillStackConfig.hiddenPills.get(i));
             }
             hiddenRowEnd = rowCount - 1;
-            if (activeDividerRow == -1) {
-                hiddenDividerRow = addRow();
-            }
         }
 
         if (listAdapter != null) {
@@ -211,15 +200,12 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
         deduplicatePills();
         settingsHeaderRow = addRow();
         infiniteScrollingRow = addRow("pillStackInfiniteScrolling");
-        settingsDividerRow = addRow();
         activeHeaderRow = -1;
         activeRowStart = -1;
         activeRowEnd = -1;
-        activeDividerRow = -1;
         hiddenHeaderRow = -1;
         hiddenRowStart = -1;
         hiddenRowEnd = -1;
-        hiddenDividerRow = -1;
         if (!PillStackConfig.activePills.isEmpty()) {
             activeHeaderRow = addRow();
             activeRowStart = rowCount;
@@ -227,7 +213,6 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
                 addRow("active_" + PillStackConfig.activePills.get(i));
             }
             activeRowEnd = rowCount - 1;
-            activeDividerRow = addRow();
         }
         if (!PillStackConfig.hiddenPills.isEmpty()) {
             hiddenHeaderRow = addRow();
@@ -236,9 +221,6 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
                 addRow("hidden_" + PillStackConfig.hiddenPills.get(i));
             }
             hiddenRowEnd = rowCount - 1;
-            if (activeDividerRow == -1) {
-                hiddenDividerRow = addRow();
-            }
         }
 
         List<String> newItems = buildItemIdentifiers();
@@ -247,7 +229,7 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
                 @Override public int getOldListSize() { return oldItems.size(); }
                 @Override public int getNewListSize() { return newItems.size(); }
                 @Override public boolean areItemsTheSame(int o, int n) { return oldItems.get(o).equals(newItems.get(n)); }
-                @Override public boolean areContentsTheSame(int o, int n) { return true; }
+                @Override public boolean areContentsTheSame(int o, int n) { return false; }
             }, true);
             result.dispatchUpdatesTo(listAdapter);
         }
@@ -282,11 +264,8 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
         for (int i = 0; i < rowCount; i++) {
             if (i == settingsHeaderRow) items.add("h_settings");
             else if (i == infiniteScrollingRow) items.add("c_infinite");
-            else if (i == settingsDividerRow) items.add("d_settings");
             else if (i == activeHeaderRow) items.add("h_active");
-            else if (i == activeDividerRow) items.add("d_active");
             else if (i == hiddenHeaderRow) items.add("h_hidden");
-            else if (i == hiddenDividerRow) items.add("d_hidden");
             else {
                 Integer id = getPillIdAtRow(i);
                 items.add(id != null ? "p_" + id : "x_" + i);
@@ -400,6 +379,7 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
             PillStackConfig.savePillsLayout();
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pillStackLayoutChanged);
             updateResetButtonVisibility();
+            listAdapter.notifyDataSetChanged();
         }
 
         private boolean isInActiveSection(int position) {
@@ -434,9 +414,6 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
             if (position == infiniteScrollingRow) {
                 return TYPE_CHECK;
             }
-            if (position == settingsDividerRow || position == activeDividerRow || position == hiddenDividerRow) {
-                return TYPE_INFO_PRIVACY;
-            }
             return TYPE_TEXT;
         }
 
@@ -460,19 +437,6 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
                     cell.setTextAndCheck(getString(R.string.PillStackInfiniteScrolling),
                             PillStackConfig.infiniteScrolling, false);
-                    break;
-                }
-                case TYPE_INFO_PRIVACY: {
-                    TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    if (position == settingsDividerRow) {
-                        cell.setText(null);
-                        cell.setFixedSize(12);
-                    } else {
-                        cell.setText(getString(R.string.PillStackPillsSettingsInfo));
-                        cell.setFixedSize(0);
-                    }
-                    cell.setBackground(Theme.getThemedDrawable(mContext,
-                            R.drawable.greydivider, getThemedColor(Theme.key_windowBackgroundGrayShadow)));
                     break;
                 }
                 case TYPE_TEXT: {

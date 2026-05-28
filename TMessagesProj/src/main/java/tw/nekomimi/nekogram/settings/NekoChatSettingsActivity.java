@@ -139,6 +139,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell headerMessages = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.MessagesChartTitle)));
     private final AbstractConfigCell messagePreviewRow = cellGroup.appendCell(new ConfigCellCustom("MessagePreview", ConfigCellCustom.CUSTOM_ITEM_MessagePreview, false));
     private final AbstractConfigCell showTimeHintRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowTimeHint()));
+    private final AbstractConfigCell messageColoredBackgroundRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getMessageColoredBackground(), null));
     private final AbstractConfigCell removeMessageTailRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRemoveMessageTail()));
     private final AbstractConfigCell useEditedIconRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getUseEditedIcon()));
     private final AbstractConfigCell customEditedMessageRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getCustomEditedMessage(), "", null));
@@ -221,6 +222,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             getString(R.string.VideoMessagesCameraRear),
             getString(R.string.VideoMessagesCameraAsk)
     }, null));
+    private final AbstractConfigCell moveAttachCameraToBottomRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.moveAttachCameraToBottom, getString(R.string.MoveAttachCameraToBottomNotice)));
     private final AbstractConfigCell rememberLastUsedCameraRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRememberLastUsedCamera(), getString(R.string.RememberLastUsedCameraInfo), getString(R.string.RememberLastUsedCamera)));
     private final AbstractConfigCell staticZoomRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getStaticZoom(), null, getString(R.string.StaticZoom)));
     private final AbstractConfigCell staticZoomInfoRow = cellGroup.appendCell(new ConfigCellCustom("StaticZoomInfo", CellGroup.ITEM_TYPE_TEXT, false));
@@ -713,6 +715,13 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 if (stickerSizeCell != null) {
                     stickerSizeCell.invalidate();
                 }
+            } else if (key.equals(NaConfig.INSTANCE.getMessageColoredBackground().getKey())) {
+                if (stickerSizeCell != null) {
+                    stickerSizeCell.invalidate();
+                }
+                if (messageSettingsPreviewCell != null) {
+                    messageSettingsPreviewCell.refresh();
+                }
             } else if (key.equals(NaConfig.INSTANCE.getRemoveMessageTail().getKey())) {
                 if (getParentActivity() != null) {
                     Theme.chat_msgInDrawable = null;
@@ -1132,7 +1141,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                     textInfoPrivacyCell.setText(getString(R.string.StaticZoomInfo));
                 }
             } else if (holder.itemView instanceof EmojiSetCell v1) {
-                v1.setData(EmojiHelper.getInstance().getCurrentEmojiPackInfo(), false, true);
+                v1.setData(EmojiHelper.getInstance().getCurrentEmojiPackInfo(), false, cellGroup.needSetDivider(emojiSetsRow));
             }
         }
 

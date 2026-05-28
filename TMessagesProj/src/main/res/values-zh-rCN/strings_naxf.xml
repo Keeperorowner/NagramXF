@@ -196,6 +196,8 @@
     <string name="VideoMessagesCameraFront">前置</string>
     <string name="VideoMessagesCameraRear">后置</string>
     <string name="VideoMessagesCameraAsk">询问</string>
+    <string name="MoveAttachCameraToBottom">底部相机快捷入口</string>
+    <string name="MoveAttachCameraToBottomNotice">在底部附件栏显示相机入口，而不是显示在相册网格中。</string>
 
     <!-- AI Chat -->
     <string name="AIChat">AI 聊天</string>

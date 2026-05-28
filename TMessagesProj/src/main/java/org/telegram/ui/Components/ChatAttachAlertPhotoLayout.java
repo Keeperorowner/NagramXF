@@ -133,6 +133,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import tw.nekomimi.nekogram.NekoConfig;
+
 @SuppressLint("ViewConstructor")
 public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayout implements NotificationCenter.NotificationCenterDelegate {
 
@@ -140,7 +142,6 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private static final int VIEW_TYPE_AVATAR_CONSTRUCTOR = 4;
     private static final int SHOW_FAST_SCROLL_MIN_COUNT = 30;
     private final boolean needCamera;
-    private final boolean disableAttachCamera = true;
 
     private RecyclerListView cameraPhotoRecyclerView;
     private LinearLayoutManager cameraPhotoLayoutManager;
@@ -833,7 +834,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         gridView.getFastScroll().setAlpha(0f);
         gridView.getFastScroll().usePadding = false;
         gridView.getFastScroll().topOffset = ActionBar.getCurrentActionBarHeight(); // + AndroidUtilities.statusBarHeight;
-        gridView.setAdapter(adapter = new PhotoAttachAdapter(context, needCamera && !disableAttachCamera));
+        gridView.setAdapter(adapter = new PhotoAttachAdapter(context, needCamera && !isAttachCameraMovedToBottom()));
         gridView.addItemDecoration(cameraViewItemDecoration = new CameraViewItemDecoration(gridView));
         adapter.createCache();
         gridView.setClipToPadding(false);
@@ -922,7 +923,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             if (!mediaEnabled || parentAlert.destroyed) {
                 return;
             }
-            if (needCamera && disableAttachCamera) {
+            if (needCamera && isAttachCameraMovedToBottom()) {
                 position++;
             }
             BaseFragment fragment = parentAlert.baseFragment;
@@ -969,7 +970,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
                 if (adapter.hasCameraSpaceRow && position > itemsPerRow) {
                     position--;
                 }
-                if (selectedAlbumEntry == galleryAlbumEntry && needCamera || disableAttachCamera && (selectedAlbumEntry != galleryAlbumEntry || shouldLoadAllMedia())) {
+                if (selectedAlbumEntry == galleryAlbumEntry && needCamera || isAttachCameraMovedToBottom() && (selectedAlbumEntry != galleryAlbumEntry || shouldLoadAllMedia())) {
                     position--;
                 }
                 if (showAvatarConstructor) {
@@ -1091,7 +1092,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             }
         });
         gridView.setOnItemLongClickListener((view, position) -> {
-            if (disableAttachCamera) {
+            if (isAttachCameraMovedToBottom()) {
                 position++;
             }
             if (parentAlert.storyMediaPicker) {
@@ -1557,7 +1558,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
     private void openCameraByClick() {
         if (SharedConfig.inappCamera) {
-            if (disableAttachCamera) {
+            if (isAttachCameraMovedToBottom()) {
                 showCamera();
             }
             openCamera(true);
@@ -2177,7 +2178,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
 
             @Override
             public boolean cancelButtonPressed() {
-                if (cameraOpened && cameraView != null && !disableAttachCamera) {
+                if (cameraOpened && cameraView != null && !isAttachCameraMovedToBottom()) {
                     AndroidUtilities.runOnUIThread(() -> {
                         if (cameraView != null && !parentAlert.isDismissed()) {
                             cameraView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_FULLSCREEN);
@@ -2479,7 +2480,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         if (cameraView == null || cameraInitAnimation != null || parentAlert.isDismissed()) {
             return;
         }
-        if (!cameraView.isInited() && LiteMode.isEnabled(LiteMode.FLAGS_CHAT) && !disableAttachCamera) {
+        if (!cameraView.isInited() && LiteMode.isEnabled(LiteMode.FLAGS_CHAT) && !isAttachCameraMovedToBottom()) {
             return;
         }
         cameraView.initTexture();
@@ -2579,7 +2580,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         gridView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         gridView.invalidate();
 
-        if ((!LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || disableAttachCamera) && cameraView != null && cameraView.isInited()) {
+        if ((!LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || isAttachCameraMovedToBottom()) && cameraView != null && cameraView.isInited()) {
             cameraView.showTexture(true, animated);
         }
     }
@@ -2605,7 +2606,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
             return;
         }
         if (cameraView == null) {
-            final boolean lazy = !LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || disableAttachCamera;
+            final boolean lazy = !LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || isAttachCameraMovedToBottom();
             final boolean defaultFront = isCameraFrontfaceBeforeEnteringEditMode != null ? isCameraFrontfaceBeforeEnteringEditMode : parentAlert.openWithFrontFaceCamera;
             cameraView = new CameraViewInternal(getContext(), org.telegram.messenger.camera.CameraView.getLastUsedCameraFace(defaultFront), lazy);
             //if (lazy) {
@@ -2732,7 +2733,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     private void saveLastCameraBitmap() {
-        if (!canSaveCameraPreview || disableAttachCamera) {
+        if (!canSaveCameraPreview || isAttachCameraMovedToBottom()) {
             return;
         }
         try {
@@ -2962,7 +2963,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         }
         gridView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_AUTO);
 
-        if ((!LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || disableAttachCamera) && cameraView != null) {
+        if ((!LiteMode.isEnabled(LiteMode.FLAGS_CHAT) || isAttachCameraMovedToBottom()) && cameraView != null) {
             cameraView.showTexture(false, animated);
         }
     }
@@ -3962,7 +3963,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     public void pauseCamera(boolean pause) {
-        if (disableAttachCamera) {
+        if (isAttachCameraMovedToBottom()) {
             return;
         }
         if (needCamera && !noCameraPermissions) {
@@ -4103,6 +4104,10 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     @Override
     public void onOpenAnimationEnd() {
         checkCamera(parentAlert != null && parentAlert.baseFragment instanceof ChatActivity);
+    }
+
+    private static boolean isAttachCameraMovedToBottom() {
+        return NekoConfig.moveAttachCameraToBottom.Bool();
     }
 
     @Override
