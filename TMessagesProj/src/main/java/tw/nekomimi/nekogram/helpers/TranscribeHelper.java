@@ -227,7 +227,7 @@ public class TranscribeHelper {
         if (button != null) {
             button.setOnClickListener(v -> {
                 var apiKey = editTextApiKey.getText();
-                if (!TextUtils.isEmpty(apiKey) && (apiKey.length() != 39 || !apiKey.toString().startsWith("AIzaSy"))) {
+                if (!TextUtils.isEmpty(apiKey) && apiKey.length() < 39) {
                     AndroidUtilities.shakeViewSpring(editTextApiKey, -6);
                     BotWebViewVibrationEffect.APP_ERROR.vibrate();
                     return;
