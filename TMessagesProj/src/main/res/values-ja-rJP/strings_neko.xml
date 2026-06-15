@@ -201,7 +201,6 @@
     <string name="AddProxySocks5">SOCKS5 プロキシを追加</string>
     <string name="AddProxyTelegram">MTProto プロキシを追加</string>
     <string name="RetestPing">すべてのサーバーの ping を再テストする</string>
-    <string name="ImportProxyList">プロキシサーバをインポート</string>
     <string name="ExportStickers">ステッカーをエクスポート</string>
     <string name="ImportStickersX">ファイルからステッカーをインポート</string>
     <string name="ImportStickersList">ステッカーをインポート</string>

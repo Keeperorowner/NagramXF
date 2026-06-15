@@ -201,7 +201,6 @@
     <string name="AddProxySocks5">新增 SOCKS5 代理</string>
     <string name="AddProxyTelegram">新增 MTProto 代理</string>
     <string name="RetestPing">重新測試所有 Ping 值</string>
-    <string name="ImportProxyList">匯入代理伺服器清單</string>
     <string name="ExportStickers">匯出貼圖包</string>
     <string name="ImportStickersX">從檔案匯入貼圖包</string>
     <string name="ImportStickersList">匯入貼圖包</string>

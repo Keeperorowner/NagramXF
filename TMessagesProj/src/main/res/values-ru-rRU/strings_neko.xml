@@ -202,7 +202,6 @@
     <string name="AddProxySocks5">Добавить прокси SOCKS5</string>
     <string name="AddProxyTelegram">MTProto-прокси</string>
     <string name="RetestPing">Пересчитать пинг всех серверов</string>
-    <string name="ImportProxyList">Импорт прокси</string>
     <string name="ExportStickers">Экспорт стикеров</string>
     <string name="ImportStickersX">Импорт стикеров</string>
     <string name="ImportStickersList">Импорт стикеров</string>
