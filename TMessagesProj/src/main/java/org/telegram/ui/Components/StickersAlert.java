@@ -29,7 +29,6 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Parcelable;
 import android.text.Editable;
 import android.text.InputType;
@@ -393,7 +392,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     File stickerFile = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document, true);
                     if (stickerFile != null) {
                         try {
-                            entry.averageDuration = (long) (RLottieDrawable.getDuration(stickerFile.getAbsolutePath(), null) * 1000L);
+                            entry.averageDuration = (long) (RLottieNative.getDuration(stickerFile.getAbsolutePath(), null) * 1000L);
                         } catch (Exception e) {
                             FileLog.e(e);
                         }

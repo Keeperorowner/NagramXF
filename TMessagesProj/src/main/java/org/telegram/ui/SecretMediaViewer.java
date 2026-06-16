@@ -87,6 +87,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.utils.WindowVisibilityManager;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -305,8 +306,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         @Keep
         @Override
         public void setAlpha(int alpha) {
-            if (parentActivity instanceof LaunchActivity) {
-                ((LaunchActivity) parentActivity).drawerLayoutContainer.setAllowDrawContent(!isPhotoVisible || alpha != 255);
+            if (activityVisibilityController != null) {
+                activityVisibilityController.setHidden(!(!isPhotoVisible || alpha != 255));
             }
             super.setAlpha(alpha);
         }
@@ -732,6 +733,8 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         }
         isPlaying = false;
     }
+
+    private WindowVisibilityManager.Controller activityVisibilityController;
 
     public void setParentActivity(Activity activity) {
         currentAccount = UserConfig.selectedAccount;
@@ -1484,6 +1487,12 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         animateToRadius = true;
         zoomAnimation = true;
 
+        if (activityVisibilityController != null) {
+            activityVisibilityController.destroy();
+            activityVisibilityController = null;
+        }
+        activityVisibilityController = LaunchActivity.obtainActivityVisibilityController();
+
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.didCreatedNewDeleteTask);
@@ -1741,6 +1750,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
         if (onClose != null) {
             onClose.run();
             onClose = null;
+        }
+        if (activityVisibilityController != null) {
+            activityVisibilityController.destroy();
+            activityVisibilityController = null;
         }
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateMessageMedia);
@@ -2024,6 +2037,10 @@ public class SecretMediaViewer implements NotificationCenter.NotificationCenterD
             }
         }
 
+        if (activityVisibilityController != null) {
+            activityVisibilityController.destroy();
+            activityVisibilityController = null;
+        }
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.messagesDeleted);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.updateMessageMedia);
         NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.didCreatedNewDeleteTask);

@@ -12,6 +12,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -19,6 +20,7 @@ import android.widget.ImageView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -54,6 +56,7 @@ public class ManageChatUserCell extends FrameLayout {
     private TLRPC.FileLocation lastAvatar;
     private boolean isAdmin;
     private boolean needDivider;
+    private boolean subtitleUsername;
     private int statusColor;
     private int statusOnlineColor;
     private final int namePadding;
@@ -209,6 +212,10 @@ public class ManageChatUserCell extends FrameLayout {
         isAdmin = value;
     }
 
+    public void setUsernameSubtitle() {
+        subtitleUsername = true;
+    }
+
     public boolean hasAvatarSet() {
         return avatarImageView.getImageReceiver().hasNotThumb();
     }
@@ -280,15 +287,21 @@ public class ManageChatUserCell extends FrameLayout {
                 statusTextView.setTextColor(statusColor);
                 statusTextView.setText(currentStatus);
             } else {
+                final String username = DialogObject.getPublicUsername(currentUser);
                 if (currentUser.bot) {
                     statusTextView.setTextColor(statusColor);
-                    if (currentUser.bot_chat_history || isAdmin) {
+                    if (subtitleUsername && !TextUtils.isEmpty(username)) {
+                        statusTextView.setText(username);
+                    } else if (currentUser.bot_chat_history || isAdmin) {
                         statusTextView.setText(LocaleController.getString(R.string.BotStatusRead));
                     } else {
                         statusTextView.setText(LocaleController.getString(R.string.BotStatusCantRead));
                     }
                 } else {
-                    if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
+                    if (subtitleUsername && !TextUtils.isEmpty(username)) {
+                        statusTextView.setText(username);
+                        statusTextView.setTextColor(statusColor);
+                    } else if (currentUser.id == UserConfig.getInstance(currentAccount).getClientUserId() || currentUser.status != null && currentUser.status.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime() || MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(currentUser.id)) {
                         statusTextView.setTextColor(statusOnlineColor);
                         statusTextView.setText(LocaleController.getString(R.string.Online));
                     } else {

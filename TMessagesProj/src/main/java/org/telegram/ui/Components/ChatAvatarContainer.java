@@ -101,6 +101,25 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     private boolean occupyStatusBar = true;
     private int leftPadding = dp(8);
     private int rightAvatarPadding = 0;
+    private int avatarSizeInDp = 42;
+    private boolean glassMode;
+    public void setGlassMode() {
+        if (titleTextView != null) {
+            titleTextView.setTextSizePx(dp(17.5f));
+        }
+        if (subtitleTextView != null) {
+            subtitleTextView.setTextSizePx(dp(13.5f));
+        }
+        SimpleTextView titleCopy = titleTextLargerCopyView.get();
+        if (titleCopy != null) {
+            titleCopy.setTextSizePx(dp(glassMode ? 17.5f : 18));
+        }
+        SimpleTextView subtitleCopy = subtitleTextLargerCopyView.get();
+        if (subtitleCopy != null) {
+            subtitleCopy.setTextSizePx(dp(glassMode ? 13.5f : 14));
+        }
+        glassMode = true;
+    }
     StatusDrawable currentTypingDrawable;
 
     private int lastWidth = -1;
@@ -765,7 +784,7 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         int padding = isCentered() ? dp(isPreviewMode() ? 35 : 10) : 0;
         int width = MeasureSpec.getSize(widthMeasureSpec) + (isCentered() ? 0 : titleTextView.getPaddingRight());
         int availableWidth = width - dp(((avatarImageView.getVisibility() == VISIBLE || isCentered()) ? 54 : 0) + 16);
-        avatarImageView.measure(MeasureSpec.makeMeasureSpec(dp(42), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(42), MeasureSpec.EXACTLY));
+        avatarImageView.measure(MeasureSpec.makeMeasureSpec(dp(avatarSizeInDp), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(avatarSizeInDp), MeasureSpec.EXACTLY));
         titleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth - padding, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(24 + 8) + titleTextView.getPaddingRight(), MeasureSpec.AT_MOST));
         if (subtitleTextView != null) {
             subtitleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth - padding, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(20), MeasureSpec.AT_MOST));
@@ -853,19 +872,20 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         int actionBarHeight = ActionBar.getCurrentActionBarHeight();
-        int viewTop = (actionBarHeight - dp(42)) / 2 + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
+        int viewTop = (actionBarHeight - dp(avatarSizeInDp)) / 2 + (Build.VERSION.SDK_INT >= 21 && occupyStatusBar ? AndroidUtilities.statusBarHeight : 0);
+        int subtitleTop = viewTop + dp(glassMode ? 23.66f : 24);
 
         int avatarLeft = leftPadding;
-        int avatarRight = leftPadding + dp(42);
+        int avatarRight = leftPadding + dp(avatarSizeInDp);
 
         if (isCentered()) {
-            avatarLeft = getWidth() - leftPadding - dp(42);
-            avatarRight = avatarLeft + dp(42);
+            avatarLeft = getWidth() - leftPadding - dp(avatarSizeInDp);
+            avatarRight = avatarLeft + dp(avatarSizeInDp);
         }
 
-        avatarImageView.layout(avatarLeft, viewTop + 1, avatarRight, viewTop + 1 + dp(42));
+        avatarImageView.layout(avatarLeft, viewTop + 1, avatarRight, viewTop + 1 + dp(avatarSizeInDp));
 
-        int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE && !isCentered() ? dp( 54) : 0) + (isCentered() ? 0 : rightAvatarPadding);
+        int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE && !isCentered() ? dp(glassMode ? 48.66f : 54) : 0) + (isCentered() ? 0 : rightAvatarPadding);
 
         if (isPreviewMode() && isCentered()) {
             l += dp(AndroidUtilities.isTablet() ? 80 : 72) / 2;
@@ -901,13 +921,13 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
             starFgItem.layout(leftPadding + dp(28), viewTop + dp(24), leftPadding + dp(28) + starFgItem.getMeasuredWidth(), viewTop + dp(24) + starFgItem.getMeasuredHeight());
         }
         if (subtitleTextView != null) {
-            subtitleTextView.layout(l, viewTop + dp(24), l + subtitleTextView.getMeasuredWidth(), viewTop + subtitleTextView.getTextHeight() + dp(24));
+            subtitleTextView.layout(l, subtitleTop, l + subtitleTextView.getMeasuredWidth(), subtitleTop + subtitleTextView.getTextHeight());
         } else if (animatedSubtitleTextView != null) {
-            animatedSubtitleTextView.layout(l, viewTop + dp(24), l + animatedSubtitleTextView.getMeasuredWidth(), viewTop + animatedSubtitleTextView.getTextHeight() + dp(24));
+            animatedSubtitleTextView.layout(l, subtitleTop, l + animatedSubtitleTextView.getMeasuredWidth(), subtitleTop + animatedSubtitleTextView.getTextHeight());
         }
         SimpleTextView subtitleTextLargerCopyView = this.subtitleTextLargerCopyView.get();
         if (subtitleTextLargerCopyView != null) {
-            subtitleTextLargerCopyView.layout(l, viewTop + dp(24), l + subtitleTextLargerCopyView.getMeasuredWidth(), viewTop + subtitleTextLargerCopyView.getTextHeight() + dp(24));
+            subtitleTextLargerCopyView.layout(l, subtitleTop, l + subtitleTextLargerCopyView.getMeasuredWidth(), subtitleTop + subtitleTextLargerCopyView.getTextHeight());
         }
     }
 
@@ -915,8 +935,29 @@ public class ChatAvatarContainer extends FrameLayout implements NotificationCent
         leftPadding = value;
     }
 
+    public int getLeftPadding() {
+        return leftPadding;
+    }
+
     public void setRightAvatarPadding(int value) {
         rightAvatarPadding = value;
+    }
+
+    public boolean hasVisibleAvatar() {
+        return avatarImageView != null && avatarImageView.getVisibility() == VISIBLE;
+    }
+
+    public int getVisualWidth() {
+        float width = 0;
+        if (titleTextView != null) {
+            width = Math.max(width, titleTextView.getExactWidthIncludeDrawables());
+        }
+        if (hasVisibleAvatar()) {
+            width += dp(52 + 12);
+        } else {
+            width += dp(30);
+        }
+        return (int) width;
     }
 
     public void showTimeItem(boolean animated) {

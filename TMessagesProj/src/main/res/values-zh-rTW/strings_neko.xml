@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">N-設定</string>
     <string name="IPv6">偏好 IPv6</string>
@@ -103,8 +103,6 @@
     <string name="customSavePath">自訂儲存路徑</string>
     <string name="customSavePathHint">留空以直接儲存</string>
     <string name="channelLabel">頻道</string>
-    <string name="forceBlurInChat">強制啟用聊天頂部模糊</string>
-    <string name="ChatBlurAlphaValue">聊天頂部不透明度</string>
     <string name="MutualContact">雙向聯絡人</string>
     <string name="MutualContactDescription">此聯絡人為雙向聯絡人。</string>
     <string name="DatacenterStatusAbout">檢查 Telegram **資料中心**的狀態。</string>

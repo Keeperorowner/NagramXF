@@ -8,7 +8,7 @@ import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import org.telegram.messenger.AndroidUtilities
-import org.telegram.tgnet.TLRPC
+import org.telegram.tgnet.tl.TL_iv
 import org.telegram.ui.ArticleViewer
 import tw.nekomimi.nekogram.translate.Translator
 import tw.nekomimi.nekogram.utils.AlertUtil
@@ -17,28 +17,29 @@ import tw.nekomimi.nekogram.utils.uUpdate
 import java.util.concurrent.atomic.AtomicInteger
 
 private fun extractTextPlainLeaves(
-    richText: TLRPC.RichText, leaves: MutableList<TLRPC.TL_textPlain>
+    richText: TL_iv.RichText, leaves: MutableList<TL_iv.textPlain>
 ) {
     when (richText) {
-        is TLRPC.TL_textPlain -> {
+        is TL_iv.textPlain -> {
             if (richText.text.isNotBlank()) {
                 leaves.add(richText)
             }
         }
 
-        is TLRPC.TL_textConcat -> richText.texts.forEach { extractTextPlainLeaves(it, leaves) }
-        is TLRPC.TL_textBold -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textItalic -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textUnderline -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textStrike -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textFixed -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textUrl -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textEmail -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textPhone -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textMarked -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textSubscript -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textSuperscript -> extractTextPlainLeaves(richText.text, leaves)
-        is TLRPC.TL_textAnchor -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textConcat -> richText.texts.forEach { extractTextPlainLeaves(it, leaves) }
+        is TL_iv.textBold -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textItalic -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textUnderline -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textStrike -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textFixed -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textUrl -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textEmail -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textPhone -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textMarked -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textSubscript -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textSuperscript -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textAnchor -> extractTextPlainLeaves(richText.text, leaves)
+        is TL_iv.textSpoiler -> extractTextPlainLeaves(richText.text, leaves)
     }
 }
 
@@ -53,8 +54,8 @@ fun ArticleViewer.doTransLATE() {
         val textsToTranslate = HashSet<String>()
         pages[0].adapter.textBlocks.forEach { item ->
             when (item) {
-                is TLRPC.RichText -> {
-                    val leaves = mutableListOf<TLRPC.TL_textPlain>()
+                is TL_iv.RichText -> {
+                    val leaves = mutableListOf<TL_iv.textPlain>()
                     extractTextPlainLeaves(item, leaves)
                     leaves.forEach { plainText ->
                         textsToTranslate.add(plainText.text)

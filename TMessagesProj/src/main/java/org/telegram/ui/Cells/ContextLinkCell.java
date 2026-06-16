@@ -287,7 +287,7 @@ public class ContextLinkCell extends FrameLayout implements DownloadController.F
                     } else if (NekoConfig.mapPreviewProvider.Int() == 3) {
                         webFile = null;
                     } else {
-                        urlLocation = AndroidUtilities.formapMapUrl(false, lat, lon, 72, 72, true, 15);
+                        urlLocation = AndroidUtilities.formapMapUrl(0, lat, lon, 72, 72, true, 15, -1);
                     }
                 }
             }

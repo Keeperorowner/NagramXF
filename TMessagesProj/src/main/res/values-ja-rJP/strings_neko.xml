@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="NekoSettings">N-設定</string>
     <string name="IPv6">IPv6 を優先</string>
@@ -103,8 +103,6 @@
     <string name="customSavePath">カスタム保存パス</string>
     <string name="customSavePathHint">空白のままにすると直接保存されます</string>
     <string name="channelLabel">チャンネル</string>
-    <string name="forceBlurInChat">チャットタイトルのぼかしを有効化</string>
-    <string name="ChatBlurAlphaValue">ぼかしの不透明度</string>
     <string name="MutualContact">相互の連絡先</string>
     <string name="MutualContactDescription">この連絡先は相互の連絡先です。</string>
     <string name="DatacenterStatusAbout">Telegram の**データセンター**の状態を確認します。</string>

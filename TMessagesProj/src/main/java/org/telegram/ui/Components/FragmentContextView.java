@@ -143,7 +143,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private BaseFragment fragment;
     private ChatActivityInterface chatActivity;
     private View applyingView;
-    private BlurredFrameLayout frameLayout;
+    private FrameLayout frameLayout;
     private FrameLayout groupCallMessagesContainer;
     private View shadow;
     private View selector;
@@ -315,11 +315,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         }
 
         final Context context = getContext();
-        SizeNotifierFrameLayout sizeNotifierFrameLayout = null;
-        if (!isInsideBubble && fragment.getFragmentView() instanceof SizeNotifierFrameLayout) {
-            sizeNotifierFrameLayout = (SizeNotifierFrameLayout) fragment.getFragmentView();
-        }
-        frameLayout = new BlurredFrameLayout(context, sizeNotifierFrameLayout) {
+        frameLayout = new FrameLayout(context) {
 
             @Override
             public void invalidate() {
@@ -400,7 +396,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 return who == notifyText || super.verifyDrawable(who);
             }
         };
-        frameLayout.drawBlur = !isInsideBubble;
         notifyButtonBounce = new ButtonBounce(frameLayout);
         notifyText.setOverrideFullWidth(AndroidUtilities.displaySize.x);
         notifyText.setScaleProperty(.4f);
