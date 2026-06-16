@@ -7275,7 +7275,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 }
                 case 9: {
                     BlockPhotoCell cell = (BlockPhotoCell) holder.itemView;
-                    cell.setBlock((TL_iv.pageBlockPhoto) block, currentPage.cached_page, null, calcHeight, position == 0);
+                    cell.setBlock((TL_iv.pageBlockPhoto) block, currentPage, null, calcHeight, position == 0);
                     cell.setParentBlock(originalBlock);
                     break;
                 }
@@ -7346,7 +7346,7 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 }
                 case 23: {
                     BlockRelatedArticlesCell cell = (BlockRelatedArticlesCell) holder.itemView;
-                    cell.setBlock((TL_pageBlockRelatedArticlesChild) block, currentPage.cached_page);
+                    cell.setBlock((TL_pageBlockRelatedArticlesChild) block, currentPage);
                     break;
                 }
                 case 24: {
