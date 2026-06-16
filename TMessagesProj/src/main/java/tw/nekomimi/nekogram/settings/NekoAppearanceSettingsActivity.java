@@ -177,8 +177,6 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     presentFragment(new com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity()))
     );
     private final AbstractConfigCell dividerFolder = cellGroup.appendCell(new ConfigCellDivider());
-    private final AbstractConfigCell headerBlurOptions = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.BlurOptions)));
-    private final AbstractConfigCell forceBlurInChatRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceBlurInChat));
 
     @Override
     protected RecyclerListView.SelectionAdapter getListAdapter() {

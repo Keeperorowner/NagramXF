@@ -85,6 +85,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.utils.GradientProtectionDrawable;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.TextStyleSpan;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 
@@ -259,15 +261,6 @@ public final class FloatingToolbar {
 
     private List<MenuItem> getVisibleAndEnabledMenuItems(Menu menu) {
         final List<MenuItem> menuItems = new ArrayList<>();
-//        boolean addedTranslate = false;
-//        for (int i = 0; (menu != null) && (i < menu.size()); i++) {
-//            final MenuItem menuItem = menu.getItem(i);
-//            if (menuItem.isVisible() && menuItem.isEnabled()) {
-//                if (menuItem.getItemId() == R.id.menu_translate) {
-//                    addedTranslate = true;
-//                }
-//            }
-//        }
         for (int i = 0; (menu != null) && (i < menu.size()); i++) {
             final MenuItem menuItem = menu.getItem(i);
             if (menuItem.isVisible() && menuItem.isEnabled()) {
@@ -276,17 +269,17 @@ public final class FloatingToolbar {
                     menuItems.addAll(getVisibleAndEnabledMenuItems(subMenu));
                 } else if (menuItem.getItemId() == R.id.menu_quote && (quoteShowCallback != null && !quoteShowCallback.run())) {
                     continue;
-                } else if (
-                    !(
-//                        addedTranslate &&
-                        (menuItem.getItemId() == TRANSLATE || menuItem.getItemId() == TRANSLATE2)
-                    ) &&
-                    (
-                        menuItem.getItemId() != R.id.menu_regular ||
-                        premiumLockClickListener == null
-                    )
-                ) {
-                    menuItems.add(menuItem);
+                } else {
+                    if (
+                        !(
+                            (menuItem.getItemId() == TRANSLATE || menuItem.getItemId() == TRANSLATE2)
+                        ) &&
+                        (
+                            menuItem.getItemId() != R.id.menu_regular || premiumLockClickListener == null
+                        )
+                    ) {
+                        menuItems.add(menuItem);
+                    }
                 }
             }
         }
@@ -302,17 +295,29 @@ public final class FloatingToolbar {
         mWindowView.removeOnLayoutChangeListener(mOrientationChangeHandler);
     }
 
+    public static final List<Integer> STYLE_BUTTONS = Arrays.asList(
+        R.id.menu_regular,
+        R.id.menu_bold,
+        R.id.menu_italic,
+        R.id.menu_strike,
+        R.id.menu_mono,
+        R.id.menu_underline,
+        R.id.menu_spoiler,
+        R.id.menu_link,
+        R.id.menu_quote,
+        R.id.menu_date
+    );
     public static final List<Integer> premiumOptions = Arrays.asList(
-            R.id.menu_bold,
-            R.id.menu_italic,
-            R.id.menu_strike,
-            R.id.menu_link,
-            R.id.menu_mono,
-            R.id.menu_code,
-            R.id.menu_mention,
-            R.id.menu_underline,
-            R.id.menu_spoiler,
-            R.id.menu_quote
+        R.id.menu_bold,
+        R.id.menu_italic,
+        R.id.menu_strike,
+        R.id.menu_link,
+        R.id.menu_mono,
+        R.id.menu_code,
+        R.id.menu_mention,
+        R.id.menu_underline,
+        R.id.menu_spoiler,
+        R.id.menu_quote
     );
 
     private final class FloatingToolbarPopup {
@@ -327,7 +332,8 @@ public final class FloatingToolbar {
         private final int mMarginVertical;
 
         private final ViewGroup mContentContainer;
-        private final ViewGroup mMainPanel;
+        private final LinearLayout mMainPanel;
+        private LinearLayout mMainPanelButtons;
         private final OverflowPanel mOverflowPanel;
         private final FrameLayout mOverflowButton;
         private final View mOverflowButtonShadow;
@@ -361,7 +367,7 @@ public final class FloatingToolbar {
             info.touchableRegion.set(mTouchableRegion);
             info.setTouchableInsets(ViewTreeObserver.InternalInsetsInfo.TOUCHABLE_INSETS_REGION);
         };*/
-        private final int mLineHeight;
+        private int mLineHeight;
         private final int mIconTextSpacing;
 
         private final Runnable mPreparePopupContentRTLHelper = new Runnable() {
@@ -977,20 +983,24 @@ public final class FloatingToolbar {
             return mOverflowPanelSize != null;
         }
 
+        public void layoutStyleItems(List<Integer> buttons) {
+            if (buttons == null || buttons.isEmpty()) {
+                mMainPanel.setOrientation(LinearLayout.HORIZONTAL);
+                mMainPanelButtons = null;
+                mLineHeight = dp(48);
+                return;
+            }
+            mMainPanel.setOrientation(LinearLayout.VERTICAL);
+            mMainPanelButtons = new LinearLayout(mContext);
+            mMainPanelButtons.setOrientation(LinearLayout.HORIZONTAL);
+            mMainPanel.addView(mMainPanelButtons);
+            mLineHeight = dp(48 + 48);
+        }
+
         public List<MenuItem> layoutMainPanelItems(List<MenuItem> menuItems, final int toolbarWidth) {
             int availableWidth = toolbarWidth;
+            final LinearLayout panel = mMainPanelButtons != null ? mMainPanelButtons : mMainPanel;
             final LinkedList<MenuItem> remainingMenuItems = new LinkedList<>(menuItems);
-            /*final LinkedList<MenuItem> overflowMenuItems = new LinkedList<>();
-            for (MenuItem menuItem : menuItems) {
-                if (menuItem.requiresOverflow()) {
-                    overflowMenuItems.add(menuItem); TODO
-                } else {
-                    remainingMenuItems.add(menuItem);
-                }
-            }
-            remainingMenuItems.addAll(overflowMenuItems);*/
-            mMainPanel.removeAllViews();
-            mMainPanel.setPaddingRelative(0, 0, 0, 0);
             boolean isFirstItem = true;
             Iterator<MenuItem> it = remainingMenuItems.iterator();
             while (it.hasNext()) {
@@ -1016,7 +1026,7 @@ public final class FloatingToolbar {
                 if (canFitWithOverflow || canFitNoOverflow) {
                     setButtonTagAndClickListener(menuItemButton, menuItem);
                     //menuItemButton.setTooltipText(menuItem.getTooltipText()); TODO
-                    mMainPanel.addView(menuItemButton);
+                    panel.addView(menuItemButton);
                     final ViewGroup.LayoutParams params = menuItemButton.getLayoutParams();
                     params.width = menuItemButtonWidth;
                     menuItemButton.setLayoutParams(params);
@@ -1028,7 +1038,7 @@ public final class FloatingToolbar {
                 isFirstItem = false;
             }
             if (!remainingMenuItems.isEmpty()) {
-                mMainPanel.setPaddingRelative(0, 0, mOverflowButtonSize.getWidth(), 0);
+                panel.setPaddingRelative(0, 0, mOverflowButtonSize.getWidth(), 0);
             }
             mMainPanelSize = measure(mMainPanel);
             return remainingMenuItems;
@@ -1101,6 +1111,7 @@ public final class FloatingToolbar {
             mIsOverflowOpen = false;
             updateOverflowButtonClickListener();
             mMainPanel.removeAllViews();
+            mMainPanel.setPaddingRelative(0, 0, 0, 0);
             ArrayAdapter<MenuItem> overflowPanelAdapter = (ArrayAdapter<MenuItem>) mOverflowPanel.getAdapter();
             overflowPanelAdapter.clear();
             mOverflowPanel.setAdapter(overflowPanelAdapter);
@@ -1156,7 +1167,7 @@ public final class FloatingToolbar {
             }
         }
 
-        private ViewGroup createMainPanel() {
+        private LinearLayout createMainPanel() {
             return new LinearLayout(mContext) {
                 @Override
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -1591,4 +1602,5 @@ public final class FloatingToolbar {
         animation.addListener(listener);
         return animation;
     }
+
 }

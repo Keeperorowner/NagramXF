@@ -328,7 +328,6 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
 
         public MainTabsPreviewCell(Context context) {
             super(context, null);
-            setEqualWidthWhenTitlesVisible(true);
             setPadding(dp(12), dp(6), dp(12), dp(6));
         }
 

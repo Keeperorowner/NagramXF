@@ -8,6 +8,7 @@ import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_AC
 import android.animation.Animator;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -98,6 +99,22 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsActivity extends ViewPagerActivity implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
     private static final int DEFAULT_PAGER_POSITION = 0;
+
+    public static final int TABS_COUNT = 4;
+    private static final int POSITION_CHATS = 0;
+    private static final int POSITION_CONTACTS = 1;
+    private static final int POSITION_CALLS_OR_SETTINGS = 2;
+    private static final int POSITION_PROFILE = 3;
+
+    private static final int INDEX_CHATS = 0;
+    private static final int INDEX_CONTACTS = 1;
+    private static final int INDEX_SETTINGS = 2;
+    private static final int INDEX_CALLS = 3;
+    private static final int INDEX_PROFILE = 4;
+
+    private static int indexToPosition(int index) {
+        return index > 2 ? index - 1 : index;
+    }
 
     private static final int ANIMATOR_ID_TABS_VISIBLE = 0;
     private static final int ANIMATOR_ID_TABS_SCROLL_HIDE = 1;
@@ -213,6 +230,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         };
     }
 
+    private boolean tabletLayout;
+    public void updateLayout() {
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        updateLayout();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -261,6 +288,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     @Override
     public View createView(Context context) {
         super.createView(context);
+        tabletLayout = false;
 
         final int mainTabsMargin = MainTabsHelper.getMainTabsMargin();
 
@@ -270,6 +298,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final int paddingH = dp(mainTabsMargin + 4);
         final int paddingV = dp(mainTabsMargin + 4);
         tabsView.setPadding(paddingH, paddingV, paddingH, paddingV);
+        tabsView.setMaxWidth(dp(328 + mainTabsMargin * 2));
 
         rebuildTabs();
 
@@ -277,7 +306,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
 
-        ViewPositionWatcher viewPositionWatcher = new ViewPositionWatcher(contentView);
+        final ViewPositionWatcher viewPositionWatcher = new ViewPositionWatcher(contentView);
 
         BlurredBackgroundDrawableViewFactory iBlur3FactoryGlass = new BlurredBackgroundDrawableViewFactory(iBlur3SourceTabGlass != null ? iBlur3SourceTabGlass : iBlur3SourceColor);
         iBlur3FactoryGlass.setSourceRootView(viewPositionWatcher, contentView);
@@ -358,6 +387,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             updateLayout.updateAppUpdateViews(currentAccount, false);
         }
 
+        updateLayout();
         checkUnreadCount(false);
         updateSearchTabButtonVisibility();
         return contentView;
@@ -896,7 +926,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
         {
-            final int bottomMargin = isUpdateLayoutVisible ? (navigationBarHeight + updateLayoutHeight) : 0;
+            int bottomMargin = isUpdateLayoutVisible ? (navigationBarHeight + updateLayoutHeight) : 0;
+            if (tabletLayout) {
+                bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
+            }
             lp = (ViewGroup.MarginLayoutParams) viewPager.getLayoutParams();
             if (lp.bottomMargin != bottomMargin) {
                 lp.bottomMargin = bottomMargin;
@@ -1031,7 +1064,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             : 0f;
         final float hide = 1f - AndroidUtilities.getNavigationBarThirdButtonsFactor(0, 1f, navigationBarHeight);
         final float scrollHideFactor = animatorTabsScrollHide.getFloatValue();
-        final float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue() * (1f - scrollHideFactor);
+        float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue() * (1f - scrollHideFactor);
+        if (tabletLayout) {
+            alpha = 0.0f;
+        }
 
         fadeView.setAlpha(alpha);
         fadeView.setTranslationY(isProfile * dp(48));

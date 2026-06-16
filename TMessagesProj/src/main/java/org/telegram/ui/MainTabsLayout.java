@@ -34,6 +34,7 @@ import me.vkryl.android.util.ClickHelper;
 @SuppressLint("ViewConstructor")
 public class MainTabsLayout extends AnimatedLinearLayout {
     private boolean equalWidthWhenTitlesVisible;
+    private int maxWidthPx;
 
     private final Theme.ResourcesProvider resourcesProvider;
 
@@ -47,10 +48,21 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         requestLayout();
     }
 
+    public void setMaxWidth(int maxWidthPx) {
+        if (this.maxWidthPx != maxWidthPx) {
+            this.maxWidthPx = maxWidthPx;
+            requestLayout();
+        }
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        final int width = MeasureSpec.getSize(widthMeasureSpec);
+        int width = MeasureSpec.getSize(widthMeasureSpec);
         final int height = MeasureSpec.getSize(heightMeasureSpec);
+        if (maxWidthPx > 0 && width > maxWidthPx) {
+            width = maxWidthPx;
+            widthMeasureSpec = MeasureSpec.makeMeasureSpec(width, MeasureSpec.getMode(widthMeasureSpec));
+        }
         final int tabHeight = height - getPaddingTop() - getPaddingBottom();
 
         measureTabTexts();
@@ -200,6 +212,8 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     public interface Tab {
         float measureTextWidth();
+        float measureTextWidth(float textSizeDp);
+        void setTextSizeDp(float textSizeDp);
     }
 
 
