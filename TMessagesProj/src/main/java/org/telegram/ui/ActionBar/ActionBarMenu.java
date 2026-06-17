@@ -74,6 +74,10 @@ public class ActionBarMenu extends LinearLayout {
         isCenteredTitle = centeredTitle;
     }
 
+    public boolean isCenteredTitle() {
+        return isCenteredTitle;
+    }
+
     public ActionBarMenuItem addItem(int id, Drawable drawable) {
         return addItem(id, 0, null, isActionMode ? parentActionBar.itemsActionModeBackgroundColor : parentActionBar.itemsBackgroundColor, drawable, dp(48), null);
     }
