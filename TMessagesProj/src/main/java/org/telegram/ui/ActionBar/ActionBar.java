@@ -2201,7 +2201,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         final int s = dp(46);
 
         final float actionModeFactor = getActionModeFactor();
-        final int defaultMenuWidth = Math.max(0, menu != null ? menu.getItemsWidth() - dp(1) - dp(1) : 0);
+        int defaultMenuWidth = Math.max(0, menu != null ? menu.getItemsWidth() - dp(1) - dp(1) : 0);
+        if (chatAvatarContainer == null && menu != null && menu.isCenteredTitle()) {
+            defaultMenuWidth = lerp(Math.max(defaultMenuWidth, s), defaultMenuWidth, searchFactor);
+        }
         final int actionMenuWidth = Math.max(0, actionMode != null ? actionMode.getItemsWidth() - dp(1) - dp(1) : 0);
         final int menuWidth = hasForcedMenuWidth ? forcedMenuWidth : lerp(defaultMenuWidth, actionMenuWidth, getActionModeFactor());
 

@@ -225,6 +225,7 @@ public class ActionBarMenuItem extends FrameLayout {
     private OnClickListener onClickListener;
 
     private boolean fixBackground;
+    private boolean forceHidden;
 
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor) {
         this(context, menu, backgroundColor, iconColor, false);
@@ -282,8 +283,22 @@ public class ActionBarMenuItem extends FrameLayout {
         invalidate();
     }
 
+    public void setForceHidden(boolean value) {
+        if (forceHidden != value) {
+            forceHidden = value;
+            if (forceHidden) {
+                super.setVisibility(GONE);
+            }
+        }
+    }
+
     public void setVisibility(boolean visibility) {
         this.setVisibility(visibility ? VISIBLE : GONE);
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(forceHidden ? GONE : visibility);
     }
 
     @Override
