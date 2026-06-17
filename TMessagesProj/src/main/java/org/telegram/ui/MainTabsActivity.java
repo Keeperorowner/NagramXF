@@ -1300,7 +1300,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 if (addedAny) {
                     o.addGap();
                 }
-                o.add(R.drawable.msg_retry_solar, getString(R.string.RestartApp), () ->
+                o.add(R.drawable.msg_retry, getString(R.string.RestartApp), () ->
                     AppRestartHelper.triggerRebirth(
                         ApplicationLoader.applicationContext,
                         new Intent(ApplicationLoader.applicationContext, LaunchActivity.class)

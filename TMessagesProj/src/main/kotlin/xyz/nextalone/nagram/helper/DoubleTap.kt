@@ -94,7 +94,7 @@ object DoubleTap {
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPEAT] = R.drawable.msg_repeat
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_REPEAT_AS_COPY] = R.drawable.msg_repeat
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_EDIT] = R.drawable.msg_edit
-        doubleTapActionIconMap[DOUBLE_TAP_ACTION_TRANSLATE_LLM] = R.drawable.magic_stick_solar
+        doubleTapActionIconMap[DOUBLE_TAP_ACTION_TRANSLATE_LLM] = R.drawable.magic_stick
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_DELETE] = R.drawable.msg_delete
         doubleTapActionIconMap[DOUBLE_TAP_ACTION_READ] = R.drawable.msg_view_file
     }

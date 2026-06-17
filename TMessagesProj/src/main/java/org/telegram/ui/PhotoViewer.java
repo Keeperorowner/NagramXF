@@ -7868,7 +7868,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 String languageText = Translator.getInputTranslateLangForChat(ChatsHelper.getChatId()).toUpperCase();
                 options.add(R.drawable.ic_translate, getString(R.string.TranslateMessage) + ' ' + "(" + languageText + ")", () -> translateComment(Translator.getInputTranslateLangLocaleForChat(ChatsHelper.getChatId())));
                 if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
-                    options.add(R.drawable.magic_stick_solar, getString(R.string.TranslateMessageLLM) + ' ' + "(" + languageText + ")", () -> translateComment(Translator.getInputTranslateLangLocaleForChat(ChatsHelper.getChatId()), Translator.providerLLMTranslator));
+                    options.add(R.drawable.magic_stick, getString(R.string.TranslateMessageLLM) + ' ' + "(" + languageText + ")", () -> translateComment(Translator.getInputTranslateLangLocaleForChat(ChatsHelper.getChatId()), Translator.providerLLMTranslator));
                 }
             }
 

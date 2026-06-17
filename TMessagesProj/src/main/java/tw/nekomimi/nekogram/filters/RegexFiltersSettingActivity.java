@@ -173,10 +173,10 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
         ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.addSubItem(1, R.drawable.msg_user_search, getString(R.string.SelectChat));
         menuItem.addColoredGap();
-        menuItem.addSubItem(2, R.drawable.msg_archive_solar, getString(R.string.RegexFiltersImport));
-        menuItem.addSubItem(3, R.drawable.msg_unarchive_solar, getString(R.string.RegexFiltersExport));
+        menuItem.addSubItem(2, R.drawable.msg_archive, getString(R.string.RegexFiltersImport));
+        menuItem.addSubItem(3, R.drawable.msg_unarchive, getString(R.string.RegexFiltersExport));
         menuItem.addColoredGap();
-        ActionBarMenuSubItem clearSub = menuItem.addSubItem(4, R.drawable.msg_clear_solar, getString(R.string.ClearRegexFilters));
+        ActionBarMenuSubItem clearSub = menuItem.addSubItem(4, R.drawable.msg_clear, getString(R.string.ClearRegexFilters));
         int red = Theme.getColor(Theme.key_text_RedRegular);
         clearSub.setColors(red, red);
         clearSub.setSelectorColor(Theme.multAlpha(red, .12f));

@@ -306,7 +306,7 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
         final boolean ghostActive = NekoConfig.isGhostModeActive();
 
         ActionBarMenuSubItem ghostToggle = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
-        ghostToggle.setTextAndIcon(LocaleController.getString(R.string.GhostMode), R.drawable.ayu_ghost_solar);
+        ghostToggle.setTextAndIcon(LocaleController.getString(R.string.GhostMode), R.drawable.ayu_ghost);
         ghostToggle.setSubtext(LocaleController.getString(ghostActive ? R.string.PasswordOn : R.string.PasswordOff));
 
         ActionBarMenuSubItem autoRefreshToggle = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);

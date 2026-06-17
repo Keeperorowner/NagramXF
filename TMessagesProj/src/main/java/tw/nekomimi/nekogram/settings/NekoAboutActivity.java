@@ -167,7 +167,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     private void showUpdatesDialog() {
         BottomBuilder builder = new BottomBuilder(getParentActivity());
         builder.addTitle(getString(R.string.CheckUpdate));
-        builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_retry_solar, (it) -> {
+        builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_retry, (it) -> {
             Browser.openUrl(getParentActivity(), "tg://update");
             return Unit.INSTANCE;
         });
@@ -249,29 +249,29 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                         detailCell.setTextAndValue(getSimpleVersion(), getString(R.string.NaxAboutDesc), false);
                     } else if (position == updatesRow) {
                         detailCell.setMultilineDetail(false);
-                        detailCell.setTextAndValueAndIcon(getString(R.string.CheckUpdate), getUpdateChannelDetail(), R.drawable.msg_retry_solar, true);
+                        detailCell.setTextAndValueAndIcon(getString(R.string.CheckUpdate), getUpdateChannelDetail(), R.drawable.msg_retry, true);
                     }
                     break;
                 case TYPE_TEXT:
                     TextCell textCell = (TextCell) holder.itemView;
                     if (position == toggleLogsRow) {
-                        textCell.setTextAndIcon(BuildVars.LOGS_ENABLED ? getString(R.string.DebugMenuDisableLogs) : getString(R.string.DebugMenuEnableLogs), R.drawable.bug_solar, sendLogsRow != -1);
+                        textCell.setTextAndIcon(BuildVars.LOGS_ENABLED ? getString(R.string.DebugMenuDisableLogs) : getString(R.string.DebugMenuEnableLogs), R.drawable.bug, sendLogsRow != -1);
                     } else if (position == sendLogsRow) {
-                        textCell.setTextAndIcon(getString(R.string.DebugSendLogs), R.drawable.ic_upward_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.DebugSendLogs), R.drawable.ic_upward, true);
                     } else if (position == clearLogsRow) {
-                        textCell.setTextAndIcon(getString(R.string.DebugClearLogs), R.drawable.msg_clear_solar, false);
+                        textCell.setTextAndIcon(getString(R.string.DebugClearLogs), R.drawable.msg_clear, false);
                     } else if (position == forkChannelRow) {
-                        textCell.setTextAndValueAndIcon(getString(R.string.NagramXForkChannel), "@NagramXF", R.drawable.msg_channel_solar, true);
+                        textCell.setTextAndValueAndIcon(getString(R.string.NagramXForkChannel), "@NagramXF", R.drawable.msg_channel, true);
                     } else if (position == xChannelRow) {
-                        textCell.setTextAndValueAndIcon(getString(R.string.XChannel), "@NagramX", R.drawable.msg_channel_solar, true);
+                        textCell.setTextAndValueAndIcon(getString(R.string.XChannel), "@NagramX", R.drawable.msg_channel, true);
                     } else if (position == channelRow) {
-                        textCell.setTextAndValueAndIcon(getString(R.string.OfficialChannel), "@nagram_channel", R.drawable.msg_channel_solar, true);
+                        textCell.setTextAndValueAndIcon(getString(R.string.OfficialChannel), "@nagram_channel", R.drawable.msg_channel, true);
                     } else if (position == channelTipsRow) {
-                        textCell.setTextAndValueAndIcon(getString(R.string.OfficialGroupChat), "@NagramXF_Chat", R.drawable.msg_discuss_solar, true);
+                        textCell.setTextAndValueAndIcon(getString(R.string.OfficialGroupChat), "@NagramXF_Chat", R.drawable.msg_viewchats, true);
                     } else if (position == sourceCodeRow) {
                         textCell.setTextAndValueAndIcon(getString(R.string.SourceCode), "GitHub", R.drawable.github_logo_white, true);
                     } else if (position == datacenterStatusRow) {
-                        textCell.setTextAndIcon(getString(R.string.DatacenterStatus), R.drawable.msg_info_solar, false);
+                        textCell.setTextAndIcon(getString(R.string.DatacenterStatus), R.drawable.msg_info, false);
                     }
                     break;
             }

@@ -170,6 +170,7 @@
     <string name="HideDividers">区切り線を非表示</string>
     <string name="IconReplacements">アイコンパック</string>
     <string name="IconReplacementSolar">Solar - @Design480</string>
+    <string name="IconReplacementRemix">Remix Icon</string>
     <string name="DebugMenuEnableInvoicePayment">請求書の支払いを有効化</string>
     <string name="DebugMenuDisableInvoicePayment">請求書の支払いを無効化</string>
     <string name="DebugMenuUseCamera2Api">Camera 2 API を使用</string>

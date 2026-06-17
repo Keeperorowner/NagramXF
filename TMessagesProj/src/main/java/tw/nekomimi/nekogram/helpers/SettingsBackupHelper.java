@@ -164,7 +164,7 @@ public final class SettingsBackupHelper {
     public static void importSettings(Context context, File settingsFile) {
         AlertUtil.showConfirm(context,
                 getString(R.string.ImportSettingsAlert),
-                R.drawable.msg_photo_settings_solar,
+                R.drawable.msg_photo_settings,
                 getString(R.string.Import),
                 true,
                 () -> importSettingsConfirmed(context, settingsFile));

@@ -4025,7 +4025,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                     sb = new StringBuilder();
                     sb.append(getString(R.string.TranslateMessageLLM));
                     sb.append(' ').append("(").append(languageText).append(")");
-                    options.add(R.drawable.magic_stick_solar, sb,
+                    options.add(R.drawable.magic_stick, sb,
                         () -> {
                             if (messageSendPreview != null) {
                                 messageSendPreview.dismiss(false);
@@ -4052,7 +4052,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 sb = new StringBuilder();
                 sb.append(getString(R.string.TranslateMessage));
                 sb.append(' ').append("(").append(languageText).append(")");
-                options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, sb,
+                options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, sb,
                         () -> {
                             if (messageSendPreview != null) {
                                 messageSendPreview.dismiss(false);
@@ -6404,7 +6404,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                         attachButton.setTag(1);
                         err = !checkPhotoAndCameraPermission(mContext);
                     } else if (position == cameraButton) {
-                        attachButton.setTextAndIcon(1390, LocaleController.getString(R.string.VoipCamera), R.drawable.msg_camera_solar);
+                        attachButton.setTextAndIcon(1390, LocaleController.getString(R.string.VoipCamera), R.drawable.msg_camera);
                         attachButton.setTag(1390);
                         err = !checkPhotoAndCameraPermission(mContext);
                     } else if (position == documentButton) {

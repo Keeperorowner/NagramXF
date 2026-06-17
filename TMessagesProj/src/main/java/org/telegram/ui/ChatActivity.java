@@ -4825,7 +4825,7 @@ public class ChatActivity extends BaseFragment implements
                 RLottieDrawable drawable = new RLottieDrawable(R.raw.boosts, "" + R.raw.boosts, dp(24), dp(24));
                 if (NaConfig.INSTANCE.getChatMenuItemBoostGroup().Bool()) headerItem.lazilyAddSubItem(boost_group, drawable, LocaleController.getString(ChatObject.isChannelAndNotMegaGroup(currentChat) ? R.string.BoostingBoostChannelMenu : R.string.BoostingBoostGroupMenu));
             }
-            translateItem = headerItem.lazilyAddSubItem(translate, LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.msg_translate, LocaleController.getString(R.string.TranslateMessage));
+            translateItem = headerItem.lazilyAddSubItem(translate, LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.msg_translate, LocaleController.getString(R.string.TranslateMessage));
             updateTranslateItemVisibility();
             /*if (currentChat != null && !currentChat.creator && !ChatObject.hasAdminRights(currentChat)) {
                 headerItem.lazilyAddSubItem(report, R.drawable.msg_report, LocaleController.getString(R.string.ReportChat));
@@ -9536,7 +9536,7 @@ public class ChatActivity extends BaseFragment implements
             if (ayuSwipeBack != null) {
                 ayuSwipeBack.setNewForegroundHeight(ghostModeSwipeBackIndex, ghostModePopupWrapper.windowLayout.precalculateHeight(), false);
             }
-            ActionBarMenuSubItem ghostModeItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.ayu_ghost_solar, getString(R.string.GhostMode), false, getResourceProvider());
+            ActionBarMenuSubItem ghostModeItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.ayu_ghost, getString(R.string.GhostMode), false, getResourceProvider());
             View.OnClickListener ghostModeClickListener = v -> {
                 if (ayuSwipeBack != null) {
                     ayuSwipeBack.openForeground(ghostModeSwipeBackIndex);
@@ -9557,7 +9557,7 @@ public class ChatActivity extends BaseFragment implements
             if (ayuSwipeBack != null) {
                 ayuSwipeBack.setNewForegroundHeight(saveDeletedSwipeBackIndex, savePopupWrapper.windowLayout.precalculateHeight(), false);
             }
-            ActionBarMenuSubItem saveDeletedItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.msg_delete_24_solar, getString(R.string.SaveDeletedExclusionMenu), false, getResourceProvider());
+            ActionBarMenuSubItem saveDeletedItem = ActionBarMenuItem.addItem(ayuLayout, R.drawable.msg_delete, getString(R.string.SaveDeletedExclusionMenu), false, getResourceProvider());
             View.OnClickListener saveDeletedClickListener = v -> {
                 if (ayuSwipeBack != null) {
                     ayuSwipeBack.openForeground(saveDeletedSwipeBackIndex);
@@ -9669,7 +9669,7 @@ public class ChatActivity extends BaseFragment implements
             });
         }
 
-        headerItem.lazilyAddSwipeBackItem(R.drawable.msg_fave, null, getString(R.string.AyuGramMenu), ayuLayout);
+        headerItem.lazilyAddSwipeBackItem(R.drawable.msg2_reactions2, null, getString(R.string.AyuGramMenu), ayuLayout);
     }
 
     private void checkInsets() {
@@ -10960,7 +10960,7 @@ public class ChatActivity extends BaseFragment implements
         if (currentEncryptedChat == null && !noforward) {
             actionModeOtherItem.addSubItem(nkbtn_forward_noquote, R.drawable.msg_forward_noquote, LocaleController.getString(R.string.NoQuoteForward));
         }
-        actionModeOtherItem.addSubItem(nkbtn_translate, LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, LocaleController.getString(R.string.Translate));
+        actionModeOtherItem.addSubItem(nkbtn_translate, LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, LocaleController.getString(R.string.Translate));
         actionModeOtherItem.addSubItem(nkbtn_sharemessage, R.drawable.msg_shareout, LocaleController.getString(R.string.ShareMessages));
         actionModeOtherItem.addSubItem(nkbtn_unpin, R.drawable.msg_unpin, LocaleController.getString(R.string.UnpinMessage));
         if (!noforward) {
@@ -32303,7 +32303,7 @@ public class ChatActivity extends BaseFragment implements
                         int idx = options.isEmpty() ? 0 : options.size() - 1;
                         items.add(idx, getString(R.string.BurnTtlMessage));
                         options.add(idx, AyuConstants.OPTION_TTL);
-                        icons.add(idx, R.drawable.burn_solar);
+                        icons.add(idx, R.drawable.filled_fire);
                     }
                 }
                 if (!NekoConfig.sendReadMessagePackets.Bool()
@@ -45951,7 +45951,7 @@ public class ChatActivity extends BaseFragment implements
                 layout.addView(copyButton);
 
                 ActionBarMenuSubItem translateButton = new ActionBarMenuSubItem(getContext(), false, false);
-                translateButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessage), LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.msg_translate);
+                translateButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessage), LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.msg_translate);
                 translateButton.setOnClickListener(e3 -> {
                     DialogTransKt.startTrans(getParentActivity(), text.toString());
                     if (dismiss[1] != null) dismiss[1].run();
@@ -45973,7 +45973,7 @@ public class ChatActivity extends BaseFragment implements
 
                 ActionBarMenuSubItem translateLlmButton = new ActionBarMenuSubItem(getContext(), false, true);
                 translateLlmButton.setVisibility(LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider() ? View.VISIBLE : View.GONE);
-                translateLlmButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessageLLM), R.drawable.magic_stick_solar);
+                translateLlmButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessageLLM), R.drawable.magic_stick);
                 translateLlmButton.setOnClickListener(e4 -> {
                     DialogTransKt.startTrans(getParentActivity(), text.toString(), toLang, Translator.providerLLMTranslator);
                     if (dismiss[2] != null) dismiss[2].run();
@@ -48312,7 +48312,7 @@ public class ChatActivity extends BaseFragment implements
             if (allowViewHistory && NekoConfig.showViewHistory.Bool()) {
                 items.add(LocaleController.getString(R.string.ViewHistory));
                 options.add(nkbtn_view_history);
-                icons.add(R.drawable.msg_recent_solar);
+                icons.add(R.drawable.msg_recent);
             }
             // type == MESSAGE_TYPE_SERVICE END
         } else if (type == MESSAGE_TYPE_SEND_ERROR_TEXT) {
@@ -48488,7 +48488,7 @@ public class ChatActivity extends BaseFragment implements
                         if (!TextUtils.isEmpty(selectedObject.getVoiceTranscription())) {
                             items.add(LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.Translate));
                             options.add(nkbtn_translateVoice);
-                            icons.add(LlmConfig.isLLMTranslatorAvailable() ? R.drawable.magic_stick_solar : R.drawable.msg_translate);
+                            icons.add(LlmConfig.isLLMTranslatorAvailable() ? R.drawable.magic_stick : R.drawable.msg_translate);
                             if (TranscribeHelper.useTranscribeAI(selectedObject.currentAccount)) {
                                 items.add(getString(R.string.Retry));
                                 options.add(nkbtn_transcriptionRetry);
@@ -48782,7 +48782,7 @@ public class ChatActivity extends BaseFragment implements
                     if (allowViewHistory && NekoConfig.showViewHistory.Bool()) {
                         items.add(LocaleController.getString(R.string.ViewHistory));
                         options.add(nkbtn_view_history);
-                        icons.add(R.drawable.msg_recent_solar);
+                        icons.add(R.drawable.msg_recent);
                     }
                     final MessageObject msg = getMessageForTranslate();
                     boolean showTranslate = NekoConfig.showTranslate.Bool() || (NaConfig.INSTANCE.getShowTranslateMessageLLM().Bool() && LlmConfig.llmIsDefaultProvider());
@@ -48804,13 +48804,13 @@ public class ChatActivity extends BaseFragment implements
                         if (showTranslate && (isOutgoingOrNotTranslatingDialog || isLLMDefault)) {
                             items.add(canUndoTranslate ? getString(R.string.UndoTranslate) : getString(R.string.Translate));
                             options.add(nkbtn_translate);
-                            icons.add(isLLMDefault ? R.drawable.magic_stick_solar : R.drawable.msg_translate);
+                            icons.add(isLLMDefault ? R.drawable.magic_stick : R.drawable.msg_translate);
                         }
                         boolean shouldShowLLM = !showTranslate || !isTranslated || !isOutgoingOrNotTranslatingDialog;
                         if (showTranslateLLM && shouldShowLLM) {
                             items.add(canUndoTranslate ? getString(R.string.UndoTranslate) : getString(R.string.TranslateMessageLLM));
                             options.add(nkbtn_translate_llm);
-                            icons.add(R.drawable.magic_stick_solar);
+                            icons.add(R.drawable.magic_stick);
                         }
                     }
                     if (NekoConfig.showShareMessages.Bool() && msg != null) {
@@ -48821,7 +48821,7 @@ public class ChatActivity extends BaseFragment implements
                     if (AiController.canUseAI() && selectedObject != null) {
                         items.add(LocaleController.getString(R.string.AIChatGenerateFromMessage));
                         options.add(nkbtn_ai_chat);
-                        icons.add(R.drawable.ai_chat_solar);
+                        icons.add(R.drawable.ai_chat);
                     }
                 }
                 if (NekoConfig.showMessageHide.Bool()) {
@@ -48990,7 +48990,7 @@ public class ChatActivity extends BaseFragment implements
                 } else if (type == MESSAGE_TYPE_NEKOX_JSON) {
                     items.add(LocaleController.getString(R.string.ImportProxyList));
                     options.add(5);
-                    icons.add(R.drawable.proxy_on_solar);
+                    icons.add(R.drawable.proxy_on);
                 } else if (type == MESSAGE_TYPE_STICKER_PACK_NOT_INSTALLED && NaConfig.INSTANCE.getShowAddToStickers().Bool()) {
                     items.add(LocaleController.getString(R.string.AddToStickers));
                     options.add(OPTION_ADD_TO_STICKERS_OR_MASKS);
@@ -49034,13 +49034,13 @@ public class ChatActivity extends BaseFragment implements
                     if (showTranslate && (isOutgoingOrNotTranslatingDialog || isLLMDefault)) {
                         items.add(canUndoTranslate ? getString(R.string.UndoTranslate) : getString(R.string.Translate));
                         options.add(nkbtn_translate);
-                        icons.add(isLLMDefault ? R.drawable.magic_stick_solar : R.drawable.msg_translate);
+                        icons.add(isLLMDefault ? R.drawable.magic_stick : R.drawable.msg_translate);
                     }
                     boolean shouldShowLLM = !showTranslate || !isTranslated || !isOutgoingOrNotTranslatingDialog;
                     if (showTranslateLLM && shouldShowLLM) {
                         items.add(canUndoTranslate ? getString(R.string.UndoTranslate) : getString(R.string.TranslateMessageLLM));
                         options.add(nkbtn_translate_llm);
-                        icons.add(R.drawable.magic_stick_solar);
+                        icons.add(R.drawable.magic_stick);
                     }
                 }
                 allowDelete = true;

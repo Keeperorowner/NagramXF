@@ -7783,7 +7783,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 return Unit.INSTANCE;
             });
-            builder.addItem(getString(R.string.Translate), LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, __ -> {
+            builder.addItem(getString(R.string.Translate), LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, __ -> {
                 try {
                     DialogTransKt.startTrans(getParentActivity(), finalText);
                 } catch (Exception e) {
@@ -7792,7 +7792,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return Unit.INSTANCE;
             });
             if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
-                builder.addItem(getString(R.string.TranslateMessageLLM), R.drawable.magic_stick_solar, __ -> {
+                builder.addItem(getString(R.string.TranslateMessageLLM), R.drawable.magic_stick, __ -> {
                     try {
                         DialogTransKt.startTrans(getParentActivity(), finalText, NekoConfig.translateToLang.String(), Translator.providerLLMTranslator);
                     } catch (Exception e) {
@@ -14317,11 +14317,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } else if (position == policyRow) {
                         textCell.setTextAndIcon(LocaleController.getString(R.string.PrivacyPolicy), R.drawable.msg2_policy, false);
                     } else if (position == sendLogsRow) {
-                        textCell.setTextAndIcon(getString(R.string.DebugSendLogs), R.drawable.ic_upward_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.DebugSendLogs), R.drawable.ic_upward, true);
                     } else if (position == sendLastLogsRow) {
-                        textCell.setTextAndIcon(getString(R.string.DebugSendLastLogs), R.drawable.bug_solar ,true);
+                        textCell.setTextAndIcon(getString(R.string.DebugSendLastLogs), R.drawable.bug ,true);
                     } else if (position == clearLogsRow) {
-                        textCell.setTextAndIcon(getString(R.string.DebugClearLogs), R.drawable.msg_clear_solar, switchBackendRow != -1);
+                        textCell.setTextAndIcon(getString(R.string.DebugClearLogs), R.drawable.msg_clear, switchBackendRow != -1);
                     } else if (position == switchBackendRow) {
                         textCell.setText("Switch Backend", false);
                     } else if (position == devicesRow) {
@@ -17824,7 +17824,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void addPeekOnlineSubItem(TLRPC.User user) {
         if (otherItem != null && canPeekOnline(user)) {
-            otherItem.addSubItem(peek_online, R.drawable.msg_stories_stealth_solar, getString(R.string.PeekOnlineMenuText));
+            otherItem.addSubItem(peek_online, R.drawable.msg_stories_stealth, getString(R.string.PeekOnlineMenuText));
         }
     }
 

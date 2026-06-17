@@ -261,6 +261,7 @@ import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.helpers.TimeStringHelper;
 import tw.nekomimi.nekogram.helpers.TranscribeHelper;
+import tw.nekomimi.nekogram.ui.icons.BaseIconPacks;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.helper.BookmarksHelper;
@@ -24654,7 +24655,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             Drawable forwardsDrawable = TimeStringHelper.forwardsDrawable;
             if (forwardsDrawable == null) {
                 try {
-                    TimeStringHelper.forwardsDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.forwards_solar).mutate();
+                    int forwardsRes = BaseIconPacks.getConversion(R.drawable.forwards, NaConfig.INSTANCE.getIconReplacements().Int());
+                    TimeStringHelper.forwardsDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, forwardsRes).mutate();
                     forwardsDrawable = TimeStringHelper.forwardsDrawable;
                 } catch (Exception ignore) {}
             }
@@ -29287,7 +29289,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return;
         }
         if (bookmarkDrawable == null) {
-            bookmarkDrawable = ContextCompat.getDrawable(getContext(), R.drawable.msg_fave_solar_12);
+            bookmarkDrawable = ContextCompat.getDrawable(getContext(), R.drawable.msg_fave_12);
             if (bookmarkDrawable != null) {
                 bookmarkDrawable = bookmarkDrawable.mutate();
             }

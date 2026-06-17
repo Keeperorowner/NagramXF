@@ -38,7 +38,7 @@ public class RegexChatFilterPopup {
         });
 
         var toggleBtn = ActionBarMenuItem.addItem(layout,
-                enabled ? R.drawable.msg_noise_off_solar : R.drawable.msg_noise_on_solar,
+                enabled ? R.drawable.msg_noise_off : R.drawable.msg_noise_on,
                 getString(enabled ? R.string.Disable : R.string.Enable),
                 false, fragment.getResourceProvider());
         toggleBtn.setOnClickListener(view -> {

@@ -1443,20 +1443,20 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         BottomBuilder builder = new BottomBuilder(getParentActivity(), false);
         builder.addTitle(message);
 
-        builder.addItem(getString(R.string.Copy), R.drawable.msg_copy_solar, (it) -> {
+        builder.addItem(getString(R.string.Copy), R.drawable.msg_copy, (it) -> {
             if (AndroidUtilities.addToClipboard(message)) {
                 BulletinFactory.of(SettingsActivity.this).createCopyLinkBulletin().show();
             }
             return Unit.INSTANCE;
         });
 
-        builder.addItem(BuildVars.LOGS_ENABLED ? getString(R.string.DebugMenuDisableLogs) : getString(R.string.DebugMenuEnableLogs), R.drawable.bug_solar, (it) -> {
+        builder.addItem(BuildVars.LOGS_ENABLED ? getString(R.string.DebugMenuDisableLogs) : getString(R.string.DebugMenuEnableLogs), R.drawable.bug, (it) -> {
             AndroidUtil.toggleLogs();
             listView.adapter.update(true);
             return Unit.INSTANCE;
         });
 
-        builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_search_solar, (it) -> {
+        builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_search, (it) -> {
             Browser.openUrl(getContext(), "tg://update");
             return Unit.INSTANCE;
         });
