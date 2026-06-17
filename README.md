@@ -5,7 +5,7 @@ Includes most features from exteraGram and AyuGram.
 
 ## Download
 
-* [Telegram Channel](https://t.me/NagramX_Fork)
+* [Telegram Channel](https://t.me/NagramXF)
 * [GitHub Releases](https://github.com/Keeperorowner/NagramXF/releases)
 
 ## Compilation Guide
@@ -28,6 +28,10 @@ Includes most features from exteraGram and AyuGram.
 3. For FCM support: Replace `TMessagesProj/google-services.json` with your own configuration file.
 
 4. Open the project in Android Studio to start building.
+
+## Notice
+
+This project reverse-engineered and uses some code from closed-source projects.
 
 ## Acknowledgments
 
