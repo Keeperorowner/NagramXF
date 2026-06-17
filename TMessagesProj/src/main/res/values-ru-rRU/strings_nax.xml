@@ -170,6 +170,7 @@
     <string name="HideDividers">Скрыть разделители</string>
     <string name="IconReplacements">Замена значков</string>
     <string name="IconReplacementSolar">Solar от @Design480</string>
+    <string name="IconReplacementRemix">Remix Icon</string>
     <string name="DebugMenuEnableInvoicePayment">Включить оплату счетов</string>
     <string name="DebugMenuDisableInvoicePayment">Отключить оплату счетов</string>
     <string name="DebugMenuUseCamera2Api">Использовать API Camera 2</string>

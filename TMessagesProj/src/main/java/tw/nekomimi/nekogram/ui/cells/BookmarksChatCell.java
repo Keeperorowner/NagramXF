@@ -86,7 +86,7 @@ public class BookmarksChatCell extends FrameLayout {
 
         if (peer instanceof TLRPC.User user) {
             if (UserObject.isUserSelf(user)) {
-                CombinedDrawable combinedDrawable = Theme.createCircleDrawableWithIcon(dp(40), useSolar ? R.drawable.chats_saved_solar : R.drawable.chats_saved);
+                CombinedDrawable combinedDrawable = Theme.createCircleDrawableWithIcon(dp(40), useSolar ? R.drawable.chats_saved : R.drawable.chats_saved);
                 combinedDrawable.setIconSize(dp(20), dp(20));
                 Theme.setCombinedDrawableColor(combinedDrawable, Theme.getColor(Theme.key_avatar_backgroundSaved), false);
                 Theme.setCombinedDrawableColor(combinedDrawable, Theme.getColor(Theme.key_avatar_text), true);
@@ -103,7 +103,7 @@ public class BookmarksChatCell extends FrameLayout {
             imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f, ChatObject.isForum(chat) || ChatObject.isMonoForum(chat)));
             imageView.setForUserOrChat(chat, avatarDrawable);
         } else {
-            CombinedDrawable combinedDrawable = Theme.createCircleDrawableWithIcon(dp(40), useSolar ? R.drawable.ghost_solar : R.drawable.ghost);
+            CombinedDrawable combinedDrawable = Theme.createCircleDrawableWithIcon(dp(40), useSolar ? R.drawable.ghost : R.drawable.ghost);
             combinedDrawable.setIconSize(dp(20), dp(20));
             Theme.setCombinedDrawableColor(combinedDrawable, Theme.getColor(Theme.keys_avatar_background[AvatarDrawable.getColorIndex(0)]), false);
             Theme.setCombinedDrawableColor(combinedDrawable, Theme.getColor(Theme.key_avatar_text), true);

@@ -5290,7 +5290,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         if (messageEditText != null && messageEditText.getText().length() > 0 && AiController.canUseAI()) {
             ArrayList<ActionRow.ActionItem> aiItems = new ArrayList<>();
-            aiItems.add(new ActionRow.ActionItem(R.drawable.ai_chat_solar, true, v -> {
+            aiItems.add(new ActionRow.ActionItem(R.drawable.ai_chat, true, v -> {
                 if (messageSendPreview != null) {
                     messageSendPreview.dismiss(false);
                     messageSendPreview = null;
@@ -5312,7 +5312,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }));
             if (LlmConfig.isLLMTranslatorAvailable()) {
                 long chatId = ChatsHelper.getChatId();
-                aiItems.add(new ActionRow.ActionItem(R.drawable.magic_stick_solar, true, v -> {
+                aiItems.add(new ActionRow.ActionItem(R.drawable.magic_stick, true, v -> {
                     if (messageSendPreview != null) {
                         messageSendPreview.dismiss(false);
                         messageSendPreview = null;
@@ -5465,7 +5465,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
             long chatId = ChatsHelper.getChatId();
             Locale targetLocale = Translator.getInputTranslateLangLocaleForChat(chatId);
-            options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick_solar : R.drawable.ic_translate, getString(R.string.TranslateMessage), () -> {
+            options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, getString(R.string.TranslateMessage), () -> {
                 translateComment(targetLocale);
                 if (messageSendPreview != null) {
                     messageSendPreview.dismiss(false);
@@ -16354,7 +16354,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
 
         // front camera option
         ActionBarMenuSubItem frontItem = new ActionBarMenuSubItem(getContext(), true, false);
-        frontItem.setTextAndIcon(getString(R.string.VideoMessagesCameraFront), R.drawable.msg_openprofile_solar);
+        frontItem.setTextAndIcon(getString(R.string.VideoMessagesCameraFront), R.drawable.msg_openprofile);
         frontItem.setOnClickListener(v -> {
             cameraSelected[0] = true;
             if (cameraSelectionPopup != null && cameraSelectionPopup.isShowing()) {
@@ -16366,7 +16366,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         popupLayout.addView(frontItem, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 0, 0, 0));
         // rear camera option
         ActionBarMenuSubItem rearItem = new ActionBarMenuSubItem(getContext(), false, true);
-        rearItem.setTextAndIcon(getString(R.string.VideoMessagesCameraRear), R.drawable.msg_rear_camera_solar);
+        rearItem.setTextAndIcon(getString(R.string.VideoMessagesCameraRear), R.drawable.msg_rear_camera);
         rearItem.setOnClickListener(v -> {
             cameraSelected[0] = true;
             if (cameraSelectionPopup != null && cameraSelectionPopup.isShowing()) {

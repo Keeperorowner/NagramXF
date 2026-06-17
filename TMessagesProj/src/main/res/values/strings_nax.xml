@@ -185,6 +185,7 @@
     <string name="HideDividers">Hide Dividers</string>
     <string name="IconReplacements">Icon Replacements</string>
     <string name="IconReplacementSolar">Solar Icons by @Design480</string>
+    <string name="IconReplacementRemix">Remix Icon</string>
     <string name="DebugMenuEnableInvoicePayment">Enable Invoice Payment</string>
     <string name="DebugMenuDisableInvoicePayment">Disable Invoice Payment</string>
     <string name="DebugMenuUseCamera2Api">Use Camera 2 API</string>

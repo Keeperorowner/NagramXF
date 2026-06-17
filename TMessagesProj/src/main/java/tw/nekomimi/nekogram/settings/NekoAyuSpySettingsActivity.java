@@ -203,7 +203,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
 
     @Override
     public int getDrawable() {
-        return R.drawable.msg_secret_solar;
+        return R.drawable.msg_secret;
     }
 
     @Override
@@ -869,15 +869,15 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
                 textInfoPrivacyCell.setText(getString(R.string.AttachmentFolderSizeLimitInfo));
             } else if (row == exportDatabaseRow) {
                 TextCell textCell = (TextCell) holder.itemView;
-                textCell.setTextAndIcon(getString(R.string.ExportMessageDatabase), R.drawable.msg_unarchive_solar, true);
+                textCell.setTextAndIcon(getString(R.string.ExportMessageDatabase), R.drawable.msg_unarchive, true);
                 textCell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
             } else if (row == importDatabaseRow) {
                 TextCell textCell = (TextCell) holder.itemView;
-                textCell.setTextAndIcon(getString(R.string.ImportMessageDatabase), R.drawable.msg_archive_solar, false);
+                textCell.setTextAndIcon(getString(R.string.ImportMessageDatabase), R.drawable.msg_archive, false);
                 textCell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
             } else if (row == clearDataRow) {
                 TextCell textCell = (TextCell) holder.itemView;
-                textCell.setTextAndValueAndIcon(getString(R.string.ClearSavedMessageData), getClearValueText(), R.drawable.msg_clear_solar, false);
+                textCell.setTextAndValueAndIcon(getString(R.string.ClearSavedMessageData), getClearValueText(), R.drawable.msg_clear, false);
                 textCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
             }
         }

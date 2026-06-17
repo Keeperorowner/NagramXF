@@ -33,7 +33,7 @@ public class TranslatePopupWrapper {
         for (var id : TranslateItem.ITEM_IDS) {
             if (id == TranslateItem.ID_TRANSLATE_LLM) {
                 if (LlmConfig.isLLMTranslatorAvailable() && !LlmConfig.llmIsDefaultProvider()) {
-                    var item = ActionBarMenuItem.addItem(false, false, windowLayout, R.drawable.magic_stick_solar, TranslateItem.ITEM_TITLES.get(id), false, resourcesProvider);
+                    var item = ActionBarMenuItem.addItem(false, false, windowLayout, R.drawable.magic_stick, TranslateItem.ITEM_TITLES.get(id), false, resourcesProvider);
                     item.setOnClickListener(view -> delegate.onItemClick(id));
                     item.setOnLongClickListener(view -> {
                         Translator.showTargetLangSelect(view, (locale) -> {
@@ -49,7 +49,7 @@ public class TranslatePopupWrapper {
                     });
                 }
             } else if (id == TranslateItem.ID_CHANGE_PROVIDER) {
-                var item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_replace_solar, TranslateItem.ITEM_TITLES.get(id), false, resourcesProvider);
+                var item = ActionBarMenuItem.addItem(windowLayout, R.drawable.msg_replace, TranslateItem.ITEM_TITLES.get(id), false, resourcesProvider);
                 item.setOnClickListener(view -> Translator.showProviderSelect(view, (provider) -> {
                     if (fragment.scrimPopupWindow != null) {
                         fragment.scrimPopupWindow.dismiss();

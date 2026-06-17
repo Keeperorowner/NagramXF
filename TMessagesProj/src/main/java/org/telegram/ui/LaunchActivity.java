@@ -1379,7 +1379,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     boolean hasStatus = user != null && DialogObject.getEmojiStatusDocumentId(user.emoji_status) != 0;
                     drawerActionCell.updateTextAndIcon(
                             getString(hasStatus ? R.string.ChangeEmojiStatus : R.string.SetEmojiStatus),
-                            hasStatus ? R.drawable.msg_status_edit_solar : R.drawable.msg_status_set_solar
+                            hasStatus ? R.drawable.msg_status_edit : R.drawable.msg_status_set
                     );
                 }
             }
@@ -1730,7 +1730,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                 boolean hasStatus = currentUser.emoji_status != null && DialogObject.getEmojiStatusDocumentId(currentUser.emoji_status) != 0;
                                 drawerActionCell.updateTextAndIcon(
                                         getString(hasStatus ? R.string.ChangeEmojiStatus : R.string.SetEmojiStatus),
-                                        hasStatus ? R.drawable.msg_status_edit_solar : R.drawable.msg_status_set_solar
+                                        hasStatus ? R.drawable.msg_status_edit : R.drawable.msg_status_set
                                 );
                             }
                         }

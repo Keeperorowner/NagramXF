@@ -243,7 +243,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         int newChannelIcon = R.drawable.msg_channel;
         int contactsIcon = R.drawable.msg_contacts;
         int callsIcon = R.drawable.msg_calls;
-        int recentChatsIcon = R.drawable.msg_recent_solar;
+        int recentChatsIcon = R.drawable.msg_recent;
         int savedIcon = R.drawable.msg_saved;
         int settingsIcon = R.drawable.msg_settings_old;
 
@@ -271,7 +271,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                     me.getEmojiStatus() != null
                             ? LocaleController.getString(R.string.ChangeEmojiStatus)
                             : LocaleController.getString(R.string.SetEmojiStatus),
-                    me.getEmojiStatus() != null ? R.drawable.msg_status_edit_solar : R.drawable.msg_status_set_solar
+                    me.getEmojiStatus() != null ? R.drawable.msg_status_edit : R.drawable.msg_status_set
             ));
         }
         boolean showArchivedChats = NaConfig.INSTANCE.getDrawerItemArchivedChats().Bool();

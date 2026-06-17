@@ -409,7 +409,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == appearanceRow) {
                         textCell.setTextAndIcon(getString(R.string.Appearance), R.drawable.msg_theme, true);
                     } else if (position == ayuMomentsRow) {
-                        textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.heart_angle_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.msg2_reactions2, true);
                     } else if (position == translatorRow) {
                         textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, true);
                     } else if (position == passcodeRow) {
@@ -417,15 +417,15 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == experimentRow) {
                         textCell.setTextAndIcon(getString(R.string.Experimental), R.drawable.msg_fave, true);
                     } else if (position == importSettingsRow) {
-                        textCell.setTextAndIcon(getString(R.string.ImportSettings), R.drawable.msg_photo_settings_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.ImportSettings), R.drawable.msg_photo_settings, true);
                     } else if (position == exportSettingsRow) {
-                        textCell.setTextAndIcon(getString(R.string.BackupSettings), R.drawable.msg_instant_link_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.BackupSettings), R.drawable.msg_instant_link, true);
                     } else if (position == resetSettingsRow) {
-                        textCell.setTextAndIcon(getString(R.string.ResetSettings), R.drawable.msg_reset_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.ResetSettings), R.drawable.msg_reset, true);
                     } else if (position == appRestartRow) {
-                        textCell.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry, true);
                     } else if (position == aboutRow) {
-                        textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info_solar, true);
+                        textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info, true);
                     }
                     break;
                 }

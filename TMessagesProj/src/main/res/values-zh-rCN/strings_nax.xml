@@ -172,6 +172,7 @@
     <string name="HideDividers">隐藏分隔线</string>
     <string name="IconReplacements">替换图标</string>
     <string name="IconReplacementSolar">Solar 图标</string>
+    <string name="IconReplacementRemix">Remix 图标</string>
     <string name="DebugMenuEnableInvoicePayment">启用发票支付</string>
     <string name="DebugMenuDisableInvoicePayment">禁用发票支付</string>
     <string name="DebugMenuUseCamera2Api">使用 Camera 2 API</string>

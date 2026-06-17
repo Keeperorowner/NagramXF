@@ -6894,7 +6894,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         readItem = otherItem.addSubItem(read, R.drawable.msg_markread, LocaleController.getString(R.string.MarkAsRead));
         clearItem = otherItem.addSubItem(clear, R.drawable.msg_clear, LocaleController.getString(R.string.ClearHistory));
         blockItem = otherItem.addSubItem(block, R.drawable.msg_block, LocaleController.getString(R.string.BlockUser));
-        otherItem.addSubItem(select_all, R.drawable.msg_select_between_solar, LocaleController.getString(R.string.SelectAll));
+        otherItem.addSubItem(select_all, R.drawable.ic_select_between, LocaleController.getString(R.string.SelectAll));
 
         muteItem.setOnLongClickListener(e -> {
             performSelectedDialogsAction(selectedDialogs, mute, true, true);
@@ -13942,7 +13942,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (!isArchive()) {
-            io.add(R.drawable.msg_recent_solar, getString(R.string.RecentChats), () -> {
+            io.add(R.drawable.msg_recent, getString(R.string.RecentChats), () -> {
                 presentFragment(new ChatHistoryActivity());
             });
             io.addGap();

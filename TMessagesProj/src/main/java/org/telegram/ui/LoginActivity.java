@@ -793,11 +793,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         updateProxyButton(false, true);*/
         moreButtonView = new ActionBarMenuItem(context, null, 0, Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         moreButtonView.setIcon(R.drawable.ic_ab_other);
-        moreButtonView.addSubItem(0, R.drawable.msg_policy_solar, getString(R.string.Proxy));
-        moreButtonView.addSubItem(1, R.drawable.msg_qrcode_solar, getString(R.string.ImportLogin));
+        moreButtonView.addSubItem(0, R.drawable.msg_policy, getString(R.string.Proxy));
+        moreButtonView.addSubItem(1, R.drawable.msg_qrcode, getString(R.string.ImportLogin));
         if (BuildVars.SUPPORTS_PASSKEYS) moreButtonView.addSubItem(4, R.drawable.menu_passkey_add, getString(R.string.PasskeyLogin));
-        moreButtonView.addSubItem(2, R.drawable.msg_permissions_solar, getString(R.string.CustomApi)).setContentDescription(getString(R.string.CustomApi));
-        moreButtonView.addSubItem(3, R.drawable.msg_retry_solar, getString(R.string.TestBackend));
+        moreButtonView.addSubItem(2, R.drawable.msg_permissions, getString(R.string.CustomApi)).setContentDescription(getString(R.string.CustomApi));
+        moreButtonView.addSubItem(3, R.drawable.msg_retry, getString(R.string.TestBackend));
         moreButtonView.setDelegate(id -> {
             if (id == 0) {
                 presentFragment(new ProxyListActivity());
