@@ -57,7 +57,7 @@ public class RecentDialogsSidebarView extends FrameLayout implements Notificatio
     private static final int HANDLE_WIDTH_DP = 26;
     private static final int HANDLE_HEIGHT_DP = 56;
     private static final int ROW_HEIGHT_DP = 75;
-    private static final int MAX_DIALOGS = 20;
+    private static final int MAX_DIALOGS = 30;
 
     private final int currentAccount;
     private final Theme.ResourcesProvider resourcesProvider;
