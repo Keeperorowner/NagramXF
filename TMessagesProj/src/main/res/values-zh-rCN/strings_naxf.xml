@@ -261,4 +261,5 @@
     <string name="AIError502Info">服务器暂时不可用。</string>
     <string name="AIError503">服务不可用</string>
     <string name="AIError503Info">服务过载，请稍后重试。</string>
+    <string name="TabStyleStroke">标签指示器描边</string>
 </resources>
