@@ -289,4 +289,5 @@
     <string name="HideAiEditor">Скрыть AI-редактор</string>
     <string name="HideAiSummary">Скрыть AI-сводку</string>
     <string name="AiHideHeader">Скрыть AI-функции</string>
+    <string name="TabStyleStroke">Обводка индикатора вкладок</string>
 </resources>

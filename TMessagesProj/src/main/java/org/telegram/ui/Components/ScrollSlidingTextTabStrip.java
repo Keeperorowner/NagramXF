@@ -50,6 +50,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Stories.recorder.HintView2;
 
+import tw.nekomimi.nekogram.NekoConfig;
+
 import java.util.ArrayList;
 
 public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements Theme.Colorable {
@@ -767,6 +769,11 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
                 getPaddingLeft() + (int) r - dp(4),
                 height - getPaddingBottom() - dp(4)
             );
+            if (NekoConfig.tabStyleStroke.Bool()) {
+                selectorDrawable.setStroke(AndroidUtilities.dp(1), processColor(Theme.getColor(activeTextColorKey, resourcesProvider)));
+            } else {
+                selectorDrawable.setStroke(0, 0);
+            }
             selectorDrawable.draw(canvas);
             selectorDrawable.setAlpha(wasAlpha);
 
