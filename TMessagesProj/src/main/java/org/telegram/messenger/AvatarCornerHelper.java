@@ -56,4 +56,19 @@ public final class AvatarCornerHelper {
         }
         return (int) Math.ceil(radius);
     }
+
+    public static float getAvatarSquareness() {
+        float avatarCorners = NaConfig.INSTANCE.getAvatarCorners().Float();
+        float squareness = 1.0f - (avatarCorners / 28.0f);
+        if (squareness < 0.0f) {
+            squareness = 0.0f;
+        } else if (squareness > 1.0f) {
+            squareness = 1.0f;
+        }
+        return squareness;
+    }
+
+    public static float getOnlineDotOffset(float dotOffset, float radius) {
+        return dotOffset + (((float) (radius / Math.sqrt(2.0)) - dotOffset) * getAvatarSquareness());
+    }
 }

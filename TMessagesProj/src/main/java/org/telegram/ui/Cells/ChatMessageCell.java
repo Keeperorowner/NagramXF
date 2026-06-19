@@ -84,6 +84,7 @@ import android.view.SoundEffectConstants;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewStructure;
 import android.view.Window;
 import android.view.accessibility.AccessibilityEvent;
@@ -821,6 +822,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return false;
         }
 
+        default boolean shouldDrawAvatarOnlineStatus(ChatMessageCell cell) {
+            return true;
+        }
+
         default PinchToZoomHelper getPinchToZoomHelper() {
             return null;
         }
@@ -1554,6 +1559,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean wasLayout;
     private boolean forcedLayout;
     public boolean isAvatarVisible;
+    private float avatarOnlineProgress;
+    private long avatarOnlineUserId;
+    private boolean avatarOnlineLastOnline;
+    private static Paint avatarOnlineClearPaint;
     private boolean isThreadPost;
     private boolean drawBackground = true;
     private int substractBackgroundHeight;
@@ -29117,6 +29126,145 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentMessageObject != null && currentMessageObject.forceAvatar ||
             currentMessageObject != null && currentMessageObject.messageOwner.guestchat_via_from != null
         );
+    }
+
+    private void postInvalidateParentOnAnimation() {
+        ViewParent parent = getParent();
+        View view = parent instanceof View ? (View) parent : null;
+        if (view != null) {
+            view.postInvalidateOnAnimation();
+        }
+    }
+
+    private TLRPC.User getOnlineStatusUser() {
+        TLRPC.User user = currentUser;
+        if (user != null) {
+            return user;
+        }
+        TLRPC.Chat chat = currentChat;
+        if (chat == null || !chat.signature_profiles || currentMessageObject == null || currentMessageObject.messageOwner == null || currentMessageObject.messageOwner.from_id == null) {
+            return null;
+        }
+        long peerDialogId = DialogObject.getPeerDialogId(currentMessageObject.messageOwner.from_id);
+        if (peerDialogId >= 0) {
+            return MessagesController.getInstance(currentAccount).getUser(peerDialogId);
+        }
+        return null;
+    }
+
+    protected boolean isUserOnline(TLRPC.User user) {
+        if (user != null && !user.self && !user.bot && !MessagesController.isSupportUser(user)) {
+            TLRPC.UserStatus userStatus = user.status;
+            if (userStatus != null && userStatus.expires <= 0 && MessagesController.getInstance(currentAccount).onlinePrivacy.containsKey(user.id)) {
+                return true;
+            }
+            TLRPC.UserStatus userStatus2 = user.status;
+            if (userStatus2 != null && userStatus2.expires > ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void drawAvatarWithOnlineStatus(Canvas canvas, ImageReceiver imageReceiver) {
+        if (!isAvatarVisible) {
+            imageReceiver.draw(canvas);
+            return;
+        }
+        if (!imageReceiver.hasBitmapImage()) {
+            imageReceiver.draw(canvas);
+            avatarOnlineProgress = 0f;
+            return;
+        }
+        if (delegate != null && !delegate.shouldDrawAvatarOnlineStatus(this)) {
+            imageReceiver.draw(canvas);
+            avatarOnlineProgress = 0f;
+            return;
+        }
+        TLRPC.User user = getOnlineStatusUser();
+        long userId = user != null ? user.id : 0L;
+        boolean showOnlineStatus = NaConfig.INSTANCE.getShowOnlineStatus().Bool();
+        if (!showOnlineStatus && avatarOnlineProgress == 0f) {
+            imageReceiver.draw(canvas);
+            avatarOnlineUserId = userId;
+            avatarOnlineLastOnline = false;
+            return;
+        }
+        boolean userOnline = isUserOnline(user) && showOnlineStatus;
+        boolean invalidate;
+        if (userId != avatarOnlineUserId) {
+            avatarOnlineUserId = userId;
+            avatarOnlineLastOnline = userOnline;
+            avatarOnlineProgress = userOnline ? 1f : 0f;
+            invalidate = false;
+        } else {
+            if (avatarOnlineLastOnline != userOnline) {
+                avatarOnlineLastOnline = userOnline;
+            }
+            float delta = 0.10666667f;
+            if (userOnline) {
+                if (avatarOnlineProgress < 1f) {
+                    avatarOnlineProgress += delta;
+                    if (avatarOnlineProgress > 1f) {
+                        avatarOnlineProgress = 1f;
+                    }
+                    invalidate = true;
+                } else {
+                    invalidate = false;
+                }
+            } else {
+                if (avatarOnlineProgress > 0f) {
+                    avatarOnlineProgress -= delta;
+                    if (avatarOnlineProgress < 0f) {
+                        avatarOnlineProgress = 0f;
+                    }
+                    invalidate = true;
+                } else {
+                    invalidate = false;
+                }
+            }
+        }
+        if (Theme.dialogs_onlineCirclePaint == null) {
+            Theme.dialogs_onlineCirclePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        float size = Math.min(imageReceiver.getImageX2() - imageReceiver.getImageX(), imageReceiver.getImageY2() - imageReceiver.getImageY());
+        float squareness = org.telegram.messenger.AvatarCornerHelper.getAvatarSquareness();
+        float innerBase = 0.11111111f * size * (0.12f * squareness + 1f);
+        float outerBase = 0.037037037f * size * (0.3f * squareness + 1f) + innerBase;
+        float progress = avatarOnlineProgress;
+        float innerRadius = innerBase * progress;
+        float outerRadius = outerBase * progress;
+        if (progress <= 0f) {
+            imageReceiver.draw(canvas);
+            if (invalidate) {
+                postInvalidateParentOnAnimation();
+            }
+            return;
+        }
+        float offset6 = org.telegram.messenger.AvatarCornerHelper.getOnlineDotOffset(dp(6f), outerBase);
+        float offset8 = org.telegram.messenger.AvatarCornerHelper.getOnlineDotOffset(dp(8f), outerBase);
+        float cx = imageReceiver.getImageX2() - offset6;
+        float cy = imageReceiver.getImageY2() - offset8;
+        if (avatarOnlineClearPaint == null) {
+            avatarOnlineClearPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            avatarOnlineClearPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+        }
+        int saveCount = canvas.saveLayer(imageReceiver.getImageX(), imageReceiver.getImageY(), imageReceiver.getImageX2(), imageReceiver.getImageY2(), null);
+        imageReceiver.draw(canvas);
+        canvas.drawCircle(cx, cy, innerRadius, avatarOnlineClearPaint);
+        canvas.restoreToCount(saveCount);
+        int oldColor = Theme.dialogs_onlineCirclePaint.getColor();
+        int oldAlpha = Theme.dialogs_onlineCirclePaint.getAlpha();
+        int onlineColor = Theme.getColor(Theme.key_chats_onlineCircle);
+        float alpha = MathUtils.clamp(imageReceiver.getAlpha(), 0f, 1f);
+        Theme.dialogs_onlineCirclePaint.setColor(onlineColor);
+        Theme.dialogs_onlineCirclePaint.setAlpha(Math.round(Color.alpha(onlineColor) * alpha));
+        canvas.drawCircle(cx, cy, outerRadius, Theme.dialogs_onlineCirclePaint);
+        Theme.dialogs_onlineCirclePaint.setColor(oldColor);
+        Theme.dialogs_onlineCirclePaint.setAlpha(oldAlpha);
+        if (invalidate) {
+            postInvalidateParentOnAnimation();
+        }
     }
 
     protected boolean drawPhotoImage(Canvas canvas) {
