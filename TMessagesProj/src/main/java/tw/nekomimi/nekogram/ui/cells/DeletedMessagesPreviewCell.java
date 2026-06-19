@@ -17,7 +17,6 @@ import android.widget.LinearLayout;
 import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -25,7 +24,6 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.INavigationLayout;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.ChatMessageCell;
-import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackgroundGradientDrawable;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.MotionBackgroundDrawable;
@@ -105,14 +103,6 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
             messageObject.eventId = 1;
             messageObject.resetLayout();
 
-            TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
-            if (currentUser != null) {
-                messageObject.customName = ContactsController.formatName(currentUser.first_name, currentUser.last_name);
-                if (currentUser.photo == null) {
-                    messageObject.customAvatarDrawable = new AvatarDrawable(currentUser, false);
-                }
-            }
-
             cell = new ChatMessageCell(context, currentAccount) {
                 @Override
                 protected void dispatchDraw(Canvas canvas) {
@@ -123,8 +113,8 @@ public class DeletedMessagesPreviewCell extends FrameLayout {
                                 getAvatarImage().getImageWidth(),
                                 getAvatarImage().getImageHeight()
                         );
-                        getAvatarImage().setRoundRadius((int) (getAvatarImage().getImageHeight() / 2f));
-                        getAvatarImage().draw(canvas);
+                        getAvatarImage().setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(getAvatarImage().getImageHeight()));
+                        drawAvatarWithOnlineStatus(canvas, getAvatarImage());
                     }
                     super.dispatchDraw(canvas);
                 }
