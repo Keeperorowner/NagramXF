@@ -270,4 +270,5 @@
     <string name="AIError502Info">The server is temporarily unavailable.</string>
     <string name="AIError503">Service Unavailable</string>
     <string name="AIError503Info">The service is overloaded. Try again later.</string>
+    <string name="TabStyleStroke">Tab Indicator Stroke</string>
 </resources>

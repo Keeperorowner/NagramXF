@@ -294,4 +294,5 @@
     <string name="AIError502Info">伺服器暫時無法使用。</string>
     <string name="AIError503">服務無法使用</string>
     <string name="AIError503Info">服務超載，請稍後再試。</string>
+    <string name="TabStyleStroke">分頁指示器描邊</string>
 </resources>

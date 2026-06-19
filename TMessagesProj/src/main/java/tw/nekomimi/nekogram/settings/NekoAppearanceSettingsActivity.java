@@ -143,6 +143,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.TabTitleTypeIcon),
             getString(R.string.TabTitleTypeMix)
     }, null));
+    private final AbstractConfigCell tabStyleStrokeRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.tabStyleStroke));
     private final AbstractConfigCell ignoreUnreadCountRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getIgnoreUnreadCount()));
     private final AbstractConfigCell dividerNavigationTop = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerNavigation = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AppNavigation)));
@@ -231,10 +232,12 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
         int appearanceIdx = cellGroup.rows.indexOf(headerAppearance);
         cellGroup.rows.addAll(appearanceIdx, dialogsBlock);
         cellGroup.rows.remove(ignoreUnreadCountRow);
+        cellGroup.rows.remove(tabStyleStrokeRow);
         cellGroup.rows.remove(tabsTitleTypeRow);
         int hideAllTabIdx = cellGroup.rows.indexOf(hideAllTabRow);
         if (hideAllTabIdx >= 0) {
             cellGroup.rows.add(hideAllTabIdx, ignoreUnreadCountRow);
+            cellGroup.rows.add(hideAllTabIdx, tabStyleStrokeRow);
             cellGroup.rows.add(hideAllTabIdx, tabsTitleTypeRow);
         }
         wasCentered = isCentered();
@@ -270,7 +273,8 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.invalidateMotionBackground);
             } else if (key.equals(NekoConfig.hideAllTab.getKey())
                     || key.equals(NaConfig.INSTANCE.getIgnoreUnreadCount().getKey())
-                    || key.equals(NekoConfig.tabsTitleType.getKey())) {
+                    || key.equals(NekoConfig.tabsTitleType.getKey())
+                    || key.equals(NekoConfig.tabStyleStroke.getKey())) {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
             } else if (key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
                     || key.equals(NekoConfig.tabletMode.getKey())

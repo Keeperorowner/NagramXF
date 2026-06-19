@@ -1627,6 +1627,13 @@ public class FilterTabsView extends FrameLayout {
                 counterVisible = tabView.tabCounterVisible;
             }
         }
+        if (NekoConfig.tabStyleStroke.Bool()) {
+            selectorDrawable.setStroke(AndroidUtilities.dp(1), Theme.getColor(activeTextColorKey, resourcesProvider));
+            selectorDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(tabLineColorKey), 50));
+        } else {
+            selectorDrawable.setStroke(0, 0);
+            selectorDrawable.setColor(Theme.getColor(tabLineColorKey, resourcesProvider));
+        }
         if (indicatorWidth != 0) {
             canvas.save();
             canvas.translate(listView.getTranslationX(), 0);
@@ -1637,7 +1644,7 @@ public class FilterTabsView extends FrameLayout {
             final int y = height / 2 - dp(14);
             float internalPadding = FolderIconHelper.getTabInternalPadding();
             selectorDrawable.setBounds((int) (indicatorX - dp(internalPadding) - add), y, (int) (indicatorX + indicatorWidth + dp(internalPadding) + add), y + dp(28));
-            selectorDrawable.setAlpha(31);
+            if (!NekoConfig.tabStyleStroke.Bool()) selectorDrawable.setAlpha(31);
             selectorDrawable.draw(canvas);
             canvas.restore();
         }

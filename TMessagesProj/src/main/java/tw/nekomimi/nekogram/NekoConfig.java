@@ -132,6 +132,7 @@ public class NekoConfig {
     public static ConfigItem disableNotificationBubbles = addConfig("disableNotificationBubbles", configTypeBool, false);
 
     public static ConfigItem tabsTitleType = addConfig("TabTitleType", configTypeInt, NekoXConfig.TITLE_TYPE_TEXT);
+    public static ConfigItem tabStyleStroke = addConfig("TabStyleStroke", configTypeBool, false);
     public static ConfigItem confirmAVMessage = addConfig("ConfirmAVMessage", configTypeBool, false);
     public static ConfigItem askBeforeCall = addConfig("AskBeforeCalling", configTypeBool, true);
     public static ConfigItem disableNumberRounding = addConfig("DisableNumberRounding", configTypeBool, false);

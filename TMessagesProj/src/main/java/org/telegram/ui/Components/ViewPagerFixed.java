@@ -56,6 +56,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Stories.recorder.HintView2;
 
+import tw.nekomimi.nekogram.NekoConfig;
+
 import java.util.ArrayList;
 
 public class ViewPagerFixed extends FrameLayout {
@@ -2060,11 +2062,18 @@ public class ViewPagerFixed extends FrameLayout {
                             final float TAB_INTERNAL_PADDING = 12.5f;
                             final float add = additionalTabWidth / 2f;
                             final int y = height / 2 - dp(14);
+                            if (NekoConfig.tabStyleStroke.Bool()) {
+                                selectorDrawable.setStroke(AndroidUtilities.dp(1), Theme.getColor(activeTextColorKey, resourcesProvider));
+                                selectorDrawable.setColor(ColorUtils.setAlphaComponent(Theme.getColor(tabLineColorKey), 50));
+                            } else {
+                                selectorDrawable.setStroke(0, 0);
+                                selectorDrawable.setColor(Theme.getColor(tabLineColorKey, resourcesProvider));
+                            }
                             selectorDrawable.setBounds(
                                 (int) (indicatorX - dp(TAB_INTERNAL_PADDING) - add), y,
                                 (int) (indicatorX + indicatorWidth + dp(TAB_INTERNAL_PADDING) + add),
                                 y + dp(28));
-                            selectorDrawable.setAlpha(31);
+                            if (!NekoConfig.tabStyleStroke.Bool()) selectorDrawable.setAlpha(31);
                             selectorDrawable.draw(canvas);
                         } else {
                             selectorDrawable.setBounds(indicatorX, (int) (height - AndroidUtilities.dpr(4) + hideProgress * AndroidUtilities.dpr(4)), indicatorX + indicatorWidth, (int) (height + hideProgress * AndroidUtilities.dpr(4)));
