@@ -487,6 +487,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val regexFiltersHideOnlyMatched =
+        addConfig(
+            "RegexFiltersHideOnlyMatched",
+            ConfigItem.configTypeBool,
+            false
+        )
     val regexChatFiltersData =
         addConfig(
             "RegexChatFiltersData",

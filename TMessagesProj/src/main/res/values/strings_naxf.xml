@@ -43,6 +43,8 @@
     <string name="RegexFiltersMaskMessages">Mask filtered or blocked messages instead of hiding them</string>
     <string name="RegexFiltersMaskMessagesShort">Mask Instead of Hiding</string>
     <string name="RegexFiltersMaskMessagesAbout">Filtered or blocked messages stay in chat as masked placeholders instead of being removed.</string>
+    <string name="RegexFiltersHideOnlyMatchedShort">Hide Only Matched Content</string>
+    <string name="RegexFiltersHideOnlyMatchedAbout">Only the regex-matched portions are hidden under spoilers instead of masking the whole message.</string>
     <string name="RegexFiltersReversed">Reversed expression</string>
     <string name="RegexFiltersPattern">Pattern</string>
     <string name="RegexFiltersExcluded">Excluded Filters</string>

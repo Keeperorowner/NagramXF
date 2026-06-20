@@ -93,6 +93,8 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell filtersOptionDividerRow = new ConfigCellDivider();
     private final AbstractConfigCell regexFiltersMaskMessagesRow = new ConfigCellCustom("RegexFiltersMaskMessagesShort", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
     private final AbstractConfigCell regexFiltersMaskMessagesInfoRow = new ConfigCellCustom("RegexFiltersMaskMessagesAbout", CellGroup.ITEM_TYPE_TEXT, false);
+    private final AbstractConfigCell regexFiltersHideOnlyMatchedRow = new ConfigCellCustom("RegexFiltersHideOnlyMatchedShort", CellGroup.ITEM_TYPE_TEXT_CHECK, true);
+    private final AbstractConfigCell regexFiltersHideOnlyMatchedInfoRow = new ConfigCellCustom("RegexFiltersHideOnlyMatchedAbout", CellGroup.ITEM_TYPE_TEXT, false);
     private final AbstractConfigCell filtersHeaderRow = new ConfigCellHeader(getString(R.string.RegexFiltersGlobalHeader));
     private final AbstractConfigCell sharedFiltersPageRow = new ConfigCellCustom("RegexFiltersSharedHeader", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true);
     private final AbstractConfigCell userFiltersPageRow = new ConfigCellCustom("ShadowBan", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true);
@@ -117,6 +119,10 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
         addCell(filtersOptionDividerRow);
         addCell(regexFiltersMaskMessagesRow);
         addCell(regexFiltersMaskMessagesInfoRow);
+        if (NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool()) {
+            addCell(regexFiltersHideOnlyMatchedRow);
+            addCell(regexFiltersHideOnlyMatchedInfoRow);
+        }
         addCell(filtersHeaderRow);
         addCell(sharedFiltersPageRow);
         addCell(userFiltersPageRow);
@@ -220,6 +226,13 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
             boolean enabled = !cell.isChecked();
             cell.setChecked(enabled);
             NaConfig.INSTANCE.getRegexFiltersMaskMessages().setConfigBool(enabled);
+            AyuFilter.invalidateFilteredCache();
+            updateHideOnlyMatchedRowsAnimated(enabled);
+        } else if (row == regexFiltersHideOnlyMatchedRow) {
+            TextCheckCell cell = (TextCheckCell) view;
+            boolean enabled = !cell.isChecked();
+            cell.setChecked(enabled);
+            NaConfig.INSTANCE.getRegexFiltersHideOnlyMatched().setConfigBool(enabled);
             AyuFilter.invalidateFilteredCache();
         } else if (row == sharedFiltersPageRow) {
             presentFragment(new RegexSharedFiltersListActivity());
@@ -961,6 +974,32 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
         }
     }
 
+    private void updateHideOnlyMatchedRowsAnimated(boolean maskEnabled) {
+        if (listAdapter == null) {
+            return;
+        }
+        int infoIndex = cellGroup.rows.indexOf(regexFiltersMaskMessagesInfoRow);
+        if (infoIndex < 0) {
+            return;
+        }
+        int insertPos = infoIndex + 1;
+        boolean currentlyShown = cellGroup.rows.contains(regexFiltersHideOnlyMatchedRow);
+        if (maskEnabled && !currentlyShown) {
+            regexFiltersHideOnlyMatchedRow.bindCellGroup(cellGroup);
+            regexFiltersHideOnlyMatchedInfoRow.bindCellGroup(cellGroup);
+            cellGroup.rows.add(insertPos, regexFiltersHideOnlyMatchedInfoRow);
+            cellGroup.rows.add(insertPos, regexFiltersHideOnlyMatchedRow);
+            addRowsToMap(cellGroup);
+            listAdapter.notifyItemRangeInserted(insertPos, 2);
+        } else if (!maskEnabled && currentlyShown) {
+            int removeIndex = cellGroup.rows.indexOf(regexFiltersHideOnlyMatchedRow);
+            cellGroup.rows.remove(regexFiltersHideOnlyMatchedRow);
+            cellGroup.rows.remove(regexFiltersHideOnlyMatchedInfoRow);
+            addRowsToMap(cellGroup);
+            listAdapter.notifyItemRangeRemoved(removeIndex, 2);
+        }
+    }
+
     @Override
     protected boolean onItemLongClick(View view, int position, float x, float y) {
         return super.onItemLongClick(view, position, x, y);
@@ -1086,6 +1125,13 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
                 TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
                 infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
                 infoCell.setText(getString(R.string.RegexFiltersMaskMessagesAbout));
+            } else if (row == regexFiltersHideOnlyMatchedRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setTextAndCheck(getString(R.string.RegexFiltersHideOnlyMatchedShort), NaConfig.INSTANCE.getRegexFiltersHideOnlyMatched().Bool(), false);
+            } else if (row == regexFiltersHideOnlyMatchedInfoRow) {
+                TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
+                infoCell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
+                infoCell.setText(getString(R.string.RegexFiltersHideOnlyMatchedAbout));
             } else if (row == sharedFiltersPageRow) {
                 TextSettingsCell settingsCell = (TextSettingsCell) holder.itemView;
                 settingsCell.setTextAndValue(getString(R.string.RegexFiltersSharedHeader), String.valueOf(AyuFilter.getRegexFilters().size()), true);
