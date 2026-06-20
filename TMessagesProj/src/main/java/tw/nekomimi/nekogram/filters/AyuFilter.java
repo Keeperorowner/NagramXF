@@ -157,6 +157,9 @@ public class AyuFilter {
         if (filter == null || !filter.enabled || filter.pattern == null || TextUtils.isEmpty(text)) {
             return false;
         }
+        if (filter.reversed && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool()) {
+            return false;
+        }
         boolean matched = filter.pattern.matcher(text).find();
         return filter.reversed ? !matched : matched;
     }
@@ -195,6 +198,81 @@ public class AyuFilter {
         }
 
         return false;
+    }
+
+    private static void collectMatchedRanges(ArrayList<int[]> ranges, FilterModel filter, CharSequence text) {
+        if (filter == null || !filter.enabled || filter.pattern == null || filter.reversed) {
+            return;
+        }
+        try {
+            var matcher = filter.pattern.matcher(text);
+            int length = text.length();
+            while (matcher.find()) {
+                int start = matcher.start();
+                int end = matcher.end();
+                if (start >= 0 && end > start && end <= length) {
+                    ranges.add(new int[]{start, end});
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static ArrayList<int[]> findFilteredRanges(CharSequence text, long dialogId) {
+        ArrayList<int[]> ranges = new ArrayList<>();
+        if (TextUtils.isEmpty(text)) {
+            return ranges;
+        }
+        if (chatFilterEntries != null) {
+            for (var entry : chatFilterEntries) {
+                if (entry.dialogId == dialogId) {
+                    if (entry.filters != null) {
+                        for (var filter : entry.filters) {
+                            collectMatchedRanges(ranges, filter, text);
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        boolean isPrivateDialog = dialogId > 0;
+        if (isPrivateDialog && !NaConfig.INSTANCE.getRegexFiltersEnableInChats().Bool()) {
+            return mergeRanges(ranges);
+        }
+
+        if (filterModels != null) {
+            HashSet<String> excludedFilterIds = getExcludedSharedFilterIds(dialogId);
+            for (var filter : filterModels) {
+                if (!TextUtils.isEmpty(filter.id) && excludedFilterIds.contains(filter.id)) {
+                    continue;
+                }
+                collectMatchedRanges(ranges, filter, text);
+            }
+        }
+        return mergeRanges(ranges);
+    }
+
+    private static ArrayList<int[]> mergeRanges(ArrayList<int[]> ranges) {
+        if (ranges.isEmpty()) {
+            return ranges;
+        }
+        Collections.sort(ranges, (a, b) -> Integer.compare(a[0], b[0]));
+        ArrayList<int[]> merged = new ArrayList<>();
+        for (int[] range : ranges) {
+            if (merged.isEmpty()) {
+                merged.add(new int[]{range[0], range[1]});
+                continue;
+            }
+            int[] last = merged.get(merged.size() - 1);
+            if (range[0] <= last[1]) {
+                last[1] = Math.max(last[1], range[1]);
+            } else {
+                merged.add(new int[]{range[0], range[1]});
+            }
+        }
+        return merged;
     }
 
     public static boolean isFiltered(MessageObject msg, MessageObject.GroupedMessages group) {
@@ -244,6 +322,12 @@ public class AyuFilter {
         return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool() && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
     }
 
+    public static boolean shouldHideOnlyMatched() {
+        return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool()
+                && NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool()
+                && NaConfig.INSTANCE.getRegexFiltersHideOnlyMatched().Bool();
+    }
+
     public static boolean shouldHideFilteredMessages() {
         return NaConfig.INSTANCE.getRegexFiltersEnabled().Bool() && !NaConfig.INSTANCE.getRegexFiltersMaskMessages().Bool();
     }
@@ -265,6 +349,9 @@ public class AyuFilter {
     }
 
     public static boolean shouldMaskFilteredMessage(MessageObject msg, MessageObject.GroupedMessages group) {
+        if (shouldHideOnlyMatched()) {
+            return false;
+        }
         return shouldMaskFilteredMessages() && isFiltered(msg, group);
     }
 
@@ -273,7 +360,25 @@ public class AyuFilter {
     }
 
     public static ArrayList<TLRPC.MessageEntity> addSpoilerEntities(MessageObject msg, ArrayList<TLRPC.MessageEntity> original, CharSequence text) {
-        if (msg == null || TextUtils.isEmpty(text) || !shouldMaskMessage(msg, null)) {
+        if (msg == null || TextUtils.isEmpty(text)) {
+            return original;
+        }
+
+        if (shouldHideOnlyMatched() && isFiltered(msg, null)) {
+            ArrayList<int[]> ranges = findFilteredRanges(text, msg.getDialogId());
+            if (!ranges.isEmpty()) {
+                ArrayList<TLRPC.MessageEntity> result = original != null ? new ArrayList<>(original) : new ArrayList<>();
+                for (int[] range : ranges) {
+                    TLRPC.TL_messageEntitySpoiler spoiler = new TLRPC.TL_messageEntitySpoiler();
+                    spoiler.offset = range[0];
+                    spoiler.length = range[1] - range[0];
+                    result.add(spoiler);
+                }
+                return result;
+            }
+        }
+
+        if (!shouldMaskMessage(msg, null)) {
             return original;
         }
 
