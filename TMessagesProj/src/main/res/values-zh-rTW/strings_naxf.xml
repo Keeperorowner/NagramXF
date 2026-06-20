@@ -40,6 +40,8 @@
     <string name="RegexFiltersEnabled">啟用消息過濾</string>
     <string name="RegexFiltersMaskMessagesShort">遮罩而不隱藏</string>
     <string name="RegexFiltersMaskMessagesAbout">過濾或被屏蔽的消息會以遮罩占位形式保留在聊天中，而不是直接隱藏。</string>
+    <string name="RegexFiltersHideOnlyMatchedShort">只隱藏正則內容</string>
+    <string name="RegexFiltersHideOnlyMatchedAbout">僅將正則匹配到的內容以劇透遮罩隱藏，而不是遮罩整條訊息。</string>
     <string name="UseSystemAiService">使用系統 AI 服務</string>
     <string name="UseSystemAiServiceDesc">當前僅支持 HyperOS 和 ColorOS</string>
     <string name="HideAiEditor">隱藏 AI 編輯器</string>
