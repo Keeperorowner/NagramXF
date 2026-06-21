@@ -103,6 +103,8 @@
     <string name="MainTabsDisplayModeShow">显示</string>
     <string name="MainTabsDisplayModeHide">隐藏</string>
     <string name="MainTabsDisplayModeFloating">浮动</string>
+    <string name="MainTabsForceOpenChats">永远在聊天中搜索</string>
+    <string name="MainTabsForceOpenChatsDesc">开启后，搜索按钮始终打开聊天搜索。关闭后，将打开当前界面的上下文搜索（例如设置或联系人）。</string>
     <string name="FoldersAtBottom">将文件夹栏移动到底部</string>
     <string name="AppNavigation">应用导航</string>
     <string name="ShowRecentChatsSidebar">显示最近聊天侧边栏</string>

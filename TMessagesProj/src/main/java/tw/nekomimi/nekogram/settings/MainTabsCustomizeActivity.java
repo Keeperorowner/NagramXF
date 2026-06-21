@@ -6,8 +6,10 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.content.ClipData;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.view.DragEvent;
@@ -55,8 +57,12 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell headerRow = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.MainTabsCustomize)));
     private final AbstractConfigCell previewRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsPreview", VIEW_TYPE_PREVIEW, false));
     private final AbstractConfigCell previewInfoRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsCustomizeDesc", CellGroup.ITEM_TYPE_TEXT, false));
+    private final AbstractConfigCell otherSettingsHeaderRow = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.OtherSettings)));
     private final AbstractConfigCell showTabTitlesRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsShowTitles", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell bottomBarDisplayModeRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsDisplayMode", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell forceOpenChatsDividerRow = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell forceOpenChatsRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsForceOpenChats", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
+    private final AbstractConfigCell forceOpenChatsInfoRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsForceOpenChatsDesc", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell shadowRow = cellGroup.appendCell(new ConfigCellDivider());
 
     public MainTabsCustomizeActivity() {
@@ -114,6 +120,11 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
         } else if (row == bottomBarDisplayModeRow) {
             showBottomBarDisplayModeDialog();
+        } else if (row == forceOpenChatsRow) {
+            boolean checked = NaConfig.INSTANCE.getMainTabsForceOpenChats().toggleConfigBool();
+            if (view instanceof TextCheckCell textCheckCell) {
+                textCheckCell.setChecked(checked);
+            }
         }
     }
 
@@ -220,11 +231,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
                 cell.bind();
             } else if (row == previewInfoRow) {
                 TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                StringBuilder desc = new StringBuilder(getString(R.string.MainTabsCustomizeDesc));
-                if (NekoConfig.navigationDrawerEnabled.Bool()) {
-                    desc.append("\n\n").append(getString(R.string.MainTabsCustomizeDrawerLocked));
-                }
-                cell.setText(desc);
+                cell.setText(getString(R.string.MainTabsCustomizeDesc));
                 cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
             } else if (row == bottomBarDisplayModeRow) {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
@@ -232,6 +239,13 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             } else if (row == showTabTitlesRow) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
                 cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
+            } else if (row == forceOpenChatsRow) {
+                TextCheckCell cell = (TextCheckCell) holder.itemView;
+                cell.setTextAndCheck(getString(R.string.MainTabsForceOpenChats), NaConfig.INSTANCE.getMainTabsForceOpenChats().Bool(), true);
+            } else if (row == forceOpenChatsInfoRow) {
+                TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
+                cell.setText(getString(R.string.MainTabsForceOpenChatsDesc));
+                cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow));
             }
         }
 
@@ -400,6 +414,8 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             boolean searchEnabled = NaConfig.INSTANCE.getMainTabsShowSearchButton().Bool();
             applySearchButtonVisual(searchTab, searchEnabled);
             searchTab.setSelected(false, false);
+            int dividerColor = Theme.multAlpha(Theme.getColor(Theme.key_switchTrack, resourceProvider), 63 / 255f);
+            searchTab.setBackground(new SearchDividerDrawable(dividerColor));
             searchTab.setOnClickListener(v -> {
                 boolean checked = NaConfig.INSTANCE.getMainTabsShowSearchButton().toggleConfigBool();
                 applySearchButtonVisual(searchTab, checked);
@@ -535,6 +551,41 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             if (onTabsChangedListener != null) {
                 onTabsChangedListener.onTabsChanged(MainTabsConfigManager.copyTabs(tabs));
             }
+        }
+    }
+
+    private static class SearchDividerDrawable extends Drawable {
+
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float strokeWidth;
+        private final float verticalInset;
+
+        public SearchDividerDrawable(int color) {
+            strokeWidth = dp(2);
+            verticalInset = dp(6);
+            paint.setColor(color);
+            paint.setStrokeWidth(strokeWidth);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            float x = strokeWidth / 2f;
+            float bottom = getBounds().height() - verticalInset;
+            canvas.drawLine(x, verticalInset, x, bottom, paint);
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
         }
     }
 }
