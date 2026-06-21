@@ -121,6 +121,8 @@
     <string name="MainTabsDisplayModeShow">顯示</string>
     <string name="MainTabsDisplayModeHide">隱藏</string>
     <string name="MainTabsDisplayModeFloating">浮動</string>
+    <string name="MainTabsForceOpenChats">永遠在聊天中搜尋</string>
+    <string name="MainTabsForceOpenChatsDesc">開啟後，搜尋按鈕始終打開聊天搜尋。關閉後，將打開當前介面的上下文搜尋（例如設定或聯絡人）。</string>
     <string name="FoldersAtBottom">將文件夾欄移動到底部</string>
     <string name="AppNavigation">應用導航</string>
     <string name="SwitchAccountNax">切換賬號</string>
