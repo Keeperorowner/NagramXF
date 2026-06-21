@@ -1431,6 +1431,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val mainTabsForceOpenChats =
+        addConfig(
+            "MainTabsForceOpenChats",
+            ConfigItem.configTypeBool,
+            false
+        )
     val showTextMonoCode =
         addConfig(
             "TextMonoCode",

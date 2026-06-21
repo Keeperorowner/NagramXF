@@ -1514,12 +1514,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void onSearchTabButtonClicked() {
-        final BaseFragment fragment = getCurrentVisibleFragment();
-        if (fragment instanceof TabFragmentDelegate) {
-            TabFragmentDelegate delegate = (TabFragmentDelegate) fragment;
-            if (delegate.hasSearch()) {
-                delegate.onSearchButtonClicked();
-                return;
+        if (!NaConfig.INSTANCE.getMainTabsForceOpenChats().Bool()) {
+            final BaseFragment fragment = getCurrentVisibleFragment();
+            if (fragment instanceof TabFragmentDelegate) {
+                TabFragmentDelegate delegate = (TabFragmentDelegate) fragment;
+                if (delegate.hasSearch()) {
+                    delegate.onSearchButtonClicked();
+                    return;
+                }
             }
         }
         int chatsPosition = getTabIndex(MainTabsConfigManager.TabType.CHATS);
