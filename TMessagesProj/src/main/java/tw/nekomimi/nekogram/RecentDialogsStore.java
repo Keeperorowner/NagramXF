@@ -12,7 +12,7 @@ import org.telegram.tgnet.SerializedData;
 
 import java.util.LinkedList;
 
-public class BackButtonMenuRecent {
+public class RecentDialogsStore {
 
     private static final int MAX_RECENT_DIALOGS = 1000;
 

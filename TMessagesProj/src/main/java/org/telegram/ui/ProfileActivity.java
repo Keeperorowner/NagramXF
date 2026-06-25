@@ -89,6 +89,7 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.AccelerateInterpolator;
@@ -348,7 +349,7 @@ import java.util.zip.ZipOutputStream;
 
 import kotlin.Unit;
 import me.vkryl.android.animator.BoolAnimator;
-import tw.nekomimi.nekogram.BackButtonMenuRecent;
+import tw.nekomimi.nekogram.RecentDialogsStore;
 import tw.nekomimi.nekogram.DatacenterActivity;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
@@ -3516,7 +3517,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (scrimView != null) {
                     int c = canvas.save();
-                    canvas.translate(scrimView.getLeft(), scrimView.getTop());
+                    float scrimX = scrimView.getLeft() + scrimView.getTranslationX();
+                    float scrimY = scrimView.getTop() + scrimView.getTranslationY();
+                    ViewParent vp = scrimView.getParent();
+                    while (vp != null && vp != this) {
+                        if (vp instanceof View) {
+                            View p = (View) vp;
+                            scrimX += p.getLeft() + p.getTranslationX() - p.getScrollX();
+                            scrimY += p.getTop() + p.getTranslationY() - p.getScrollY();
+                        }
+                        vp = vp.getParent();
+                    }
+                    canvas.translate(scrimX, scrimY);
                     if (scrimView == actionBar.getBackButton()) {
                         int r = Math.max(scrimView.getMeasuredWidth(), scrimView.getMeasuredHeight()) / 2;
                         int wasAlpha = actionBarBackgroundPaint.getAlpha();
@@ -6077,7 +6089,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         contentView.blurBehindViews.add(sharedMediaLayout);
         updateTtlIcon();
 
-        BackButtonMenuRecent.addToRecentDialogs(currentAccount, userId != 0 ? userId : -chatId);
+        RecentDialogsStore.addToRecentDialogs(currentAccount, userId != 0 ? userId : -chatId);
 
         blurredView = new View(context) {
             @Override

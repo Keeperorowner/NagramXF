@@ -33,7 +33,6 @@ import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
-import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
@@ -66,14 +65,15 @@ import org.telegram.ui.ChatActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
-import tw.nekomimi.nekogram.BackButtonMenuRecent;
+import tw.nekomimi.nekogram.RecentDialogsStore;
 
 public class ChatHistoryActivity extends BaseFragment {
 
     private static final String TAG = "ChatHistoryActivity";
-    private static final long SEARCH_DEBOUNCE_MS = 250L;
     private static final int TABS_CONTAINER_HEIGHT_DP = 50;
 
     public enum ChatCategory {
@@ -98,22 +98,14 @@ public class ChatHistoryActivity extends BaseFragment {
     private final BlurredBackgroundDrawableViewFactory tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceColor);
 
     private ArrayList<HistoryItem> allHistoryItems = new ArrayList<>();
-    private ArrayList<HistoryItem> filteredHistoryItems = new ArrayList<>();
 
     private android.os.Parcelable savedScrollState = null;
     private int savedScrollTab = -1;
 
 
-    private boolean isSearchMode = false;
-    private String searchQuery = "";
     private ActionBarMenuItem searchItem;
-    private Runnable searchRunnable;
-    private int searchRequestId;
-    private boolean searchInProgress;
 
     // State preservation
-    private boolean savedSearchMode = false;
-    private String savedSearchQuery = "";
     private int savedCurrentTab = 0;
     private boolean isOpeningChat = false;
 
@@ -131,62 +123,25 @@ public class ChatHistoryActivity extends BaseFragment {
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
-        cancelPendingSearch();
-        searchRequestId++;
-        searchInProgress = false;
         saveState();
     }
 
     private void saveState() {
-        if (isSearchMode && !android.text.TextUtils.isEmpty(searchQuery)) {
-            savedSearchMode = true;
-            savedSearchQuery = searchQuery;
-        } else {
-            savedSearchMode = false;
-            savedSearchQuery = "";
-        }
-        
         if (viewPager != null) {
             savedCurrentTab = viewPager.getCurrentPosition();
         }
-        
-        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Save state: searchMode=" + savedSearchMode + ", query=" + savedSearchQuery + ", currentTab=" + savedCurrentTab);
+        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Save state: currentTab=" + savedCurrentTab);
     }
 
     private void restoreState() {
-        restoreState(true);
-    }
+        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Start restoring state: currentTab=" + savedCurrentTab);
 
-    private void restoreState(boolean refreshSearchResults) {
-        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Start restoring state: searchMode=" + savedSearchMode + ", query=" + savedSearchQuery + ", currentTab=" + savedCurrentTab);
-        
         if (viewPager != null && savedCurrentTab >= 0 && savedCurrentTab < ChatCategory.values().length) {
             viewPager.setPosition(savedCurrentTab);
             if (tabsView != null) {
                 tabsView.selectTabWithId(savedCurrentTab, 1.0f);
             }
             if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Tab restored to position: " + savedCurrentTab);
-        }
-        
-        if (savedSearchMode && !android.text.TextUtils.isEmpty(savedSearchQuery)) {
-            isSearchMode = true;
-            searchQuery = savedSearchQuery;
-            
-            updateTitle();
-            
-            if (searchItem != null) {
-                searchItem.postDelayed(() -> {
-                    searchItem.openSearch(false);
-                    if (searchItem.getSearchField() != null) {
-                        searchItem.getSearchField().setText(savedSearchQuery);
-                    }
-                }, 50);
-            }
-            
-            if (refreshSearchResults) {
-                performSearch(savedSearchQuery);
-            }
-            if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Search state restored");
         }
     }
 
@@ -220,7 +175,7 @@ public class ChatHistoryActivity extends BaseFragment {
         createViewPager(context, (SizeNotifierFrameLayout) fragmentView);
 
         if (isOpeningChat) {
-            fragmentView.post(() -> restoreState(false));
+            fragmentView.post(() -> restoreState());
         }
 
         return fragmentView;
@@ -306,55 +261,77 @@ public class ChatHistoryActivity extends BaseFragment {
 
 
     private void loadHistoryItems() {
-        allHistoryItems.clear();
-
-        LinkedList<Long> recentDialogIds = BackButtonMenuRecent.getRecentDialogs(currentAccount);
-
-        for (Long dialogId : recentDialogIds) {
-            if (ChatHistoryUtils.isOfficialDialog(dialogId, currentAccount)) {
-                continue;
-            }
-
-            HistoryItem item = createHistoryItem(dialogId, currentAccount);
-            if (item != null) {
-                allHistoryItems.add(item);
-            }
-        }
-
-        if (isSearchMode) {
-            performSearch(searchQuery);
-        } else {
-            searchInProgress = false;
-            filteredHistoryItems.clear();
-            filteredHistoryItems.addAll(allHistoryItems);
-        }
+        LinkedList<Long> recentDialogIds = RecentDialogsStore.getRecentDialogs(currentAccount);
+        allHistoryItems = buildHistoryItems(recentDialogIds, currentAccount);
 
         updateTabs();
     }
 
-    private static HistoryItem createHistoryItem(long dialogId, int account) {
-        HistoryItem item = new HistoryItem();
-        item.dialogId = dialogId;
+    public static ArrayList<HistoryItem> buildHistoryItems(List<Long> dialogIds, int account) {
+        ArrayList<HistoryItem> items = new ArrayList<>(dialogIds.size());
+        ArrayList<Long> missingUserIds = new ArrayList<>();
+        ArrayList<Long> missingChatIds = new ArrayList<>();
+        MessagesController controller = MessagesController.getInstance(account);
 
-        if (dialogId > 0) {
-            item.user = MessagesController.getInstance(account).getUser(dialogId);
-            if (item.user == null) {
-                item.user = loadUserFromDatabase(dialogId, account);
+        for (Long dialogId : dialogIds) {
+            if (dialogId == null || dialogId == 0) {
+                continue;
             }
-            if (item.user == null) {
-                return null;
+            if (ChatHistoryUtils.isOfficialDialog(dialogId, account)) {
+                continue;
             }
-        } else {
-            long chatId = -dialogId;
-            item.chat = MessagesController.getInstance(account).getChat(chatId);
-            if (item.chat == null) {
-                item.chat = loadChatFromDatabase(chatId, account);
+            HistoryItem item = new HistoryItem();
+            item.dialogId = dialogId;
+            if (dialogId > 0) {
+                item.user = controller.getUser(dialogId);
+                if (item.user == null) {
+                    missingUserIds.add(dialogId);
+                }
+            } else {
+                long chatId = -dialogId;
+                item.chat = controller.getChat(chatId);
+                if (item.chat == null) {
+                    missingChatIds.add(chatId);
+                }
             }
-            if (item.chat == null) {
-                return null;
+            items.add(item);
+        }
+
+        if (!missingUserIds.isEmpty()) {
+            ArrayList<TLRPC.User> users = MessagesStorage.getInstance(account).getUsers(missingUserIds);
+            controller.putUsers(users, true);
+            HashMap<Long, TLRPC.User> userMap = new HashMap<>(users.size());
+            for (TLRPC.User u : users) {
+                userMap.put(u.id, u);
+            }
+            for (HistoryItem it : items) {
+                if (it.user == null && it.dialogId > 0) {
+                    it.user = userMap.get(it.dialogId);
+                }
             }
         }
-        return item;
+
+        if (!missingChatIds.isEmpty()) {
+            ArrayList<TLRPC.Chat> chats = MessagesStorage.getInstance(account).getChats(missingChatIds);
+            controller.putChats(chats, true);
+            HashMap<Long, TLRPC.Chat> chatMap = new HashMap<>(chats.size());
+            for (TLRPC.Chat c : chats) {
+                chatMap.put(c.id, c);
+            }
+            for (HistoryItem it : items) {
+                if (it.chat == null && it.dialogId < 0) {
+                    it.chat = chatMap.get(-it.dialogId);
+                }
+            }
+        }
+
+        ArrayList<HistoryItem> result = new ArrayList<>(items.size());
+        for (HistoryItem it : items) {
+            if (it.user != null || it.chat != null) {
+                result.add(it);
+            }
+        }
+        return result;
     }
 
     private static TLRPC.User loadUserFromDatabase(long userId, int account) {
@@ -397,89 +374,7 @@ public class ChatHistoryActivity extends BaseFragment {
 
 
     private void updateTitle() {
-        if (isSearchMode) {
-            actionBar.setTitle(getString(R.string.Search));
-        } else {
-            actionBar.setTitle(getString(R.string.RecentChats));
-        }
-    }
-
-    private void exitSearchMode() {
-        cancelPendingSearch();
-        searchRequestId++;
-        searchInProgress = false;
-        isSearchMode = false;
-        searchQuery = "";
-
-        if (!isMultiSelectMode) {
-            savedSearchMode = false;
-            savedSearchQuery = "";
-        }
-
-        updateTitle();
-        refreshAllPages();
-    }
-
-    private void performSearch(String query) {
-        searchQuery = query == null ? "" : query;
-        cancelPendingSearch();
-        searchRequestId++;
-
-        if (TextUtils.isEmpty(searchQuery)) {
-            searchInProgress = false;
-            filteredHistoryItems.clear();
-            filteredHistoryItems.addAll(allHistoryItems);
-            refreshAllPages();
-            return;
-        }
-
-        searchInProgress = true;
-        filteredHistoryItems.clear();
-        refreshAllPages();
-
-        final int requestId = searchRequestId;
-        final String queryText = searchQuery;
-        final ArrayList<HistoryItem> allHistoryItemsSnapshot = new ArrayList<>(allHistoryItems);
-        Runnable runnable = () -> {
-            String lowerQuery = queryText.toLowerCase();
-            ArrayList<HistoryItem> filtered = new ArrayList<>();
-            for (HistoryItem item : allHistoryItemsSnapshot) {
-                if (matchesSearchQuery(item, lowerQuery)) {
-                    filtered.add(item);
-                }
-            }
-            AndroidUtilities.runOnUIThread(() -> applySearchResults(queryText, requestId, filtered));
-        };
-        searchRunnable = runnable;
-        Utilities.searchQueue.postRunnable(runnable, SEARCH_DEBOUNCE_MS);
-    }
-
-    private void applySearchResults(String query, int requestId, ArrayList<HistoryItem> filtered) {
-        if (requestId != searchRequestId || !TextUtils.equals(query, searchQuery)) {
-            return;
-        }
-        searchRunnable = null;
-        searchInProgress = false;
-        filteredHistoryItems.clear();
-        filteredHistoryItems.addAll(filtered);
-        refreshAllPages();
-    }
-
-    private void cancelPendingSearch() {
-        if (searchRunnable != null) {
-            Utilities.searchQueue.cancelRunnable(searchRunnable);
-            searchRunnable = null;
-        }
-    }
-
-    private String getSearchEmptyText() {
-        if (TextUtils.isEmpty(searchQuery)) {
-            return getString(R.string.ChatHistory_EnterSearchQuery);
-        }
-        if (searchInProgress) {
-            return LocaleController.getString(R.string.Loading);
-        }
-        return LocaleController.formatString(R.string.ChatHistory_NoResultsFor, searchQuery);
+        actionBar.setTitle(getString(R.string.RecentChats));
     }
 
     public static boolean matchesSearchQuery(HistoryItem item, String query) {
@@ -623,7 +518,7 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void clearHistory() {
-        BackButtonMenuRecent.clearRecentDialogs(currentAccount);
+        RecentDialogsStore.clearRecentDialogs(currentAccount);
 
         clearSavedState();
 
@@ -633,8 +528,6 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void clearSavedState() {
-        savedSearchMode = false;
-        savedSearchQuery = "";
         isOpeningChat = false;
         savedScrollState = null;
         savedScrollTab = -1;
@@ -682,23 +575,13 @@ public class ChatHistoryActivity extends BaseFragment {
     public void onResume() {
         super.onResume();
 
-        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "onResume: isOpeningChat=" + isOpeningChat + ", savedSearchMode=" + savedSearchMode);
+        if (BuildVars.LOGS_ENABLED) Log.d(TAG, "onResume: isOpeningChat=" + isOpeningChat);
 
         if (isOpeningChat && viewPager != null) {
             if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Returning from chat");
             isOpeningChat = false;
 
-            if (isSearchMode && android.text.TextUtils.isEmpty(searchQuery)) {
-                if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Exiting empty search mode on return");
-                try {
-                    if (actionBar != null && actionBar.isSearchFieldVisible()) {
-                        actionBar.closeSearchField(false);
-                    }
-                } catch (Exception ignore) { }
-                exitSearchMode();
-            }
-
-            restoreState(false);
+            restoreState();
             restoreScrollPosition();
             return;
         }
@@ -710,15 +593,6 @@ public class ChatHistoryActivity extends BaseFragment {
     public boolean onBackPressed(boolean invoked) {
         if (isMultiSelectMode) {
             exitMultiSelectMode();
-            return false;
-        }
-        if (isSearchMode) {
-            try {
-                if (actionBar != null && actionBar.isSearchFieldVisible()) {
-                    actionBar.closeSearchField(false);
-                }
-            } catch (Exception ignore) { }
-            exitSearchMode();
             return false;
         }
         return true;
@@ -847,7 +721,7 @@ public class ChatHistoryActivity extends BaseFragment {
         private void updateCategoryData() {
             categoryItems.clear();
 
-            ArrayList<HistoryItem> sourceItems = isSearchMode ? filteredHistoryItems : allHistoryItems;
+            ArrayList<HistoryItem> sourceItems = allHistoryItems;
 
             if (sourceItems == null || sourceItems.isEmpty()) {
                 if (BuildVars.LOGS_ENABLED) Log.d(TAG, "No data available for " + category.name() + " category");
@@ -860,7 +734,7 @@ public class ChatHistoryActivity extends BaseFragment {
                 }
             }
 
-            if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Updated " + category.name() + " category: " + categoryItems.size() + " items from " + sourceItems.size() + " total" + (isSearchMode ? " (search mode)" : ""));
+            if (BuildVars.LOGS_ENABLED) Log.d(TAG, "Updated " + category.name() + " category: " + categoryItems.size() + " items from " + sourceItems.size() + " total");
         }
 
         public void onItemClick(View view, int position) {
@@ -889,9 +763,7 @@ public class ChatHistoryActivity extends BaseFragment {
                     EmptyStateCell emptyStateCell = (EmptyStateCell) holder.itemView;
                     emptyStateCell.applyThemeColors();
 
-                    if (isSearchMode) {
-                        emptyStateCell.setText("", getSearchEmptyText());
-                    } else if (category == ChatCategory.ALL) {
+                    if (category == ChatCategory.ALL) {
                         emptyStateCell.setText("", getString(R.string.ChatHistory_NoRecentChats));
                     } else {
                         String categoryDisplayName = getCategoryDisplayName(category);
@@ -943,15 +815,6 @@ public class ChatHistoryActivity extends BaseFragment {
             return;
         }
 
-        if (isSearchMode && TextUtils.isEmpty(searchQuery)) {
-            try {
-                if (actionBar != null && actionBar.isSearchFieldVisible()) {
-                    actionBar.closeSearchField(false);
-                }
-            } catch (Exception ignore) { }
-            exitSearchMode();
-        }
-
         isOpeningChat = true;
         saveScrollPosition();
         saveState();
@@ -996,20 +859,8 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     public static ArrayList<HistoryItem> loadRecentHistoryItems(int account) {
-        ArrayList<HistoryItem> items = new ArrayList<>();
-        
-        LinkedList<Long> recentDialogIds = BackButtonMenuRecent.getRecentDialogs(account);
-        
-        for (Long dialogId : recentDialogIds) {
-            if (ChatHistoryUtils.isOfficialDialog(dialogId, account)) {
-                continue;
-            }
-            HistoryItem item = createHistoryItem(dialogId, account);
-            if (item != null) {
-                items.add(item);
-            }
-        }
-        return items;
+        LinkedList<Long> recentDialogIds = RecentDialogsStore.getRecentDialogs(account);
+        return buildHistoryItems(recentDialogIds, account);
     }
 
     private boolean chatExistsInCurrentAccount(HistoryItem item) {
@@ -1205,11 +1056,11 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void deleteChatFromHistory(HistoryItem item, boolean refreshUI) {
-        LinkedList<Long> recentDialogIds = BackButtonMenuRecent.getRecentDialogs(currentAccount);
+        LinkedList<Long> recentDialogIds = RecentDialogsStore.getRecentDialogs(currentAccount);
 
         recentDialogIds.remove(item.dialogId);
 
-        BackButtonMenuRecent.saveRecentDialogs(currentAccount, recentDialogIds);
+        RecentDialogsStore.saveRecentDialogs(currentAccount, recentDialogIds);
 
         if (refreshUI) {
             loadHistoryItems();
@@ -1495,16 +1346,6 @@ public class ChatHistoryActivity extends BaseFragment {
     }
 
     private void enterMultiSelectMode() {
-        savedSearchMode = isSearchMode;
-        savedSearchQuery = searchQuery;
-
-        // Close search field to avoid ActionBar conflicts, but preserve search state
-        if (isSearchMode && actionBar != null && actionBar.isSearchFieldVisible()) {
-            isSearchMode = false; // temporarily clear to prevent exitSearchMode side effects
-            actionBar.closeSearchField();
-            isSearchMode = savedSearchMode; // restore
-        }
-
         isMultiSelectMode = true;
         selectedItems.clear();
         updateActionBarForMultiSelect();
@@ -1515,26 +1356,8 @@ public class ChatHistoryActivity extends BaseFragment {
         isMultiSelectMode = false;
         selectedItems.clear();
 
-        boolean shouldRestoreSearch = savedSearchMode && !TextUtils.isEmpty(savedSearchQuery);
-
         updateActionBarForNormalMode();
         updateAllCellsMultiSelectMode();
-
-        if (shouldRestoreSearch) {
-            AndroidUtilities.runOnUIThread(() -> {
-                if (searchItem != null && actionBar != null) {
-                    isSearchMode = true;
-                    searchQuery = savedSearchQuery;
-                    actionBar.openSearchField(savedSearchQuery, false);
-                    if (searchItem.getSearchField() != null) {
-                        searchItem.getSearchField().setText(savedSearchQuery);
-                        searchItem.getSearchField().setSelection(savedSearchQuery.length());
-                    }
-                    updateTitle();
-                    performSearch(savedSearchQuery);
-                }
-            }, 200);
-        }
     }
 
     private void toggleItemSelection(HistoryItem item, HistoryCell cell) {
