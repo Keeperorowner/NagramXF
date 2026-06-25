@@ -44,7 +44,7 @@ import org.telegram.ui.ActionBar.Theme;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import tw.nekomimi.nekogram.BackButtonMenuRecent;
+import tw.nekomimi.nekogram.RecentDialogsStore;
 import tw.nekomimi.nekogram.ChatHistoryUtils;
 
 public class RecentDialogsSidebarView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -158,7 +158,7 @@ public class RecentDialogsSidebarView extends FrameLayout implements Notificatio
     }
 
     public void reloadDialogs() {
-        LinkedList<Long> recentDialogs = BackButtonMenuRecent.getRecentDialogs(currentAccount);
+        LinkedList<Long> recentDialogs = RecentDialogsStore.getRecentDialogs(currentAccount);
         dialogIds.clear();
         for (Long dialogId : recentDialogs) {
             if (dialogId == null || dialogId == 0 || dialogId == currentDialogId) {
