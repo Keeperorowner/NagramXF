@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
@@ -1404,7 +1405,7 @@ public class ChatHistoryActivity extends BaseFragment {
             if (item.user != null) {
                 avatarDrawable.setInfo(item.user);
                 avatarImageView.setForUserOrChat(item.user, avatarDrawable);
-                nameTextView.setText(UserObject.getUserName(item.user));
+                nameTextView.setText(Emoji.replaceEmoji(UserObject.getUserName(item.user), nameTextView.getPaint().getFontMetricsInt(), false));
 
                 String username = UserObject.getPublicUsername(item.user);
                 if (!TextUtils.isEmpty(username)) {
@@ -1417,7 +1418,7 @@ public class ChatHistoryActivity extends BaseFragment {
             } else if (item.chat != null) {
                 avatarDrawable.setInfo(item.chat);
                 avatarImageView.setForUserOrChat(item.chat, avatarDrawable);
-                nameTextView.setText(item.chat.title);
+                nameTextView.setText(Emoji.replaceEmoji(item.chat.title, nameTextView.getPaint().getFontMetricsInt(), false));
 
                 String username = ChatObject.getPublicUsername(item.chat);
                 if (!TextUtils.isEmpty(username)) {
