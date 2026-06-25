@@ -198,7 +198,7 @@
     <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">Учётные данные API не настроены.</string>
     <string name="ApiNotSupportedOnAndroidVersion">Этот поставщик API не поддерживается на вашей версии Android (требуется Android 8.0+).</string>
-    <string name="AppIconTelegramOriginal">Оригинальная</string>
+    <string name="AppIconTelegramOriginal">Классическая</string>
     <string name="BurnTtlMessage">Сжечь</string>
     <string name="StreamMkvNax">Показывать MKV как видео</string>
     <string name="StreamAllVideoNax">Стриминг всех видео</string>
