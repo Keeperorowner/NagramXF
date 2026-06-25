@@ -148,4 +148,11 @@ public class AccountSelectCell extends FrameLayout {
     public int getAccountNumber() {
         return accountNumber;
     }
+
+    @Override
+    public void setSelected(boolean z) {
+        if (checkImageView != null) {
+            checkImageView.setVisibility(z ? VISIBLE : INVISIBLE);
+        }
+    }
 }
