@@ -1,5 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AppIconNagram">Nagram</string>
     <!-- Pillstack (ported from exteragram/ayuGram) -->
     <string name="PillStackPills">Pill Stack</string>
     <string name="PillStackPillsInfo">Display interactive pills in the search field</string>
