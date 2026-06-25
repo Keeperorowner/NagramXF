@@ -384,7 +384,7 @@ public class ConnectionsManager extends BaseController {
         }
 
         // --- Ghost Mode ---
-        AyuGhostUtils.InterceptResult interceptResult = AyuGhostUtils.interceptRequest(object, onCompleteOrig);
+        AyuGhostUtils.InterceptResult interceptResult = AyuGhostUtils.interceptRequest(object, onCompleteOrig, currentAccount);
         if (interceptResult.blockRequest()) {
             FileLog.d("GhostMode: Request " + object.getClass().getSimpleName() + " blocked by handler.");
             return;

@@ -4,28 +4,49 @@ import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.LaunchActivity.getLastFragment;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.preferences.components.AccountCell;
+import com.radolyn.ayugram.utils.AyuGhostUtils;
 import com.radolyn.ayugram.utils.AyuState;
 
+import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.ActionBar;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.AccountSelectCell;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.AvatarDrawable;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.CellGroup;
@@ -42,14 +63,55 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
     private ListAdapter listAdapter;
     private final CellGroup cellGroup = new CellGroup(this);
 
+    // --- Per-account viewing state ---
+
+    /**
+     * The account index currently being viewed in the settings UI.
+     * -1 means "global settings" (when globalOverride is on).
+     */
+    private int currentViewingAccount = -1;
+
+    /**
+     * The settings object for the currently viewed account/global.
+     * Set in {@link #onFragmentCreate()} and updated when the account selector changes.
+     */
+    private AyuGhostConfig.GhostModeSettings currentSettings;
+
+    // --- ConfigItem wrappers that delegate to currentSettings ---
+
+    private final ConfigItem sendReadMessagePacketsItem = ghostBoolItem("sendReadMessagePackets",
+            () -> currentSettings.sendReadMessagePackets,
+            v -> { currentSettings.sendReadMessagePackets = v; currentSettings.save(); });
+
+    private final ConfigItem sendReadStoriesPacketsItem = ghostBoolItem("sendReadStoriesPackets",
+            () -> currentSettings.sendReadStoryPackets,
+            v -> { currentSettings.sendReadStoryPackets = v; currentSettings.save(); });
+
+    private final ConfigItem sendOnlinePacketsItem = ghostBoolItem("sendOnlinePackets",
+            () -> currentSettings.sendOnlinePackets,
+            v -> { currentSettings.sendOnlinePackets = v; currentSettings.save(); });
+
+    private final ConfigItem sendUploadProgressItem = ghostBoolItem("sendUploadProgress",
+            () -> currentSettings.sendUploadProgress,
+            v -> { currentSettings.sendUploadProgress = v; currentSettings.save(); });
+
+    private final ConfigItem sendOfflinePacketAfterOnlineItem = ghostBoolItem("sendOfflinePacketAfterOnline",
+            () -> currentSettings.sendOfflinePacketAfterOnline,
+            v -> { currentSettings.sendOfflinePacketAfterOnline = v; currentSettings.save(); });
+
+    // Inverted wrappers for "Don't Read Messages" style toggles
+    private final ConfigItem invSendReadMessagePackets = inverted("inv_sendReadMessagePackets", sendReadMessagePacketsItem);
+    private final ConfigItem invSendReadStoriesPackets = inverted("inv_sendReadStoriesPackets", sendReadStoriesPacketsItem);
+    private final ConfigItem invSendOnlinePackets = inverted("inv_sendOnlinePackets", sendOnlinePacketsItem);
+    private final ConfigItem invSendUploadProgress = inverted("inv_sendUploadProgress", sendUploadProgressItem);
+
+    // --- Cells ---
+
     private final AbstractConfigCell ghostEssentialsHeaderRow = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.GhostEssentialsHeader)));
 
-    private final ConfigItem invSendReadMessagePackets = inverted(NekoConfig.sendReadMessagePackets);
-    private final ConfigItem invSendReadStoriesPackets = inverted(NekoConfig.sendReadStoriesPackets);
-    private final ConfigItem invSendOnlinePackets = inverted(NekoConfig.sendOnlinePackets);
-    private final ConfigItem invSendUploadProgress = inverted(NekoConfig.sendUploadProgress);
-
     private final AbstractConfigCell ghostModeNoticeRow = new ConfigCellCustom("GhostModeNotice", CellGroup.ITEM_TYPE_TEXT, false);
+
+    private boolean ghostModeMenuExpanded = false;
 
     private final AbstractConfigCell ghostModeToggleRow = cellGroup.appendCell(
             new ConfigCellTextCheck2("GhostMode", getString(R.string.GhostMode), new ArrayList<>() {{
@@ -57,27 +119,37 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
                 add(new ConfigCellCheckBox(invSendReadStoriesPackets, "DontReadStoriesPackets", getString(R.string.DontReadStoriesPackets), 0, true));
                 add(new ConfigCellCheckBox(invSendOnlinePackets, "DontSendOnlinePackets", getString(R.string.DontSendOnlinePackets), 0, true));
                 add(new ConfigCellCheckBox(invSendUploadProgress, "DontSendUploadProgress", getString(R.string.DontSendUploadProgress), 0, true));
-                add(new ConfigCellCheckBox(NekoConfig.sendOfflinePacketAfterOnline, "SendOfflinePacketAfterOnline", getString(R.string.SendOfflinePacketAfterOnline), 0, false));
+                add(new ConfigCellCheckBox(sendOfflinePacketAfterOnlineItem, "SendOfflinePacketAfterOnline", getString(R.string.SendOfflinePacketAfterOnline), 0, false));
             }}, null) {
                 @Override
                 public void onBindViewHolder(RecyclerView.ViewHolder holder) {
                     TextCheckCell2 checkCell = (TextCheckCell2) holder.itemView;
                     this.cell = checkCell;
                     cell.setEnabled(isEnabled());
-                    cell.setTextAndCheck(getTitle(), NekoConfig.isGhostModeActive(), cellGroup.needSetDivider(this), true);
-                    cell.setCollapseArrow(String.format(Locale.US, "%d/%d", getSelectedCount(), getVisibleCheckBox().size()), isCollapsed(), this::onCheckClick);
+                    cell.setTextAndCheck(getTitle(), currentSettings.isGhostModeActive(), cellGroup.needSetDivider(this), true);
+                    cell.setCollapseArrow(String.format(Locale.US, "%d/%d", currentSettings.getSelectedCount(), getVisibleCheckBox().size()), isCollapsed(), this::onCheckClick);
                     cell.getCheckBox().setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
                     cell.getCheckBox().setDrawIconType(0);
                 }
 
                 @Override
                 public void onCheckClick() {
-                    NekoConfig.toggleGhostMode();
-                    boolean isActive = NekoConfig.isGhostModeActive();
-                    String msg = isActive
+                    boolean newState = !currentSettings.isGhostModeActive();
+                    currentSettings.setGhostMode(newState);
+                    String msg = newState
                             ? getString(R.string.GhostModeEnabled)
                             : getString(R.string.GhostModeDisabled);
                     BulletinFactory.of(getLastFragment()).createSuccessBulletin(msg).show();
+
+                    // Send status packet for the viewed account
+                    if (currentViewingAccount >= 0) {
+                        boolean sendOnlineNow = !newState
+                                && !currentSettings.sendOfflinePacketAfterOnlineLocked
+                                && currentSettings.sendOfflinePacketAfterOnline;
+                        AyuGhostUtils.performStatusRequest(currentViewingAccount, sendOnlineNow);
+                        currentSettings.postChangedNotification(currentViewingAccount);
+                    }
+
                     updateGhostViews();
                 }
 
@@ -120,12 +192,65 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell showGhostInDrawerRow = cellGroup.appendCell(new ConfigCellCustom("GhostModeInDrawer", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell showGhostModeStatusRow = cellGroup.appendCell(new ConfigCellCustom("GhostModeStatusIndicator", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
 
+    // --- Account selector dropdown ---
+
+    private ActionBarMenuItem switchItem;
+    private BackupImageView avatarImageView;
+    private AccountCell globalAccountCell;
+    private final Map<Integer, FrameLayout> accountSelectorItems = new HashMap<>();
+    private static final int ID_GLOBAL_SETTINGS = 100;
+    private static final int ID_ACCOUNT_BASE = 200;
+
     public GhostModeActivity() {
         addRowsToMap(cellGroup);
     }
 
-    private ConfigItem inverted(ConfigItem original) {
-        return new ConfigItem("inv_" + original.key, ConfigItem.configTypeBool, !(boolean) original.defaultValue) {
+    // --- ConfigItem factory helpers ---
+
+    /**
+     * Creates a ConfigItem that delegates reads/writes to a dynamic source (currentSettings).
+     * The supplier/setter are lambdas that reference {@link #currentSettings},
+     * which is set in {@link #onFragmentCreate()} before any binding occurs.
+     */
+    private ConfigItem ghostBoolItem(String key, java.util.function.BooleanSupplier getter, java.util.function.Consumer<Boolean> setter) {
+        return new ConfigItem(key, ConfigItem.configTypeBool, true) {
+            @Override
+            public boolean Bool() {
+                return currentSettings != null && getter.getAsBoolean();
+            }
+
+            @Override
+            public void setConfigBool(boolean v) {
+                if (currentSettings != null) setter.accept(v);
+            }
+
+            @Override
+            public boolean toggleConfigBool() {
+                boolean n = !Bool();
+                setConfigBool(n);
+                return n;
+            }
+
+            @Override
+            public void saveConfig() {
+                if (currentSettings != null) currentSettings.save();
+            }
+
+            @Override
+            public void changed(Object o) {
+                if (o instanceof Boolean) {
+                    setConfigBool((boolean) o);
+                }
+            }
+        };
+    }
+
+    /**
+     * Creates an inverted ConfigItem wrapper: Bool() returns !original.Bool(),
+     * setConfigBool(v) calls original.setConfigBool(!v).
+     */
+    private ConfigItem inverted(String key, ConfigItem original) {
+        return new ConfigItem(key, ConfigItem.configTypeBool, !(boolean) original.defaultValue) {
             @Override
             public boolean Bool() {
                 return !original.Bool();
@@ -158,10 +283,29 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         };
     }
 
+    // --- Lifecycle ---
+
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
+        // Initialize viewing state: follow the current global override setting
+        if (AyuGhostConfig.isGlobalOverride() || UserConfig.getActivatedAccountsCount() <= 1) {
+            currentViewingAccount = -1;
+        } else {
+            currentViewingAccount = UserConfig.selectedAccount;
+        }
+        refreshCurrentSettings();
         return true;
+    }
+
+    private void refreshCurrentSettings() {
+        if (currentViewingAccount < 0) {
+            // Global settings
+            currentSettings = AyuGhostConfig.getGhostModeSettings(-1);
+        } else {
+            long userId = UserConfig.getInstance(currentViewingAccount).getClientUserId();
+            currentSettings = AyuGhostConfig.getGhostModeSettings(userId);
+        }
     }
 
     @Override
@@ -180,13 +324,123 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         listAdapter = new ListAdapter(context);
         listView.setAdapter(listAdapter);
         setupDefaultListeners();
+        setupAccountSelector(context);
         return view;
     }
 
-    @Override
-    public void onFragmentDestroy() {
-        super.onFragmentDestroy();
+    // --- Account selector dropdown ---
+
+    private void setupAccountSelector(Context context) {
+        // If only one account, force global mode and hide selector (matching ayuGram behavior)
+        if (UserConfig.getActivatedAccountsCount() <= 1) {
+            if (!AyuGhostConfig.isGlobalOverride()) {
+                AyuGhostConfig.setGlobalOverride(true);
+            }
+            currentViewingAccount = -1;
+            refreshCurrentSettings();
+            return;
+        }
+
+        // Create the avatar menu item (createMenu() initialises menu if null)
+        switchItem = actionBar.createMenu().addItemWithWidth(ID_GLOBAL_SETTINGS, 0, AndroidUtilities.dp(56));
+
+        AvatarDrawable avatarDrawable = new AvatarDrawable();
+        avatarDrawable.setTextSize(AndroidUtilities.dp(12));
+        avatarImageView = new BackupImageView(context);
+        avatarImageView.setRoundRadius(AndroidUtilities.dp(18));
+        switchItem.addView(avatarImageView, LayoutHelper.createFrame(36, 36, 17));
+
+        accountSelectorItems.clear();
+
+        // "Global Settings" entry
+        globalAccountCell = new AccountCell(context);
+        switchItem.addSubItem(ID_GLOBAL_SETTINGS, globalAccountCell, AndroidUtilities.dp(268), AndroidUtilities.dp(48));
+        accountSelectorItems.put(ID_GLOBAL_SETTINGS, globalAccountCell);
+
+        // Per-account entries
+        for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
+            TLRPC.User currentUser = AccountInstance.getInstance(i).getUserConfig().getCurrentUser();
+            if (currentUser != null) {
+                AccountSelectCell accountCell = new AccountSelectCell(context, false);
+                accountCell.setAccount(i, true);
+                int itemId = ID_ACCOUNT_BASE + i;
+                switchItem.addSubItem(itemId, accountCell, AndroidUtilities.dp(268), AndroidUtilities.dp(48));
+                accountSelectorItems.put(itemId, accountCell);
+            }
+        }
+
+        // Set initial selection and avatar
+        int initialSelectedId = AyuGhostConfig.isGlobalOverride() ? ID_GLOBAL_SETTINGS : (ID_ACCOUNT_BASE + currentViewingAccount);
+        updateSelectorSelection(initialSelectedId);
+        updateSelectorAvatar(context);
+
+        // Handle dropdown item clicks
+        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            @Override
+            public void onItemClick(int id) {
+                if (id == -1) {
+                    finishFragment();
+                    return;
+                }
+                if (id == ID_GLOBAL_SETTINGS) {
+                    AyuGhostConfig.setGlobalOverride(true);
+                    currentViewingAccount = -1;
+                } else if (id >= ID_ACCOUNT_BASE) {
+                    int account = id - ID_ACCOUNT_BASE;
+                    if (UserConfig.isValidAccount(account)) {
+                        AyuGhostConfig.setGlobalOverride(false);
+                        currentViewingAccount = account;
+                    }
+                } else {
+                    return;
+                }
+                refreshCurrentSettings();
+                updateSelectorSelection(id);
+                updateSelectorAvatar(context);
+                if (listAdapter != null) {
+                    listAdapter.notifyDataSetChanged();
+                }
+                NotificationCenter.getInstance(UserConfig.selectedAccount)
+                        .postNotificationName(NotificationCenter.mainUserInfoChanged);
+            }
+        });
     }
+
+    private void updateSelectorAvatar(Context context) {
+        if (avatarImageView == null) return;
+        if (AyuGhostConfig.isGlobalOverride() || currentViewingAccount < 0) {
+            // Use the same AvatarDrawable from the AccountCell, like ayuGram
+            if (globalAccountCell != null) {
+                avatarImageView.setImageDrawable(globalAccountCell.getAvatarDrawable());
+            }
+        } else {
+            TLRPC.User user = UserConfig.getInstance(currentViewingAccount).getCurrentUser();
+            if (user != null) {
+                AvatarDrawable avatarDrawable = new AvatarDrawable();
+                avatarDrawable.setInfo(currentViewingAccount, user);
+                Drawable placeholder = user.photo != null && user.photo.strippedBitmap != null ? user.photo.strippedBitmap : avatarDrawable;
+                avatarImageView.setImage(ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_SMALL), "50_50", ImageLocation.getForUserOrChat(user, ImageLocation.TYPE_STRIPPED), "50_50", placeholder, user);
+            }
+        }
+    }
+
+    /**
+     * Updates the check mark visibility on all selector cells.
+     * Matches ayuGram's logic: only the cell whose id matches {@code clickedId}
+     * gets selected=true, all others get false.
+     *
+     * @param clickedId the id of the clicked sub-item, or the initially selected id.
+     *                  Use {@code -1} for the initial state (computed from current settings).
+     */
+    private void updateSelectorSelection(int clickedId) {
+        for (Map.Entry<Integer, FrameLayout> entry : accountSelectorItems.entrySet()) {
+            int id = entry.getKey();
+            boolean selected = (id == clickedId);
+            entry.getValue().setSelected(selected);
+        }
+    }
+
+    // --- Cell helpers ---
 
     private int rowIndex(AbstractConfigCell row) {
         return cellGroup.rows.indexOf(row);
@@ -204,17 +458,38 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         for (ConfigCellCheckBox cb : ghostModeCheckBoxRows) {
             notifyRow(cb);
         }
-        NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+        int notifyAccount = currentViewingAccount >= 0 ? currentViewingAccount : UserConfig.selectedAccount;
+        NotificationCenter.getInstance(notifyAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
     private ConfigItem getGhostModeLockedItem(AbstractConfigCell row) {
         if (!(row instanceof ConfigCellCheckBox checkBox)) return null;
         ConfigItem bindConfig = checkBox.getBindConfig();
-        if (bindConfig == invSendReadMessagePackets) return NekoConfig.sendReadMessagePacketsLocked;
-        if (bindConfig == invSendReadStoriesPackets) return NekoConfig.sendReadStoriesPacketsLocked;
-        if (bindConfig == invSendOnlinePackets) return NekoConfig.sendOnlinePacketsLocked;
-        if (bindConfig == invSendUploadProgress) return NekoConfig.sendUploadProgressLocked;
-        if (bindConfig == NekoConfig.sendOfflinePacketAfterOnline) return NekoConfig.sendOfflinePacketAfterOnlineLocked;
+        if (bindConfig == invSendReadMessagePackets) {
+            return ghostBoolItem("sendReadMessagePacketsLocked",
+                    () -> currentSettings.sendReadMessagePacketsLocked,
+                    v -> { currentSettings.sendReadMessagePacketsLocked = v; currentSettings.save(); });
+        }
+        if (bindConfig == invSendReadStoriesPackets) {
+            return ghostBoolItem("sendReadStoriesPacketsLocked",
+                    () -> currentSettings.sendReadStoryPacketsLocked,
+                    v -> { currentSettings.sendReadStoryPacketsLocked = v; currentSettings.save(); });
+        }
+        if (bindConfig == invSendOnlinePackets) {
+            return ghostBoolItem("sendOnlinePacketsLocked",
+                    () -> currentSettings.sendOnlinePacketsLocked,
+                    v -> { currentSettings.sendOnlinePacketsLocked = v; currentSettings.save(); });
+        }
+        if (bindConfig == invSendUploadProgress) {
+            return ghostBoolItem("sendUploadProgressLocked",
+                    () -> currentSettings.sendUploadProgressLocked,
+                    v -> { currentSettings.sendUploadProgressLocked = v; currentSettings.save(); });
+        }
+        if (bindConfig == sendOfflinePacketAfterOnlineItem) {
+            return ghostBoolItem("sendOfflinePacketAfterOnlineLocked",
+                    () -> currentSettings.sendOfflinePacketAfterOnlineLocked,
+                    v -> { currentSettings.sendOfflinePacketAfterOnlineLocked = v; currentSettings.save(); });
+        }
         return null;
     }
 
@@ -236,12 +511,27 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
     protected void onCustomCellClick(View view, int position, float x, float y) {
         AbstractConfigCell row = cellGroup.rows.get(position);
         if (row == markReadAfterSendRow) {
-            NekoConfig.markReadAfterSend.toggleConfigBool();
-            ((TextCheckCell) view).setChecked(NekoConfig.markReadAfterSend.Bool());
+            currentSettings.markReadAfterSend = !currentSettings.markReadAfterSend;
+            currentSettings.save();
+            ((TextCheckCell) view).setChecked(currentSettings.markReadAfterSend);
             AyuState.setAllowReadPacket(false, -1);
+            // markReadAfterSend and useScheduledMessages are mutually exclusive
+            if (currentSettings.markReadAfterSend && currentSettings.useScheduledMessages) {
+                currentSettings.useScheduledMessages = false;
+                currentSettings.save();
+                notifyRow(useScheduledMessagesRow);
+            }
         } else if (row == useScheduledMessagesRow) {
-            NekoConfig.useScheduledMessages.toggleConfigBool();
-            ((TextCheckCell) view).setChecked(NekoConfig.useScheduledMessages.Bool());
+            currentSettings.useScheduledMessages = !currentSettings.useScheduledMessages;
+            currentSettings.save();
+            AyuState.setAutomaticallyScheduled(false, -1);
+            ((TextCheckCell) view).setChecked(currentSettings.useScheduledMessages);
+            // markReadAfterSend and useScheduledMessages are mutually exclusive
+            if (currentSettings.useScheduledMessages && currentSettings.markReadAfterSend) {
+                currentSettings.markReadAfterSend = false;
+                currentSettings.save();
+                notifyRow(markReadAfterSendRow);
+            }
         } else if (row == sendWithoutSoundRow) {
             NaConfig.INSTANCE.getSilentMessageByDefault().toggleConfigBool();
             ((TextCheckCell) view).setChecked(NaConfig.INSTANCE.getSilentMessageByDefault().Bool());
@@ -263,11 +553,11 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
 
         if (lockedItem != null) {
             boolean currentLocked = lockedItem.Bool();
-            if (!currentLocked && getGhostModeLockedCount() >= 4) {
+            if (!currentLocked && currentSettings.getLockedCount() >= 4) {
                 AndroidUtilities.shakeViewSpring(view, -4);
                 return true;
             }
-            lockedItem.setConfigBool(!currentLocked);
+            lockedItem.toggleConfigBool();
             if (row instanceof ConfigCellCheckBox checkBox) {
                 checkBox.setEnabled(currentLocked);
             }
@@ -287,15 +577,7 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         return "ghostmode";
     }
 
-    private int getGhostModeLockedCount() {
-        int count = 0;
-        if (NekoConfig.sendReadMessagePacketsLocked.Bool()) count++;
-        if (NekoConfig.sendReadStoriesPacketsLocked.Bool()) count++;
-        if (NekoConfig.sendOnlinePacketsLocked.Bool()) count++;
-        if (NekoConfig.sendUploadProgressLocked.Bool()) count++;
-        if (NekoConfig.sendOfflinePacketAfterOnlineLocked.Bool()) count++;
-        return count;
-    }
+    // --- ListAdapter ---
 
     private class ListAdapter extends BaseListAdapter {
 
@@ -328,11 +610,11 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
             } else if (row == markReadAfterSendRow) {
                 TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                 textCheckCell.setEnabled(true, null);
-                textCheckCell.setTextAndCheck(getString(R.string.MarkReadAfterSend), NekoConfig.markReadAfterSend.Bool(), true);
+                textCheckCell.setTextAndCheck(getString(R.string.MarkReadAfterSend), currentSettings.markReadAfterSend, true);
             } else if (row == useScheduledMessagesRow) {
                 TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                 textCheckCell.setEnabled(true, null);
-                textCheckCell.setTextAndCheck(getString(R.string.UseScheduledMessages), NekoConfig.useScheduledMessages.Bool(), true);
+                textCheckCell.setTextAndCheck(getString(R.string.UseScheduledMessages), currentSettings.useScheduledMessages, true);
             } else if (row == sendWithoutSoundRow) {
                 TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                 textCheckCell.setEnabled(true, null);

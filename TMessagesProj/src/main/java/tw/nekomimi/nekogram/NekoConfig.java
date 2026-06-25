@@ -14,9 +14,11 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 import android.util.Pair;
 
+import com.radolyn.ayugram.AyuGhostConfig;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
 
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.UserConfig;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
@@ -180,24 +182,92 @@ public class NekoConfig {
     public static ConfigItem minimizedStickerCreator = addConfig("minimizedStickerCreator", configTypeBool, false);
 
     // --- Ghost Mode ---
-    public static ConfigItem sendReadMessagePackets = addConfig("sendReadMessagePackets", configTypeBool, true);
-    public static ConfigItem sendReadStoriesPackets = addConfig("sendReadStoriesPackets", configTypeBool, true);
-    public static ConfigItem sendOnlinePackets = addConfig("sendOnlinePackets", configTypeBool, true);
-    public static ConfigItem sendUploadProgress = addConfig("sendUploadProgress", configTypeBool, true);
-    public static ConfigItem sendOfflinePacketAfterOnline = addConfig("sendOfflinePacketAfterOnline", configTypeBool, false);
-    public static ConfigItem markReadAfterSend = addConfig("markReadAfterSend", configTypeBool, true);
-    public static ConfigItem useScheduledMessages = addConfig("useScheduledMessages", configTypeBool, false);
+    // These ConfigItems delegate to AyuGhostConfig for per-account isolation.
+    // External callers using NekoConfig.sendReadMessagePackets.Bool() etc. will
+    // transparently get the value for UserConfig.selectedAccount.
+    public static ConfigItem sendReadMessagePackets = ghostDelegate("sendReadMessagePackets", true,
+            () -> AyuGhostConfig.isSendReadMessagePackets(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendReadMessagePackets(UserConfig.selectedAccount, v));
+    public static ConfigItem sendReadStoriesPackets = ghostDelegate("sendReadStoriesPackets", true,
+            () -> AyuGhostConfig.isSendReadStoriesPackets(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendReadStoriesPackets(UserConfig.selectedAccount, v));
+    public static ConfigItem sendOnlinePackets = ghostDelegate("sendOnlinePackets", true,
+            () -> AyuGhostConfig.isSendOnlinePackets(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendOnlinePackets(UserConfig.selectedAccount, v));
+    public static ConfigItem sendUploadProgress = ghostDelegate("sendUploadProgress", true,
+            () -> AyuGhostConfig.isSendUploadProgress(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendUploadProgress(UserConfig.selectedAccount, v));
+    public static ConfigItem sendOfflinePacketAfterOnline = ghostDelegate("sendOfflinePacketAfterOnline", false,
+            () -> AyuGhostConfig.isSendOfflinePacketAfterOnline(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendOfflinePacketAfterOnline(UserConfig.selectedAccount, v));
+    public static ConfigItem markReadAfterSend = ghostDelegate("markReadAfterSend", true,
+            () -> AyuGhostConfig.isMarkReadAfterSend(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setMarkReadAfterSend(UserConfig.selectedAccount, v));
+    public static ConfigItem useScheduledMessages = ghostDelegate("useScheduledMessages", false,
+            () -> AyuGhostConfig.isUseScheduledMessages(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setUseScheduledMessages(UserConfig.selectedAccount, v));
     public static ConfigItem showGhostInDrawer = addConfig("showGhostInDrawer", configTypeBool, false);
     public static ConfigItem showGhostModeStatus = addConfig("showGhostModeStatus", configTypeBool, false);
     public static ConfigItem navigationDrawerEnabled = addConfig("navigationDrawerEnabled", configTypeBool, false);
 
     // --- Locked Status ---
-    public static ConfigItem sendReadMessagePacketsLocked = addConfig("sendReadMessagePacketsLocked", configTypeBool, false);
-    public static ConfigItem sendReadStoriesPacketsLocked = addConfig("sendReadStoriesPacketsLocked", configTypeBool, false);
-    public static ConfigItem sendOnlinePacketsLocked = addConfig("sendOnlinePacketsLocked", configTypeBool, false);
-    public static ConfigItem sendUploadProgressLocked = addConfig("sendUploadProgressLocked", configTypeBool, false);
-    public static ConfigItem sendOfflinePacketAfterOnlineLocked = addConfig("sendOfflinePacketAfterOnlineLocked", configTypeBool, false);
+    public static ConfigItem sendReadMessagePacketsLocked = ghostDelegate("sendReadMessagePacketsLocked", false,
+            () -> AyuGhostConfig.isSendReadMessagePacketsLocked(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendReadMessagePacketsLocked(UserConfig.selectedAccount, v));
+    public static ConfigItem sendReadStoriesPacketsLocked = ghostDelegate("sendReadStoriesPacketsLocked", false,
+            () -> AyuGhostConfig.isSendReadStoriesPacketsLocked(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendReadStoriesPacketsLocked(UserConfig.selectedAccount, v));
+    public static ConfigItem sendOnlinePacketsLocked = ghostDelegate("sendOnlinePacketsLocked", false,
+            () -> AyuGhostConfig.isSendOnlinePacketsLocked(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendOnlinePacketsLocked(UserConfig.selectedAccount, v));
+    public static ConfigItem sendUploadProgressLocked = ghostDelegate("sendUploadProgressLocked", false,
+            () -> AyuGhostConfig.isSendUploadProgressLocked(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendUploadProgressLocked(UserConfig.selectedAccount, v));
+    public static ConfigItem sendOfflinePacketAfterOnlineLocked = ghostDelegate("sendOfflinePacketAfterOnlineLocked", false,
+            () -> AyuGhostConfig.isSendOfflinePacketAfterOnlineLocked(UserConfig.selectedAccount),
+            v -> AyuGhostConfig.setSendOfflinePacketAfterOnlineLocked(UserConfig.selectedAccount, v));
     // --- Ghost Mode ---
+
+    /**
+     * Creates a ConfigItem that delegates Bool()/setConfigBool()/saveConfig() to
+     * AyuGhostConfig, so all legacy callers transparently get per-account values.
+     */
+    private static ConfigItem ghostDelegate(String key, boolean defaultValue,
+                                            java.util.function.BooleanSupplier getter,
+                                            java.util.function.Consumer<Boolean> setter) {
+        ConfigItem item = new ConfigItem(key, configTypeBool, defaultValue) {
+            @Override
+            public boolean Bool() {
+                return getter.getAsBoolean();
+            }
+
+            @Override
+            public void setConfigBool(boolean v) {
+                setter.accept(v);
+            }
+
+            @Override
+            public boolean toggleConfigBool() {
+                boolean n = !Bool();
+                setConfigBool(n);
+                return n;
+            }
+
+            @Override
+            public void saveConfig() {
+                // AyuGhostConfig persists inside setConfigBool; nothing to do here
+            }
+
+            @Override
+            public void changed(Object o) {
+                if (o instanceof Boolean) {
+                    setConfigBool((boolean) o);
+                }
+            }
+        };
+        configs.add(item);
+        return item;
+    }
 
     static {
         init();
@@ -291,49 +361,37 @@ public class NekoConfig {
         }
     }
 
-    // --- Ghost Mode ---
+    // --- Ghost Mode (delegates to AyuGhostConfig for per-account isolation) ---
+
+    /**
+     * Returns true when ghost mode is active for the currently selected account.
+     * Delegates to {@link AyuGhostConfig} which stores per-account settings.
+     */
     public static boolean isGhostModeActive() {
-        for (Pair<ConfigItem, ConfigItem> pair : ghostToggleItems) {
-            ConfigItem item = pair.first;
-            ConfigItem lockedItem = pair.second;
-            if (!lockedItem.Bool()) {
-                boolean currentValue = item.Bool();
-                boolean isGhostState = (item == sendOfflinePacketAfterOnline) == currentValue;
-
-                if (!isGhostState) {
-                    return false;
-                }
-            }
-        }
-        return true;
+        return AyuGhostConfig.isGhostModeActive(UserConfig.selectedAccount);
     }
 
+    /**
+     * Sets ghost mode for the currently selected account.
+     * Delegates to {@link AyuGhostConfig} which stores per-account settings.
+     */
     public static void setGhostMode(boolean enabled) {
-        for (Pair<ConfigItem, ConfigItem> pair : ghostToggleItems) {
-            ConfigItem item = pair.first;
-            ConfigItem lockedItem = pair.second;
-            if (!lockedItem.Bool()) {
-                boolean targetValue = (item == sendOfflinePacketAfterOnline) == enabled;
-                item.setConfigBool(targetValue);
-            }
-        }
+        AyuGhostConfig.setGhostMode(UserConfig.selectedAccount, enabled);
     }
 
+    /**
+     * Toggles ghost mode for the currently selected account and sends an
+     * immediate online/offline status packet to match the new state.
+     */
     public static void toggleGhostMode() {
-        boolean newState = !isGhostModeActive();
-        setGhostMode(newState);
+        boolean newState = !AyuGhostConfig.isGhostModeActive(UserConfig.selectedAccount);
+        AyuGhostConfig.setGhostMode(UserConfig.selectedAccount, newState);
 
-        boolean sendOnlineNow = !newState && !sendOfflinePacketAfterOnlineLocked.Bool() && sendOfflinePacketAfterOnline.Bool();
+        boolean sendOnlineNow = !newState
+                && !AyuGhostConfig.isSendOfflinePacketAfterOnlineLocked(UserConfig.selectedAccount)
+                && AyuGhostConfig.isSendOfflinePacketAfterOnline(UserConfig.selectedAccount);
         AyuGhostUtils.performStatusRequest(sendOnlineNow);
     }
-
-    private static final List<Pair<ConfigItem, ConfigItem>> ghostToggleItems = Arrays.asList(
-            new Pair<>(sendReadMessagePackets, sendReadMessagePacketsLocked),
-            new Pair<>(sendReadStoriesPackets, sendReadStoriesPacketsLocked),
-            new Pair<>(sendOnlinePackets, sendOnlinePacketsLocked),
-            new Pair<>(sendUploadProgress, sendUploadProgressLocked),
-            new Pair<>(sendOfflinePacketAfterOnline, sendOfflinePacketAfterOnlineLocked)
-    );
     // --- Ghost Mode ---
 
     public static Set<String> getAllKeys() {
