@@ -1,5 +1,5 @@
 /*
- * This is the source code of Nagramx_Fork for Android.
+ * This is the source code of Nagram XF for Android.
  * It is licensed under GNU GPL v. 3 or later.
  * You should have received a copy of the license in this archive (see LICENSE).
  * 
@@ -7,7 +7,7 @@
  * 
  * Please, be respectful and credit the original author if you use this code.
  *
- * Copyright @Chen_hai, 2025
+ * Copyright @Keeperorowner, 2025-2030
  */
 
 package tw.nekomimi.nekogram;

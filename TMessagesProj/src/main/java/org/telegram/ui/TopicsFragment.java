@@ -146,7 +146,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
-import tw.nekomimi.nekogram.BackButtonMenuRecent;
+import tw.nekomimi.nekogram.RecentDialogsStore;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 
@@ -1509,7 +1509,7 @@ public class TopicsFragment extends BaseFragment implements NotificationCenter.N
         updateChatInfo();
         updateColors();
 
-        BackButtonMenuRecent.addToRecentDialogs(currentAccount, -chatId);
+        RecentDialogsStore.addToRecentDialogs(currentAccount, -chatId);
 
         if (ChatObject.isBoostSupported(getCurrentChat())) {
             getMessagesController().getBoostsController().getBoostsStats(-chatId, boostsStatus -> this.boostsStatus = boostsStatus);

@@ -12,7 +12,22 @@ import org.telegram.tgnet.SerializedData;
 
 import java.util.LinkedList;
 
-public class BackButtonMenuRecent {
+/**
+ * Persistent store of recently-visited dialog ids, per account.
+ *
+ * <p>Backed by an in-memory {@link SparseArray} of {@link LinkedList} (one per account)
+ * persisted to {@code SharedPreferences("nekorecentdialogs")} under key
+ * {@code recents_<account>}. Serialization uses {@link SerializedData} (count + ids)
+ * encoded with Base64 ({@code NO_WRAP | NO_PADDING}).</p>
+ *
+ * <p>Consumers: {@link org.telegram.ui.ChatActivity}, {@link org.telegram.ui.ProfileActivity},
+ * {@link org.telegram.ui.TopicsFragment} write via {@link #addToRecentDialogs};
+ * {@link tw.nekomimi.nekogram.ChatHistoryActivity},
+ * {@link tw.nekomimi.nekogram.ChatHistorySearchActivity} (indirectly),
+ * and {@link org.telegram.ui.Components.RecentDialogsSidebarView} read via
+ * {@link #getRecentDialogs}; {@link org.telegram.ui.LoginActivity} clears on auth.</p>
+ */
+public class RecentDialogsStore {
 
     private static final int MAX_RECENT_DIALOGS = 1000;
 

@@ -372,7 +372,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.reference.ReferenceList;
 
-import tw.nekomimi.nekogram.BackButtonMenuRecent;
+import tw.nekomimi.nekogram.RecentDialogsStore;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.filters.RegexChatFiltersListActivity;
@@ -9415,7 +9415,7 @@ public class ChatActivity extends BaseFragment implements
         }
 
         if (currentUser != null || currentChat != null) {
-            BackButtonMenuRecent.addToRecentDialogs(currentAccount, currentUser != null ? currentUser.id : -currentChat.id);
+            RecentDialogsStore.addToRecentDialogs(currentAccount, currentUser != null ? currentUser.id : -currentChat.id);
         }
 
         if (getDialogId() == getUserConfig().getClientUserId() && chatMode != MODE_SAVED) {
