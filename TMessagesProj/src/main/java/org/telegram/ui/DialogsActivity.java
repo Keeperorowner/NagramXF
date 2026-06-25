@@ -14585,6 +14585,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 iBlur3Positions,
                 scrollableViewNoiseSuppressor
             );
+            if (iBlur3SourceGlassFrosted != null) {
+                iBlur3SourceGlassFrosted.setSize(fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
+                iBlur3SourceGlassFrosted.updateDisplayListIfNeeded();
+            }
+            if (iBlur3SourceGlass != null) {
+                iBlur3SourceGlass.setSize(fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
+                iBlur3SourceGlass.updateDisplayListIfNeeded();
+            }
             return;
         }
 
