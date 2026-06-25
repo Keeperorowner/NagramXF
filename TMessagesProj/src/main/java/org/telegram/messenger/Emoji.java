@@ -714,9 +714,10 @@ public class Emoji {
         } else {
             s = Spannable.Factory.getInstance().newSpannable(cs);
         }
+        boolean replacedAppleLogo = EmojiHelper.replaceAppleLogo(s, fontMetrics);
         ArrayList<EmojiSpanRange> emojis = parseEmojis(s, emojiOnly);
         if (emojis.isEmpty()) {
-            return cs;
+            return replacedAppleLogo ? s : cs;
         }
 
         AnimatedEmojiSpan[] animatedEmojiSpans = s.getSpans(0, s.length(), AnimatedEmojiSpan.class);
@@ -775,7 +776,10 @@ public class Emoji {
     }
 
     public static CharSequence replaceWithRestrictedEmoji(CharSequence cs, Paint.FontMetricsInt fontMetrics, Runnable update) {
-        if (NekoConfig.useSystemEmoji.Bool() || cs == null || cs.length() == 0) {
+        if (cs == null || cs.length() == 0) {
+            return cs;
+        }
+        if (NekoConfig.useSystemEmoji.Bool() && !EmojiHelper.containsAppleLogo(cs)) {
             return cs;
         }
         return replaceWithRestrictedEmoji(cs, fontMetrics, AnimatedEmojiDrawable.CACHE_TYPE_STANDARD_EMOJI, update);

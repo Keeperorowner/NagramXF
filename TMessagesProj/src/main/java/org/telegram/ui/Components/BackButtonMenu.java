@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ChatObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
@@ -122,7 +123,7 @@ public class BackButtonMenu {
                     thumb = ForumUtilities.createTopicDrawable(topic, false);
                     imageView.setImageDrawable(thumb);
                 }
-                titleView.setText(topic.title);
+                titleView.setText(Emoji.replaceEmoji(topic.title, titleView.getPaint().getFontMetricsInt(), false));
             } else if (chat != null) {
                 hadDialogs = true;
                 avatarDrawable.setInfo(thisFragment.getCurrentAccount(), chat);
@@ -130,7 +131,7 @@ public class BackButtonMenu {
                     thumb = chat.photo.strippedBitmap;
                 }
                 imageView.setImage(ImageLocation.getForChat(thisFragment.getCurrentAccount(), chat, ImageLocation.TYPE_SMALL), "50_50", thumb, chat);
-                titleView.setText(chat.title);
+                titleView.setText(Emoji.replaceEmoji(chat.title, titleView.getPaint().getFontMetricsInt(), false));
             } else if (user != null) {
                 hadDialogs = true;
                 String name;
@@ -154,7 +155,7 @@ public class BackButtonMenu {
                     avatarDrawable.setInfo(thisFragment.getCurrentAccount(), user);
                     imageView.setImage(ImageLocation.getForUser(thisFragment.getCurrentAccount(), user, ImageLocation.TYPE_SMALL), "50_50", thumb, user);
                 }
-                titleView.setText(name);
+                titleView.setText(Emoji.replaceEmoji(name, titleView.getPaint().getFontMetricsInt(), false));
             } else {
                 Drawable drawable = ContextCompat.getDrawable(context, R.drawable.msg_viewchats).mutate();
                 imageView.setImageDrawable(drawable);
