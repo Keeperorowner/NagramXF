@@ -199,7 +199,7 @@
     <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">尚未設定 API 憑證。</string>
     <string name="ApiNotSupportedOnAndroidVersion">此 API 提供者不支援您的 Android 版本 (需要 Android 8.0+)。</string>
-    <string name="AppIconTelegramOriginal">官方預設</string>
+    <string name="AppIconTelegramOriginal">經典</string>
     <string name="BurnTtlMessage">銷燬</string>
     <string name="StreamMkvNax">MKV 顯示為影片</string>
     <string name="StreamAllVideoNax">流式播放所有影片</string>
