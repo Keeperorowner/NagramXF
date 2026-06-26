@@ -375,6 +375,9 @@ import tw.nekomimi.nekogram.utils.FileUtil;
 import tw.nekomimi.nekogram.utils.ShareUtil;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.nowplaying.LocalNowPlayingController;
+import xyz.nextalone.nagram.nowplaying.NowPlayingCard;
+import xyz.nextalone.nagram.nowplaying.NowPlayingCardData;
+import xyz.nextalone.nagram.nowplaying.NowPlayingDTO;
 
 public class ProfileActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, DialogsActivity.DialogsActivityDelegate, SharedMediaLayout.SharedMediaPreloaderDelegate, ImageUpdater.ImageUpdaterDelegate, SharedMediaLayout.Delegate, MainTabsActivity.TabFragmentDelegate {
     private final static int PHONE_OPTION_CALL = 0,
@@ -383,7 +386,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             PHONE_OPTION_TELEGRAM_VIDEO_CALL = 3;
     private static final int MUSIC_VIEW_MODE_NONE = 0;
     private static final int MUSIC_VIEW_MODE_SAVED_MUSIC = 1;
-    private static final int MUSIC_VIEW_MODE_LAST_FM = 2;
 
     private RecyclerListView listView;
     private RecyclerListView searchListView;
@@ -428,12 +430,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ProfileActionsView actionsView;
     private MessagesController.SavedMusicList savedMusicList;
     private ProfileMusicView musicView;
-    private LocalNowPlayingController.Track currentNowPlayingTrack;
+    private NowPlayingCardData nowPlayingCardData;
     private boolean loadingNowPlayingTrack;
     private boolean nowPlayingPollingActive;
     private int nowPlayingRequestId;
     private int musicViewMode;
     private final Runnable nowPlayingPollRunnable = this::pollNowPlayingTrack;
+    private int nowPlayingRow = -1;
+    private int nowPlayingSectionRow = -1;
     private AnimatedStatusView animatedStatusView;
     private AvatarImageView avatarImage;
     private View avatarOverlay;
@@ -9781,33 +9785,101 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (!nowPlayingPollingActive || !shouldShowLocalNowPlaying()) {
             nowPlayingRequestId++;
             loadingNowPlayingTrack = false;
-            currentNowPlayingTrack = null;
+            if (nowPlayingCardData != null) {
+                nowPlayingCardData = null;
+                updateListAnimated(false);
+            }
             updateMusicViewState();
             return;
         }
         final int requestId = ++nowPlayingRequestId;
+        final long startTime = System.currentTimeMillis();
+        final boolean rowVisible = nowPlayingRow >= 0;
         loadingNowPlayingTrack = true;
+
+        NowPlayingDTO cached = LocalNowPlayingController.getCachedTrack();
+        if (cached != null && cached.isPlaying() && nowPlayingCardData == null) {
+            final NowPlayingDTO cachedDto = cached;
+            NowPlayingCardData.create(cachedDto, cardData -> {
+                if (requestId != nowPlayingRequestId || nowPlayingCardData != null) {
+                    return;
+                }
+                if (cardData != null && cardData.getCoverBitmap() == null) {
+                    return;
+                }
+                nowPlayingCardData = cardData;
+                if (nowPlayingRow < 0) {
+                    updateListAnimated(false);
+                } else {
+                    refreshNowPlayingRow();
+                }
+            });
+        }
         updateMusicViewState();
-        LocalNowPlayingController.getCurrentTrack(track -> {
+        if (!rowVisible) {
+            updateListAnimated(false);
+        }
+
+        LocalNowPlayingController.getCurrentTrack(dto -> {
             if (requestId != nowPlayingRequestId) {
                 return;
             }
-            loadingNowPlayingTrack = false;
-            currentNowPlayingTrack = track;
-            updateMusicViewState();
-            scheduleNowPlayingPolling();
+            final NowPlayingDTO finalDto = (dto != null && dto.isPlaying()) ? dto : null;
+            final Runnable finish = () -> {
+                if (requestId != nowPlayingRequestId) return;
+                loadingNowPlayingTrack = false;
+                if (nowPlayingCardData == null) {
+                    if (nowPlayingRow >= 0) {
+                        updateListAnimated(false);
+                    }
+                } else {
+                    refreshNowPlayingRow();
+                }
+                scheduleNowPlayingPolling();
+            };
+            if (finalDto == null) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                long delay = elapsed < 325 ? 325 - elapsed : 0;
+                AndroidUtilities.runOnUIThread(finish, delay);
+                return;
+            }
+            final NowPlayingDTO trackDto = finalDto;
+            NowPlayingCardData.create(trackDto, cardData -> {
+                if (requestId != nowPlayingRequestId) {
+                    return;
+                }
+                long elapsed = System.currentTimeMillis() - startTime;
+                long delay = elapsed < 325 ? 325 - elapsed : 0;
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (requestId != nowPlayingRequestId) return;
+                    loadingNowPlayingTrack = false;
+                    if (cardData != null && cardData.getCoverBitmap() == null
+                        && nowPlayingCardData != null) {
+                        scheduleNowPlayingPolling();
+                        return;
+                    }
+                    nowPlayingCardData = cardData;
+                    if (nowPlayingRow < 0) {
+                        updateListAnimated(false);
+                    } else {
+                        refreshNowPlayingRow();
+                    }
+                    scheduleNowPlayingPolling();
+                }, delay);
+            });
         });
     }
 
+    private void refreshNowPlayingRow() {
+        if (listAdapter != null && nowPlayingRow >= 0) {
+            try {
+                listAdapter.notifyItemChanged(nowPlayingRow);
+            } catch (Exception ignore) {}
+        }
+    }
+
     private void onMusicViewClicked() {
-        if (musicViewMode == MUSIC_VIEW_MODE_LAST_FM) {
-            String url = currentNowPlayingTrack != null && !TextUtils.isEmpty(currentNowPlayingTrack.url)
-                ? currentNowPlayingTrack.url
-                : LocalNowPlayingController.getProfileUrl();
-            if (getParentActivity() != null) {
-                Browser.openUrl(getParentActivity(), url);
-            }
-        } else if (musicViewMode == MUSIC_VIEW_MODE_SAVED_MUSIC) {
+        if (musicViewMode == MUSIC_VIEW_MODE_SAVED_MUSIC) {
             openSavedMusic();
         }
     }
@@ -9856,24 +9928,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (!hasMusic) {
             musicViewMode = MUSIC_VIEW_MODE_NONE;
             musicView.setVisibility(View.GONE);
-            return;
-        }
-
-        if (shouldShowLocalNowPlaying()) {
-            musicViewMode = MUSIC_VIEW_MODE_LAST_FM;
-            if (loadingNowPlayingTrack) {
-                musicView.setText("Last.fm", " - " + getString(R.string.Loading));
-            } else if (currentNowPlayingTrack != null) {
-                String artist = TextUtils.isEmpty(currentNowPlayingTrack.artist) ? getString(R.string.AudioUnknownArtist) : currentNowPlayingTrack.artist;
-                String title = TextUtils.isEmpty(currentNowPlayingTrack.title) ? getString(R.string.AudioUnknownTitle) : currentNowPlayingTrack.title;
-                musicView.setText(artist, " - " + title);
-            } else if (hasSavedMusic) {
-                musicViewMode = MUSIC_VIEW_MODE_SAVED_MUSIC;
-                musicView.setMusicDocument(userInfo.saved_music);
-            } else {
-                musicView.setText("Last.fm", " - " + getString(R.string.NowPlayingNothingPlaying));
-            }
-            musicView.setVisibility(View.VISIBLE);
             return;
         }
 
@@ -10906,6 +10960,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         channelBalanceRow = -1;
         balanceDividerRow = -1;
         hasMusic = false;
+        nowPlayingRow = -1;
+        nowPlayingSectionRow = -1;
 
         unblockRow = -1;
         joinRow = -1;
@@ -10951,16 +11007,22 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         if (userId != 0) {
             TLRPC.User user = getMessagesController().getUser(userId);
-            if (shouldShowLocalNowPlaying() || userInfo != null && userInfo.saved_music != null && (imageUpdater == null || myProfile)) {
+            boolean showNowPlaying = shouldShowLocalNowPlaying() && (nowPlayingCardData != null || loadingNowPlayingTrack);
+            if (userInfo != null && userInfo.saved_music != null && (imageUpdater == null || myProfile)) {
                 hasMusic = true;
             }
 
             if (emptyRow < 0 && emptyRow2 < 0) {
-                if (hasMusic || peerColor != null || actionsView == null) {
+                if (hasMusic || showNowPlaying || peerColor != null || actionsView == null) {
                     emptyRow2 = rowCount++;
                 } else {
                     emptyRow = rowCount++;
                 }
+            }
+
+            if (showNowPlaying) {
+                nowPlayingRow = rowCount++;
+                nowPlayingSectionRow = rowCount++;
             }
 
             if (UserObject.isUserSelf(user) && !myProfile) {
@@ -13556,7 +13618,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 VIEW_TYPE_MUSIC = 29,
                 VIEW_TYPE_TEXT_DETAIL_MULTILINE_2 = 30,
                 VIEW_TYPE_EMPTY2 = 31,
-                VIEW_TYPE_TEXT2 = 32;
+                VIEW_TYPE_TEXT2 = 32,
+                VIEW_TYPE_NOW_PLAYING = 100;
 
         private Context mContext;
 
@@ -13796,6 +13859,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     };
                     break;
+                case VIEW_TYPE_NOW_PLAYING: {
+                    NowPlayingCard card = new NowPlayingCard(mContext, resourcesProvider) {
+                        @Override
+                        protected void onSavedMusicClick() {
+                            openSavedMusic();
+                        }
+                    };
+                    view = card;
+                    break;
+                }
                 case VIEW_TYPE_BOT_APP:
                     FrameLayout frameLayout = new FrameLayout(mContext);
                     ButtonWithCounterView button = new ButtonWithCounterView(mContext, resourcesProvider);
@@ -14644,6 +14717,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 case VIEW_TYPE_MUSIC:
                     break;
+                case VIEW_TYPE_NOW_PLAYING:
+                    if (holder.itemView instanceof NowPlayingCard) {
+                        NowPlayingCard card = (NowPlayingCard) holder.itemView;
+                        if (nowPlayingCardData != null) {
+                            card.set(nowPlayingCardData);
+                        } else {
+                            card.set(new NowPlayingCardData(
+                                new NowPlayingDTO(getString(R.string.Loading), null, null, null, null,
+                                    LocalNowPlayingController.getProfileUrl(), true, null,
+                                    LocalNowPlayingController.PLATFORM_LAST_FM, null),
+                                null, null, null, null, 0L));
+                        }
+                    }
+                    break;
                 case VIEW_TYPE_VERSION:
                     ((TextInfoPrivacyCell) holder.itemView).setText(AndroidUtil.getVersionText());
                     break;
@@ -14787,6 +14874,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public int getItemViewType(int position) {
+            if (position == nowPlayingRow) {
+                return VIEW_TYPE_NOW_PLAYING;
+            }
             if (position == infoHeaderRow || position == membersHeaderRow || position == settingsSectionRow2 ||
                     position == numberSectionRow || position == helpHeaderRow || position == debugHeaderRow || position == botPermissionsHeader) {
                 return VIEW_TYPE_HEADER;
@@ -14822,7 +14912,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     position == helpSectionCell || position == setAvatarSectionRow || position == passwordSuggestionSectionRow ||
                     position == phoneSuggestionSectionRow || position == premiumSectionsRow || position == reportDividerRow ||
                     position == channelDividerRow || position == graceSuggestionSectionRow || position == balanceDividerRow ||
-                    position == botPermissionsDivider || position == channelBalanceSectionRow || position == unofficialSecurityRiskDividerRow
+                    position == botPermissionsDivider || position == channelBalanceSectionRow || position == unofficialSecurityRiskDividerRow ||
+                    position == nowPlayingSectionRow
             ) {
                 return VIEW_TYPE_SHADOW;
             } else if (position >= membersStartRow && position < membersEndRow) {
@@ -16245,6 +16336,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             int pointer = 0;
             put(++pointer, setAvatarRow, sparseIntArray);
             put(++pointer, setAvatarSectionRow, sparseIntArray);
+            put(++pointer, nowPlayingRow, sparseIntArray);
+            put(++pointer, nowPlayingSectionRow, sparseIntArray);
             put(++pointer, numberSectionRow, sparseIntArray);
             put(++pointer, numberRow, sparseIntArray);
             put(++pointer, setUsernameRow, sparseIntArray);

@@ -1,14 +1,19 @@
 package xyz.nextalone.nagram.nowplaying;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.text.TextUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
@@ -21,30 +26,22 @@ public class LocalNowPlayingController {
     public static final int SERVICE_NONE = 0;
     public static final int SERVICE_LAST_FM = 1;
 
+    public static final String PLATFORM_LAST_FM = "LAST_FM";
+    private static final String WORKER_URL = "https://lastfm-nowplaying.chenhai0731.workers.dev";
+
+    private static final String CACHE_PREFS = "nowplaying_cache";
+    private static final String CACHE_KEY_DTO = "last_dto";
+
     private static final OkHttpClient httpClient = new OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(10, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)
         .build();
 
+    private static volatile NowPlayingDTO cachedDto;
+
     public interface Callback {
-        void onTrackLoaded(Track track);
-    }
-
-    public static class Track {
-        public final String title;
-        public final String artist;
-        public final String album;
-        public final String url;
-        public final String imageUrl;
-
-        public Track(String title, String artist, String album, String url, String imageUrl) {
-            this.title = title;
-            this.artist = artist;
-            this.album = album;
-            this.url = url;
-            this.imageUrl = imageUrl;
-        }
+        void onTrackLoaded(NowPlayingDTO dto);
     }
 
     public static int getServiceType() {
@@ -55,14 +52,9 @@ public class LocalNowPlayingController {
         return NaConfig.INSTANCE.getNowPlayingLastFmUsername().String().trim();
     }
 
-    public static String getLastFmApiKey() {
-        return NaConfig.INSTANCE.getNowPlayingLastFmApiKey().String().trim();
-    }
-
     public static boolean isEnabled() {
         return getServiceType() == SERVICE_LAST_FM
-            && !TextUtils.isEmpty(getLastFmUsername())
-            && !TextUtils.isEmpty(getLastFmApiKey());
+            && !TextUtils.isEmpty(getLastFmUsername());
     }
 
     public static String getProfileUrl() {
@@ -70,6 +62,13 @@ public class LocalNowPlayingController {
             return "https://www.last.fm/";
         }
         return "https://www.last.fm/user/" + Uri.encode(getLastFmUsername());
+    }
+
+    public static NowPlayingDTO getCachedTrack() {
+        if (cachedDto == null) {
+            cachedDto = loadCachedDto();
+        }
+        return cachedDto;
     }
 
     public static void getCurrentTrack(Callback callback) {
@@ -80,25 +79,31 @@ public class LocalNowPlayingController {
             AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(null));
             return;
         }
+        final NowPlayingDTO cached = getCachedTrack();
         Utilities.globalQueue.postRunnable(() -> {
-            Track track = null;
+            NowPlayingDTO dto = null;
             try {
-                track = fetchLastFmTrack();
+                dto = fetchFromWorker();
             } catch (Exception e) {
                 FileLog.e(e);
             }
-            Track finalTrack = track;
-            AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(finalTrack));
+            final NowPlayingDTO result = dto;
+            if (result != null && result.isPlaying()) {
+                cachedDto = result;
+                persistCachedDto(result);
+            }
+            AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(result != null ? result : cached));
         });
     }
 
-    private static Track fetchLastFmTrack() throws Exception {
-        Uri uri = Uri.parse("https://ws.audioscrobbler.com/2.0/").buildUpon()
-            .appendQueryParameter("method", "user.getrecenttracks")
+    private static NowPlayingDTO fetchFromWorker() throws Exception {
+        String base = WORKER_URL;
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        Uri uri = Uri.parse(base).buildUpon()
+            .appendPath("now-playing")
             .appendQueryParameter("user", getLastFmUsername())
-            .appendQueryParameter("api_key", getLastFmApiKey())
-            .appendQueryParameter("format", "json")
-            .appendQueryParameter("limit", "1")
             .build();
 
         Request request = new Request.Builder()
@@ -110,63 +115,115 @@ public class LocalNowPlayingController {
             if (!response.isSuccessful() || response.body() == null) {
                 return null;
             }
+            return parseDtoFromJson(response.body().string());
+        }
+    }
 
-            JSONObject root = new JSONObject(response.body().string());
-            JSONObject recentTracks = root.optJSONObject("recenttracks");
-            if (recentTracks == null) {
-                return null;
-            }
-
-            JSONObject trackObject = null;
-            Object trackValue = recentTracks.opt("track");
-            if (trackValue instanceof JSONArray) {
-                JSONArray tracksArray = (JSONArray) trackValue;
-                if (tracksArray.length() > 0) {
-                    trackObject = tracksArray.optJSONObject(0);
-                }
-            } else if (trackValue instanceof JSONObject) {
-                trackObject = (JSONObject) trackValue;
-            }
-
-            if (trackObject == null) {
-                return null;
-            }
-
-            JSONObject attr = trackObject.optJSONObject("@attr");
-            if (attr == null || !"true".equalsIgnoreCase(attr.optString("nowplaying"))) {
-                return null;
-            }
-
-            String title = trackObject.optString("name");
-            String url = trackObject.optString("url");
-
-            JSONObject artistObject = trackObject.optJSONObject("artist");
-            String artist = artistObject != null ? artistObject.optString("#text") : null;
-
-            JSONObject albumObject = trackObject.optJSONObject("album");
-            String album = albumObject != null ? albumObject.optString("#text") : null;
-
-            String imageUrl = null;
-            JSONArray images = trackObject.optJSONArray("image");
-            if (images != null) {
-                for (int i = images.length() - 1; i >= 0; i--) {
-                    JSONObject imageObject = images.optJSONObject(i);
-                    if (imageObject == null) {
-                        continue;
-                    }
-                    String candidate = imageObject.optString("#text");
-                    if (!TextUtils.isEmpty(candidate)) {
-                        imageUrl = candidate;
-                        break;
-                    }
+    private static NowPlayingDTO parseDtoFromJson(String json) throws Exception {
+        JSONObject o = new JSONObject(json);
+        boolean isPlaying = o.optBoolean("isPlaying", false);
+        if (!isPlaying) {
+            return null;
+        }
+        String trackName = o.optString("trackName", null);
+        if (TextUtils.isEmpty(trackName)) {
+            return null;
+        }
+        JSONArray arr = o.optJSONArray("artists");
+        List<String> artists = new ArrayList<>();
+        if (arr != null) {
+            for (int i = 0; i < arr.length(); i++) {
+                String a = arr.optString(i, null);
+                if (!TextUtils.isEmpty(a)) {
+                    artists.add(a);
                 }
             }
+        }
+        String albumName = optStringOrNull(o, "albumName");
+        String coverUrl = optStringOrNull(o, "coverUrl");
+        String previewUrl = optStringOrNull(o, "previewUrl");
+        String songUrl = optStringOrNull(o, "songUrl");
+        String deviceName = optStringOrNull(o, "deviceName");
+        String platform = optStringOrNull(o, "platform");
+        if (platform == null) {
+            platform = PLATFORM_LAST_FM;
+        }
+        Long duration = null;
+        if (o.has("duration") && !o.isNull("duration")) {
+            duration = o.optLong("duration");
+        }
+        return new NowPlayingDTO(trackName, artists, albumName, coverUrl, previewUrl, songUrl, true, deviceName, platform, duration);
+    }
 
-            if (TextUtils.isEmpty(title) && TextUtils.isEmpty(artist)) {
-                return null;
+    private static String optStringOrNull(JSONObject o, String key) {
+        if (!o.has(key) || o.isNull(key)) {
+            return null;
+        }
+        String s = o.optString(key, null);
+        return TextUtils.isEmpty(s) ? null : s;
+    }
+
+    private static NowPlayingDTO loadCachedDto() {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx == null) return null;
+            SharedPreferences prefs = ctx.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE);
+            String json = prefs.getString(CACHE_KEY_DTO, null);
+            if (TextUtils.isEmpty(json)) return null;
+            JSONObject o = new JSONObject(json);
+            String trackName = o.optString("trackName", null);
+            JSONArray arr = o.optJSONArray("artists");
+            List<String> artists = new ArrayList<>();
+            if (arr != null) {
+                for (int i = 0; i < arr.length(); i++) {
+                    String a = arr.optString(i, null);
+                    if (!TextUtils.isEmpty(a)) artists.add(a);
+                }
             }
+            String albumName = optStringOrNull(o, "albumName");
+            String coverUrl = optStringOrNull(o, "coverUrl");
+            String previewUrl = optStringOrNull(o, "previewUrl");
+            String songUrl = optStringOrNull(o, "songUrl");
+            boolean isPlaying = o.optBoolean("isPlaying", false);
+            String deviceName = optStringOrNull(o, "deviceName");
+            String platform = optStringOrNull(o, "platform");
+            Long duration = null;
+            if (o.has("duration") && !o.isNull("duration")) {
+                duration = o.optLong("duration");
+            }
+            if (TextUtils.isEmpty(trackName)) return null;
+            return new NowPlayingDTO(trackName, artists, albumName, coverUrl, previewUrl, songUrl, isPlaying, deviceName, platform, duration);
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
 
-            return new Track(title, artist, album, url, imageUrl);
+    private static void persistCachedDto(NowPlayingDTO dto) {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx == null) return;
+            JSONObject o = new JSONObject();
+            o.put("trackName", dto.trackName);
+            if (dto.artists != null) {
+                JSONArray arr = new JSONArray();
+                for (String a : dto.artists) arr.put(a);
+                o.put("artists", arr);
+            }
+            o.put("albumName", dto.albumName == null ? "" : dto.albumName);
+            o.put("coverUrl", dto.coverUrl == null ? "" : dto.coverUrl);
+            o.put("previewUrl", dto.previewUrl == null ? "" : dto.previewUrl);
+            o.put("songUrl", dto.songUrl == null ? "" : dto.songUrl);
+            o.put("isPlaying", dto.isPlaying);
+            o.put("deviceName", dto.deviceName == null ? "" : dto.deviceName);
+            o.put("platform", dto.platform == null ? "" : dto.platform);
+            if (dto.duration != null) {
+                o.put("duration", dto.duration);
+            }
+            SharedPreferences prefs = ctx.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE);
+            prefs.edit().putString(CACHE_KEY_DTO, o.toString()).apply();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
     }
 }

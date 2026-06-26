@@ -104,8 +104,6 @@
     <string name="NowPlayingService">服務</string>
     <string name="NowPlayingLocalOnlyInfo">僅在本地顯示，只會在當前設備上顯示。</string>
     <string name="NowPlayingLastFmUsername">Last.fm 用戶名</string>
-    <string name="NowPlayingLastFmApiKey">Last.fm API Key</string>
-    <string name="NowPlayingLastFmApiKeyInfo">本地模式需要填寫你自己的 **Last.fm API Key**。</string>
     <string name="NowPlayingNothingPlaying">當前沒有播放內容</string>
     <string name="SemiTransparentDeletedMessages">半透明已刪除的消息</string>
     <string name="HideHomeSearchField">隱藏主頁搜索框</string>
