@@ -73,8 +73,6 @@
     <string name="NowPlayingService">Service</string>
     <string name="NowPlayingLocalOnlyInfo">This is a local-only integration and is only shown on this device.</string>
     <string name="NowPlayingLastFmUsername">Last.fm username</string>
-    <string name="NowPlayingLastFmApiKey">Last.fm API key</string>
-    <string name="NowPlayingLastFmApiKeyInfo">Local mode needs your own **Last.fm API key**.</string>
     <string name="NowPlayingNothingPlaying">Nothing playing</string>
     <string name="SemiTransparentDeletedMessages">Semi-transparent Deleted Messages</string>
     <string name="FiltersExportClipboard">Copy to Clipboard</string>
