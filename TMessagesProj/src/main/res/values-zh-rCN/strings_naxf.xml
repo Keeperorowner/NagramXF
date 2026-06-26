@@ -65,8 +65,6 @@
     <string name="NowPlayingService">服务</string>
     <string name="NowPlayingLocalOnlyInfo">仅在本地显示，只会在当前设备上显示。</string>
     <string name="NowPlayingLastFmUsername">Last.fm 用户名</string>
-    <string name="NowPlayingLastFmApiKey">Last.fm API Key</string>
-    <string name="NowPlayingLastFmApiKeyInfo">本地模式需要填写你自己的 **Last.fm API Key**。</string>
     <string name="NowPlayingNothingPlaying">当前没有播放内容</string>
     <string name="SemiTransparentDeletedMessages">半透明已删除的消息</string>
     <string name="FiltersExportClipboard">复制到剪贴板</string>

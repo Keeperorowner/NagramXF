@@ -267,12 +267,6 @@ object NaConfig {
             ConfigItem.configTypeString,
             ""
         )
-    val nowPlayingLastFmApiKey =
-        addConfig(
-            "NowPlayingLastFmApiKey",
-            ConfigItem.configTypeString,
-            ""
-        )
     val replaceBlockedMyInfo =
         addConfig(
             "ReplaceBlockedMyInfo",

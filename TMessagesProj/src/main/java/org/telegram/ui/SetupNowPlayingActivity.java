@@ -3,16 +3,13 @@ package org.telegram.ui;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
-import android.text.InputType;
 import android.text.TextUtils;
-import android.text.method.PasswordTransformationMethod;
 import android.view.View;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BotWebViewVibrationEffect;
 import org.telegram.messenger.R;
-import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -37,15 +34,12 @@ public class SetupNowPlayingActivity extends BaseFragment {
     private ActionBarMenuItem doneButton;
     private UniversalRecyclerView listView;
     private EditTextCell usernameEdit;
-    private EditTextCell apiKeyEdit;
 
     private int initialServiceType;
     private String initialUsername;
-    private String initialApiKey;
 
     private int serviceType;
     private String username;
-    private String apiKey;
 
     private int shiftDp = -4;
 
@@ -71,7 +65,6 @@ public class SetupNowPlayingActivity extends BaseFragment {
 
         initialServiceType = serviceType = LocalNowPlayingController.getServiceType();
         initialUsername = username = LocalNowPlayingController.getLastFmUsername();
-        initialApiKey = apiKey = LocalNowPlayingController.getLastFmApiKey();
 
         usernameEdit = new EditTextCell(context, getString(R.string.NowPlayingLastFmUsername), false, false, -1, resourceProvider) {
             @Override
@@ -83,20 +76,6 @@ public class SetupNowPlayingActivity extends BaseFragment {
         };
         usernameEdit.hideKeyboardOnEnter();
         usernameEdit.setText(username);
-
-        apiKeyEdit = new EditTextCell(context, getString(R.string.NowPlayingLastFmApiKey), false, false, -1, resourceProvider) {
-            @Override
-            protected void onTextChanged(CharSequence newText) {
-                super.onTextChanged(newText);
-                apiKey = newText == null ? "" : newText.toString().trim();
-                checkDone(true);
-            }
-        };
-        apiKeyEdit.hideKeyboardOnEnter();
-        apiKeyEdit.editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        apiKeyEdit.editText.setRawInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        apiKeyEdit.editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
-        apiKeyEdit.setText(apiKey);
 
         FrameLayout contentView = new FrameLayout(context);
         contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
@@ -120,11 +99,6 @@ public class SetupNowPlayingActivity extends BaseFragment {
         if (serviceType == LocalNowPlayingController.SERVICE_LAST_FM) {
             items.add(UItem.asHeader(getString(R.string.Username)));
             items.add(UItem.asCustom(usernameEdit));
-            items.add(UItem.asHeader(getString(R.string.NowPlayingLastFmApiKey)));
-            items.add(UItem.asCustom(apiKeyEdit));
-            items.add(UItem.asShadow(AndroidUtilities.replaceSingleTag(getString(R.string.NowPlayingLastFmApiKeyInfo), () ->
-                Browser.openUrl(getParentActivity(), "https://www.last.fm/api/account/create")
-            )));
         }
     }
 
@@ -142,8 +116,7 @@ public class SetupNowPlayingActivity extends BaseFragment {
 
     private boolean hasChanges() {
         return serviceType != initialServiceType
-            || !TextUtils.equals(username, initialUsername)
-            || !TextUtils.equals(apiKey, initialApiKey);
+            || !TextUtils.equals(username, initialUsername);
     }
 
     private void checkDone(boolean animated) {
@@ -173,16 +146,10 @@ public class SetupNowPlayingActivity extends BaseFragment {
                 AndroidUtilities.shakeViewSpring(usernameEdit, shiftDp = -shiftDp);
                 return;
             }
-            if (TextUtils.isEmpty(apiKey)) {
-                BotWebViewVibrationEffect.APP_ERROR.vibrate();
-                AndroidUtilities.shakeViewSpring(apiKeyEdit, shiftDp = -shiftDp);
-                return;
-            }
         }
 
         NaConfig.INSTANCE.getNowPlayingServiceType().setConfigInt(serviceType);
         NaConfig.INSTANCE.getNowPlayingLastFmUsername().setConfigString(username == null ? "" : username);
-        NaConfig.INSTANCE.getNowPlayingLastFmApiKey().setConfigString(apiKey == null ? "" : apiKey);
         finishFragment();
     }
 
