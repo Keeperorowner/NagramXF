@@ -1576,7 +1576,7 @@ public class AlertsCreator {
     public static AlertDialog showSecretLocationAlert(Context context, int currentAccount, final Runnable onSelectRunnable, boolean inChat, Theme.ResourcesProvider resourcesProvider) {
         ArrayList<String> arrayList = new ArrayList<>();
         ArrayList<Integer> types = new ArrayList<>();
-        int providers = 5; // MessagesController.getInstance(currentAccount).availableMapProviders;
+        int providers = 7; // MessagesController.getInstance(currentAccount).availableMapProviders;
         if ((providers & 1) != 0) {
             arrayList.add(LocaleController.getString(R.string.MapPreviewProviderTelegram));
             types.add(0);
