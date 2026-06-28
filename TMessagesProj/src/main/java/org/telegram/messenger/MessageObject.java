@@ -4304,6 +4304,10 @@ public class MessageObject {
         return messageOwner != null && messageOwner.ayuDeleted;
     }
 
+    public boolean isRich() {
+        return messageOwner != null && messageOwner.rich_message != null;
+    }
+
     public boolean isTranslated() {
         if (messageOwner != null) {
             if (messageOwner.summarizedOpen) return translated;
