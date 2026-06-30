@@ -404,7 +404,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
         items.add(UItem.asHeader(getString(R.string.NowPlaying)));
         nowPlayingRow = items.size();
         items.add(UItem.asButton(BUTTON_NOW_PLAYING, getString(R.string.NowPlayingService), getNowPlayingSummary()));
-        items.add(UItem.asShadow(getString(R.string.NowPlayingLocalOnlyInfo)));
+        items.add(UItem.asShadow(null));
         channelRow = items.size();
         if (channel == null) {
             items.add(SettingsActivity.SettingCell.Factory.of(BUTTON_CHANNEL, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.msg_filled_menu_channels, getString(R.string.EditProfileChannelTitle), null, getString(R.string.EditProfileChannelAdd)));
@@ -612,12 +612,19 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
     }
 
     private CharSequence getNowPlayingSummary() {
-        if (LocalNowPlayingController.getServiceType() == LocalNowPlayingController.SERVICE_LAST_FM) {
+        int serviceType = LocalNowPlayingController.getServiceType();
+        if (serviceType == LocalNowPlayingController.SERVICE_LAST_FM) {
             String username = LocalNowPlayingController.getLastFmUsername();
             if (!TextUtils.isEmpty(username)) {
                 return "Last.fm - " + username;
             }
             return "Last.fm";
+        } else if (serviceType == LocalNowPlayingController.SERVICE_STATS_FM) {
+            String username = LocalNowPlayingController.getStatsFmUsername();
+            if (!TextUtils.isEmpty(username)) {
+                return "Stats.fm - " + username;
+            }
+            return "Stats.fm";
         }
         return getString(R.string.None);
     }

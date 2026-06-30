@@ -267,6 +267,12 @@ object NaConfig {
             ConfigItem.configTypeString,
             ""
         )
+    val nowPlayingStatsFmUsername =
+        addConfig(
+            "NowPlayingStatsFmUsername",
+            ConfigItem.configTypeString,
+            ""
+        )
     val replaceBlockedMyInfo =
         addConfig(
             "ReplaceBlockedMyInfo",

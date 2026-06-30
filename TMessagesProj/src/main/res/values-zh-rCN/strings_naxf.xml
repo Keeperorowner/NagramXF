@@ -63,9 +63,11 @@
     <string name="DeletedMarkEyeCrossed">划掉的眼睛</string>
     <string name="NowPlaying">正在播放</string>
     <string name="NowPlayingService">服务</string>
-    <string name="NowPlayingLocalOnlyInfo">仅在本地显示，只会在当前设备上显示。</string>
     <string name="NowPlayingLastFmUsername">Last.fm 用户名</string>
+    <string name="NowPlayingStatsFmUsername">Stats.fm 用户名</string>
     <string name="NowPlayingNothingPlaying">当前没有播放内容</string>
+    <string name="NowPlayingNotWhitelistedInfo">你的卡片仅在本地可见，白名单内赞助者的卡片对所有人可见。</string>
+    <string name="NowPlayingBindSuccess">绑定成功</string>
     <string name="SemiTransparentDeletedMessages">半透明已删除的消息</string>
     <string name="FiltersExportClipboard">复制到剪贴板</string>
     <string name="FiltersExportTitle">选择导出过滤器的方式</string>
