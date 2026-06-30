@@ -202,6 +202,19 @@ public class AyuForward {
         return isForwardingToDialog(dialogId);
     }
 
+    public static boolean requestStopForDialog(long dialogId) {
+        AyuForward forward = activeForwards.get(dialogId);
+        if (forward != null) {
+            forward.requestStop();
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean requestStopForDialog(int currentAccount, long dialogId) {
+        return requestStopForDialog(dialogId);
+    }
+
     public static String getStatusForDialog(long dialogId) {
         AyuForward forward = activeForwards.get(dialogId);
         return forward != null ? forward.getForwardingStatus() : null;
@@ -230,12 +243,20 @@ public class AyuForward {
         notifyStatusChanged();
     }
 
+    public void requestStop() {
+        if (disposed || !isForwarding()) {
+            return;
+        }
+        stopRequested = true;
+        notifyStatusChanged();
+    }
+
     public void detachFromFragment() {
         detached = true;
     }
 
     public boolean isForwarding() {
-        return activeTaskId != 0L;
+        return activeTaskId != 0L && !stopRequested;
     }
 
     public synchronized String consumeLastFailureReason() {

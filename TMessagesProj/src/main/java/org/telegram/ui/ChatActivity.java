@@ -19881,10 +19881,12 @@ public class ChatActivity extends BaseFragment implements
         boolean hideKeyboard = false;
         bottomOverlayText.setBackground(null);
         bottomOverlayText.setOnClickListener(null);
+        bottomOverlayText.setOnLongClickListener(null);
         if (AyuForward.isForwardingToDialog(currentAccount, dialog_id)) {
             String forceForwardStatus = AyuForward.getStatusForDialog(currentAccount, dialog_id);
             if (!TextUtils.isEmpty(forceForwardStatus)) {
                 bottomOverlayText.setText(forceForwardStatus);
+                bottomOverlayText.setOnLongClickListener(v -> AyuForward.requestStopForDialog(currentAccount, dialog_id));
                 bottomOverlay.setVisibility(inPreviewMode ? View.INVISIBLE : View.VISIBLE);
                 if (chatActivityEnterView != null) {
                     chatActivityEnterView.setVisibility(View.INVISIBLE);
