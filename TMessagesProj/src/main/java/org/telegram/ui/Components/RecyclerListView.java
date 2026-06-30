@@ -3294,7 +3294,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     }
     public void setSections(int padding, float roundRadius, boolean topPadding) {
         setSections(
-            view -> !(view instanceof TextInfoPrivacyCell || view instanceof ShadowSectionCell || view instanceof FiltersSetupActivity.HintInnerCell || view instanceof GraySectionCell || view instanceof CollapseTextCell || (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() && (view instanceof HeaderCell || view instanceof tw.nekomimi.nekogram.ui.cells.HeaderCell))) && !Objects.equals(view.getTag(), TAG_NOT_SECTION),
+            view -> !(view instanceof TextInfoPrivacyCell || view instanceof ShadowSectionCell || view instanceof FiltersSetupActivity.HintInnerCell || view instanceof GraySectionCell || view instanceof CollapseTextCell || isSeparatedHeader(view)) && !Objects.equals(view.getTag(), TAG_NOT_SECTION),
             padding,
             roundRadius,
             this::drawBackgroundRect,
@@ -3467,6 +3467,9 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         return isViewTypeSection.run(viewType);
     }
     private ArrayList<SectionsDrawer.Section> sections;
+    private static boolean isSeparatedHeader(View view) {
+        return NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() && (view instanceof HeaderCell || view instanceof tw.nekomimi.nekogram.ui.cells.HeaderCell);
+    }
     public boolean isInsideForcedSection(int position) {
         if (forcedSections == null || position < 0) return false;
         for (int j = 0; j < forcedSections.size(); ++j) {
@@ -3572,6 +3575,9 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                     final int position = getChildAdapterPosition(child);
 
                     if (child != draggingChild && position >= beginPosition && position <= endPosition) {
+                        if (isSeparatedHeader(child)) {
+                            continue;
+                        }
                         from = Math.min(from, top(child));
                         to = Math.max(to, bottom(child));
                     }

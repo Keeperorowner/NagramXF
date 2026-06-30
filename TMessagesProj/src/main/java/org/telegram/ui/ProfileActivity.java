@@ -9769,6 +9769,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             && LocalNowPlayingController.isEnabled();
     }
 
+    private boolean shouldShowRemoteNowPlaying() {
+        return getDialogId() != getUserConfig().getClientUserId()
+            && userId != 0
+            && LocalNowPlayingController.isEnabled();
+    }
+
+    private boolean shouldShowAnyNowPlaying() {
+        return LocalNowPlayingController.isEnabled() && userId != 0;
+    }
+
     private void cancelNowPlayingPolling() {
         AndroidUtilities.cancelRunOnUIThread(nowPlayingPollRunnable);
     }
@@ -9782,7 +9792,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     private void pollNowPlayingTrack() {
         cancelNowPlayingPolling();
-        if (!nowPlayingPollingActive || !shouldShowLocalNowPlaying()) {
+        boolean showLocal = shouldShowLocalNowPlaying();
+        boolean showRemote = shouldShowRemoteNowPlaying();
+        if (!nowPlayingPollingActive || (!showLocal && !showRemote)) {
             nowPlayingRequestId++;
             loadingNowPlayingTrack = false;
             if (nowPlayingCardData != null) {
@@ -9795,43 +9807,33 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final int requestId = ++nowPlayingRequestId;
         final long startTime = System.currentTimeMillis();
         final boolean rowVisible = nowPlayingRow >= 0;
-        loadingNowPlayingTrack = true;
+        final boolean isRemote = showRemote;
+        loadingNowPlayingTrack = !isRemote;
 
-        NowPlayingDTO cached = LocalNowPlayingController.getCachedTrack();
-        if (cached != null && cached.isPlaying() && nowPlayingCardData == null) {
-            final NowPlayingDTO cachedDto = cached;
-            NowPlayingCardData.create(cachedDto, cardData -> {
-                if (requestId != nowPlayingRequestId || nowPlayingCardData != null) {
-                    return;
-                }
-                if (cardData != null && cardData.getCoverBitmap() == null) {
-                    return;
-                }
-                nowPlayingCardData = cardData;
-                if (nowPlayingRow < 0) {
-                    updateListAnimated(false);
-                } else {
-                    refreshNowPlayingRow();
-                }
-            });
+        if (!isRemote) {
+            NowPlayingDTO cached = LocalNowPlayingController.getCachedTrack();
+            if (cached != null && cached.isPlaying() && nowPlayingCardData == null) {
+                final NowPlayingDTO cachedDto = cached;
+                NowPlayingCardData.create(cachedDto, cardData -> {
+                    if (requestId != nowPlayingRequestId || nowPlayingCardData != null) return;
+                    if (cardData != null && cardData.getCoverBitmap() == null) return;
+                    nowPlayingCardData = cardData;
+                    if (nowPlayingRow < 0) updateListAnimated(false);
+                    else refreshNowPlayingRow();
+                });
+            }
         }
         updateMusicViewState();
-        if (!rowVisible) {
-            updateListAnimated(false);
-        }
+        if (!isRemote && !rowVisible) updateListAnimated(false);
 
-        LocalNowPlayingController.getCurrentTrack(dto -> {
-            if (requestId != nowPlayingRequestId) {
-                return;
-            }
+        LocalNowPlayingController.Callback trackCallback = dto -> {
+            if (requestId != nowPlayingRequestId) return;
             final NowPlayingDTO finalDto = (dto != null && dto.isPlaying()) ? dto : null;
             final Runnable finish = () -> {
                 if (requestId != nowPlayingRequestId) return;
                 loadingNowPlayingTrack = false;
                 if (nowPlayingCardData == null) {
-                    if (nowPlayingRow >= 0) {
-                        updateListAnimated(false);
-                    }
+                    if (nowPlayingRow >= 0) updateListAnimated(false);
                 } else {
                     refreshNowPlayingRow();
                 }
@@ -9845,9 +9847,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             final NowPlayingDTO trackDto = finalDto;
             NowPlayingCardData.create(trackDto, cardData -> {
-                if (requestId != nowPlayingRequestId) {
-                    return;
-                }
+                if (requestId != nowPlayingRequestId) return;
                 long elapsed = System.currentTimeMillis() - startTime;
                 long delay = elapsed < 325 ? 325 - elapsed : 0;
                 AndroidUtilities.runOnUIThread(() -> {
@@ -9859,15 +9859,18 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         return;
                     }
                     nowPlayingCardData = cardData;
-                    if (nowPlayingRow < 0) {
-                        updateListAnimated(false);
-                    } else {
-                        refreshNowPlayingRow();
-                    }
+                    if (nowPlayingRow < 0) updateListAnimated(false);
+                    else refreshNowPlayingRow();
                     scheduleNowPlayingPolling();
                 }, delay);
             });
-        });
+        };
+
+        if (isRemote) {
+            LocalNowPlayingController.getNowPlayingByUid(userId, trackCallback);
+        } else {
+            LocalNowPlayingController.getCurrentTrack(trackCallback);
+        }
     }
 
     private void refreshNowPlayingRow() {
@@ -11007,7 +11010,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         if (userId != 0) {
             TLRPC.User user = getMessagesController().getUser(userId);
-            boolean showNowPlaying = shouldShowLocalNowPlaying() && (nowPlayingCardData != null || loadingNowPlayingTrack);
+            boolean showNowPlaying = (shouldShowLocalNowPlaying() || shouldShowRemoteNowPlaying())
+                && (nowPlayingCardData != null || loadingNowPlayingTrack);
             if (userInfo != null && userInfo.saved_music != null && (imageUpdater == null || myProfile)) {
                 hasMusic = true;
             }
