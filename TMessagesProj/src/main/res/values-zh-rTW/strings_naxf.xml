@@ -102,9 +102,11 @@
     <string name="DeletedMarkEyeCrossed">劃掉的眼睛</string>
     <string name="NowPlaying">正在播放</string>
     <string name="NowPlayingService">服務</string>
-    <string name="NowPlayingLocalOnlyInfo">僅在本地顯示，只會在當前設備上顯示。</string>
     <string name="NowPlayingLastFmUsername">Last.fm 用戶名</string>
+    <string name="NowPlayingStatsFmUsername">Stats.fm 用戶名</string>
     <string name="NowPlayingNothingPlaying">當前沒有播放內容</string>
+    <string name="NowPlayingNotWhitelistedInfo">你的卡片僅在本地可見，白名單內贊助者的卡片對所有人可見。</string>
+    <string name="NowPlayingBindSuccess">綁定成功</string>
     <string name="SemiTransparentDeletedMessages">半透明已刪除的消息</string>
     <string name="HideHomeSearchField">隱藏主頁搜索框</string>
     <string name="ReplaceBlockedMyInfo">替換屏蔽我的用戶信息</string>

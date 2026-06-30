@@ -71,9 +71,11 @@
     <string name="DeletedMarkEyeCrossed">Eye Crossed</string>
     <string name="NowPlaying">Now Playing</string>
     <string name="NowPlayingService">Service</string>
-    <string name="NowPlayingLocalOnlyInfo">This is a local-only integration and is only shown on this device.</string>
     <string name="NowPlayingLastFmUsername">Last.fm username</string>
+    <string name="NowPlayingStatsFmUsername">Stats.fm username</string>
     <string name="NowPlayingNothingPlaying">Nothing playing</string>
+    <string name="NowPlayingNotWhitelistedInfo">Your card is only visible on this device. Whitelisted supporters\' cards are visible to everyone.</string>
+    <string name="NowPlayingBindSuccess">Bound successfully</string>
     <string name="SemiTransparentDeletedMessages">Semi-transparent Deleted Messages</string>
     <string name="FiltersExportClipboard">Copy to Clipboard</string>
     <string name="FiltersExportTitle">Select a way to export filters</string>

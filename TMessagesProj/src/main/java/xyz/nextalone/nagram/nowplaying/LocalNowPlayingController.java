@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import xyz.nextalone.nagram.NaConfig;
 
@@ -25,9 +27,11 @@ public class LocalNowPlayingController {
 
     public static final int SERVICE_NONE = 0;
     public static final int SERVICE_LAST_FM = 1;
+    public static final int SERVICE_STATS_FM = 2;
 
     public static final String PLATFORM_LAST_FM = "LAST_FM";
-    private static final String WORKER_URL = "https://lastfm-nowplaying.chenhai0731.workers.dev";
+    public static final String PLATFORM_STATS_FM = "STATS_FM";
+    private static final String WORKER_URL = "https://nowplaying.chenhai0731.workers.dev";
 
     private static final String CACHE_PREFS = "nowplaying_cache";
     private static final String CACHE_KEY_DTO = "last_dto";
@@ -44,6 +48,16 @@ public class LocalNowPlayingController {
         void onTrackLoaded(NowPlayingDTO dto);
     }
 
+    public interface WhitelistStatusCallback {
+        void onStatusChecked(boolean whitelisted);
+    }
+
+    public interface BindCallback {
+        void onBindResult(boolean success, String message);
+    }
+
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+
     public static int getServiceType() {
         return NaConfig.INSTANCE.getNowPlayingServiceType().Int();
     }
@@ -52,16 +66,125 @@ public class LocalNowPlayingController {
         return NaConfig.INSTANCE.getNowPlayingLastFmUsername().String().trim();
     }
 
+    public static String getStatsFmUsername() {
+        return NaConfig.INSTANCE.getNowPlayingStatsFmUsername().String().trim();
+    }
+
+    public static String getUsername() {
+        if (getServiceType() == SERVICE_STATS_FM) {
+            return getStatsFmUsername();
+        }
+        return getLastFmUsername();
+    }
+
     public static boolean isEnabled() {
-        return getServiceType() == SERVICE_LAST_FM
-            && !TextUtils.isEmpty(getLastFmUsername());
+        if (getServiceType() == SERVICE_NONE) {
+            return false;
+        }
+        return !TextUtils.isEmpty(getUsername());
     }
 
     public static String getProfileUrl() {
-        if (TextUtils.isEmpty(getLastFmUsername())) {
-            return "https://www.last.fm/";
+        String username = getUsername();
+        if (TextUtils.isEmpty(username)) {
+            return getServiceType() == SERVICE_STATS_FM ? "https://stats.fm/" : "https://www.last.fm/";
         }
-        return "https://www.last.fm/user/" + Uri.encode(getLastFmUsername());
+        if (getServiceType() == SERVICE_STATS_FM) {
+            return "https://stats.fm/" + Uri.encode(username);
+        }
+        return "https://www.last.fm/user/" + Uri.encode(username);
+    }
+
+    public static void checkWhitelistStatus(long tgUid, WhitelistStatusCallback callback) {
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                Request request = new Request.Builder()
+                    .url(WORKER_URL + "/whitelist-status?tgUid=" + tgUid)
+                    .get()
+                    .build();
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        JSONObject r = new JSONObject(response.body().string());
+                        boolean whitelisted = r.optBoolean("whitelisted", false);
+                        AndroidUtilities.runOnUIThread(() -> callback.onStatusChecked(whitelisted));
+                    } else {
+                        AndroidUtilities.runOnUIThread(() -> callback.onStatusChecked(false));
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+                AndroidUtilities.runOnUIThread(() -> callback.onStatusChecked(false));
+            }
+        });
+    }
+
+    public static void bind(long tgUid, BindCallback callback) {
+        if (!isEnabled()) {
+            callback.onBindResult(false, "Feature not enabled");
+            return;
+        }
+        String service = getServiceType() == SERVICE_STATS_FM ? "statsfm" : "lastfm";
+        String username = getUsername();
+        JSONObject body = new JSONObject();
+        try {
+            body.put("tgUid", String.valueOf(tgUid));
+            body.put("service", service);
+            body.put("username", username);
+        } catch (Exception e) {
+            callback.onBindResult(false, e.getMessage());
+            return;
+        }
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                Request request = new Request.Builder()
+                    .url(WORKER_URL + "/bind")
+                    .post(RequestBody.create(body.toString(), JSON))
+                    .build();
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (response.isSuccessful()) {
+                        AndroidUtilities.runOnUIThread(() -> callback.onBindResult(true, "OK"));
+                    } else {
+                        String msg = "HTTP " + response.code();
+                        if (response.body() != null) {
+                            try {
+                                JSONObject r = new JSONObject(response.body().string());
+                                msg = r.optString("error", msg);
+                            } catch (Exception ignore) {}
+                        }
+                        final String errMsg = msg;
+                        AndroidUtilities.runOnUIThread(() -> callback.onBindResult(false, errMsg));
+                    }
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+                AndroidUtilities.runOnUIThread(() -> callback.onBindResult(false, e.getMessage()));
+            }
+        });
+    }
+
+    public static void getNowPlayingByUid(long tgUid, Callback callback) {
+        if (callback == null) return;
+        Utilities.globalQueue.postRunnable(() -> {
+            NowPlayingDTO dto = null;
+            try {
+                dto = fetchNowPlayingByUid(tgUid);
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            final NowPlayingDTO result = dto;
+            AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(result));
+        });
+    }
+
+    private static NowPlayingDTO fetchNowPlayingByUid(long tgUid) throws Exception {
+        Request request = new Request.Builder()
+            .url(WORKER_URL + "/now-playing?uid=" + tgUid)
+            .get()
+            .build();
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful() || response.body() == null) return null;
+            return parseDtoFromJson(response.body().string());
+        }
     }
 
     public static NowPlayingDTO getCachedTrack() {
@@ -101,9 +224,11 @@ public class LocalNowPlayingController {
         if (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
         }
+        String service = getServiceType() == SERVICE_STATS_FM ? "statsfm" : "lastfm";
         Uri uri = Uri.parse(base).buildUpon()
             .appendPath("now-playing")
-            .appendQueryParameter("user", getLastFmUsername())
+            .appendQueryParameter("user", getUsername())
+            .appendQueryParameter("service", service)
             .build();
 
         Request request = new Request.Builder()
