@@ -6,6 +6,7 @@ Includes most features from exteraGram and AyuGram.
 ## Download
 
 * [Telegram Channel](https://t.me/NagramXF)
+* [Telegram Channel (Latest Beta)](https://t.me/NagramXFBetaAPKs)
 * [GitHub Releases](https://github.com/Keeperorowner/NagramXF/releases)
 
 ## Compilation Guide
