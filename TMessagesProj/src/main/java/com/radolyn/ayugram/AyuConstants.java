@@ -29,6 +29,8 @@ public class AyuConstants {
     public static final int MESSAGES_DELETED_NOTIFICATION = 6969;
     public static final int DELETED_MEDIA_LOADED_NOTIFICATION = 6970;
 
+    public static final int LAST_SEEN_PILL_FETCH = 6971;
+
     public static String AYU_DATABASE = "ayu-data";
 
     public static String APP_NAME = NekoConfig.customSavePath.String();

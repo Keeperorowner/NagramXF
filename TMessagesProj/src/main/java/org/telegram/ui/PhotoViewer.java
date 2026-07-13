@@ -354,6 +354,7 @@ import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
 import tw.nekomimi.nekogram.utils.ProxyUtil;
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.streaming.MediaStreamingProvider;
@@ -5575,9 +5576,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 for (int a = 0; a < dids.size(); a++) {
                                     long did = dids.get(a).dialogId;
                                     if (message != null) {
-                                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, null, false));
+                                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, null, false));
                                     }
-                                    forwardMessagesFromViewer(fmessages, did, id == gallery_menu_send_noquote, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0);
+                                    forwardMessagesFromViewer(fmessages, did, id == gallery_menu_send_noquote, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
                                 }
                                 fragment1.finishFragment();
                                 if (parentChatActivityFinal != null) {
@@ -7813,7 +7814,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (parentChatActivity != null && parentChatActivity.isInScheduleMode() && !parentChatActivity.isEditingMessageMedia()) {
                 showScheduleDatePickerDialog();
             } else {
-                sendPressed(!NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
+                sendPressed(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
             }
         });
         pickerViewSendButton.setOnLongClickListener(view -> {
@@ -7871,7 +7872,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             final boolean showWithoutSound = !(canEdit && canReplace) && !userIsSelf;
             final boolean multipleSelected = placeProvider != null && placeProvider.getSelectedCount() > 1;
 
-            boolean sendWithoutSoundNax = NaConfig.INSTANCE.getSilentMessageByDefault().Bool();
+            boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
 
             final ItemOptions options = ItemOptions.makeOptions(containerView, new DarkThemeResourceProvider(), view)
                 .addIf(showSendAsFile, R.drawable.msg_sendfile, getString(multipleSelected ? R.string.SendAsFiles : R.string.SendAsFile), () -> sendPressed(!sendWithoutSoundNax, 0, 0, false, true, false))

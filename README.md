@@ -3,6 +3,11 @@
 A fork of [Nagram X](https://github.com/risin42/NagramX) with additional features.
 Includes most features from exteraGram and AyuGram.
 
+## Sponsor
+
+* [爱发电](https://ifdian.net/a/nagramxf)
+d* [Ko-fi](https://ko-fi.com/nagramxf)
+
 ## Download
 
 * [Telegram Channel](https://t.me/NagramXF)

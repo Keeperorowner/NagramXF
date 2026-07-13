@@ -3,6 +3,8 @@
     <string name="NagramX" translatable="false">Nagram X</string>
     <string name="XChannel">Nagram X Channel</string>
     <string name="NagramXForkChannel">Nagram XF Channel</string>
+    <string name="JoinOfficialChannelTitle">Join Official Channel</string>
+    <string name="JoinOfficialChannelMessage">Welcome to Nagram X! Would you like to join the official channel @NagramXF to get the latest updates and news?</string>
     <string name="EnableSaveDeletedMessages">Save Deleted Messages</string>
     <string name="DeletedMessage">deleted</string>
     <string name="EnableSaveEditsHistory">Save Edits History</string>
@@ -157,7 +159,10 @@
     <string name="MarkReadAfterSend">Read on Interact</string>
     <string name="GhostModeNotice">Long tap on any option to prevent it from changing on toggling Ghost Mode.</string>
     <string name="MarkReadAfterSendNotice">Automatically reads message when you send a new one or tap a reaction.</string>
-    <string name="SendWithoutSoundRowNotice">Automatically sends outgoing messages without sound.</string>
+    <string name="SendWithoutSoundRowNotice">Choose when outgoing messages should be sent without sound.</string>
+    <string name="SendWithoutSoundByDefaultNever">Never</string>
+    <string name="SendWithoutSoundByDefaultInGhostMode">Only in Ghost Mode</string>
+    <string name="SendWithoutSoundByDefaultAlways">Always</string>
     <string name="GhostReadMessage">Read Message</string>
     <string name="GhostModeExcludeRead">Exclude Read</string>
     <string name="GhostModeExcludeTyping">Exclude Typing</string>

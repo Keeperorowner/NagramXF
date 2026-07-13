@@ -10051,7 +10051,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         int max_id_delete = max_id;
 
-        if (first != 0) {
+            if (first != 0) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("delete dialog with id " + did);
             }
@@ -10849,7 +10849,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.TL_help_promoDataEmpty res = (TLRPC.TL_help_promoDataEmpty) response;
                 nextPromoInfoCheckTime = res.expires;
                 noDialog = true;
-            } else if (response instanceof TLRPC.TL_help_promoData res && (!res.proxy || !NekoConfig.hideProxySponsorChannel.Bool())) {
+            } else if (response instanceof TLRPC.TL_help_promoData res && (!res.proxy || !NekoConfig.disableAds.Bool())) {
                 long did;
                     if (res.peer == null) {
                         did = 0;
@@ -21210,7 +21210,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public SponsoredMessagesInfo getSponsoredMessages(long dialogId) {
-        if (NekoConfig.hideSponsoredMessage.Bool()) {
+        if (NekoConfig.disableAds.Bool()) {
             return null;
         }
         SponsoredMessagesInfo info = sponsoredMessages.get(dialogId);
@@ -21265,7 +21265,7 @@ public class MessagesController extends BaseController implements NotificationCe
                             message.entities = sponsoredMessage.entities;
                             message.flags |= 128;
                         }
-                        if (NekoConfig.hideSponsoredMessage.Bool()) {
+                        if (NekoConfig.disableAds.Bool()) {
                             message.hide = true;
                         }
                         message.peer_id = getPeer(dialogId);

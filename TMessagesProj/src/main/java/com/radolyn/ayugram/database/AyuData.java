@@ -17,6 +17,8 @@ import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.database.dao.DeletedMessageDao;
 import com.radolyn.ayugram.database.dao.EditedMessageDao;
 import com.radolyn.ayugram.database.dao.LastSeenDao;
+import com.radolyn.ayugram.database.dao.RegexFilterDao;
+import com.radolyn.ayugram.database.dao.SpyDao;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -45,6 +47,8 @@ public class AyuData {
     private static EditedMessageDao editedMessageDao;
     private static DeletedMessageDao deletedMessageDao;
     private static LastSeenDao lastSeenDao;
+    private static SpyDao spyDao;
+    private static RegexFilterDao regexFilterDao;
     private static final int IO_BUFFER_SIZE = 16 * 1024;
 
     private static final Migration MIGRATION_21_22 = new Migration(21, 22) {
@@ -102,6 +106,69 @@ public class AyuData {
         }
     };
 
+    private static final Migration MIGRATION_26_27 = new Migration(26, 27) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS SpyMessageRead (" +
+                    "fakeId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                    "userId INTEGER NOT NULL, " +
+                    "dialogId INTEGER NOT NULL, " +
+                    "messageId INTEGER NOT NULL, " +
+                    "entityCreateDate INTEGER NOT NULL)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_SpyMessageRead_userId_dialogId_messageId ON SpyMessageRead(userId, dialogId, messageId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_SpyMessageRead_userId_entityCreateDate ON SpyMessageRead(userId, entityCreateDate)");
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS SpyMessageContentsRead (" +
+                    "fakeId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, " +
+                    "userId INTEGER NOT NULL, " +
+                    "dialogId INTEGER NOT NULL, " +
+                    "messageId INTEGER NOT NULL, " +
+                    "entityCreateDate INTEGER NOT NULL)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_SpyMessageContentsRead_userId_dialogId_messageId ON SpyMessageContentsRead(userId, dialogId, messageId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_SpyMessageContentsRead_userId_entityCreateDate ON SpyMessageContentsRead(userId, entityCreateDate)");
+        }
+    };
+
+    private static final Migration MIGRATION_27_28 = new Migration(27, 28) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS RegexFilter (" +
+                    "id TEXT NOT NULL PRIMARY KEY, " +
+                    "text TEXT, " +
+                    "dialogId INTEGER, " +
+                    "enabled INTEGER NOT NULL, " +
+                    "caseInsensitive INTEGER NOT NULL, " +
+                    "reversed INTEGER NOT NULL)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_RegexFilter_dialogId ON RegexFilter(dialogId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_RegexFilter_enabled ON RegexFilter(enabled)");
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS RegexFilterGlobalExclusion (" +
+                    "dialogId INTEGER NOT NULL, " +
+                    "filterId TEXT NOT NULL, " +
+                    "PRIMARY KEY(dialogId, filterId))");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_RegexFilterGlobalExclusion_dialogId ON RegexFilterGlobalExclusion(dialogId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_RegexFilterGlobalExclusion_filterId ON RegexFilterGlobalExclusion(filterId)");
+        }
+    };
+
+    private static final Migration MIGRATION_28_29 = new Migration(28, 29) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE DeletedMessage ADD COLUMN postAuthor TEXT");
+            database.execSQL("ALTER TABLE EditedMessage ADD COLUMN postAuthor TEXT");
+            database.execSQL("ALTER TABLE DeletedMessageReaction ADD COLUMN isPaid INTEGER NOT NULL DEFAULT 0");
+        }
+    };
+
+    private static final Migration MIGRATION_29_30 = new Migration(29, 30) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("DROP TABLE IF EXISTS DeletedDialog");
+            database.execSQL("DROP INDEX IF EXISTS index_DeletedDialog_userId_dialogId");
+            database.execSQL("DROP INDEX IF EXISTS index_DeletedDialog_userId_entityCreateDate");
+        }
+    };
+
     static {
         create();
     }
@@ -111,12 +178,12 @@ public class AyuData {
             return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigrationOnDowngrade()
-                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
+                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
                     .build();
         }
         return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                 .allowMainThreadQueries()
-                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26)
+                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
                 .build();
     }
 
@@ -129,7 +196,10 @@ public class AyuData {
         editedMessageDao = database.editedMessageDao();
         deletedMessageDao = database.deletedMessageDao();
         lastSeenDao = database.lastSeenDao();
+        spyDao = database.spyDao();
+        regexFilterDao = database.regexFilterDao();
         AyuMessagesController.refreshAfterDatabaseChange();
+        FilterPrefsMigrator.runIfNeeded();
     }
 
     public static AyuDatabase getDatabase() {
@@ -146,6 +216,14 @@ public class AyuData {
 
     public static LastSeenDao getLastSeenDao() {
         return lastSeenDao;
+    }
+
+    public static SpyDao getSpyDao() {
+        return spyDao;
+    }
+
+    public static RegexFilterDao getRegexFilterDao() {
+        return regexFilterDao;
     }
 
     private static File getDatabaseFile() {
@@ -178,6 +256,8 @@ public class AyuData {
         editedMessageDao = null;
         deletedMessageDao = null;
         lastSeenDao = null;
+        spyDao = null;
+        regexFilterDao = null;
     }
 
     public static synchronized void clean() {

@@ -50,7 +50,7 @@ public class HTMLKeeper {
     private static final Pattern PATTERN_NEWLINE_TO_BR = Pattern.compile("\n");
 
     private static void toHtml(StringBuilder out, Spanned text, int end) {
-        ArrayList<CharacterStyle> lastActiveSpans = new ArrayList<>();
+        ArrayList<CharacterStyle> openStack = new ArrayList<>();
 
         int next;
         for (int i = 0; i < end; i = next) {
@@ -74,26 +74,23 @@ public class HTMLKeeper {
 
             ArrayList<CharacterStyle> currentActiveSpans = new ArrayList<>(Arrays.asList(spans));
 
-            for (int j = lastActiveSpans.size() - 1; j >= 0; j--) {
-                CharacterStyle lastSpan = lastActiveSpans.get(j);
-                if (!currentActiveSpans.contains(lastSpan)) {
-                    closeTagFor(out, lastSpan);
+            boolean sameSet = openStack.size() == currentActiveSpans.size() && openStack.containsAll(currentActiveSpans);
+            if (!sameSet) {
+                for (int j = openStack.size() - 1; j >= 0; j--) {
+                    closeTagFor(out, openStack.get(j));
                 }
-            }
-
-            for (CharacterStyle currentSpan : currentActiveSpans) {
-                if (!lastActiveSpans.contains(currentSpan)) {
+                openStack.clear();
+                for (CharacterStyle currentSpan : currentActiveSpans) {
                     openTagFor(out, currentSpan);
+                    openStack.add(currentSpan);
                 }
             }
 
             out.append(StringEscapeUtils.escapeHtml4(text.subSequence(i, next).toString()));
-
-            lastActiveSpans = currentActiveSpans;
         }
 
-        for (int j = lastActiveSpans.size() - 1; j >= 0; j--) {
-            closeTagFor(out, lastActiveSpans.get(j));
+        for (int j = openStack.size() - 1; j >= 0; j--) {
+            closeTagFor(out, openStack.get(j));
         }
     }
 

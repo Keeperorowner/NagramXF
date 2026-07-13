@@ -144,7 +144,10 @@
     <string name="MarkReadAfterSend">动作后设置已读</string>
     <string name="GhostModeNotice">长按任何选项以阻止其在切换幽灵模式时发生变化。</string>
     <string name="MarkReadAfterSendNotice">发送新消息或点击表情回应时，自动将消息标记为已读。</string>
-    <string name="SendWithoutSoundRowNotice">对方将不会收到声音提醒。</string>
+    <string name="SendWithoutSoundRowNotice">选择何时将发出的消息以无声方式发送。</string>
+    <string name="SendWithoutSoundByDefaultNever">从不</string>
+    <string name="SendWithoutSoundByDefaultInGhostMode">仅在幽灵模式</string>
+    <string name="SendWithoutSoundByDefaultAlways">始终</string>
     <string name="GhostReadMessage">标记已读</string>
     <string name="GhostModeExcludeRead">排除已读</string>
     <string name="GhostModeExcludeTyping">排除输入</string>

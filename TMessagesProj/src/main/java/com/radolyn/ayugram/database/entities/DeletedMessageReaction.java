@@ -30,4 +30,5 @@ public class DeletedMessageReaction {
 
     public int count;
     public boolean selfSelected;
+    public boolean isPaid;
 }

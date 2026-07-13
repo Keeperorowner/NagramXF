@@ -114,6 +114,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.helper.StickerSetHelper;
 
@@ -1204,7 +1205,7 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                 hidePreview();
                 selectedStickerPath = null;
             } else {
-                delegate.onStickerSelected(selectedSticker, null, stickerSet, null, clearsInputField, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
+                delegate.onStickerSelected(selectedSticker, null, stickerSet, null, clearsInputField, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
                 dismiss();
             }
         });

@@ -3,6 +3,7 @@ package tw.nekomimi.nekogram.settings;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.content.Context;
+import android.graphics.drawable.ColorDrawable;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -15,8 +16,11 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.browser.Browser;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextDetailSettingsCell;
+import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.ProfileActivity;
 
 import kotlin.Unit;
@@ -35,12 +39,11 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     private int toggleLogsRow;
     private int sendLogsRow;
     private int clearLogsRow;
-    private int infoShadowRow;
+    private int donateInfoRow;
 
     private int linksHeaderRow;
     private int forkChannelRow;
     private int xChannelRow;
-    private int channelRow;
     private int channelTipsRow;
     private int sourceCodeRow;
     private int datacenterStatusRow;
@@ -61,12 +64,11 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
             sendLogsRow = -1;
             clearLogsRow = -1;
         }
-        infoShadowRow = addRow();
+        donateInfoRow = addRow();
 
         linksHeaderRow = addRow();
         forkChannelRow = addRow();
         xChannelRow = addRow();
-        channelRow = addRow();
         channelTipsRow = addRow();
         sourceCodeRow = addRow();
         datacenterStatusRow = addRow();
@@ -94,6 +96,25 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     private String getSimpleVersion() {
         String versionName = BuildConfig.VERSION_NAME.split("-")[0];
         return "Nagram XF v" + versionName;
+    }
+
+    private void showDonateDialog() {
+        android.app.Activity parent = getParentActivity();
+        if (parent == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(parent, resourceProvider);
+        builder.setTitle(getString(R.string.Donate));
+        builder.setItems(new CharSequence[]{
+                getString(R.string.DonateAfdian),
+                getString(R.string.DonateKoFi)
+        }, (dialog, which) -> {
+            if (which == 0) {
+                Browser.openUrl(parent, "https://ifdian.net/a/nagramxf");
+            } else if (which == 1) {
+                Browser.openUrl(parent, "https://ko-fi.com/nagramxf");
+            }
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     @Override
@@ -127,10 +148,8 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
             MessagesController.getInstance(currentAccount).openByUserName("NagramXF", NekoAboutActivity.this, 1);
         } else if (position == xChannelRow) {
             MessagesController.getInstance(currentAccount).openByUserName("NagramX", NekoAboutActivity.this, 1);
-        } else if (position == channelRow) {
-            MessagesController.getInstance(currentAccount).openByUserName("nagram_channel", NekoAboutActivity.this, 1);
         } else if (position == channelTipsRow) {
-            MessagesController.getInstance(currentAccount).openByUserName("NagramXF_Chat", NekoAboutActivity.this, 1);
+            Browser.openUrl(getParentActivity(), "https://t.me/Nagram_XF_Chat");
         } else if (position == sourceCodeRow) {
             Browser.openUrl(getParentActivity(), "https://github.com/Keeperorowner/NagramXF");
         } else if (position == datacenterStatusRow) {
@@ -139,11 +158,10 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     }
 
     private void shiftRowsAfterLogsEnabled() {
-        infoShadowRow += 2;
+        donateInfoRow += 2;
         linksHeaderRow += 2;
         forkChannelRow += 2;
         xChannelRow += 2;
-        channelRow += 2;
         channelTipsRow += 2;
         sourceCodeRow += 2;
         datacenterStatusRow += 2;
@@ -152,11 +170,10 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     }
 
     private void shiftRowsAfterLogsDisabled() {
-        infoShadowRow -= 2;
+        donateInfoRow -= 2;
         linksHeaderRow -= 2;
         forkChannelRow -= 2;
         xChannelRow -= 2;
-        channelRow -= 2;
         channelTipsRow -= 2;
         sourceCodeRow -= 2;
         datacenterStatusRow -= 2;
@@ -264,14 +281,19 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndValueAndIcon(getString(R.string.NagramXForkChannel), "@NagramXF", R.drawable.msg_channel, true);
                     } else if (position == xChannelRow) {
                         textCell.setTextAndValueAndIcon(getString(R.string.XChannel), "@NagramX", R.drawable.msg_channel, true);
-                    } else if (position == channelRow) {
-                        textCell.setTextAndValueAndIcon(getString(R.string.OfficialChannel), "@nagram_channel", R.drawable.msg_channel, true);
                     } else if (position == channelTipsRow) {
                         textCell.setTextAndValueAndIcon(getString(R.string.OfficialGroupChat), "@NagramXF_Chat", R.drawable.msg_viewchats, true);
                     } else if (position == sourceCodeRow) {
                         textCell.setTextAndValueAndIcon(getString(R.string.SourceCode), "GitHub", R.drawable.github_logo_white, true);
                     } else if (position == datacenterStatusRow) {
                         textCell.setTextAndIcon(getString(R.string.DatacenterStatus), R.drawable.msg_info, false);
+                    }
+                    break;
+                case TYPE_INFO_PRIVACY:
+                    TextInfoPrivacyCell infoCell = (TextInfoPrivacyCell) holder.itemView;
+                    if (position == donateInfoRow) {
+                        infoCell.setBackground(new ColorDrawable(0x00000000));
+                        infoCell.setText(AndroidUtilities.replaceSingleTag(getString(R.string.DonateInfo), Theme.key_windowBackgroundWhiteLinkText, 0, () -> showDonateDialog(), resourceProvider));
                     }
                     break;
             }
@@ -283,8 +305,10 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                 return TYPE_HEADER;
             } else if (position == versionRow || position == updatesRow) {
                 return TYPE_DETAIL_SETTINGS;
-            } else if (position == infoShadowRow || position == linksShadowRow) {
+            } else if (position == linksShadowRow) {
                 return TYPE_SHADOW;
+            } else if (position == donateInfoRow) {
+                return TYPE_INFO_PRIVACY;
             } else {
                 return TYPE_TEXT;
             }
