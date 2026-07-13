@@ -149,7 +149,7 @@
     <string name="RecentChats">Недавние чаты</string>
     <string name="ClearRecentChats">Очистить недавние чаты</string>
     <string name="ClearRecentChatAlert">Вы хотите очистить недавние чаты?</string>
-    <string name="CloudConfig">Облачные настройки</string>
+    <string name="CloudConfig">Облачная синхронизация</string>
     <string name="CloudConfigDesc">Сохраните ваши «Настройки N» в облаке Telegram.</string>
     <string name="CloudConfigSyncDate">Последняя синхронизация: %s, облако: %s</string>
     <string name="CloudConfigSyncDateNever">никогда</string>
@@ -267,4 +267,9 @@
     <string name="EmojiUseDefault">Использовать системные эмодзи</string>
     <string name="Chat">Чаты</string>
     <string name="Appearance">Внешний вид</string>
+    <string name="Donate">Поддержать</string>
+    <string name="DonateDesc">Если вам нравится Nagram XF, пожалуйста, поддержите разработку.</string>
+    <string name="DonateAfdian">Afdian</string>
+    <string name="DonateKoFi">Ko-fi</string>
+    <string name="DonateInfo">Нравится этот клиент? **Поддержать разработку**</string>
 </resources>

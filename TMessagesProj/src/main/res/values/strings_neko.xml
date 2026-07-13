@@ -150,7 +150,7 @@
     <string name="RecentChats">Recent chats</string>
     <string name="ClearRecentChats">Clear recent chats</string>
     <string name="ClearRecentChatAlert">Do you want to clear your recent chats?</string>
-    <string name="CloudConfig">Cloud Settings</string>
+    <string name="CloudConfig">Cloud Sync</string>
     <string name="CloudConfigDesc">Save your N-Settings to Telegram cloud.</string>
     <string name="CloudConfigSyncDate">Last synced: %s, cloud: %s</string>
     <string name="CloudConfigSyncDateNever">never</string>
@@ -269,4 +269,9 @@
     <string name="EmojiUseDefault">Use system emoji</string>
     <string name="Chat">Chats</string>
     <string name="Appearance">Appearance</string>
+    <string name="Donate">Donate</string>
+    <string name="DonateDesc">If you like Nagram XF, please consider supporting development.</string>
+    <string name="DonateAfdian">Afdian</string>
+    <string name="DonateKoFi">Ko-fi</string>
+    <string name="DonateInfo">Like this client? **Support development**</string>
 </resources>

@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.AyuWorker;
 import com.radolyn.ayugram.preferences.components.AccountCell;
 import com.radolyn.ayugram.utils.AyuGhostUtils;
 import com.radolyn.ayugram.utils.AyuState;
@@ -36,6 +37,7 @@ import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.BulletinFactory;
@@ -141,12 +143,22 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
                             : getString(R.string.GhostModeDisabled);
                     BulletinFactory.of(getLastFragment()).createSuccessBulletin(msg).show();
 
-                    // Send status packet for the viewed account
+                    // Send status packet and manage AyuWorker for the viewed account
                     if (currentViewingAccount >= 0) {
-                        boolean sendOnlineNow = !newState
-                                && !currentSettings.sendOfflinePacketAfterOnlineLocked
-                                && currentSettings.sendOfflinePacketAfterOnline;
-                        AyuGhostUtils.performStatusRequest(currentViewingAccount, sendOnlineNow);
+                        if (newState) {
+                            // Ghost mode enabled: start periodic offline sender if configured
+                            if (!currentSettings.sendOfflinePacketAfterOnlineLocked
+                                    && currentSettings.sendOfflinePacketAfterOnline) {
+                                AyuWorker.setOnline(currentViewingAccount, true);
+                            }
+                            // Immediately go offline
+                            AyuGhostUtils.performStatusRequest(currentViewingAccount, true);
+                        } else {
+                            // Ghost mode disabled: stop periodic offline sender
+                            AyuWorker.clearOnline(currentViewingAccount);
+                            // Go online if online packets are now allowed
+                            AyuGhostUtils.performStatusRequest(currentViewingAccount, false);
+                        }
                         currentSettings.postChangedNotification(currentViewingAccount);
                     }
 
@@ -187,10 +199,10 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell markReadAfterSendNoticeRow = cellGroup.appendCell(new ConfigCellCustom("MarkReadAfterSendNotice", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell useScheduledMessagesRow = cellGroup.appendCell(new ConfigCellCustom("UseScheduledMessages", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell useScheduledMessagesNoticeRow = cellGroup.appendCell(new ConfigCellCustom("UseScheduledMessagesDescription", CellGroup.ITEM_TYPE_TEXT, false));
-    private final AbstractConfigCell sendWithoutSoundRow = cellGroup.appendCell(new ConfigCellCustom("SilentMessageByDefault", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
+    private final AbstractConfigCell sendWithoutSoundRow = cellGroup.appendCell(new ConfigCellCustom("SendWithoutSoundByDefault", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell sendWithoutSoundNoticeRow = cellGroup.appendCell(new ConfigCellCustom("SendWithoutSoundRowNotice", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell showGhostInDrawerRow = cellGroup.appendCell(new ConfigCellCustom("GhostModeInDrawer", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
-    private final AbstractConfigCell showGhostModeStatusRow = cellGroup.appendCell(new ConfigCellCustom("GhostModeStatusIndicator", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
+    private final AbstractConfigCell suggestGhostBeforeStoryRow = cellGroup.appendCell(new ConfigCellCustom("SuggestGhostModeBeforeViewingStory", CellGroup.ITEM_TYPE_TEXT_CHECK, false));
 
     // --- Account selector dropdown ---
 
@@ -462,6 +474,22 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         NotificationCenter.getInstance(notifyAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
+    private void showSendWithoutSoundDialog(View view) {
+        if (getParentActivity() == null) return;
+        int currentState = currentSettings.sendWithoutSound;
+        String[] items = {
+                getString(R.string.SendWithoutSoundByDefaultNever),
+                getString(R.string.SendWithoutSoundByDefaultInGhostMode),
+                getString(R.string.SendWithoutSoundByDefaultAlways)
+        };
+        showSingleChoiceDialog(getParentActivity(), getString(R.string.SilentMessageByDefault), items, currentState, getResourceProvider(), which -> {
+            if (which == currentState) return;
+            currentSettings.sendWithoutSound = which;
+            currentSettings.save();
+            notifyRow(sendWithoutSoundRow);
+        });
+    }
+
     private ConfigItem getGhostModeLockedItem(AbstractConfigCell row) {
         if (!(row instanceof ConfigCellCheckBox checkBox)) return null;
         ConfigItem bindConfig = checkBox.getBindConfig();
@@ -503,6 +531,14 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
             if (checkBox.getBindConfig() == invSendReadMessagePackets) {
                 AyuState.setAllowReadPacket(false, -1);
             }
+            // Manage AyuWorker when sendOfflinePacketAfterOnline is toggled individually
+            if (checkBox.getBindConfig() == sendOfflinePacketAfterOnlineItem && currentViewingAccount >= 0) {
+                if (currentSettings.sendOfflinePacketAfterOnline && currentSettings.isGhostModeActive()) {
+                    AyuWorker.setOnline(currentViewingAccount, true);
+                } else {
+                    AyuWorker.clearOnline(currentViewingAccount);
+                }
+            }
             updateGhostViews();
         }
     }
@@ -533,16 +569,16 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
                 notifyRow(markReadAfterSendRow);
             }
         } else if (row == sendWithoutSoundRow) {
-            NaConfig.INSTANCE.getSilentMessageByDefault().toggleConfigBool();
-            ((TextCheckCell) view).setChecked(NaConfig.INSTANCE.getSilentMessageByDefault().Bool());
+            showSendWithoutSoundDialog(view);
         } else if (row == showGhostInDrawerRow) {
             NekoConfig.showGhostInDrawer.toggleConfigBool();
             ((TextCheckCell) view).setChecked(NekoConfig.showGhostInDrawer.Bool());
             NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
-        } else if (row == showGhostModeStatusRow) {
-            NekoConfig.showGhostModeStatus.toggleConfigBool();
-            ((TextCheckCell) view).setChecked(NekoConfig.showGhostModeStatus.Bool());
-            NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+        } else if (row == suggestGhostBeforeStoryRow) {
+            boolean v = !currentSettings.suggestGhostModeBeforeViewingStory;
+            currentSettings.suggestGhostModeBeforeViewingStory = v;
+            currentSettings.save();
+            ((TextCheckCell) view).setChecked(v);
         }
     }
 
@@ -616,17 +652,26 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
                 textCheckCell.setEnabled(true, null);
                 textCheckCell.setTextAndCheck(getString(R.string.UseScheduledMessages), currentSettings.useScheduledMessages, true);
             } else if (row == sendWithoutSoundRow) {
-                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
-                textCheckCell.setEnabled(true, null);
-                textCheckCell.setTextAndCheck(getString(R.string.SilentMessageByDefault), NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), true);
+                TextSettingsCell textSettingsCell = (TextSettingsCell) holder.itemView;
+                textSettingsCell.setEnabled(true, null);
+                int state = currentSettings.sendWithoutSound;
+                String value;
+                if (state == AyuGhostConfig.SEND_WITHOUT_SOUND_ALWAYS) {
+                    value = getString(R.string.SendWithoutSoundByDefaultAlways);
+                } else if (state == AyuGhostConfig.SEND_WITHOUT_SOUND_IN_GHOST_MODE) {
+                    value = getString(R.string.SendWithoutSoundByDefaultInGhostMode);
+                } else {
+                    value = getString(R.string.SendWithoutSoundByDefaultNever);
+                }
+                textSettingsCell.setTextAndValue(getString(R.string.SilentMessageByDefault), value, true);
             } else if (row == showGhostInDrawerRow) {
                 TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                 textCheckCell.setEnabled(true, null);
                 textCheckCell.setTextAndCheck(getString(R.string.GhostModeInDrawer), NekoConfig.showGhostInDrawer.Bool(), true);
-            } else if (row == showGhostModeStatusRow) {
+            } else if (row == suggestGhostBeforeStoryRow) {
                 TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                 textCheckCell.setEnabled(true, null);
-                textCheckCell.setTextAndCheck(getString(R.string.GhostModeStatusIndicator), NekoConfig.showGhostModeStatus.Bool(), false);
+                textCheckCell.setTextAndCheck(getString(R.string.SuggestGhostModeBeforeViewingStory), currentSettings.suggestGhostModeBeforeViewingStory, false);
             }
         }
 

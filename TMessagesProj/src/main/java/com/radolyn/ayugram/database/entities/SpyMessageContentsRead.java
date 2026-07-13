@@ -15,20 +15,15 @@ import androidx.room.PrimaryKey;
 
 @Entity(
         indices = {
-                @Index(value = {"deletedMessageId"})
+                @Index(value = {"userId", "dialogId", "messageId"}),
+                @Index(value = {"userId", "entityCreateDate"})
         }
 )
-public class DeletedMessageReaction {
+public class SpyMessageContentsRead {
     @PrimaryKey(autoGenerate = true)
-    public long fakeReactionId;
-
-    public long deletedMessageId;
-
-    public String emoticon;
-    public long documentId;
-    public boolean isCustom;
-
-    public int count;
-    public boolean selfSelected;
-    public boolean isPaid;
+    public long fakeId;
+    public long userId;
+    public long dialogId;
+    public int messageId;
+    public int entityCreateDate;
 }

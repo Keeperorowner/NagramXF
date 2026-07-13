@@ -223,6 +223,7 @@ import java.util.concurrent.CountDownLatch;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.ui.MessageDetailsActivity;
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 public class PeerStoriesView extends SizeNotifierFrameLayout implements NotificationCenter.NotificationCenterDelegate {
@@ -3723,7 +3724,7 @@ public class PeerStoriesView extends SizeNotifierFrameLayout implements Notifica
             @Override
             public void onStickerSelected(TLRPC.TL_document document, String query, Object parent) {
                 AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialogId, 1, payStars -> {
-                    SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialogId, null, null, currentStory.storyItem, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, false, parent, null, 0, payStars, chatActivityEnterView.getSendMonoForumPeerId(), chatActivityEnterView.getSendMessageSuggestionParams());
+                    SendMessagesHelper.getInstance(currentAccount).sendSticker(document, query, dialogId, null, null, currentStory.storyItem, null, null, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, false, parent, null, 0, payStars, chatActivityEnterView.getSendMonoForumPeerId(), chatActivityEnterView.getSendMessageSuggestionParams());
                     chatActivityEnterView.addStickerToRecent(document);
                     chatActivityEnterView.setFieldText("");
                     afterMessageSend(payStars <= 0);

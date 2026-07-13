@@ -1,12 +1,15 @@
 package com.radolyn.ayugram.utils;
 
 import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.AyuWorker;
 
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
+import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -15,6 +18,8 @@ import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.ui.ActionBar.AlertDialog;
+import org.telegram.ui.Stories.StoriesController;
 
 public class AyuGhostUtils {
 
@@ -83,7 +88,7 @@ public class AyuGhostUtils {
                 if (internal) FileLog.d("GhostMode: Read-after-send request completed.");
                 // Go offline after sending
                 if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account) && !internal) {
-                    Utilities.globalQueue.postRunnable(() -> performStatusRequest(account, true), OFFLINE_DELAY_MS);
+                    AyuWorker.setOnline(account, true);
                 }
             }
         });
@@ -140,7 +145,7 @@ public class AyuGhostUtils {
                 if (internal) FileLog.d("GhostMode: Read-after-send request completed.");
                 // Go offline after sending
                 if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account) && !internal) {
-                    Utilities.globalQueue.postRunnable(() -> performStatusRequest(account, true), OFFLINE_DELAY_MS);
+                    AyuWorker.setOnline(account, true);
                 }
             }
         });
@@ -232,15 +237,15 @@ public class AyuGhostUtils {
             if (peer != null && AyuGhostPreferences.getGhostModeTypingExclusion(getDialogId(peer))) {
                 return onCompleteOrig;
             }
-            FileLog.d("GhostMode: Wrapping callback for offline-after-send.");
+            FileLog.d("GhostMode: Wrapping callback for offline-after-send via AyuWorker.");
 
             return (response, error) -> {
                 if (onCompleteOrig != null) {
                     Utilities.stageQueue.postRunnable(() -> onCompleteOrig.run(response, error));
                 }
 
-                FileLog.d("GhostMode: Scheduling delayed offline status update.");
-                Utilities.globalQueue.postRunnable(() -> performStatusRequest(account, true), OFFLINE_DELAY_MS);
+                FileLog.d("GhostMode: Triggering AyuWorker periodic offline schedule.");
+                AyuWorker.setOnline(account, true);
             };
         }
         return onCompleteOrig;
@@ -334,4 +339,54 @@ public class AyuGhostUtils {
                 return new InterceptResult(false, effectiveOnComplete);
             }
         }
+
+    /**
+     * If {@code suggestGhostModeBeforeViewingStory} is enabled and ghost mode is not active,
+     * shows a dialog offering to enable ghost mode before opening the story. The caller's
+     * {@code onProceed} runnable is invoked either from the dialog's positive button (after
+     * enabling ghost mode), its negative button (continue without ghost), or not at all if
+     * the user dismisses the dialog.
+     *
+     * @return {@code true} if the dialog was shown and the caller must NOT proceed on its own;
+     *         {@code false} when no suggestion is needed and the caller should open the story
+     *         immediately.
+     */
+    public static boolean maybeSuggestGhostBeforeStory(android.content.Context context, int account, long dialogId, Runnable onProceed) {
+        if (!AyuGhostConfig.isSuggestGhostModeBeforeViewingStory(account)) {
+            return false;
+        }
+        if (AyuGhostConfig.isGhostModeActive(account)) {
+            return false;
+        }
+        long selfUserId = UserConfig.getInstance(account).getClientUserId();
+        if (dialogId == selfUserId || dialogId == 0) {
+            return false;
+        }
+        StoriesController storiesController = MessagesController.getInstance(account).getStoriesController();
+        if (storiesController == null || !storiesController.hasUnreadStories(dialogId)) {
+            return false;
+        }
+        if (context == null) {
+            return false;
+        }
+
+        AlertDialog dlg = new AlertDialog(context, 0);
+        dlg.setTitle(LocaleController.getString(R.string.SuggestGhostModeBeforeStoryTitle));
+        dlg.setMessage(LocaleController.getString(R.string.SuggestGhostModeBeforeStoryMessage));
+        dlg.setPositiveButton(LocaleController.getString(R.string.SuggestGhostModeBeforeStoryEnable), (d, w) -> {
+            AyuGhostConfig.setGhostMode(account, true);
+            if (onProceed != null) {
+                onProceed.run();
+            }
+        });
+        dlg.setNegativeButton(LocaleController.getString(R.string.SuggestGhostModeBeforeStorySkip), (d, w) -> {
+            if (onProceed != null) {
+                onProceed.run();
+            }
+        });
+        dlg.setOnCancelListener(d -> {
+        });
+        dlg.show();
+        return true;
+    }
 }

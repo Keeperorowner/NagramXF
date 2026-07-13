@@ -410,6 +410,7 @@ import tw.nekomimi.nekogram.ui.components.GroupedIconsView;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
 import tw.nekomimi.nekogram.utils.ProxyUtil;
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.ToggleResult;
 import xyz.nextalone.nagram.helper.BookmarksHelper;
@@ -3916,6 +3917,14 @@ public class ChatActivity extends BaseFragment implements
                 chatActivity.presentFragment(new RegexFilterEditActivity(chatActivity.getDialogId(), text));
             }
         }
+
+        @Override
+        protected void searchText(CharSequence text) {
+            if (chatActivity != null) {
+                chatActivity.hideActionMode();
+                chatActivity.openSearchWithText(text == null ? "" : text.toString());
+            }
+        }
     }
 
     @Override
@@ -4144,7 +4153,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                     if (str.length() != 0) {
                         SendMessagesHelper.getInstance(currentAccount)
-                                .sendMessage(str.toString(), dialog_id, replyTo, getThreadMessage(), null, false, null, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, null, false);
+                                .sendMessage(str.toString(), dialog_id, replyTo, getThreadMessage(), null, false, null, null, null, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, null, false);
                         MessagesController.getInstance(currentAccount).deleteMessages(toDeleteMessagesIds, null, null, dialog_id, 0, true, MODE_DEFAULT);
                     }
                     clearSelectionMode();
@@ -21594,7 +21603,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void sendUriAsDocument(Uri uri) {
-        sendUriAsDocument(uri, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0);
+        sendUriAsDocument(uri, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
     }
     private void sendUriAsDocument(Uri uri, boolean notify, int schedule_date) {
         if (uri == null) {
@@ -41377,7 +41386,7 @@ public class ChatActivity extends BaseFragment implements
             final boolean isSavedMessages = did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
             final ArrayList<MessageObject> finalArrayList = arrayList;
             Runnable delayedRunnalble = () -> {
-                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(finalArrayList, did, false, false, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, null, -1, 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
+                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(finalArrayList, did, false, false, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, null, -1, 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                 AlertsCreator.showSendMediaAlert(result, ChatActivity.this, null);
             };
 

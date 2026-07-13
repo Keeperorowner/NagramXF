@@ -287,11 +287,13 @@ import me.vkryl.android.animator.FactorAnimator;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
+import tw.nekomimi.nekogram.helpers.JoinOfficialChannelHelper;
 import tw.nekomimi.nekogram.ChatHistoryActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.ui.folders.FoldersHelper;
 
@@ -5741,6 +5743,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (topPanelLayout != null) {
             contentView.addView(topPanelLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP, 0, -14, 0, 0));
         }
+
+        JoinOfficialChannelHelper.postCheck(getParentActivity(), currentAccount);
 
         updateStoriesVisibility(false);
 
@@ -12097,7 +12101,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         sendPopupLayout2.setupRadialSelectors(getThemedColor(Theme.key_dialogButtonSelector));
 
         ActionBarMenuSubItem sendWithoutSound = new ActionBarMenuSubItem(parentActivity, true, true, resourcesProvider);
-        boolean sendWithoutSoundNax = NaConfig.INSTANCE.getSilentMessageByDefault().Bool();
+        boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
         sendWithoutSound.setTextAndIcon(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
         sendWithoutSound.setMinimumWidth(dp(196));
         sendWithoutSound.setOnClickListener(v -> {

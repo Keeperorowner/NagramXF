@@ -149,7 +149,7 @@
     <string name="RecentChats">最近のチャット</string>
     <string name="ClearRecentChats">最近のチャットをクリア</string>
     <string name="ClearRecentChatAlert">本当に最近のチャットをクリアしますか？</string>
-    <string name="CloudConfig">クラウド設定</string>
+    <string name="CloudConfig">クラウド同期</string>
     <string name="CloudConfigDesc">N-設定を Telegram クラウドに保存。</string>
     <string name="CloudConfigSyncDate">最終同期：%1$s、クラウド：%2$s</string>
     <string name="CloudConfigSyncDateNever">なし</string>
@@ -266,4 +266,9 @@
     <string name="EmojiUseDefault">システム絵文字を使用</string>
     <string name="Chat">チャット</string>
     <string name="Appearance">外観</string>
+    <string name="Donate">寄付</string>
+    <string name="DonateDesc">Nagram XF が気に入ったら、開発のサポートをご検討ください。</string>
+    <string name="DonateAfdian">Afdian</string>
+    <string name="DonateKoFi">Ko-fi</string>
+    <string name="DonateInfo">このクライアントが気に入りましたか？**開発をサポート**</string>
 </resources>

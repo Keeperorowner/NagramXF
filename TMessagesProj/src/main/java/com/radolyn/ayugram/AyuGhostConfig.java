@@ -26,6 +26,13 @@ public abstract class AyuGhostConfig {
     private static final String PREFS_FILE = "ayughostconfig";
     private static final String KEY_GLOBAL_OVERRIDE = "useGlobalConfig";
     private static final String KEY_MIGRATED = "migratedFromNekoConfig";
+    private static final String KEY_SILENT_MIGRATED = "migratedSilentMessage";
+    private static final String KEY_SUGGEST_GHOST_BEFORE_STORY = "suggestGhostModeBeforeViewingStory";
+
+    /** sendWithoutSound states: 0 = never, 1 = only in ghost mode, 2 = always */
+    public static final int SEND_WITHOUT_SOUND_NEVER = 0;
+    public static final int SEND_WITHOUT_SOUND_IN_GHOST_MODE = 1;
+    public static final int SEND_WITHOUT_SOUND_ALWAYS = 2;
 
     private static boolean configLoaded = false;
     private static SharedPreferences preferences;
@@ -69,6 +76,12 @@ public abstract class AyuGhostConfig {
             if (!preferences.getBoolean(KEY_MIGRATED, false)) {
                 migrateFromNekoConfig();
                 editor.putBoolean(KEY_MIGRATED, true).apply();
+            }
+
+            // One-time migration from the old NaConfig.silentMessageByDefault boolean
+            if (!preferences.getBoolean(KEY_SILENT_MIGRATED, false)) {
+                migrateSilentMessageFromNaConfig();
+                editor.putBoolean(KEY_SILENT_MIGRATED, true).apply();
             }
 
             configLoaded = true;
@@ -146,6 +159,16 @@ public abstract class AyuGhostConfig {
         return getGhostModeSettingsForAccount(account).sendOfflinePacketAfterOnline;
     }
 
+    public static boolean isSuggestGhostModeBeforeViewingStory(int account) {
+        return getGhostModeSettingsForAccount(account).suggestGhostModeBeforeViewingStory;
+    }
+
+    public static void setSuggestGhostModeBeforeViewingStory(int account, boolean v) {
+        GhostModeSettings s = getGhostModeSettingsForAccount(account);
+        s.suggestGhostModeBeforeViewingStory = v;
+        s.save();
+    }
+
     public static boolean isMarkReadAfterSend(int account) {
         return getGhostModeSettingsForAccount(account).markReadAfterSend;
     }
@@ -153,6 +176,31 @@ public abstract class AyuGhostConfig {
     public static boolean isUseScheduledMessages(int account) {
         GhostModeSettings s = getGhostModeSettingsForAccount(account);
         return s.useScheduledMessages && s.isGhostModeActive();
+    }
+
+    /**
+     * Returns whether messages should be sent without sound for the given account,
+     * evaluating the three-state {@code sendWithoutSound} setting:
+     * <ul>
+     *   <li>{@code 2} — always silent</li>
+     *   <li>{@code 1} — silent only when ghost mode is active</li>
+     *   <li>{@code 0} — never silent (send with sound)</li>
+     * </ul>
+     */
+    public static boolean isSendWithoutSound(int account) {
+        int state = getGhostModeSettingsForAccount(account).sendWithoutSound;
+        return state == SEND_WITHOUT_SOUND_ALWAYS
+                || (state == SEND_WITHOUT_SOUND_IN_GHOST_MODE && isGhostModeActive(account));
+    }
+
+    public static int getSendWithoutSoundState(int account) {
+        return getGhostModeSettingsForAccount(account).sendWithoutSound;
+    }
+
+    public static void setSendWithoutSoundState(int account, int state) {
+        GhostModeSettings s = getGhostModeSettingsForAccount(account);
+        s.sendWithoutSound = state;
+        s.save();
     }
 
     public static boolean isSendReadMessagePacketsLocked(int account) {
@@ -276,10 +324,34 @@ public abstract class AyuGhostConfig {
             global.sendOfflinePacketAfterOnlineLocked = nekoPrefs.getBoolean("sendOfflinePacketAfterOnlineLocked", false);
             global.markReadAfterSend = nekoPrefs.getBoolean("markReadAfterSend", true);
             global.useScheduledMessages = nekoPrefs.getBoolean("useScheduledMessages", false);
+            global.suggestGhostModeBeforeViewingStory = nekoPrefs.getBoolean("suggestGhostModeBeforeViewingStory", true);
             global.save();
             FileLog.d("AyuGhostConfig: migrated settings from nkmrcfg");
         } catch (Exception e) {
             FileLog.e("AyuGhostConfig: migration failed", e);
+        }
+    }
+
+    /**
+     * One-time migration from the legacy {@code NaConfig.silentMessageByDefault} boolean
+     * to the three-state {@code sendWithoutSound} integer. If the old boolean was true,
+     * the global setting is mapped to {@link #SEND_WITHOUT_SOUND_ALWAYS} (2).
+     */
+    private static void migrateSilentMessageFromNaConfig() {
+        try {
+            boolean wasSilent = xyz.nextalone.nagram.NaConfig.INSTANCE
+                    .getSilentMessageByDefault().Bool();
+            if (wasSilent) {
+                GhostModeSettings global = settings.get(-1L);
+                global.sendWithoutSound = SEND_WITHOUT_SOUND_ALWAYS;
+                global.save();
+                // Reset the old boolean to avoid double-apply confusion
+                xyz.nextalone.nagram.NaConfig.INSTANCE
+                        .getSilentMessageByDefault().setConfigBool(false);
+            }
+            FileLog.d("AyuGhostConfig: migrated silentMessageByDefault (was=" + wasSilent + ")");
+        } catch (Exception e) {
+            FileLog.e("AyuGhostConfig: silent message migration failed", e);
         }
     }
 
@@ -298,6 +370,8 @@ public abstract class AyuGhostConfig {
         public boolean sendOfflinePacketAfterOnlineLocked;
         public boolean markReadAfterSend;
         public boolean useScheduledMessages;
+        public boolean suggestGhostModeBeforeViewingStory;
+        public int sendWithoutSound;
         public final long userId;
 
         public GhostModeSettings(long userId) {
@@ -315,6 +389,8 @@ public abstract class AyuGhostConfig {
             sendOfflinePacketAfterOnlineLocked = preferences.getBoolean("sendOfflinePacketAfterOnlineLocked" + s, false);
             markReadAfterSend = preferences.getBoolean("markReadAfterSend" + s, true);
             useScheduledMessages = preferences.getBoolean("useScheduledMessages" + s, false);
+            suggestGhostModeBeforeViewingStory = preferences.getBoolean(KEY_SUGGEST_GHOST_BEFORE_STORY + s, true);
+            sendWithoutSound = preferences.getInt("sendWithoutSound2" + s, SEND_WITHOUT_SOUND_NEVER);
         }
 
         private String suffix() {
@@ -335,6 +411,8 @@ public abstract class AyuGhostConfig {
             editor.putBoolean("sendOfflinePacketAfterOnlineLocked" + s, sendOfflinePacketAfterOnlineLocked).apply();
             editor.putBoolean("markReadAfterSend" + s, markReadAfterSend).apply();
             editor.putBoolean("useScheduledMessages" + s, useScheduledMessages).apply();
+            editor.putBoolean(KEY_SUGGEST_GHOST_BEFORE_STORY + s, suggestGhostModeBeforeViewingStory).apply();
+            editor.putInt("sendWithoutSound2" + s, sendWithoutSound).apply();
         }
 
         /**

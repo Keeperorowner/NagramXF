@@ -125,7 +125,7 @@ public class RecentDialogsSidebarView extends FrameLayout implements Notificatio
             toggleButton.setBackground(toggleBackground);
         }
         toggleButton.setOnClickListener(v -> setOpened(!opened, true));
-        addView(toggleButton, LayoutHelper.createFrame(HANDLE_WIDTH_DP, HANDLE_HEIGHT_DP, Gravity.START | Gravity.CENTER_VERTICAL));
+        addView(toggleButton, LayoutHelper.createFrame(HANDLE_WIDTH_DP, HANDLE_HEIGHT_DP, Gravity.START | Gravity.CENTER_VERTICAL, 0, 80, 0, 0));
 
         updateToggleIcon();
         setTranslationX(AndroidUtilities.dp(PANEL_WIDTH_DP));

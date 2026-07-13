@@ -149,7 +149,7 @@
     <string name="RecentChats">最近聊天</string>
     <string name="ClearRecentChats">清除最近聊天</string>
     <string name="ClearRecentChatAlert">您确定要清除您的最近聊天吗？</string>
-    <string name="CloudConfig">云设置</string>
+    <string name="CloudConfig">云同步</string>
     <string name="CloudConfigDesc">保存 N-设置 到 Telegram 云。</string>
     <string name="CloudConfigSyncDate">最后同步：%s，云端：%s</string>
     <string name="CloudConfigSyncDateNever">从未</string>
@@ -267,4 +267,9 @@
     <string name="EmojiUseDefault">使用系统 Emoji</string>
     <string name="Chat">聊天</string>
     <string name="Appearance">外观</string>
+    <string name="Donate">赞助</string>
+    <string name="DonateDesc">如果你喜欢 Nagram XF，请考虑支持开发。</string>
+    <string name="DonateAfdian">爱发电</string>
+    <string name="DonateKoFi">Ko-fi</string>
+    <string name="DonateInfo">喜欢这个客户端？**支持开发**</string>
 </resources>

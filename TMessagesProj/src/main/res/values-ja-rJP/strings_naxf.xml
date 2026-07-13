@@ -39,7 +39,7 @@
     <string name="RegexFiltersEnabled">メッセージフィルターを有効化</string>
     <string name="RegexFiltersMaskMessages">フィルタまたはブロックされたメッセージを非表示ではなくマスクする</string>
     <string name="RegexFiltersMaskMessagesShort">非表示の代わりにマスク</string>
-    <string name="RegexFiltersMaskMessagesAbout">フィルタまたはブロックされたメッセージは削除されず、マスクされたプレースホルダーとしてチャット内に残ります。</string>
+    <string name="RegexFiltersMaskMessagesAbout">フィルタまたはブロックされたメッセージは削除されず、マスクされたプレースホルダーとしてチャット内に残ります。有効にすると反転表現は機能しなくなります。</string>
     <string name="RegexFiltersHideOnlyMatchedShort">正規表現の一致部分のみ非表示</string>
     <string name="RegexFiltersHideOnlyMatchedAbout">メッセージ全体をマスクする代わりに、正規表現に一致した部分のみをネタバレで非表示にします。</string>
     <string name="UseSystemAiService">システム AI サービスを使用</string>
@@ -196,6 +196,7 @@
     <string name="HideFilteredMessagesMenuText">フィルタリングされたメッセージを隠す</string>
     <string name="HideProxySponsorChannel">プロキシのスポンサー チャンネルを非表示</string>
     <string name="hideSponsoredMessage">スポンサー メッセージを非表示</string>
+    <string name="DisableAds">広告を無効化</string>
     <string name="GoogleCloudTransKey">Google Cloud 翻訳キー</string>
     <string name="StickerSizeLeft">小</string>
     <string name="StickerSizeRight">大</string>
