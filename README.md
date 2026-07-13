@@ -6,12 +6,12 @@ Includes most features from exteraGram and AyuGram.
 ## Sponsor
 
 * [爱发电](https://ifdian.net/a/nagramxf)
-d* [Ko-fi](https://ko-fi.com/nagramxf)
+* [Ko-fi](https://ko-fi.com/nagramxf)
 
 ## Download
 
 * [Telegram Channel](https://t.me/NagramXF)
-* [Telegram Channel (Latest Beta)](https://t.me/NagramXFBetaAPKs)
+* [Telegram Beta Channel](https://t.me/NagramXFBetaAPKs)
 * [GitHub Releases](https://github.com/Keeperorowner/NagramXF/releases)
 
 ## Compilation Guide
