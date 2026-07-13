@@ -11,6 +11,7 @@ d* [Ko-fi](https://ko-fi.com/nagramxf)
 ## Download
 
 * [Telegram Channel](https://t.me/NagramXF)
+* [Telegram Channel (Latest Beta)](https://t.me/NagramXFBetaAPKs)
 * [GitHub Releases](https://github.com/Keeperorowner/NagramXF/releases)
 
 ## Compilation Guide
