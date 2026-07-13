@@ -1453,6 +1453,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     private static final int TRANSLATE = 3;
     private static final int ADD_TO_FILTER = 4;
     private static final int SYSTEM_AI = 5;
+    private static final int SEARCH = 6;
     private ActionMode.Callback createActionCallback() {
         final ActionMode.Callback callback = new ActionMode.Callback() {
             @Override
@@ -1465,6 +1466,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 }
                 menu.add(Menu.NONE, TRANSLATE, 4, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
                 menu.add(Menu.NONE, ADD_TO_FILTER, 5, getString(R.string.AddToFilter));
+                menu.add(Menu.NONE, SEARCH, 6, LocaleController.getString(R.string.AvatarPreviewSearchMessages));
                 return true;
             }
 
@@ -1490,6 +1492,10 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 MenuItem addToFilterItem = menu.findItem(ADD_TO_FILTER);
                 if (addToFilterItem != null) {
                     addToFilterItem.setVisible(canShowAddToFilter());
+                }
+                MenuItem searchItem = menu.findItem(SEARCH);
+                if (searchItem != null) {
+                    searchItem.setVisible(selectedView instanceof ChatMessageCell);
                 }
                 return true;
             }
@@ -1569,6 +1575,11 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     return true;
                 } else if (itemId == ADD_TO_FILTER) {
                     addToFilter();
+                    return true;
+                } else if (itemId == SEARCH) {
+                    searchText(getSelectedText());
+                    hideActions();
+                    clear(true);
                     return true;
                 } else {
                     clear();
@@ -1704,6 +1715,9 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
     }
 
     protected void onAddToFilterClick(String text) {
+    }
+
+    protected void searchText(CharSequence text) {
     }
 
     protected CharSequence getSelectedText() {

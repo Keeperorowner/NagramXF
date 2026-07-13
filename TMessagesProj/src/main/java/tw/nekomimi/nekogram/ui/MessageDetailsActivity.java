@@ -118,6 +118,7 @@ public class MessageDetailsActivity extends BaseFragment implements Notification
     private int botRow;
     private int dateRow;
     private int editedRow;
+    private int readDateRow;
     private int forwardRow;
     private int restrictionReasonRow;
     private int fileNameRow;
@@ -517,6 +518,7 @@ public class MessageDetailsActivity extends BaseFragment implements Notification
         botRow = fromUser != null && fromUser.bot ? rowCount++ : -1;
         dateRow = messageObject.messageOwner.date != 0 ? rowCount++ : -1;
         editedRow = messageObject.messageOwner.edit_date != 0 ? rowCount++ : -1;
+        readDateRow = (messageObject.isOutOwner() && com.radolyn.ayugram.controllers.AyuSpyController.isEnabled()) ? rowCount++ : -1;
         forwardRow = messageObject.isForwarded() ? rowCount++ : -1;
         restrictionReasonRow = messageObject.messageOwner.restriction_reason.isEmpty() ? -1 : rowCount++;
         fileNameRow = TextUtils.isEmpty(fileName) ? -1 : rowCount++;
@@ -691,6 +693,22 @@ public class MessageDetailsActivity extends BaseFragment implements Notification
                     } else if (position == editedRow) {
                         long date = (long) messageObject.messageOwner.edit_date * 1000;
                         textCell.setTextAndValue("Edited", LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterYear().format(new Date(date)), LocaleController.getInstance().getFormatterDay().format(new Date(date))), divider);
+                    } else if (position == readDateRow) {
+                        long dialogId = messageObject.getDialogId();
+                        int msgId = messageObject.getId();
+                        com.radolyn.ayugram.database.entities.SpyMessageRead read = com.radolyn.ayugram.controllers.AyuSpyController.getMessageRead(currentAccount, dialogId, msgId);
+                        com.radolyn.ayugram.database.entities.SpyMessageContentsRead contentsRead = com.radolyn.ayugram.controllers.AyuSpyController.getMessageContentsRead(currentAccount, dialogId, msgId);
+                        int ts = 0;
+                        if (read != null) ts = read.entityCreateDate;
+                        else if (contentsRead != null) ts = contentsRead.entityCreateDate;
+                        String value;
+                        if (ts > 0) {
+                            long ms = (long) ts * 1000;
+                            value = LocaleController.formatString(R.string.formatDateAtTime, LocaleController.getInstance().getFormatterYear().format(new Date(ms)), LocaleController.getInstance().getFormatterDay().format(new Date(ms)));
+                        } else {
+                            value = getString(R.string.AyuReadDateUnknown);
+                        }
+                        textCell.setTextAndValue(getString(R.string.AyuReadDate), value, divider);
                     } else if (position == forwardRow) {
                         StringBuilder builder = new StringBuilder();
                         if (messageObject.messageOwner.fwd_from.from_id == null) {

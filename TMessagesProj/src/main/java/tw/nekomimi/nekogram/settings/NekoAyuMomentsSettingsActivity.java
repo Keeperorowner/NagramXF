@@ -23,6 +23,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Cells.TextCell;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.RecyclerListView;
@@ -67,8 +68,8 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell customDeletedMarkRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getCustomDeletedMark(), "", null));
     private final AbstractConfigCell dividerCustomExperimentalRow = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell localPremiumRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.localPremium));
-    private final AbstractConfigCell hideProxySponsorChannelRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideProxySponsorChannel));
-    private final AbstractConfigCell hideSponsoredMessageRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideSponsoredMessage));
+    private final AbstractConfigCell disableAdsRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableAds));
+    private final AbstractConfigCell showGhostModeStatusRow = cellGroup.appendCell(new ConfigCellCustom("GhostModeStatusIndicator", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell dividerCustomExperimentalBottomRow = cellGroup.appendCell(new ConfigCellDivider());
 
     public NekoAyuMomentsSettingsActivity() {
@@ -121,14 +122,15 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
             } else if (key.equals(NekoConfig.localPremium.getKey())) {
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
-            } else if (key.equals(NekoConfig.hideSponsoredMessage.getKey())) {
+            } else if (key.equals(NekoConfig.disableAds.getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
-            } else if (key.equals(NekoConfig.hideProxySponsorChannel.getKey())) {
                 for (int account = 0; account < UserConfig.MAX_ACCOUNT_COUNT; account++) {
                     if (UserConfig.getInstance(account).isClientActivated()) {
                         org.telegram.messenger.MessagesController.getInstance(account).checkPromoInfo(true);
                     }
                 }
+            } else if (key.equals(NekoConfig.showGhostModeStatus.getKey())) {
+                NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
             }
         };
 
@@ -137,8 +139,14 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
 
     @Override
     protected void onCustomCellClick(View view, int position, float x, float y) {
-        if (position == cellGroup.rows.indexOf(deletedMarkRow)) {
+        AbstractConfigCell row = cellGroup.rows.get(position);
+        if (row == deletedMarkRow) {
             showDeletedMarkDialog();
+            return;
+        } else if (row == showGhostModeStatusRow) {
+            NekoConfig.showGhostModeStatus.toggleConfigBool();
+            ((TextCheckCell) view).setChecked(NekoConfig.showGhostModeStatus.Bool());
+            NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
             return;
         }
         super.onCustomCellClick(view, position, x, y);
@@ -397,6 +405,10 @@ public class NekoAyuMomentsSettingsActivity extends BaseNekoXSettingsActivity {
             } else if (row == deletedMarkColorRow) {
                 DeletedMessagesColorPickerCell colorPickerCell = (DeletedMessagesColorPickerCell) holder.itemView;
                 colorPickerCell.setSelectedColorId(NaConfig.INSTANCE.getDeletedIconColor().Int(), false);
+            } else if (row == showGhostModeStatusRow) {
+                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
+                textCheckCell.setEnabled(true, null);
+                textCheckCell.setTextAndCheck(getString(R.string.GhostModeStatusIndicator), NekoConfig.showGhostModeStatus.Bool(), false);
             }
         }
     }

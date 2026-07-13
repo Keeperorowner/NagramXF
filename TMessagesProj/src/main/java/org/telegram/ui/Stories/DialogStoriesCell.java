@@ -551,14 +551,20 @@ public class DialogStoriesCell extends FrameLayout implements NotificationCenter
                 }
             }).setPaginationParaments(type == TYPE_ARCHIVE, onlyUnreadStories, onlySelfStories), false);
         };
-        if (overscroll) {
-            runnable.run();
-        } else {
-            globalCancelable = cell.cancellable = StoriesUtilities.ensureStoryFileLoaded(userStories, runnable);
-            if (globalCancelable != null) {
-                storiesController.setLoading(cell.dialogId, true);
+        Runnable trigger = () -> {
+            if (overscroll) {
+                runnable.run();
+            } else {
+                globalCancelable = cell.cancellable = StoriesUtilities.ensureStoryFileLoaded(userStories, runnable);
+                if (globalCancelable != null) {
+                    storiesController.setLoading(cell.dialogId, true);
+                }
             }
+        };
+        if (com.radolyn.ayugram.utils.AyuGhostUtils.maybeSuggestGhostBeforeStory(getContext(), currentAccount, cell.dialogId, trigger)) {
+            return;
         }
+        trigger.run();
 
     }
 

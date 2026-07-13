@@ -6,6 +6,10 @@ import android.text.TextUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import com.radolyn.ayugram.database.AyuData;
+import com.radolyn.ayugram.database.dao.RegexFilterDao;
+import com.radolyn.ayugram.database.entities.RegexFilter;
+import com.radolyn.ayugram.database.entities.RegexFilterGlobalExclusion;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -22,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -33,41 +38,75 @@ public class AyuFilter {
     private static final Object cacheLock = new Object();
     private static volatile ArrayList<FilterModel> filterModels;
     private static volatile ArrayList<ChatFilterEntry> chatFilterEntries;
-    private static volatile HashSet<Long> excludedDialogs;
-    private static volatile ArrayList<ExcludedFilterEntry> excludedFilterEntries;
     private static volatile HashMap<Long, HashSet<String>> excludedSharedFilterIdsByDialog;
     private static volatile HashSet<Long> blockedChannels;
     private static volatile HashSet<Long> customFilteredUsers;
     private static volatile HashMap<Long, CustomFilteredUser> customFilteredUsersData;
 
+
     public static ArrayList<FilterModel> getRegexFilters() {
         if (filterModels == null) {
             synchronized (cacheLock) {
                 if (filterModels == null) {
-                    var str = NaConfig.INSTANCE.getRegexFiltersData().String();
-                    FilterModel[] arr = new Gson().fromJson(str, FilterModel[].class);
-                    if (arr != null) {
-                        filterModels = new ArrayList<>(Arrays.asList(arr));
-                        boolean migrated = false;
-                        for (var filter : filterModels) {
-                            if (filter.ensureId()) {
-                                migrated = true;
-                            }
-                            if (filter.migrateFromLegacy(0L)) {
-                                migrated = true;
-                            }
-                            filter.buildPattern();
-                        }
-                        if (migrated) {
-                            NaConfig.INSTANCE.getRegexFiltersData().setConfigString(new Gson().toJson(filterModels));
-                        }
-                    } else {
-                        filterModels = new ArrayList<>();
-                    }
+                    filterModels = loadSharedFilters();
                 }
             }
         }
         return filterModels;
+    }
+
+    private static ArrayList<FilterModel> loadSharedFilters() {
+        ArrayList<FilterModel> out = new ArrayList<>();
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao != null) {
+            try {
+                List<RegexFilter> rows = dao.getShared();
+                for (RegexFilter row : rows) {
+                    FilterModel m = new FilterModel();
+                    m.id = row.id != null ? row.id : UUID.randomUUID().toString();
+                    m.regex = row.text;
+                    m.caseInsensitive = row.caseInsensitive;
+                    m.reversed = row.reversed;
+                    m.enabled = row.enabled;
+                    m.buildPattern();
+                    out.add(m);
+                }
+            } catch (Exception e) {
+                FileLog.e("AyuFilter.loadSharedFilters", e);
+            }
+        }
+        if (out.isEmpty()) {
+            ArrayList<FilterModel> legacy = loadSharedFiltersFromPrefs();
+            if (legacy != null && !legacy.isEmpty()) {
+                saveFilter(legacy);
+                return legacy;
+            }
+        }
+        return out;
+    }
+
+    private static ArrayList<FilterModel> loadSharedFiltersFromPrefs() {
+        try {
+            String str = NaConfig.INSTANCE.getRegexFiltersData().String();
+            if (TextUtils.isEmpty(str) || "[]".equals(str)) {
+                return null;
+            }
+            FilterModel[] arr = new Gson().fromJson(str, FilterModel[].class);
+            if (arr == null || arr.length == 0) {
+                return null;
+            }
+            ArrayList<FilterModel> list = new ArrayList<>();
+            for (FilterModel f : arr) {
+                if (f == null) continue;
+                f.ensureId();
+                f.buildPattern();
+                list.add(f);
+            }
+            return list;
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.loadSharedFiltersFromPrefs", e);
+            return null;
+        }
     }
 
     public static void addFilter(String text, boolean caseInsensitive) {
@@ -81,6 +120,7 @@ public class AyuFilter {
         filterModel.caseInsensitive = caseInsensitive;
         filterModel.reversed = reversed;
         filterModel.enabled = true;
+        filterModel.buildPattern();
         list.add(0, filterModel);
         saveFilter(list);
     }
@@ -90,7 +130,7 @@ public class AyuFilter {
     }
 
     public static void editFilter(int filterIdx, String text, boolean caseInsensitive, boolean reversed) {
-        var list = new ArrayList<>(getRegexFilters());
+        var list = getRegexFilters();
         if (filterIdx < 0 || filterIdx >= list.size()) {
             return;
         }
@@ -98,17 +138,31 @@ public class AyuFilter {
         filterModel.regex = text;
         filterModel.caseInsensitive = caseInsensitive;
         filterModel.reversed = reversed;
+        filterModel.buildPattern();
         saveFilter(list);
     }
 
     public static void saveFilter(ArrayList<FilterModel> filterModels1) {
-        var str = new Gson().toJson(filterModels1);
-        NaConfig.INSTANCE.getRegexFiltersData().setConfigString(str);
-        AyuFilter.rebuildCache();
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao == null) {
+            return;
+        }
+        try {
+            dao.deleteAllShared();
+            for (FilterModel m : filterModels1) {
+                m.ensureId();
+                m.buildPattern();
+                dao.insert(toRow(m, null));
+            }
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.saveFilter", e);
+        }
+        NaConfig.INSTANCE.getRegexFiltersData().setConfigString(new Gson().toJson(filterModels1));
+        rebuildCache();
     }
 
     public static void removeFilter(int filterIdx) {
-        var list = new ArrayList<>(getRegexFilters());
+        var list = getRegexFilters();
         if (filterIdx < 0 || filterIdx >= list.size()) {
             return;
         }
@@ -137,8 +191,6 @@ public class AyuFilter {
         synchronized (cacheLock) {
             filterModels = null;
             chatFilterEntries = null;
-            excludedDialogs = null;
-            excludedFilterEntries = null;
             excludedSharedFilterIdsByDialog = null;
             AyuFilterCache.clearAll();
         }
@@ -464,44 +516,108 @@ public class AyuFilter {
         if (chatFilterEntries == null) {
             synchronized (cacheLock) {
                 if (chatFilterEntries == null) {
-                    var str = NaConfig.INSTANCE.getRegexChatFiltersData().String();
-                    try {
-                        ChatFilterEntry[] arr = new Gson().fromJson(str, ChatFilterEntry[].class);
-                        if (arr != null) {
-                            chatFilterEntries = new ArrayList<>(Arrays.asList(arr));
-                            boolean migrated = false;
-                            for (var entry : chatFilterEntries) {
-                                if (entry.filters == null) continue;
-                                for (var f : entry.filters) {
-                                    if (f.ensureId()) {
-                                        migrated = true;
-                                    }
-                                    if (f.migrateFromLegacy(entry.dialogId)) {
-                                        migrated = true;
-                                    }
-                                    f.buildPattern();
-                                }
-                            }
-                            if (migrated) {
-                                var json = new Gson().toJson(chatFilterEntries);
-                                NaConfig.INSTANCE.getRegexChatFiltersData().setConfigString(json);
-                            }
-                        } else {
-                            chatFilterEntries = new ArrayList<>();
-                        }
-                    } catch (Exception e) {
-                        chatFilterEntries = new ArrayList<>();
-                    }
+                    chatFilterEntries = loadChatFilterEntries();
                 }
             }
         }
         return chatFilterEntries;
     }
 
+    private static ArrayList<ChatFilterEntry> loadChatFilterEntries() {
+        ArrayList<ChatFilterEntry> out = new ArrayList<>();
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao != null) {
+            try {
+                HashMap<Long, ChatFilterEntry> byDialog = new HashMap<>();
+                List<RegexFilter> all = dao.getAll();
+                for (RegexFilter row : all) {
+                    if (row.dialogId == null) {
+                        continue;
+                    }
+                    long did = row.dialogId;
+                    ChatFilterEntry entry = byDialog.get(did);
+                    if (entry == null) {
+                        entry = new ChatFilterEntry();
+                        entry.dialogId = did;
+                        entry.filters = new ArrayList<>();
+                        byDialog.put(did, entry);
+                    }
+                    FilterModel m = new FilterModel();
+                    m.id = row.id != null ? row.id : UUID.randomUUID().toString();
+                    m.regex = row.text;
+                    m.caseInsensitive = row.caseInsensitive;
+                    m.reversed = row.reversed;
+                    m.enabled = row.enabled;
+                    m.buildPattern();
+                    entry.filters.add(m);
+                }
+                out.addAll(byDialog.values());
+            } catch (Exception e) {
+                FileLog.e("AyuFilter.loadChatFilterEntries", e);
+            }
+        }
+        if (out.isEmpty()) {
+            ArrayList<ChatFilterEntry> legacy = loadChatFilterEntriesFromPrefs();
+            if (legacy != null && !legacy.isEmpty()) {
+                saveChatFilterEntries(legacy);
+                return legacy;
+            }
+        }
+        return out;
+    }
+
+    private static ArrayList<ChatFilterEntry> loadChatFilterEntriesFromPrefs() {
+        try {
+            String str = NaConfig.INSTANCE.getRegexChatFiltersData().String();
+            if (TextUtils.isEmpty(str) || "[]".equals(str)) {
+                return null;
+            }
+            ChatFilterEntry[] arr = new Gson().fromJson(str, ChatFilterEntry[].class);
+            if (arr == null || arr.length == 0) {
+                return null;
+            }
+            ArrayList<ChatFilterEntry> list = new ArrayList<>();
+            for (ChatFilterEntry entry : arr) {
+                if (entry == null || entry.filters == null) continue;
+                for (FilterModel f : entry.filters) {
+                    if (f != null) {
+                        f.ensureId();
+                        f.buildPattern();
+                    }
+                }
+                list.add(entry);
+            }
+            return list;
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.loadChatFilterEntriesFromPrefs", e);
+            return null;
+        }
+    }
+
     public static void saveChatFilterEntries(ArrayList<ChatFilterEntry> entries) {
-        var str = new Gson().toJson(entries);
-        NaConfig.INSTANCE.getRegexChatFiltersData().setConfigString(str);
-        AyuFilter.rebuildCache();
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao == null) {
+            return;
+        }
+        try {
+            List<RegexFilter> shared = dao.getShared();
+            dao.deleteAllFilters();
+            for (RegexFilter s : shared) {
+                dao.insert(s);
+            }
+            for (ChatFilterEntry entry : entries) {
+                if (entry == null || entry.filters == null) continue;
+                for (FilterModel m : entry.filters) {
+                    m.ensureId();
+                    m.buildPattern();
+                    dao.insert(toRow(m, entry.dialogId));
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.saveChatFilterEntries", e);
+        }
+        NaConfig.INSTANCE.getRegexChatFiltersData().setConfigString(new Gson().toJson(entries));
+        rebuildCache();
     }
 
     public static ArrayList<FilterModel> getChatFiltersForDialog(long dialogId) {
@@ -530,19 +646,16 @@ public class AyuFilter {
         if (target == null) {
             target = new ChatFilterEntry();
             target.dialogId = dialogId;
+            target.filters = new ArrayList<>();
             entries.add(target);
         }
-
-        FilterModel filterModel = new FilterModel();
-        filterModel.regex = text;
-        filterModel.caseInsensitive = caseInsensitive;
-        filterModel.reversed = reversed;
-        filterModel.enabled = true;
-        if (target.filters == null) {
-            target.filters = new ArrayList<>();
-        }
-        target.filters.add(0, filterModel);
-
+        FilterModel m = new FilterModel();
+        m.regex = text;
+        m.caseInsensitive = caseInsensitive;
+        m.reversed = reversed;
+        m.enabled = true;
+        m.buildPattern();
+        target.filters.add(0, m);
         saveChatFilterEntries(entries);
     }
 
@@ -551,77 +664,107 @@ public class AyuFilter {
     }
 
     public static void editChatFilter(long dialogId, int filterIdx, String text, boolean caseInsensitive, boolean reversed) {
-        var entries = new ArrayList<>(getChatFilterEntries());
+        var entries = getChatFilterEntries();
+        ChatFilterEntry target = null;
         for (var e : entries) {
             if (e.dialogId == dialogId) {
-                if (e.filters != null && filterIdx >= 0 && filterIdx < e.filters.size()) {
-                    var fm = e.filters.get(filterIdx);
-                    fm.regex = text;
-                    fm.caseInsensitive = caseInsensitive;
-                    fm.reversed = reversed;
-                    saveChatFilterEntries(entries);
-                }
-                return;
+                target = e;
+                break;
             }
         }
+        if (target == null || target.filters == null) return;
+        if (filterIdx < 0 || filterIdx >= target.filters.size()) return;
+        FilterModel m = target.filters.get(filterIdx);
+        m.regex = text;
+        m.caseInsensitive = caseInsensitive;
+        m.reversed = reversed;
+        m.buildPattern();
+        saveChatFilterEntries(entries);
     }
 
     public static void removeChatFilter(long dialogId, int filterIdx) {
-        var entries = new ArrayList<>(getChatFilterEntries());
-        for (int i = 0; i < entries.size(); i++) {
-            var e = entries.get(i);
+        var entries = getChatFilterEntries();
+        ChatFilterEntry target = null;
+        for (var e : entries) {
             if (e.dialogId == dialogId) {
-                if (e.filters != null && filterIdx >= 0 && filterIdx < e.filters.size()) {
-                    e.filters.remove(filterIdx);
-                    if (e.filters.isEmpty()) {
-                        entries.remove(i);
-                    }
-                    saveChatFilterEntries(entries);
-                }
-                return;
+                target = e;
+                break;
             }
         }
+        if (target == null || target.filters == null) return;
+        if (filterIdx < 0 || filterIdx >= target.filters.size()) return;
+        target.filters.remove(filterIdx);
+        if (target.filters.isEmpty()) {
+            entries.remove(target);
+        }
+        saveChatFilterEntries(entries);
     }
 
+
     private static HashSet<Long> getExcludedDialogs() {
-        if (excludedDialogs == null) {
-            synchronized (cacheLock) {
-                if (excludedDialogs == null) {
-                    try {
-                        String str = NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().String();
-                        Long[] arr = new Gson().fromJson(str, Long[].class);
-                        excludedDialogs = new HashSet<>();
-                        if (arr != null) {
-                            excludedDialogs.addAll(Arrays.asList(arr));
-                        }
-                    } catch (Exception e) {
-                        excludedDialogs = new HashSet<>();
-                    }
-                }
+        HashSet<Long> set = new HashSet<>();
+        try {
+            String str = NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().String();
+            Long[] arr = new Gson().fromJson(str, Long[].class);
+            if (arr != null) {
+                set.addAll(Arrays.asList(arr));
             }
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.getExcludedDialogs", e);
         }
-        return excludedDialogs;
+        return set;
     }
 
     public static boolean isDialogExcluded(long dialogId) {
         return getExcludedDialogs().contains(dialogId);
     }
 
+    public static void setDialogExcluded(long dialogId, boolean excluded) {
+        HashSet<Long> set = new HashSet<>(getExcludedDialogs());
+        boolean changed;
+        if (excluded) {
+            changed = set.add(dialogId);
+        } else {
+            changed = set.remove(dialogId);
+        }
+        if (changed) {
+            Long[] arr = set.toArray(new Long[0]);
+            String str = new Gson().toJson(arr);
+            NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().setConfigString(str);
+            AyuFilterCache.clearDialog(dialogId);
+        }
+    }
+
+
     public static ArrayList<ExcludedFilterEntry> getExcludedFilterEntries() {
-        if (excludedFilterEntries == null) {
+        ArrayList<ExcludedFilterEntry> out = new ArrayList<>();
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao == null) {
+            return out;
+        }
+        try {
+            List<RegexFilterGlobalExclusion> rows = dao.getAllExclusions();
+            for (RegexFilterGlobalExclusion row : rows) {
+                ExcludedFilterEntry entry = new ExcludedFilterEntry();
+                entry.dialogId = row.dialogId;
+                entry.filterId = row.filterId;
+                out.add(entry);
+            }
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.getExcludedFilterEntries", e);
+        }
+        return out;
+    }
+
+    private static HashMap<Long, HashSet<String>> getExcludedSharedFilterIdsByDialog() {
+        if (excludedSharedFilterIdsByDialog == null) {
             synchronized (cacheLock) {
-                if (excludedFilterEntries == null) {
-                    try {
-                        String str = NaConfig.INSTANCE.getRegexFiltersExcludedEntriesData().String();
-                        ExcludedFilterEntry[] arr = new Gson().fromJson(str, ExcludedFilterEntry[].class);
-                        excludedFilterEntries = arr != null ? new ArrayList<>(Arrays.asList(arr)) : new ArrayList<>();
-                    } catch (Exception e) {
-                        excludedFilterEntries = new ArrayList<>();
-                    }
+                if (excludedSharedFilterIdsByDialog == null) {
+                    excludedSharedFilterIdsByDialog = buildExcludedSharedFilterIdsMap(getExcludedFilterEntries());
                 }
             }
         }
-        return excludedFilterEntries;
+        return excludedSharedFilterIdsByDialog;
     }
 
     private static HashMap<Long, HashSet<String>> buildExcludedSharedFilterIdsMap(ArrayList<ExcludedFilterEntry> entries) {
@@ -636,17 +779,6 @@ public class AyuFilter {
             result.computeIfAbsent(entry.dialogId, k -> new HashSet<>()).add(entry.filterId);
         }
         return result;
-    }
-
-    private static HashMap<Long, HashSet<String>> getExcludedSharedFilterIdsByDialog() {
-        if (excludedSharedFilterIdsByDialog == null) {
-            synchronized (cacheLock) {
-                if (excludedSharedFilterIdsByDialog == null) {
-                    excludedSharedFilterIdsByDialog = buildExcludedSharedFilterIdsMap(getExcludedFilterEntries());
-                }
-            }
-        }
-        return excludedSharedFilterIdsByDialog;
     }
 
     public static HashSet<String> getExcludedSharedFilterIds(long dialogId) {
@@ -684,16 +816,6 @@ public class AyuFilter {
         return filter.reversed ? "!= " + regex : regex;
     }
 
-    private static void saveExcludedFilterEntries(ArrayList<ExcludedFilterEntry> entries) {
-        String str = new Gson().toJson(entries != null ? entries : new ArrayList<>());
-        NaConfig.INSTANCE.getRegexFiltersExcludedEntriesData().setConfigString(str);
-        synchronized (cacheLock) {
-            excludedFilterEntries = entries != null ? entries : new ArrayList<>();
-            excludedSharedFilterIdsByDialog = buildExcludedSharedFilterIdsMap(excludedFilterEntries);
-            AyuFilterCache.clearAll();
-        }
-    }
-
     public static void setSharedFilterExcluded(long dialogId, String filterId, boolean excluded) {
         if (dialogId == 0L || TextUtils.isEmpty(filterId)) {
             return;
@@ -706,23 +828,36 @@ public class AyuFilter {
     }
 
     private static void addSharedFilterExclusion(long dialogId, String filterId) {
-        HashSet<String> existing = getExcludedSharedFilterIdsByDialog().get(dialogId);
-        if (existing != null && existing.contains(filterId)) {
-            return;
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao == null) return;
+        try {
+            if (dao.isExcluded(dialogId, filterId)) {
+                return;
+            }
+            RegexFilterGlobalExclusion row = new RegexFilterGlobalExclusion();
+            row.dialogId = dialogId;
+            row.filterId = filterId;
+            dao.insertExclusion(row);
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.addSharedFilterExclusion", e);
         }
-        ArrayList<ExcludedFilterEntry> entries = new ArrayList<>(getExcludedFilterEntries());
-        ExcludedFilterEntry entry = new ExcludedFilterEntry();
-        entry.dialogId = dialogId;
-        entry.filterId = filterId;
-        entries.add(entry);
-        saveExcludedFilterEntries(entries);
+        synchronized (cacheLock) {
+            excludedSharedFilterIdsByDialog = null;
+            AyuFilterCache.clearAll();
+        }
     }
 
     private static void removeSharedFilterExclusion(long dialogId, String filterId) {
-        ArrayList<ExcludedFilterEntry> entries = new ArrayList<>(getExcludedFilterEntries());
-        boolean removed = entries.removeIf(e -> e != null && e.dialogId == dialogId && TextUtils.equals(e.filterId, filterId));
-        if (removed) {
-            saveExcludedFilterEntries(entries);
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao == null) return;
+        try {
+            dao.deleteExclusion(dialogId, filterId);
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.removeSharedFilterExclusion", e);
+        }
+        synchronized (cacheLock) {
+            excludedSharedFilterIdsByDialog = null;
+            AyuFilterCache.clearAll();
         }
     }
 
@@ -730,44 +865,34 @@ public class AyuFilter {
         if (TextUtils.isEmpty(filterId)) {
             return;
         }
-        ArrayList<ExcludedFilterEntry> entries = new ArrayList<>(getExcludedFilterEntries());
-        boolean changed = false;
-        for (int i = entries.size() - 1; i >= 0; i--) {
-            ExcludedFilterEntry entry = entries.get(i);
-            if (entry != null && TextUtils.equals(entry.filterId, filterId)) {
-                entries.remove(i);
-                changed = true;
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao != null) {
+            try {
+                dao.deleteExclusionsByFilterId(filterId);
+            } catch (Exception e) {
+                FileLog.e("AyuFilter.removeExcludedSharedFilterEntries", e);
             }
         }
-        if (changed) {
-            saveExcludedFilterEntries(entries);
-        }
-    }
-
-    public static void setDialogExcluded(long dialogId, boolean excluded) {
-        HashSet<Long> set = new HashSet<>(getExcludedDialogs());
-        boolean changed;
-        if (excluded) {
-            changed = set.add(dialogId);
-        } else {
-            changed = set.remove(dialogId);
-        }
-        if (changed) {
-            Long[] arr = set.toArray(new Long[0]);
-            String str = new Gson().toJson(arr);
-            NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().setConfigString(str);
-            synchronized (cacheLock) {
-                excludedDialogs = set;
-            }
-            AyuFilterCache.clearDialog(dialogId);
+        synchronized (cacheLock) {
+            excludedSharedFilterIdsByDialog = null;
+            AyuFilterCache.clearAll();
         }
     }
 
     public static void clearAllFilters() {
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao != null) {
+            try {
+                dao.deleteAllFilters();
+                dao.deleteAllExclusions();
+            } catch (Exception e) {
+                FileLog.e("AyuFilter.clearAllFilters", e);
+            }
+        }
         NaConfig.INSTANCE.getRegexFiltersData().setConfigString("[]");
         NaConfig.INSTANCE.getRegexChatFiltersData().setConfigString("[]");
-        NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().setConfigString("[]");
         NaConfig.INSTANCE.getRegexFiltersExcludedEntriesData().setConfigString("[]");
+        NaConfig.INSTANCE.getRegexFiltersExcludedDialogs().setConfigString("[]");
         NaConfig.INSTANCE.getCustomFilteredUsersData().setConfigString("[]");
         synchronized (cacheLock) {
             customFilteredUsers = new HashSet<>();
@@ -775,6 +900,7 @@ public class AyuFilter {
         }
         rebuildCache();
     }
+
 
     private static HashSet<Long> getBlockedChannels() {
         if (blockedChannels == null) {
@@ -871,6 +997,7 @@ public class AyuFilter {
     public static void onMessageEdited(int msgId, long dialogId) {
         AyuFilterCache.invalidate(dialogId, msgId);
     }
+
 
     private static void ensureCustomFilteredUsersLoaded() {
         if (customFilteredUsers != null && customFilteredUsersData != null) {
@@ -1032,6 +1159,30 @@ public class AyuFilter {
         }
     }
 
+
+    private static RegexFilter toRow(FilterModel m, Long dialogId) {
+        RegexFilter row = new RegexFilter();
+        row.id = m.id;
+        row.text = m.regex;
+        row.dialogId = dialogId;
+        row.enabled = m.enabled;
+        row.caseInsensitive = m.caseInsensitive;
+        row.reversed = m.reversed;
+        return row;
+    }
+
+    private static void insertFilterRow(FilterModel m, Long dialogId) {
+        RegexFilterDao dao = AyuData.getRegexFilterDao();
+        if (dao == null) return;
+        m.ensureId();
+        try {
+            dao.insert(toRow(m, dialogId));
+        } catch (Exception e) {
+            FileLog.e("AyuFilter.insertFilterRow", e);
+        }
+    }
+
+
     public static class FilterModel {
         @Expose
         public String id = UUID.randomUUID().toString();
@@ -1045,7 +1196,6 @@ public class AyuFilter {
         public boolean reversed;
         public Pattern pattern;
 
-        // Legacy fields for deserialization migration only
         public ArrayList<Long> enabledGroups;
         public ArrayList<Long> disabledGroups;
 

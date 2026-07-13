@@ -38,6 +38,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.Easings;
+import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
@@ -49,7 +50,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class AppIconsSelectorCell extends RecyclerListView implements NotificationCenter.NotificationCenterDelegate {
-    public final static float ICONS_ROUND_RADIUS = 18;
+    public final static float ICONS_ROUND_RADIUS = 100;
 
     private List<LauncherIconController.LauncherIcon> availableIcons = new ArrayList<>();
     private LinearLayoutManager linearLayoutManager;
@@ -58,13 +59,13 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
     public AppIconsSelectorCell(Context context, BaseFragment fragment, int currentAccount) {
         super(context);
         this.currentAccount = currentAccount;
-        setPadding(0, AndroidUtilities.dp(12), 0, AndroidUtilities.dp(12));
+        setPadding(6, AndroidUtilities.dp(12), 6, AndroidUtilities.dp(12));
 
         setFocusable(false);
         setItemAnimator(null);
         setLayoutAnimation(null);
 
-        setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
+        setLayoutManager(linearLayoutManager = new ExtendedGridLayoutManager(getContext(), 4));
         setAdapter(new Adapter() {
 
             @NonNull
@@ -91,20 +92,7 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
         addItemDecoration(new ItemDecoration() {
             @Override
             public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
-                int pos = parent.getChildViewHolder(view).getAdapterPosition();
-                if (pos == 0) {
-                    outRect.left = AndroidUtilities.dp(18);
-                }
-                if (pos == getAdapter().getItemCount() - 1) {
-                    outRect.right = AndroidUtilities.dp(18);
-                } else {
-                    int itemCount = getAdapter().getItemCount();
-                    if (itemCount == 4) {
-                        outRect.right = (getWidth() - AndroidUtilities.dp(36) - AndroidUtilities.dp(58) * itemCount) / (itemCount - 1);
-                    } else {
-                        outRect.right = AndroidUtilities.dp(24);
-                    }
-                }
+                outRect.bottom = AndroidUtilities.dp(10);
             }
         });
         setOnItemClickListener((view, position) -> {
@@ -222,10 +210,11 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
             setWillNotDraw(false);
             iconView = new AdaptiveIconImageView(context);
             iconView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
-            addView(iconView, LayoutHelper.createLinear(58, 58, Gravity.CENTER_HORIZONTAL));
+            addView(iconView, LayoutHelper.createLinear(65, 65, Gravity.CENTER_HORIZONTAL));
 
             titleView = new TextView(context);
-            titleView.setSingleLine();
+            titleView.setGravity(Gravity.CENTER_HORIZONTAL);
+            titleView.setLineSpacing(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 5.0f,  getResources().getDisplayMetrics()), 1.0f);
             titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 0));
@@ -233,7 +222,7 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
             outlinePaint.setStyle(Paint.Style.STROKE);
             outlinePaint.setStrokeWidth(Math.max(2, AndroidUtilities.dp(0.5f)));
 
-            fillPaint.setColor(Color.WHITE);
+            fillPaint.setColor(Color.TRANSPARENT);
         }
 
         @Override

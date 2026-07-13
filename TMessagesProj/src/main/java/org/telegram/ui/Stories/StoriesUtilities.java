@@ -1420,7 +1420,13 @@ public class StoriesUtilities {
                 if (parent instanceof RecyclerView) {
                     placeProvider = StoriesListPlaceProvider.of((RecyclerListView) parent);
                 }
-                fragment.getOrCreateStoryViewer().open(fragment.getContext(), dialogId, placeProvider);
+                final StoriesListPlaceProvider finalPlaceProvider = placeProvider;
+                int account = UserConfig.selectedAccount;
+                Runnable proceed = () -> fragment.getOrCreateStoryViewer().open(fragment.getContext(), dialogId, finalPlaceProvider);
+                if (com.radolyn.ayugram.utils.AyuGhostUtils.maybeSuggestGhostBeforeStory(fragment.getContext(), account, dialogId, proceed)) {
+                    return;
+                }
+                proceed.run();
             }
         }
 

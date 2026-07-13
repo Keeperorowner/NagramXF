@@ -142,7 +142,10 @@
     <string name="MarkReadAfterSend">Отмечать прочитанным после взаимодействия</string>
     <string name="GhostModeNotice">Долгое нажатие на любую опцию предотвращает её изменение при переключении режима «Призрака».</string>
     <string name="MarkReadAfterSendNotice">Когда вы отправляете новое сообщение или нажимаете на реакцию, сообщение автоматически отмечается как прочитанное.</string>
-    <string name="SendWithoutSoundRowNotice">Автоматически отправлять исходящие сообщения без звука.</string>
+    <string name="SendWithoutSoundRowNotice">Выберите, когда исходящие сообщения должны отправляться без звука.</string>
+    <string name="SendWithoutSoundByDefaultNever">Никогда</string>
+    <string name="SendWithoutSoundByDefaultInGhostMode">Только в режиме «Призрака»</string>
+    <string name="SendWithoutSoundByDefaultAlways">Всегда</string>
     <string name="GhostReadMessage">Прочитать сообщение</string>
     <string name="GhostModeExcludeRead">Исключить прочтение</string>
     <string name="GhostModeExcludeTyping">Исключить ввод текста</string>
@@ -323,4 +326,6 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Показывает содержимое уведомлений даже при включённой блокировке паролем.</string>
     <string name="StickerSavedHint">Стикер сохранён в галерею.</string>
     <string name="StickerCopied">Стикер скопирован в буфер обмена.</string>
+    <string name="MainTabsForceOpenChats">Всегда искать в чатах</string>
+    <string name="MainTabsForceOpenChatsDesc">Если включено, кнопка поиска всегда открывает поиск по чатам. Если выключено, открывается контекстный поиск для текущего экрана (например, «Настройки» или «Контакты»).</string>
 </resources>

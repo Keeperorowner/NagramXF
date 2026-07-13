@@ -37,6 +37,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BasePermissionsActivity;
@@ -67,7 +69,13 @@ import tw.nekomimi.nekogram.utils.AlertUtil;
 public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
     private static final int MENU_SEARCH = 1;
-    private static final int MENU_SYNC = 2;
+    private static final int MENU_OVERFLOW = 2;
+    private static final int MENU_IMPORT = 3;
+    private static final int MENU_EXPORT = 4;
+    private static final int MENU_RESET = 5;
+    private static final int MENU_RESTART = 6;
+
+    private ActionBarMenuItem overflowItem;
 
     private int generalRow;
     private int appearanceRow;
@@ -77,13 +85,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int passcodeRow;
     private int experimentRow;
     private int categoriesEndRow;
-
-    private int importSettingsRow;
-    private int exportSettingsRow;
-    private int resetSettingsRow;
-    private int appRestartRow;
-    private int nSettingsEndRow;
-
+    private int cloudSyncRow;
+    private int cloudSyncEndRow;
 
     private int aboutRow;
 
@@ -104,11 +107,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         experimentRow = addRow();
         categoriesEndRow = addRow();
 
-        importSettingsRow = addRow();
-        exportSettingsRow = addRow();
-        resetSettingsRow = addRow();
-        appRestartRow = addRow();
-        nSettingsEndRow = addRow();
+        cloudSyncRow = addRow();
+        cloudSyncEndRow = addRow();
 
         aboutRow = addRow();
     }
@@ -119,7 +119,17 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
         ActionBarMenu menu = actionBar.createMenu();
         menu.addItem(MENU_SEARCH, R.drawable.ic_ab_search, resourcesProvider);
-        menu.addItem(MENU_SYNC, R.drawable.cloud_sync, resourcesProvider);
+        overflowItem = menu.addItem(MENU_OVERFLOW, R.drawable.ic_ab_other, resourcesProvider);
+        overflowItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
+        overflowItem.addSubItem(MENU_IMPORT, R.drawable.msg_photo_settings, getString(R.string.ImportSettings));
+        overflowItem.addSubItem(MENU_EXPORT, R.drawable.msg_instant_link, getString(R.string.BackupSettings));
+        overflowItem.addColoredGap();
+        ActionBarMenuSubItem resetSub = overflowItem.addSubItem(MENU_RESET, R.drawable.msg_reset, getString(R.string.ResetSettings));
+        int red = Theme.getColor(Theme.key_text_RedRegular, resourcesProvider);
+        resetSub.setColors(red, red);
+        resetSub.setSelectorColor(Theme.multAlpha(red, .12f));
+        overflowItem.setOnClickListener(v -> showOverflowMenu());
+        overflowItem.setLongClickEnabled(false);
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -128,8 +138,33 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     finishFragment();
                 } else if (id == MENU_SEARCH) {
                     showSettingsSearchDialog();
-                } else if (id == MENU_SYNC) {
-                    CloudSettingsHelper.getInstance().showDialog(NekoSettingsActivity.this);
+                } else if (id == MENU_IMPORT) {
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        openFilePicker();
+                    } else {
+                        DocumentSelectActivity activity = getDocumentSelectActivity(getParentActivity());
+                        if (activity != null) {
+                            presentFragment(activity);
+                        }
+                    }
+                } else if (id == MENU_EXPORT) {
+                    SettingsBackupHelper.backupSettings(getParentActivity(), resourceProvider);
+                } else if (id == MENU_RESET) {
+                    AlertUtil.showConfirm(getParentActivity(),
+                            getString(R.string.ResetSettingsAlert),
+                            R.drawable.msg_reset,
+                            getString(R.string.Reset),
+                            true,
+                            () -> {
+                                ApplicationLoader.applicationContext.getSharedPreferences("nekocloud", Activity.MODE_PRIVATE).edit().clear().commit();
+                                ApplicationLoader.applicationContext.getSharedPreferences("nekox_config", Activity.MODE_PRIVATE).edit().clear().commit();
+                                ApplicationLoader.applicationContext.getSharedPreferences("aichatconfig", Activity.MODE_PRIVATE).edit().clear().commit();
+                                ApplicationLoader.applicationContext.getSharedPreferences("pillstackconfig", Activity.MODE_PRIVATE).edit().clear().commit();
+                                NekoConfig.getPreferences().edit().clear().commit();
+                                AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
+                            });
+                } else if (id == MENU_RESTART) {
+                    AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
                 }
             }
         });
@@ -327,6 +362,20 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         }
     }
 
+    private void showOverflowMenu() {
+        if (overflowItem == null) return;
+        Context context = getContext();
+        if (context == null) return;
+        ActionBarMenuSubItem restartItem = new ActionBarMenuSubItem(context, false, true, true, resourcesProvider);
+        restartItem.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry);
+        restartItem.setMinimumWidth(AndroidUtilities.dp(196));
+        restartItem.setOnClickListener(view -> {
+            overflowItem.closeSubMenu();
+            AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
+        });
+        overflowItem.toggleSubMenu(restartItem, overflowItem);
+    }
+
     @Override
     protected String getActionBarTitle() {
         return getString(R.string.NekoSettings);
@@ -347,37 +396,12 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoPasscodeSettingsActivity());
         } else if (position == experimentRow) {
             presentFragment(new NekoExperimentalSettingsActivity());
+        } else if (position == cloudSyncRow) {
+            CloudSettingsHelper.getInstance().showDialog(NekoSettingsActivity.this);
         } else if (position == translatorRow) {
             presentFragment(new NekoTranslatorSettingsActivity());
         } else if (position == aboutRow) {
             presentFragment(new NekoAboutActivity());
-        } else if (position == importSettingsRow) {
-            if (Build.VERSION.SDK_INT >= 33) {
-                openFilePicker();
-            } else {
-                DocumentSelectActivity activity = getDocumentSelectActivity(getParentActivity());
-                if (activity != null) {
-                    presentFragment(activity);
-                }
-            }
-        } else if (position == resetSettingsRow) {
-            AlertUtil.showConfirm(getParentActivity(),
-                    getString(R.string.ResetSettingsAlert),
-                    R.drawable.msg_reset,
-                    getString(R.string.Reset),
-                    true,
-                    () -> {
-                        ApplicationLoader.applicationContext.getSharedPreferences("nekocloud", Activity.MODE_PRIVATE).edit().clear().commit();
-                        ApplicationLoader.applicationContext.getSharedPreferences("nekox_config", Activity.MODE_PRIVATE).edit().clear().commit();
-                        ApplicationLoader.applicationContext.getSharedPreferences("aichatconfig", Activity.MODE_PRIVATE).edit().clear().commit();
-                        ApplicationLoader.applicationContext.getSharedPreferences("pillstackconfig", Activity.MODE_PRIVATE).edit().clear().commit();
-                        NekoConfig.getPreferences().edit().clear().commit();
-                        AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
-                    });
-        } else if (position == exportSettingsRow) {
-            SettingsBackupHelper.backupSettings(getParentActivity(), resourceProvider);
-        } else if (position == appRestartRow) {
-            AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
         }
     }
 
@@ -416,14 +440,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(getString(R.string.PasscodeNeko), R.drawable.msg_permissions, true);
                     } else if (position == experimentRow) {
                         textCell.setTextAndIcon(getString(R.string.Experimental), R.drawable.msg_fave, true);
-                    } else if (position == importSettingsRow) {
-                        textCell.setTextAndIcon(getString(R.string.ImportSettings), R.drawable.msg_photo_settings, true);
-                    } else if (position == exportSettingsRow) {
-                        textCell.setTextAndIcon(getString(R.string.BackupSettings), R.drawable.msg_instant_link, true);
-                    } else if (position == resetSettingsRow) {
-                        textCell.setTextAndIcon(getString(R.string.ResetSettings), R.drawable.msg_reset, true);
-                    } else if (position == appRestartRow) {
-                        textCell.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry, true);
+                    } else if (position == cloudSyncRow) {
+                        textCell.setTextAndIcon(getString(R.string.CloudConfig), R.drawable.sync_outline_28, true);
                     } else if (position == aboutRow) {
                         textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info, true);
                     }
@@ -435,10 +453,9 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == categoriesEndRow || position == nSettingsEndRow) {
+            if (position == categoriesEndRow || position == cloudSyncEndRow) {
                 return TYPE_SHADOW;
-            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == passcodeRow || position == experimentRow || position == translatorRow ||
-                    position == importSettingsRow || position == exportSettingsRow || position == resetSettingsRow || position == appRestartRow ||
+            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == passcodeRow || position == experimentRow || position == cloudSyncRow || position == translatorRow ||
                     position == aboutRow) {
                 return TYPE_TEXT;
             }

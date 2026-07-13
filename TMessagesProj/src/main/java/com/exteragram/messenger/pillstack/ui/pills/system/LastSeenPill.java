@@ -13,7 +13,8 @@ import android.widget.LinearLayout;
 import com.exteragram.messenger.pillstack.core.PillStackConfig;
 import com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity;
 import com.exteragram.messenger.pillstack.ui.pills.BasePill;
-import com.radolyn.ayugram.utils.AyuGhostUtils;
+import com.radolyn.ayugram.AyuConstants;
+import com.radolyn.ayugram.AyuWorker;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -50,6 +51,7 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
     private final AnimatedTextView textView;
 
     private boolean requestInFlight;
+    private boolean waitingForWorkerFetch;
     private boolean statusExpanded;
 
     private final Runnable hideStatusRunnable = () -> hideStatusText(true);
@@ -143,7 +145,7 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
     }
 
     private void requestStatus(boolean persistent) {
-        if (requestInFlight) {
+        if (requestInFlight || waitingForWorkerFetch) {
             return;
         }
         int account = getAccount();
@@ -151,17 +153,24 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
         if (selfId == 0) {
             return;
         }
-        requestInFlight = true;
+        requestInFlight = false;
+        waitingForWorkerFetch = true;
         if (!loading) {
             startLoading();
         }
+        AyuWorker.requestLastSeenUpdate(account);
+    }
 
-        if (NekoConfig.sendOfflinePacketAfterOnline.Bool()) {
-            AyuGhostUtils.performStatusRequest(true);
-            postDelayed(() -> fetchSelfUser(account, selfId, persistent), 1000L);
-        } else {
-            fetchSelfUser(account, selfId, persistent);
+    private void onWorkerFetchReady() {
+        waitingForWorkerFetch = false;
+        int account = getAccount();
+        long selfId = UserConfig.getInstance(account).getClientUserId();
+        if (selfId == 0) {
+            finishRequest(null, false);
+            return;
         }
+        requestInFlight = true;
+        fetchSelfUser(account, selfId, true);
     }
 
     private void fetchSelfUser(int account, long selfId, boolean persistent) {
@@ -191,6 +200,7 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
 
     private void finishRequest(TLRPC.User user, boolean persistent) {
         requestInFlight = false;
+        waitingForWorkerFetch = false;
         stopLoading();
         if (!isAttachedToWindow()) {
             return;
@@ -342,6 +352,7 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
         super.onAttachedToWindow();
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pillStackSettingsChanged);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
+        NotificationCenter.getGlobalInstance().addObserver(this, AyuConstants.LAST_SEEN_PILL_FETCH);
         boolean pending = PillStackConfig.checkAndClearPendingUpdate(getPillId());
         onUpdateData(pending);
     }
@@ -351,10 +362,12 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
         super.onDetachedFromWindow();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pillStackSettingsChanged);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
+        NotificationCenter.getGlobalInstance().removeObserver(this, AyuConstants.LAST_SEEN_PILL_FETCH);
         removeCallbacks(hideStatusRunnable);
         removeCallbacks(finishHideRunnable);
         statusExpanded = false;
         requestInFlight = false;
+        waitingForWorkerFetch = false;
         setTextSpacing(0);
         stopLoading();
         textView.cancelAnimation();
@@ -368,6 +381,10 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
                 && PillStackConfig.shouldUpdatePill(args, getPillId())) {
             PillStackConfig.checkAndClearPendingUpdate(getPillId());
             onUpdateData(true);
+        } else if (id == AyuConstants.LAST_SEEN_PILL_FETCH) {
+            if (waitingForWorkerFetch) {
+                onWorkerFetchReady();
+            }
         } else if (id == NotificationCenter.reloadInterface) {
             updateColors();
             if (isPeriodicOnlineEnabled() || statusExpanded) {

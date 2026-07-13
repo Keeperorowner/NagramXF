@@ -37,7 +37,7 @@
     <string name="SeparateHeaders">分离标题</string>
     <string name="RegexFiltersMaskMessages">将过滤或被屏蔽的消息遮罩而不是隐藏</string>
     <string name="RegexFiltersMaskMessagesShort">遮罩而不隐藏</string>
-    <string name="RegexFiltersMaskMessagesAbout">过滤或被屏蔽的消息会以遮罩占位形式保留在聊天中，而不是直接隐藏。</string>
+    <string name="RegexFiltersMaskMessagesAbout">过滤或被屏蔽的消息会以遮罩占位形式保留在聊天中，而不是直接隐藏。开启后反向表达式会失效。</string>
     <string name="RegexFiltersHideOnlyMatchedShort">只隐藏正则内容</string>
     <string name="RegexFiltersHideOnlyMatchedAbout">仅将正则匹配到的内容以剧透遮罩隐藏，而不是遮罩整条消息。</string>
     <string name="UseSystemAiService">使用系统 AI 服务</string>
@@ -174,6 +174,7 @@
     <string name="HideFilteredMessagesMenuText">隐藏过滤消息</string>
     <string name="HideProxySponsorChannel">隐藏代理赞助商频道</string>
     <string name="hideSponsoredMessage">隐藏赞助消息</string>
+    <string name="DisableAds">禁用广告</string>
     <string name="StickerSizeLeft">小</string>
     <string name="StickerSizeRight">大</string>
     <string name="UseScheduledMessages">定时发送消息</string>
@@ -268,4 +269,13 @@
     <string name="AIError503">服务不可用</string>
     <string name="AIError503Info">服务过载，请稍后重试。</string>
     <string name="TabStyleStroke">标签指示器描边</string>
+    <string name="SuggestGhostModeBeforeViewingStory">查看 Story 前提示开启幽灵模式</string>
+    <string name="SuggestGhostModeBeforeStoryTitle">幽灵模式</string>
+    <string name="SuggestGhostModeBeforeStoryMessage">查看此 Story 会暴露你的在线状态。是否先开启幽灵模式？</string>
+    <string name="SuggestGhostModeBeforeStoryEnable">开启幽灵模式</string>
+    <string name="SuggestGhostModeBeforeStorySkip">仍然查看</string>
+    <string name="SaveReadDate">保存已读回执</string>
+    <string name="SaveReadDateAbout">记录你的发出消息被阅读的时间，该时间会显示在消息信息中。</string>
+    <string name="AyuReadDate">已读</string>
+    <string name="AyuReadDateUnknown">未知</string>
 </resources>

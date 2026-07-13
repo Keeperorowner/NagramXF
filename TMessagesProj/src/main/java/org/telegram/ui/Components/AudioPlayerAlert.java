@@ -126,6 +126,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate, DownloadController.FileDownloadProgressListener {
@@ -3233,9 +3234,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             document = null;
         }
         if (fmessages != null) {
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, dialogId, false, false, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, dialogId, false, false, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
         } else {
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(document, null, messageObject.messageOwner.attachPath, dialogId, null, null, null, null, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, 0, savedMusicList, null, false, false));
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(document, null, messageObject.messageOwner.attachPath, dialogId, null, null, null, null, null, null, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, 0, savedMusicList, null, false, false));
         }
         final BaseFragment lastFragment = LaunchActivity.getLastFragment();
         if (lastFragment != null) {
@@ -3279,12 +3280,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 for (int a = 0; a < dids.size(); a++) {
                     long did = dids.get(a).dialogId;
                     if (message != null) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, null, false));
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, null, false));
                     }
                     if (fmessages != null) {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, false, false, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
                     } else {
-                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(document, null, messageObject.messageOwner.attachPath, did, null, null, null, null, null, null, notify && !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), scheduleDate, 0, 0, savedMusicList, null, false, false));
+                        SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(document, null, messageObject.messageOwner.attachPath, did, null, null, null, null, null, null, notify && !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), scheduleDate, 0, 0, savedMusicList, null, false, false));
                     }
                 }
                 fragment1.finishFragment();

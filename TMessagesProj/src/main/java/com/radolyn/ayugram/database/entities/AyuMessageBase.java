@@ -30,6 +30,7 @@ public abstract class AyuMessageBase {
     public String fwdName;
     public int fwdDate;
     public String fwdPostAuthor;
+    public String postAuthor;
 
     public int replyFlags;
     public int replyMessageId;

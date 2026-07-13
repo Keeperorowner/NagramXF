@@ -453,6 +453,7 @@ public abstract class AyuMessageUtils {
                 }
             }
         }
+        target.post_author = source.postAuthor;
         target.message = source.text;
         target.entities = deserializeMultiple(
                 source.textEntities,
@@ -536,6 +537,7 @@ public abstract class AyuMessageUtils {
             }
         }
         out.entityCreateDate = prefs.getRequestCatchTime();
+        out.postAuthor = message.post_author;
         out.text = message.message;
         out.textEntities = serializeMultiple(message.entities);
         // serialize reply_markup (inline keyboard)

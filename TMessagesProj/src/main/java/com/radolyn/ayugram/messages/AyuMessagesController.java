@@ -27,6 +27,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
+import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.File;
@@ -399,6 +400,8 @@ public class AyuMessagesController {
             } else if (reaction.reaction instanceof TLRPC.TL_reactionCustomEmoji) {
                 deletedReaction.documentId = ((TLRPC.TL_reactionCustomEmoji) reaction.reaction).document_id;
                 deletedReaction.isCustom = true;
+            } else if (reaction.reaction instanceof TLRPC.TL_reactionPaid) {
+                deletedReaction.isPaid = true;
             } else {
                 continue;
             }

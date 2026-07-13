@@ -186,6 +186,7 @@ import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
+import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 import java.util.Objects;
@@ -3658,9 +3659,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 } else {
                     boolean shownDialog = false;
                     if (currentAttachLayout == photoLayout || currentAttachLayout == photoPreviewLayout) {
-                        shownDialog = sendPressed(!NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, effectId, isCaptionAbove());
+                        shownDialog = sendPressed(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, effectId, isCaptionAbove());
                     } else {
-                        if (!currentAttachLayout.sendSelectedItems(!NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, effectId, isCaptionAbove())) {
+                        if (!currentAttachLayout.sendSelectedItems(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, effectId, isCaptionAbove())) {
                             allowPassConfirmationAlert = true;
                             dismiss();
                         }
@@ -3994,7 +3995,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 });
             }
             if (editingMessageObject == null && !self) {
-                boolean sendWithoutSoundNax = NaConfig.INSTANCE.getSilentMessageByDefault().Bool();
+                boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
                 options.add(sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off, sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), () -> {
                     final long effectId = messageSendPreview != null ? messageSendPreview.getSelectedEffect() : 0;
                     writeButton.setEffect(ChatAttachAlert.this.effectId = effectId);
@@ -4318,9 +4319,9 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             }, resourcesProvider);
         } else {
             if (currentAttachLayout == photoLayout || currentAttachLayout == photoPreviewLayout) {
-                sendPressed(!NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, effectId, isCaptionAbove());
+                sendPressed(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, effectId, isCaptionAbove());
             } else {
-                if (!currentAttachLayout.sendSelectedItems(!NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, effectId, isCaptionAbove())) {
+                if (!currentAttachLayout.sendSelectedItems(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, effectId, isCaptionAbove())) {
                     allowPassConfirmationAlert = true;
                     dismiss();
                 }

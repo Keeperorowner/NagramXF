@@ -13565,6 +13565,7 @@ public class MessagesStorage extends BaseController {
                 for (int b = 0; b < outbox.size(); b++) {
                     long key = outbox.keyAt(b);
                     int messageId = outbox.get(key);
+                    recordAyuOutboxRead(key, messageId);
                     database.executeFast(String.format(Locale.US, "UPDATE messages_v2 SET read_state = read_state | 1 WHERE uid = %d AND mid > 0 AND mid <= %d AND read_state IN(0,2) AND out = 1", key, messageId)).stepThis().dispose();
                 }
             }
@@ -13572,6 +13573,7 @@ public class MessagesStorage extends BaseController {
                 for (int a = 0; a < encryptedMessages.size(); a++) {
                     long dialogId = DialogObject.makeEncryptedDialogId(encryptedMessages.keyAt(a));
                     int max_date = encryptedMessages.valueAt(a);
+                    recordAyuEncryptedOutboxRead(dialogId, max_date);
                     state = database.executeFast("UPDATE messages_v2 SET read_state = read_state | 1 WHERE uid = ? AND date <= ? AND read_state IN(0,2) AND out = 1");
                     state.requery();
                     state.bindLong(1, dialogId);
@@ -13590,11 +13592,66 @@ public class MessagesStorage extends BaseController {
         }
     }
 
+    private void recordAyuOutboxRead(long dialogId, int maxId) {
+        if (!com.radolyn.ayugram.controllers.AyuSpyController.isEnabled()) {
+            return;
+        }
+        SQLiteCursor cursor = null;
+        try {
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM messages_v2 WHERE uid = %d AND mid > 0 AND mid <= %d AND read_state IN(0,2) AND out = 1", dialogId, maxId));
+            ArrayList<Integer> mids = null;
+            while (cursor.next()) {
+                if (mids == null) {
+                    mids = new ArrayList<>();
+                }
+                mids.add(cursor.intValue(0));
+            }
+            if (mids != null) {
+                com.radolyn.ayugram.controllers.AyuSpyController.onOutboxRead(currentAccount, dialogId, mids);
+            }
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+    }
+
+    private void recordAyuEncryptedOutboxRead(long dialogId, int maxDate) {
+        if (!com.radolyn.ayugram.controllers.AyuSpyController.isEnabled()) {
+            return;
+        }
+        SQLiteCursor cursor = null;
+        try {
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid FROM messages_v2 WHERE uid = %d AND date <= %d AND read_state IN(0,2) AND out = 1", dialogId, maxDate));
+            ArrayList<Integer> mids = null;
+            while (cursor.next()) {
+                if (mids == null) {
+                    mids = new ArrayList<>();
+                }
+                mids.add(cursor.intValue(0));
+            }
+            if (mids != null) {
+                com.radolyn.ayugram.controllers.AyuSpyController.onOutboxRead(currentAccount, dialogId, mids);
+            }
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+    }
+
     private void markMessagesContentAsReadInternal(long dialogId, ArrayList<Integer> mids, int date) {
         SQLiteCursor cursor = null;
         try {
             String midsStr = TextUtils.join(",", mids);
             database.executeFast(String.format(Locale.US, "UPDATE messages_v2 SET read_state = read_state | 2 WHERE mid IN (%s) AND uid = %d", midsStr, dialogId)).stepThis().dispose();
+            if (com.radolyn.ayugram.controllers.AyuSpyController.isEnabled()) {
+                com.radolyn.ayugram.controllers.AyuSpyController.onContentsRead(currentAccount, dialogId, mids);
+            }
             if (date != 0) {
                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, ttl FROM messages_v2 WHERE mid IN (%s) AND uid = %d AND ttl > 0", midsStr, dialogId));
                 ArrayList<Integer> arrayList = null;

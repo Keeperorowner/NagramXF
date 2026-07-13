@@ -40,7 +40,7 @@
     <string name="UseSystemAiServiceDesc">Поддерживаются только HyperOS и ColorOS</string>
     <string name="RegexFiltersMaskMessages">Маскировать отфильтрованные или заблокированные сообщения вместо скрытия</string>
     <string name="RegexFiltersMaskMessagesShort">Маскировать вместо скрытия</string>
-    <string name="RegexFiltersMaskMessagesAbout">Отфильтрованные или заблокированные сообщения остаются в чате как замаскированные заполнители вместо удаления.</string>
+    <string name="RegexFiltersMaskMessagesAbout">Отфильтрованные или заблокированные сообщения остаются в чате как замаскированные заполнители вместо удаления. При включении инвертированные выражения перестают работать.</string>
     <string name="RegexFiltersHideOnlyMatchedShort">Скрывать только совпадения</string>
     <string name="RegexFiltersHideOnlyMatchedAbout">Только части сообщения, совпавшие с регулярным выражением, скрываются под спойлером вместо маскирования всего сообщения.</string>
     <string name="RegexFiltersListEmpty">Пока нет фильтров. Нажмите +, чтобы добавить.</string>
@@ -195,6 +195,7 @@
     <string name="HideFilteredMessagesMenuText">Скрывать отфильтрованные</string>
     <string name="HideProxySponsorChannel">Скрыть спонсорский прокси-канал</string>
     <string name="hideSponsoredMessage">Скрыть спонсируемые сообщения</string>
+    <string name="DisableAds">Отключить рекламу</string>
     <string name="StickerSizeLeft">Меньше</string>
     <string name="StickerSizeRight">Больше</string>
     <string name="UseScheduledMessages">Запланированная отправка</string>
@@ -294,4 +295,15 @@
     <string name="HideAiSummary">Скрыть AI-сводку</string>
     <string name="AiHideHeader">Скрыть AI-функции</string>
     <string name="TabStyleStroke">Обводка индикатора вкладок</string>
+
+    <!-- AyuGram feature-gap completion -->
+    <string name="SuggestGhostModeBeforeViewingStory">Предупреждать перед просмотром историй</string>
+    <string name="SuggestGhostModeBeforeStoryTitle">Режим «Призрака»</string>
+    <string name="SuggestGhostModeBeforeStoryMessage">Просмотр этой истории покажет ваш онлайн-статус. Включить режим «Призрака»?</string>
+    <string name="SuggestGhostModeBeforeStoryEnable">Включить</string>
+    <string name="SuggestGhostModeBeforeStorySkip">Просмотреть</string>
+    <string name="SaveReadDate">Сохранять дату прочтения</string>
+    <string name="SaveReadDateAbout">Сохранять дату, когда ваши исходящие сообщения были прочитаны. Время отображается в информации о сообщении.</string>
+    <string name="AyuReadDate">Прочитано</string>
+    <string name="AyuReadDateUnknown">Неизвестно</string>
 </resources>

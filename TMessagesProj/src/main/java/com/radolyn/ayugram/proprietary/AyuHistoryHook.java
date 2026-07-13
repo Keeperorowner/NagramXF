@@ -231,7 +231,9 @@ public abstract class AyuHistoryHook {
                 reactionCount.chosen = deletedMessageReaction.selfSelected;
                 orderIndex++;
                 reactionCount.chosen_order = orderIndex;
-                if (deletedMessageReaction.isCustom) {
+                if (deletedMessageReaction.isPaid) {
+                    reaction = new TLRPC.TL_reactionPaid();
+                } else if (deletedMessageReaction.isCustom) {
                     var customEmoji = new TLRPC.TL_reactionCustomEmoji();
                     customEmoji.document_id = deletedMessageReaction.documentId;
                     reaction = customEmoji;

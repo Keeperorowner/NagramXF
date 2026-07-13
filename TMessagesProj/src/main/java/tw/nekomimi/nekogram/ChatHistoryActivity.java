@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -592,10 +593,28 @@ public class ChatHistoryActivity extends BaseFragment {
     @Override
     public boolean onBackPressed(boolean invoked) {
         if (isMultiSelectMode) {
-            exitMultiSelectMode();
+            if (invoked) {
+                exitMultiSelectMode();
+            }
             return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean isSwipeBackEnabled(MotionEvent event) {
+        if (isMultiSelectMode) {
+            return false;
+        }
+        return super.isSwipeBackEnabled(event);
+    }
+
+    @Override
+    public boolean canBeginSlide() {
+        if (isMultiSelectMode) {
+            return false;
+        }
+        return super.canBeginSlide();
     }
 
     private void refreshAllPages() {
