@@ -78,6 +78,8 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.RLottieDrawable;
+
+import com.exteragram.messenger.components.ActionRow;
 import org.telegram.ui.Components.RLottieImageView;
 import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 
@@ -343,7 +345,7 @@ public class ActionBarMenuItem extends FrameLayout {
                     View child = popupLayout.getItemAt(a);
                     child.getHitRect(rect);
                     Object tag = child.getTag();
-                    if (tag instanceof Integer && (Integer) tag < 3000) {
+                    if ((tag instanceof Integer && (Integer) tag < 3000) || (child instanceof ActionBarMenuSubItem && ((ActionBarMenuSubItem) child).openSwipeBackLayout != null)) {
                         if (!rect.contains((int) x, (int) y)) {
                             child.setPressed(false);
                             child.setSelected(false);
@@ -359,18 +361,70 @@ public class ActionBarMenuItem extends FrameLayout {
                             child.drawableHotspotChanged(x, y - child.getTop());
                             selectedMenuView = child;
                         }
+                    } else if (child instanceof ActionRow) {
+                        ActionRow actionRow = (ActionRow) child;
+                        if (rect.contains((int) x, (int) y)) {
+                            float localX = x - child.getLeft();
+                            float localY = y - child.getTop();
+                            ViewGroup buttons = (ViewGroup) actionRow.getChildAt(0);
+                            if (buttons != null) {
+                                float buttonsX = localX - buttons.getLeft();
+                                float buttonsY = localY - buttons.getTop();
+                                for (int b = 0; b < buttons.getChildCount(); b++) {
+                                    View button = buttons.getChildAt(b);
+                                    button.getHitRect(rect);
+                                    if (rect.contains((int) buttonsX, (int) buttonsY)) {
+                                        button.setPressed(true);
+                                        button.setSelected(true);
+                                        button.drawableHotspotChanged(buttonsX, buttonsY - button.getTop());
+                                        selectedMenuView = button;
+                                    } else {
+                                        button.setPressed(false);
+                                        button.setSelected(false);
+                                    }
+                                }
+                            }
+                        } else {
+                            ViewGroup buttons = (ViewGroup) actionRow.getChildAt(0);
+                            if (buttons != null) {
+                                for (int b = 0; b < buttons.getChildCount(); b++) {
+                                    View button = buttons.getChildAt(b);
+                                    button.setPressed(false);
+                                    button.setSelected(false);
+                                }
+                            }
+                        }
                     }
                 }
             }
         } else if (popupWindow != null && popupWindow.isShowing() && event.getActionMasked() == MotionEvent.ACTION_UP) {
             if (selectedMenuView != null) {
                 selectedMenuView.setSelected(false);
-                if (parentMenu != null) {
-                    parentMenu.onItemClick((Integer) selectedMenuView.getTag());
-                } else if (delegate != null) {
-                    delegate.onItemClick((Integer) selectedMenuView.getTag());
+                if (selectedMenuView instanceof ActionBarMenuSubItem && ((ActionBarMenuSubItem) selectedMenuView).openSwipeBackLayout != null) {
+                    ((ActionBarMenuSubItem) selectedMenuView).openSwipeBack();
+                } else {
+                    Object tag = selectedMenuView.getTag();
+                    if (tag instanceof ActionRow.ActionItem) {
+                        ActionRow.ActionItem actionItem = (ActionRow.ActionItem) tag;
+                        if (!processedPopupClick) {
+                            processedPopupClick = true;
+                            if (actionItem.enabled && actionItem.action != null) {
+                                View clicked = selectedMenuView;
+                                AndroidUtilities.runOnUIThread(() -> actionItem.action.onClick(clicked));
+                            }
+                            if (popupWindow != null) {
+                                popupWindow.dismiss(allowCloseAnimation);
+                            }
+                        }
+                    } else {
+                        if (parentMenu != null) {
+                            parentMenu.onItemClick((Integer) selectedMenuView.getTag());
+                        } else if (delegate != null) {
+                            delegate.onItemClick((Integer) selectedMenuView.getTag());
+                        }
+                        popupWindow.dismiss(allowCloseAnimation);
+                    }
                 }
-                popupWindow.dismiss(allowCloseAnimation);
             } else if (showSubmenuByMove) {
                 popupWindow.dismiss();
             }
@@ -2432,7 +2486,8 @@ public class ActionBarMenuItem extends FrameLayout {
     public static final int VIEW_TYPE_SUBITEM = 0;
     public static final int VIEW_TYPE_COLORED_GAP = 1;
     public static final int VIEW_TYPE_SWIPEBACKITEM = 2;
-    public static final int VIEW_TYPE_TEXT = 3;
+    public static final int VIEW_TYPE_CUSTOM = 3;
+    public static final int VIEW_TYPE_TEXT = 4;
 
     private ArrayList<Item> lazyList;
     private HashMap<Integer, Item> lazyMap;
@@ -2447,6 +2502,8 @@ public class ActionBarMenuItem extends FrameLayout {
         public boolean dismiss, needCheck;
         public View viewToSwipeBack;
         public int textSizeDp;
+        public View customView;
+        public LinearLayout.LayoutParams customLayoutParams;
 
         private View view;
         private View.OnClickListener overrideClickListener;
@@ -2483,6 +2540,13 @@ public class ActionBarMenuItem extends FrameLayout {
             Item item = new Item(VIEW_TYPE_TEXT);
             item.text = text;
             item.textSizeDp = textSizeDp;
+            return item;
+        }
+
+        private static Item asCustom(View customView, LinearLayout.LayoutParams layoutParams) {
+            Item item = new Item(VIEW_TYPE_CUSTOM);
+            item.customView = customView;
+            item.customLayoutParams = layoutParams;
             return item;
         }
 
@@ -2528,6 +2592,9 @@ public class ActionBarMenuItem extends FrameLayout {
                 gap.setTag(R.id.fit_width_tag, 1);
                 parent.popupLayout.addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
                 view = gap;
+            } else if (viewType == VIEW_TYPE_CUSTOM) {
+                parent.popupLayout.addView(customView, customLayoutParams);
+                view = customView;
             } else if (viewType == VIEW_TYPE_SWIPEBACKITEM) {
                 ActionBarMenuSubItem cell = new ActionBarMenuSubItem(parent.getContext(), false, false, false, parent.resourcesProvider);
                 cell.setTextAndIcon(text, icon, iconDrawable);
@@ -2660,6 +2727,10 @@ public class ActionBarMenuItem extends FrameLayout {
     }
     public Item lazilyAddText(CharSequence text, int textSizeDp) {
         return putLazyItem(Item.asText(text, textSizeDp));
+    }
+
+    public Item lazilyAddView(View customView, LinearLayout.LayoutParams layoutParams) {
+        return putLazyItem(Item.asCustom(customView, layoutParams));
     }
 
     private Item putLazyItem(Item item) {
