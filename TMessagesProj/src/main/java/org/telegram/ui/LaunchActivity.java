@@ -830,7 +830,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             EmojiHelper.getInstance().checkEmojiPacks();
             PagePreviewRulesHelper.getInstance().checkPagePreviewRules();
         });
-        BackupAgent.requestBackup(this);
+        BackupAgent.requestBackup(ApplicationLoader.applicationContext);
 
         RestrictedLanguagesSelectActivity.checkRestrictedLanguages(false);
         if (Build.VERSION.SDK_INT >= 34 && NaConfig.INSTANCE.getBackAnimationStyle().Int() == ActionBarLayout.BACK_ANIMATION_PREDICTIVE) {
@@ -7724,6 +7724,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback((OnBackInvokedCallback) onBackInvokedCallback);
             }
         }
+        Bulletin.removeDelegate(frameLayout);
         if (instance == this) {
             clearFragments();
             instance = null;
