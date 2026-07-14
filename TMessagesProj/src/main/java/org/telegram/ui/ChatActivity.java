@@ -603,6 +603,8 @@ public class ChatActivity extends BaseFragment implements
     private ActionBarMenuItem.Item muteItem;
     private ActionBarMenuItem.Item muteItemGap;
     private ActionBarMenuItem.Item muteItemTopGap;
+    private ActionBarMenuItem.Item adminItemsGap;
+    private ActionBarMenuItem.Item adminItemsRow;
     private ActionBarMenuItem.Item feeItemGap;
     private ActionBarMenuItem.Item feeItemText;
     private ChatNotificationsPopupWrapper chatNotificationsPopupWrapper;
@@ -4842,33 +4844,6 @@ public class ChatActivity extends BaseFragment implements
                 muteItemGap = headerItem.lazilyAddColoredGap();
             }
 
-            if (ChatObject.hasAdminRights(currentChat)) {
-                boolean hasAtLeastOneOption = false;
-                if (NaConfig.INSTANCE.getShortcutsAdministrators().Bool()) {
-                    hasAtLeastOneOption = true;
-                    headerItem.lazilyAddSubItem(shortcuts_administrators, R.drawable.msg_admins, LocaleController.getString(R.string.ChannelAdministrators));
-                }
-                if (NaConfig.INSTANCE.getShortcutsRecentActions().Bool()) {
-                    hasAtLeastOneOption = true;
-                    headerItem.lazilyAddSubItem(shortcuts_recent_actions, R.drawable.msg_log, LocaleController.getString(R.string.EventLog));
-                }
-                if (NaConfig.INSTANCE.getShortcutsStatistics().Bool()) {
-                    hasAtLeastOneOption = true;
-                    headerItem.lazilyAddSubItem(shortcuts_statistics, R.drawable.msg_stats, LocaleController.getString(R.string.Statistics));
-                }
-                if (NaConfig.INSTANCE.getShortcutsPermissions().Bool()) {
-                    hasAtLeastOneOption = true;
-                    headerItem.lazilyAddSubItem(shortcuts_permissions, R.drawable.msg_permissions, LocaleController.getString(R.string.ChannelPermissions));
-                }
-                if (NaConfig.INSTANCE.getShortcutsMembers().Bool()) {
-                    hasAtLeastOneOption = true;
-                    headerItem.lazilyAddSubItem(shortcuts_members, R.drawable.msg_groups, LocaleController.getString(R.string.GroupMembers));
-                }
-                if (hasAtLeastOneOption) {
-                    headerItem.lazilyAddColoredGap();
-                }
-            }
-
             if (currentChat != null) {
                 headerItem.lazilyAddSubItem(open_direct, R.drawable.msg_markunread, getString(R.string.ChannelOpenDirect));
                 headerItem.setSubItemShown(open_direct, ChatObject.isChannel(currentChat) && !ChatObject.isMonoForum(currentChat) && currentChat.linked_monoforum_id != 0 && (NaConfig.INSTANCE.getDisableChannelMuteButton().Bool() || ChatObject.canManageMonoForum(currentAccount, -currentChat.linked_monoforum_id)));
@@ -5001,6 +4976,22 @@ public class ChatActivity extends BaseFragment implements
                 feeItemText = headerItem.lazilyAddText("", 13);
                 feeItemGap.setVisibility(View.GONE);
                 feeItemText.setVisibility(View.GONE);
+            }
+            if (currentChat != null && (currentChat.creator || currentChat.admin_rights != null)
+                    && !ChatObject.isMonoForum(currentChat)
+                    && (ChatObject.isChannel(currentChat) || currentChat.megagroup || currentChat.gigagroup)) {
+                adminItemsGap = headerItem.lazilyAddColoredGap();
+                int permissionsIcon = (ChatObject.isChannel(currentChat) && !currentChat.megagroup) || currentChat.gigagroup
+                        ? R.drawable.msg_user_remove
+                        : R.drawable.msg_permissions;
+                List<com.exteragram.messenger.components.ActionRow.ActionItem> adminActions = Arrays.asList(
+                        new com.exteragram.messenger.components.ActionRow.ActionItem(permissionsIcon, true, v -> onAdminShortcutsClick(shortcuts_permissions)),
+                        new com.exteragram.messenger.components.ActionRow.ActionItem(R.drawable.msg_admins, true, v -> onAdminShortcutsClick(shortcuts_administrators)),
+                        new com.exteragram.messenger.components.ActionRow.ActionItem(R.drawable.msg_groups, true, v -> onAdminShortcutsClick(shortcuts_members)),
+                        new com.exteragram.messenger.components.ActionRow.ActionItem(R.drawable.msg_log, true, v -> onAdminShortcutsClick(shortcuts_recent_actions))
+                );
+                com.exteragram.messenger.components.ActionRow adminActionRow = new com.exteragram.messenger.components.ActionRow(getContext(), themeDelegate, adminActions);
+                adminItemsRow = headerItem.lazilyAddView(adminActionRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
             }
         } else if (chatMode == MODE_EDIT_BUSINESS_LINK) {
             headerItem = menu.addItem(chat_menu_options, otherIcon);
@@ -29668,6 +29659,13 @@ public class ChatActivity extends BaseFragment implements
                     muteItemGap.setVisibility(View.VISIBLE);
                 }
             }
+            if (adminItemsGap != null) {
+                int adminVisibility = currentChat != null && ChatObject.isNotInChat(currentChat) ? View.GONE : View.VISIBLE;
+                adminItemsGap.setVisibility(adminVisibility);
+                if (adminItemsRow != null) {
+                    adminItemsRow.setVisibility(adminVisibility);
+                }
+            }
             if (isInsideContainer || forceNoBottom || shouldHideBottomBar()) {
                 bottomChannelButtonsLayout.setVisibility(View.GONE);
                 chatActivityEnterView.setVisibility(View.GONE);
@@ -46773,17 +46771,8 @@ public class ChatActivity extends BaseFragment implements
             } catch (Exception e) {
                 AlertUtil.showToast(e);
             }
-        } else if (id == shortcuts_administrators || id == shortcuts_permissions || id == shortcuts_members) {
-            Bundle args = new Bundle();
-            args.putLong("chat_id", currentChat.id);
-            args.putInt("type", id == shortcuts_permissions ? ChatUsersActivity.TYPE_KICKED : id == shortcuts_members ? ChatUsersActivity.TYPE_USERS : ChatUsersActivity.TYPE_ADMIN);
-            ChatUsersActivity fragment = new ChatUsersActivity(args);
-            fragment.setInfo(chatInfo);
-            presentFragment(fragment);
-        } else if (id == shortcuts_recent_actions) {
-            presentFragment(new ChannelAdminLogActivity(currentChat));
-        } else if (id == shortcuts_statistics) {
-            presentFragment(StatisticActivity.create(currentChat, false));
+        } else if (id == shortcuts_administrators || id == shortcuts_permissions || id == shortcuts_members || id == shortcuts_recent_actions || id == shortcuts_statistics) {
+            onAdminShortcutsClick(id);
         } else if (id == nkbtn_report) {
             getSelectedMessages1().stream().findFirst().ifPresent(obj -> {
                 selectedObject = obj;
@@ -46791,6 +46780,39 @@ public class ChatActivity extends BaseFragment implements
                 clearSelectionMode();
             });
         }
+    }
+
+    private void onAdminShortcutsClick(int id) {
+        if (headerItem != null) {
+            headerItem.closeSubMenu();
+        }
+        if (currentChat == null) {
+            return;
+        }
+        if (id == shortcuts_recent_actions) {
+            presentFragment(new ChannelAdminLogActivity(currentChat));
+            return;
+        }
+        if (id == shortcuts_statistics) {
+            presentFragment(StatisticActivity.create(currentChat, false));
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putLong("chat_id", currentChat.id);
+        if (id == shortcuts_permissions) {
+            args.putInt("type", (!ChatObject.isChannel(currentChat) || currentChat.megagroup) && !currentChat.gigagroup
+                    ? ChatUsersActivity.TYPE_KICKED
+                    : ChatUsersActivity.TYPE_BANNED);
+        } else if (id == shortcuts_administrators) {
+            args.putInt("type", ChatUsersActivity.TYPE_ADMIN);
+        } else if (id == shortcuts_members) {
+            args.putInt("type", ChatUsersActivity.TYPE_USERS);
+        } else {
+            return;
+        }
+        ChatUsersActivity fragment = new ChatUsersActivity(args);
+        fragment.setInfo(chatInfo != null ? chatInfo : getMessagesController().getChatFull(currentChat.id));
+        presentFragment(fragment);
     }
 
     private void nkbtn_onclick(int id) {
@@ -48757,9 +48779,12 @@ public class ChatActivity extends BaseFragment implements
 
         if (type == -1) {
             if ((selectedObject.type == MessageObject.TYPE_TEXT || selectedObject.type == MessageObject.TYPE_ARTICLE || selectedObject.isAnimatedEmoji() || selectedObject.isAnimatedEmojiStickers() || getMessageCaption(selectedObject, selectedObjectGroup) != null) && !noforwardsOrPaidMedia && !message.isExpiredStory()) {
-                items.add(LocaleController.getString(R.string.Copy));
-                options.add(OPTION_COPY);
-                icons.add(R.drawable.msg_copy);
+                allowCopy = true;
+                if (!GroupedIconsView.useGroupedIcons()) {
+                    items.add(LocaleController.getString(R.string.Copy));
+                    options.add(OPTION_COPY);
+                    icons.add(R.drawable.msg_copy);
+                }
             }
             items.add(LocaleController.getString(R.string.CancelSending));
             options.add(OPTION_CANCEL_SENDING);
@@ -48916,9 +48941,12 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
                 if ((selectedObject.type == MessageObject.TYPE_TEXT || selectedObject.type == MessageObject.TYPE_ARTICLE || selectedObject.isDice() || selectedObject.isAnimatedEmoji() || selectedObject.isAnimatedEmojiStickers() || getMessageCaption(selectedObject, selectedObjectGroup) != null) && !noforwardsOrPaidMedia && !selectedObject.sponsoredCanReport) {
-                    items.add(LocaleController.getString(R.string.Copy));
-                    options.add(OPTION_COPY);
-                    icons.add(R.drawable.msg_copy);
+                    allowCopy = true;
+                    if (!GroupedIconsView.useGroupedIcons()) {
+                        items.add(LocaleController.getString(R.string.Copy));
+                        options.add(OPTION_COPY);
+                        icons.add(R.drawable.msg_copy);
+                    }
                 }
                 if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && primaryMessage != null && (currentChat.has_link || primaryMessage.hasReplies()) && currentChat.megagroup && primaryMessage.canViewThread()) {
                     if (primaryMessage.hasReplies()) {
@@ -49450,9 +49478,12 @@ public class ChatActivity extends BaseFragment implements
                     }
                 }
                 if ((selectedObject.type == MessageObject.TYPE_TEXT || selectedObject.type == MessageObject.TYPE_ARTICLE || selectedObject.isAnimatedEmoji() || selectedObject.isAnimatedEmojiStickers() || getMessageCaption(selectedObject, selectedObjectGroup) != null) && !noforwardsOrPaidMedia) {
-                    items.add(LocaleController.getString(R.string.Copy));
-                    options.add(OPTION_COPY);
-                    icons.add(R.drawable.msg_copy);
+                    allowCopy = true;
+                    if (!GroupedIconsView.useGroupedIcons()) {
+                        items.add(LocaleController.getString(R.string.Copy));
+                        options.add(OPTION_COPY);
+                        icons.add(R.drawable.msg_copy);
+                    }
                 }
                 if (!isThreadChat() && chatMode != MODE_SCHEDULED && currentChat != null && primaryMessage != null && (currentChat.has_link || primaryMessage.hasReplies()) && currentChat.megagroup && primaryMessage.canViewThread()) {
                     if (primaryMessage.hasReplies()) {
