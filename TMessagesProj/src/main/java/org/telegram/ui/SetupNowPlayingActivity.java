@@ -129,6 +129,7 @@ public class SetupNowPlayingActivity extends BaseFragment {
         items.add(UItem.asRadio(RADIO_STATS_FM, "Stats.fm").setChecked(serviceType == LocalNowPlayingController.SERVICE_STATS_FM));
 
         if (serviceType == LocalNowPlayingController.SERVICE_LAST_FM || serviceType == LocalNowPlayingController.SERVICE_STATS_FM) {
+            items.add(UItem.asShadow(null));
             items.add(UItem.asHeader(getString(R.string.Username)));
             items.add(UItem.asCustom(usernameEdit));
             if (whitelistChecked && !whitelisted) {
