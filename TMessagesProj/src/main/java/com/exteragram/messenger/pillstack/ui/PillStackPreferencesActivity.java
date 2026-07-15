@@ -44,9 +44,13 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
     private int settingsHeaderRow;
     private int infiniteScrollingRow;
 
+    private int settingsShadowRow;
+
     private int activeHeaderRow;
     private int activeRowStart;
     private int activeRowEnd;
+
+    private int activeShadowRow;
 
     private int hiddenHeaderRow;
     private int hiddenRowStart;
@@ -108,21 +112,27 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void updateRows() {
+        rebuildRows();
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void rebuildRows() {
         super.updateRows();
         deduplicatePills();
 
         settingsHeaderRow = addRow();
         infiniteScrollingRow = addRow("pillStackInfiniteScrolling");
 
+        boolean hasActive = !PillStackConfig.activePills.isEmpty();
+        boolean hasHidden = !PillStackConfig.hiddenPills.isEmpty();
+        settingsShadowRow = (hasActive || hasHidden) ? addRow() : -1;
+
         activeHeaderRow = -1;
         activeRowStart = -1;
         activeRowEnd = -1;
-
-        hiddenHeaderRow = -1;
-        hiddenRowStart = -1;
-        hiddenRowEnd = -1;
-
-        if (!PillStackConfig.activePills.isEmpty()) {
+        if (hasActive) {
             activeHeaderRow = addRow();
             activeRowStart = rowCount;
             for (int i = 0; i < PillStackConfig.activePills.size(); i++) {
@@ -131,17 +141,18 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
             activeRowEnd = rowCount - 1;
         }
 
-        if (!PillStackConfig.hiddenPills.isEmpty()) {
+        activeShadowRow = (hasActive && hasHidden) ? addRow() : -1;
+
+        hiddenHeaderRow = -1;
+        hiddenRowStart = -1;
+        hiddenRowEnd = -1;
+        if (hasHidden) {
             hiddenHeaderRow = addRow();
             hiddenRowStart = rowCount;
             for (int i = 0; i < PillStackConfig.hiddenPills.size(); i++) {
                 addRow("hidden_" + PillStackConfig.hiddenPills.get(i));
             }
             hiddenRowEnd = rowCount - 1;
-        }
-
-        if (listAdapter != null) {
-            listAdapter.notifyDataSetChanged();
         }
     }
 
@@ -196,32 +207,7 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
         PillStackConfig.savePillsLayout();
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pillStackLayoutChanged);
 
-        super.updateRows();
-        deduplicatePills();
-        settingsHeaderRow = addRow();
-        infiniteScrollingRow = addRow("pillStackInfiniteScrolling");
-        activeHeaderRow = -1;
-        activeRowStart = -1;
-        activeRowEnd = -1;
-        hiddenHeaderRow = -1;
-        hiddenRowStart = -1;
-        hiddenRowEnd = -1;
-        if (!PillStackConfig.activePills.isEmpty()) {
-            activeHeaderRow = addRow();
-            activeRowStart = rowCount;
-            for (int i = 0; i < PillStackConfig.activePills.size(); i++) {
-                addRow("active_" + PillStackConfig.activePills.get(i));
-            }
-            activeRowEnd = rowCount - 1;
-        }
-        if (!PillStackConfig.hiddenPills.isEmpty()) {
-            hiddenHeaderRow = addRow();
-            hiddenRowStart = rowCount;
-            for (int i = 0; i < PillStackConfig.hiddenPills.size(); i++) {
-                addRow("hidden_" + PillStackConfig.hiddenPills.get(i));
-            }
-            hiddenRowEnd = rowCount - 1;
-        }
+        rebuildRows();
 
         List<String> newItems = buildItemIdentifiers();
         if (listAdapter != null) {
@@ -414,6 +400,9 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
             if (position == infiniteScrollingRow) {
                 return TYPE_CHECK;
             }
+            if (position == settingsShadowRow || position == activeShadowRow) {
+                return TYPE_SHADOW;
+            }
             return TYPE_TEXT;
         }
 
@@ -424,6 +413,7 @@ public class PillStackPreferencesActivity extends BaseNekoSettingsActivity {
             switch (viewType) {
                 case TYPE_HEADER: {
                     HeaderCell headerCell = (HeaderCell) holder.itemView;
+                    headerCell.applySeparatedHeadersStyle();
                     if (position == settingsHeaderRow) {
                         headerCell.setText(getString(R.string.Settings));
                     } else if (position == activeHeaderRow) {
