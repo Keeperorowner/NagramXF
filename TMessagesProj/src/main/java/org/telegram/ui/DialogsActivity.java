@@ -5896,14 +5896,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private int getSearchFieldReservedHeight() {
-        if (!isSupportSearch()) {
-            return 0;
-        }
-        if (onlySelect && initialDialogsType != DIALOGS_TYPE_FORWARD
-                && initialDialogsType != DIALOGS_TYPE_SHADOW_BAN
-                && initialDialogsType != DIALOGS_TYPE_REGEX_FILTER) {
-            return 0;
-        }
         return shouldHideHomeSearchField() ? 0 : dp(SEARCH_FIELD_HEIGHT);
     }
 
