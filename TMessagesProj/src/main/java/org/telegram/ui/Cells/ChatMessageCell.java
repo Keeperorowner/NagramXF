@@ -2449,9 +2449,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             pressedCopyCode = null;
                         } else {
                             pressedCopyCode = block;
-                            block.copySelector.setHotspot(x, y);
-                            block.copySelector.setCallback(this);
-                            block.copySelector.setState(pressedState);
+                            if (block.copySelector != null) {
+                                block.copySelector.setHotspot(x, y);
+                                block.copySelector.setCallback(this);
+                                block.copySelector.setState(pressedState);
+                            }
                         }
                         return true;
                     }
@@ -2671,9 +2673,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                             pressedCopyCode = null;
                         } else {
                             pressedCopyCode = block;
-                            block.copySelector.setHotspot(x, y);
-                            block.copySelector.setCallback(this);
-                            block.copySelector.setState(pressedState);
+                            if (block.copySelector != null) {
+                                block.copySelector.setHotspot(x, y);
+                                block.copySelector.setCallback(this);
+                                block.copySelector.setState(pressedState);
+                            }
                         }
                         touchedByCaption = true;
                         return true;
