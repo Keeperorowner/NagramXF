@@ -21,24 +21,40 @@ public class IconsResources extends Resources {
 
     @Override
     public Drawable getDrawable(int id) throws NotFoundException {
-        return super.getDrawable(getConversion(id), null);
+        try {
+            return super.getDrawable(getConversion(id), null);
+        } catch (NotFoundException e) {
+            return super.getDrawable(id, null);
+        }
     }
 
     @Override
     public Drawable getDrawable(int id, @Nullable Theme theme) throws NotFoundException {
-        return super.getDrawable(getConversion(id), theme);
+        try {
+            return super.getDrawable(getConversion(id), theme);
+        } catch (NotFoundException e) {
+            return super.getDrawable(id, theme);
+        }
     }
 
     @Nullable
     @Override
     public Drawable getDrawableForDensity(int id, int density, @Nullable Theme theme) {
-        return super.getDrawableForDensity(getConversion(id), density, theme);
+        try {
+            return super.getDrawableForDensity(getConversion(id), density, theme);
+        } catch (NotFoundException e) {
+            return super.getDrawableForDensity(id, density, theme);
+        }
     }
 
     @Nullable
     @Override
     public Drawable getDrawableForDensity(int id, int density) throws NotFoundException {
-        return super.getDrawableForDensity(getConversion(id), density, null);
+        try {
+            return super.getDrawableForDensity(getConversion(id), density, null);
+        } catch (NotFoundException e) {
+            return super.getDrawableForDensity(id, density, null);
+        }
     }
 
     private int getConversion(int icon) {
