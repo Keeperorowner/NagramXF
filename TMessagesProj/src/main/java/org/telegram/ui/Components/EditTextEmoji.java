@@ -510,7 +510,6 @@ public class EditTextEmoji extends FrameLayout implements NotificationCenter.Not
 
     public void onDestroy() {
         destroyed = true;
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
         if (emojiView != null) {
             emojiView.onDestroy();
         }
