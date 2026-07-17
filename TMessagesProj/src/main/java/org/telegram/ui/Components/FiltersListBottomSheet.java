@@ -154,6 +154,9 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                     if (top + backgroundPaddingTop < AndroidUtilities.statusBarHeight) {
                         statusBarHeight = Math.min(AndroidUtilities.statusBarHeight, AndroidUtilities.statusBarHeight - top - backgroundPaddingTop);
                     }
+                    if (top + backgroundPaddingTop < AndroidUtilities.statusBarHeight) {
+                        statusBarHeight = Math.min(AndroidUtilities.statusBarHeight, AndroidUtilities.statusBarHeight - top - backgroundPaddingTop);
+                    }
                 }
 
                 // On some devices(Pixel 9 ~) the status bar inset can be larger than the extra space we add for the
@@ -163,7 +166,7 @@ public class FiltersListBottomSheet extends BottomSheet implements NotificationC
                     height = getMeasuredHeight();
                 }
 
-                shadowDrawable.setBounds(0, top, getMeasuredWidth(), height);
+                shadowDrawable.setBounds(0, top, getMeasuredWidth(), getMeasuredHeight());
                 shadowDrawable.draw(canvas);
 
                 if (radProgress != 1.0f) {

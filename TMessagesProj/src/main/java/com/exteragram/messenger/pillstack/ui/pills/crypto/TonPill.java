@@ -13,7 +13,7 @@ public class TonPill extends RatePill {
     private static final RateCache CACHE = new RateCache();
 
     public TonPill(Context context, Theme.ResourcesProvider resourcesProvider) {
-        super(context, resourcesProvider, CACHE, "TON", 3, R.drawable.ton_16,
+        super(context, resourcesProvider, CACHE, "TON", 3, R.drawable.mini_gram_16,
                 new ColoredBackground(0xFF28A2ED, 0xFF1873E1));
     }
 

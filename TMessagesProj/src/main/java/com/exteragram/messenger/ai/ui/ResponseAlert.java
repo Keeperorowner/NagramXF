@@ -851,7 +851,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             if (full) {
                 color = getThemedColor(Theme.key_dialogBackground);
             } else {
-                color = Theme.blendOver(getThemedColor(Theme.key_actionBarDefault), AndroidUtilities.DARK_STATUS_BAR_OVERLAY);
+                color = Theme.blendOver(getThemedColor(Theme.key_actionBarDefault), 0x33000000);
             }
             AndroidUtilities.setLightStatusBar(window, AndroidUtilities.computePerceivedBrightness(color) > 0.721f);
         }

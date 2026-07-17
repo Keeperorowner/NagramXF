@@ -22,6 +22,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -78,11 +79,6 @@ public class DrawerLayoutContainer extends FrameLayout {
     private AnimatorSet currentAnimation;
 
     private final Rect rect = new Rect();
-
-    private final Paint scrimPaint = new Paint();
-    private final Paint backgroundPaint = new Paint();
-
-    private int behindKeyboardColor;
 
     private boolean hasCutout;
 
@@ -634,78 +630,6 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
     }
 
-    public void setBehindKeyboardColor(int color) {
-        behindKeyboardColor = color;
-        invalidate();
-    }
-
-    public int getBehindKeyboardColor() {
-        return behindKeyboardColor;
-    }
-
-
-    @Override
-    protected void dispatchDraw(@NonNull Canvas canvas) {
-        super.dispatchDraw(canvas);
-        if (drawCurrentPreviewFragmentAbove && parentActionBarLayout != null) {
-            if (previewBlurDrawable != null) {
-                previewBlurDrawable.setAlpha((int) (parentActionBarLayout.getCurrentPreviewFragmentAlpha() * 255));
-                previewBlurDrawable.draw(canvas);
-            }
-            parentActionBarLayout.drawCurrentPreviewFragment(canvas, previewForegroundDrawable);
-        }
-    }
-
-    @Override
-    protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
-        if (!allowDrawContent) {
-            return false;
-        }
-        final int height = getHeight();
-        final boolean drawingContent = child != drawerLayout;
-        int lastVisibleChild = 0;
-        int clipLeft = 0, clipRight = getWidth();
-
-        final int restoreCount = canvas.save();
-        if (drawingContent) {
-            final int childCount = getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                final View v = getChildAt(i);
-                if (v.getVisibility() == VISIBLE && v != drawerLayout) {
-                    lastVisibleChild = i;
-                }
-                if (v == child || v.getVisibility() != VISIBLE || v != drawerLayout || v.getHeight() < height) {
-                    continue;
-                }
-
-                final int vright = (int) Math.ceil(v.getX()) + v.getMeasuredWidth();
-                if (vright > clipLeft) {
-                    clipLeft = vright;
-                }
-            }
-            if (clipLeft != 0) {
-                canvas.clipRect(clipLeft - AndroidUtilities.dp(1), 0, clipRight, getHeight());
-            }
-        }
-        final boolean result = super.drawChild(canvas, child, drawingTime);
-        canvas.restoreToCount(restoreCount);
-
-        if (scrimOpacity > 0 && drawingContent) {
-            if (indexOfChild(child) == lastVisibleChild) {
-                scrimPaint.setColor((int) (((0x99000000 & 0xff000000) >>> 24) * scrimOpacity) << 24);
-                canvas.drawRect(clipLeft, 0, clipRight, getHeight(), scrimPaint);
-            }
-        } else if (shadowLeft != null) {
-            final float alpha = Math.max(0, Math.min(drawerPosition / AndroidUtilities.dp(20), 1.0f));
-            if (alpha != 0) {
-                shadowLeft.setBounds((int) drawerPosition, child.getTop(), (int) drawerPosition + shadowLeft.getIntrinsicWidth(), child.getBottom());
-                shadowLeft.setAlpha((int) (0xff * alpha));
-                shadowLeft.draw(canvas);
-            }
-        }
-        return result;
-    }
-
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         if (lastWindowInsetsCompat == null) {
@@ -717,7 +641,6 @@ public class DrawerLayoutContainer extends FrameLayout {
             | WindowInsetsCompat.Type.displayCutout());
 
         if (insets.bottom > 0) {
-            backgroundPaint.setColor(behindKeyboardColor);
             canvas.drawRect(
                 0,
                 getMeasuredHeight() - insets.bottom,
@@ -728,14 +651,13 @@ public class DrawerLayoutContainer extends FrameLayout {
         }
 
         if (hasCutout) {
-            backgroundPaint.setColor(0xff000000);
-            int left = insets.left;
+            final int left = insets.left;
             if (left != 0) {
-                canvas.drawRect(0, 0, left, getMeasuredHeight(), backgroundPaint);
+                canvas.drawRect(0, 0, left, getMeasuredHeight(), Theme.fillingPaint(Color.BLACK));
             }
-            int right = insets.right;
+            final int right = insets.right;
             if (right != 0) {
-                canvas.drawRect(right, 0, getMeasuredWidth(), getMeasuredHeight(), backgroundPaint);
+                canvas.drawRect(right, 0, getMeasuredWidth(), getMeasuredHeight(), Theme.fillingPaint(Color.BLACK));
             }
         }
     }
