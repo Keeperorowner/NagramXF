@@ -106,7 +106,7 @@ public class PillRegistry {
         register(new PillInfo(
             PillStackConfig.PillType.TON.id,
             "TON",
-            R.drawable.settings_ton,
+            R.drawable.settings_gram_24,
             0xFF28A2ED, 0xFF1873E1,
             TonPill::new
         ));
