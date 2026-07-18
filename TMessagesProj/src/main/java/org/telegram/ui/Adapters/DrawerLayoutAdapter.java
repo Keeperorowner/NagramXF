@@ -248,17 +248,14 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         int settingsIcon = R.drawable.msg_settings_old;
 
         UserConfig me = UserConfig.getInstance(UserConfig.selectedAccount);
-        boolean showGhostInDrawer = NekoConfig.showGhostInDrawer.Bool();
-        if (showGhostInDrawer) {
-            items.add(new Item(
-                    nkbtnGhostMode,
-                    NekoConfig.isGhostModeActive()
-                            ? LocaleController.getString(R.string.DisableGhostMode)
-                            : LocaleController.getString(R.string.EnableGhostMode),
-                    R.drawable.ayu_ghost
-            ));
-            items.add(null);
-        }
+        items.add(new Item(
+                nkbtnGhostMode,
+                NekoConfig.isGhostModeActive()
+                        ? LocaleController.getString(R.string.DisableGhostMode)
+                        : LocaleController.getString(R.string.EnableGhostMode),
+                R.drawable.ayu_ghost
+        ));
+        items.add(null);
 
         boolean showMyProfile = NaConfig.INSTANCE.getDrawerItemMyProfile().Bool();
         if (showMyProfile) {
@@ -275,22 +272,8 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
             ));
         }
         boolean showArchivedChats = NaConfig.INSTANCE.getDrawerItemArchivedChats().Bool();
-        boolean showDivider = false;
-        if (showGhostInDrawer && showArchivedChats) {
+        if (showArchivedChats) {
             items.add(new Item(nkbtnArchivedChats, LocaleController.getString(R.string.ArchivedChats), R.drawable.msg_archive));
-        }
-        if (!showGhostInDrawer && (showMyProfile || showSetEmojiStatus)) {
-            showDivider = true;
-        }
-        if (!showGhostInDrawer && showArchivedChats) {
-            if (showDivider) {
-                items.add(null);
-            }
-            items.add(new Item(nkbtnArchivedChats, LocaleController.getString(R.string.ArchivedChats), R.drawable.msg_archive));
-            showDivider = true;
-        }
-        if (showDivider) {
-            items.add(null);
         }
         if (NaConfig.INSTANCE.getDrawerItemNewGroup().Bool()) {
             items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));

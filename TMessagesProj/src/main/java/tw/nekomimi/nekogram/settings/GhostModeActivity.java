@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
@@ -184,7 +183,6 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell useScheduledMessagesNoticeRow = cellGroup.appendCell(new ConfigCellCustom("UseScheduledMessagesDescription", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell sendWithoutSoundRow = cellGroup.appendCell(new ConfigCellCustom("SendWithoutSoundByDefault", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell sendWithoutSoundNoticeRow = cellGroup.appendCell(new ConfigCellCustom("SendWithoutSoundRowNotice", CellGroup.ITEM_TYPE_TEXT, false));
-    private final AbstractConfigCell showGhostInDrawerRow = cellGroup.appendCell(new ConfigCellCustom("GhostModeInDrawer", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell suggestGhostBeforeStoryRow = cellGroup.appendCell(new ConfigCellCustom("SuggestGhostModeBeforeViewingStory", CellGroup.ITEM_TYPE_TEXT_CHECK, false));
 
 
@@ -519,10 +517,6 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
             }
         } else if (row == sendWithoutSoundRow) {
             showSendWithoutSoundDialog(view);
-        } else if (row == showGhostInDrawerRow) {
-            NekoConfig.showGhostInDrawer.toggleConfigBool();
-            ((TextCheckCell) view).setChecked(NekoConfig.showGhostInDrawer.Bool());
-            NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
         } else if (row == suggestGhostBeforeStoryRow) {
             boolean v = !currentSettings.suggestGhostModeBeforeViewingStory;
             currentSettings.suggestGhostModeBeforeViewingStory = v;
@@ -612,10 +606,6 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
                     value = getString(R.string.SendWithoutSoundByDefaultNever);
                 }
                 textSettingsCell.setTextAndValue(getString(R.string.SilentMessageByDefault), value, true);
-            } else if (row == showGhostInDrawerRow) {
-                TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
-                textCheckCell.setEnabled(true, null);
-                textCheckCell.setTextAndCheck(getString(R.string.GhostModeInDrawer), NekoConfig.showGhostInDrawer.Bool(), true);
             } else if (row == suggestGhostBeforeStoryRow) {
                 TextCheckCell textCheckCell = (TextCheckCell) holder.itemView;
                 textCheckCell.setEnabled(true, null);

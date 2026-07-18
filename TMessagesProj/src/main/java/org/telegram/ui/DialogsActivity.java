@@ -299,6 +299,7 @@ import tw.nekomimi.nekogram.helpers.JoinOfficialChannelHelper;
 import tw.nekomimi.nekogram.ChatHistoryActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
+import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
 import com.radolyn.ayugram.AyuGhostConfig;
@@ -14273,6 +14274,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             io.show();
             io.setTranslationY(-dp(64));
             return;
+        }
+
+        if (!NekoConfig.navigationDrawerEnabled.Bool()) {
+            final String ghostMsg = NekoConfig.isGhostModeActive()
+                    ? getString(R.string.DisableGhostMode)
+                    : getString(R.string.EnableGhostMode);
+            io.add(R.drawable.ayu_ghost, ghostMsg, () -> presentFragment(new GhostModeActivity()), () -> {
+                final String toggleMsg = NekoConfig.isGhostModeActive()
+                        ? getString(R.string.GhostModeDisabled)
+                        : getString(R.string.GhostModeEnabled);
+                NekoConfig.toggleGhostMode();
+                BulletinFactory.of(DialogsActivity.this).createSuccessBulletin(toggleMsg).show();
+                NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+            });
+            io.addGap();
         }
 
         io.add(R.drawable.msg_recent, getString(R.string.RecentChats), () -> {
