@@ -77,7 +77,6 @@ import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.glass.GlassTabView;
 import org.telegram.ui.Stories.recorder.HintView2;
-import org.telegram.ui.web.WebBrowserSettings;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,14 +84,9 @@ import java.util.List;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
-import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
-import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
-import tw.nekomimi.nekogram.utils.BrowserUtils;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsActivity extends ViewPagerActivity implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
@@ -1298,41 +1292,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             openAccountSelector(button);
             return true;
         }
-        final boolean drawerOn = NekoConfig.navigationDrawerEnabled.Bool();
-        if (tabType == MainTabsConfigManager.TabType.SETTINGS) {
-            final boolean nSettingsInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemNSettings().Bool();
-            final boolean browserInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemBrowser().Bool();
-            final boolean restartInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemRestartApp().Bool();
-
-            ItemOptions o = ItemOptions.makeOptions(this, button);
-            boolean addedAny = false;
-            if (!nSettingsInDrawer) {
-                o.add(R.drawable.msg_settings, getString(R.string.NekoSettings), () -> presentFragment(new NekoSettingsActivity()));
-                addedAny = true;
-            }
-            if (!browserInDrawer) {
-                o.add(R.drawable.web_browser, getString(R.string.InappBrowser), () -> presentFragment(new WebBrowserSettings(null)), () -> BrowserUtils.openBrowserHome(null, true));
-                addedAny = true;
-            }
-            if (!restartInDrawer) {
-                if (addedAny) {
-                    o.addGap();
-                }
-                o.add(R.drawable.msg_retry, getString(R.string.RestartApp), () ->
-                    AppRestartHelper.triggerRebirth(
-                        ApplicationLoader.applicationContext,
-                        new Intent(ApplicationLoader.applicationContext, LaunchActivity.class)
-                    )
-                );
-                addedAny = true;
-            }
-            if (!addedAny) {
-                return false;
-            }
-            setupPopupMenuStyle(o);
-            o.show();
-            return true;
-        }
         if (tabType == MainTabsConfigManager.TabType.CONTACTS) {
             return openContactsSelector(button);
         }
@@ -1345,11 +1304,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         final ArrayList<MessagesController.DialogFilter> filters = getMessagesController().getDialogFilters();
         final boolean hasFolders = filters != null && filters.size() > 1;
-
-        final boolean archivedInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemArchivedChats().Bool();
-        final boolean savedInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemSaved().Bool();
-        final boolean showBookmarks = NaConfig.INSTANCE.getShowAddToBookmark().Bool();
-        final boolean bookmarksInDrawer = drawerOn && showBookmarks;
 
         ItemOptions o = ItemOptions.makeOptions(this, button);
 
@@ -1391,27 +1345,6 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         o.add(R.drawable.tabs_reorder, getString(R.string.MainTabsCustomize), () ->
             presentFragment(new MainTabsCustomizeActivity())
         );
-        final boolean hasAnyExtra = !archivedInDrawer || !savedInDrawer || (showBookmarks && !bookmarksInDrawer);
-        if (hasAnyExtra) {
-            o.addGap();
-        }
-        if (!archivedInDrawer) {
-            o.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
-                Bundle args = new Bundle();
-                args.putInt("folderId", 1);
-                presentFragment(new DialogsActivity(args));
-            });
-        }
-        if (!savedInDrawer) {
-            o.add(R.drawable.msg_saved, getString(R.string.SavedMessages), () -> {
-                Bundle args = new Bundle();
-                args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
-                presentFragment(new ChatActivity(args));
-            });
-        }
-        if (showBookmarks && !bookmarksInDrawer) {
-            o.add(R.drawable.msg_fave, getString(R.string.BookmarksManager), () -> presentFragment(new BookmarkManagerActivity()));
-        }
         setupPopupMenuStyle(o);
         o.show();
         return true;
