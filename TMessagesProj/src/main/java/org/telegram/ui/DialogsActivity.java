@@ -302,6 +302,10 @@ import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
+import tw.nekomimi.nekogram.utils.BrowserUtils;
+import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
+import tw.nekomimi.nekogram.helpers.AppRestartHelper;
+import org.telegram.ui.web.WebBrowserSettings;
 import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.ui.folders.FoldersHelper;
@@ -14198,11 +14202,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         io.addGap();
         io.add(R.drawable.tabs_reorder, getString(R.string.MainTabsCustomize), () -> presentFragment(new MainTabsCustomizeActivity()));
-        io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
-            Bundle args = new Bundle();
-            args.putInt("folderId", 1);
-            presentFragment(new DialogsActivity(args));
-        });
+        if (NekoConfig.navigationDrawerEnabled.Bool()) {
+            io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
+                Bundle args = new Bundle();
+                args.putInt("folderId", 1);
+                presentFragment(new DialogsActivity(args));
+            });
+        }
         if (MainTabsConfigManager.isTabEnabled(MainTabsConfigManager.TabType.CONTACTS)) {
             io.add(R.drawable.msg_contacts, getString(R.string.MainTabsContacts), () -> {
                 Bundle args = new Bundle();
@@ -14366,17 +14372,32 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 presentFragment(new ContactsActivity(args));
             });
         }
-        io.add(R.drawable.outline_saved_24, getString(R.string.SavedMessages), () -> {
-            Bundle args = new Bundle();
-            args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
-            presentFragment(new ChatActivity(args));
-        });
-        if (mainTabsActivityController != null
-                && NaConfig.INSTANCE.getMainTabsDisplayMode().Int() == MainTabsHelper.BOTTOM_BAR_MODE_HIDE
-                && NaConfig.INSTANCE.getShowAddToBookmark().Bool()) {
-            io.add(R.drawable.msg_fave, getString(R.string.BookmarksManager), () -> {
-                presentFragment(new BookmarkManagerActivity());
+        if (!NekoConfig.navigationDrawerEnabled.Bool()) {
+            io.addGap();
+            io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
+                Bundle args = new Bundle();
+                args.putInt("folderId", 1);
+                presentFragment(new DialogsActivity(args));
             });
+            io.add(R.drawable.outline_saved_24, getString(R.string.SavedMessages), () -> {
+                Bundle args = new Bundle();
+                args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                presentFragment(new ChatActivity(args));
+            });
+            if (NaConfig.INSTANCE.getShowAddToBookmark().Bool()) {
+                io.add(R.drawable.msg_fave, getString(R.string.BookmarksManager), () -> {
+                    presentFragment(new BookmarkManagerActivity());
+                });
+            }
+            io.addGap();
+            io.add(R.drawable.msg_settings, getString(R.string.NekoSettings), () -> presentFragment(new NekoSettingsActivity()));
+            io.add(R.drawable.web_browser, getString(R.string.InappBrowser), () -> presentFragment(new WebBrowserSettings(null)), () -> BrowserUtils.openBrowserHome(null, true));
+            io.add(R.drawable.msg_retry, getString(R.string.RestartApp), () ->
+                AppRestartHelper.triggerRebirth(
+                    ApplicationLoader.applicationContext,
+                    new Intent(ApplicationLoader.applicationContext, LaunchActivity.class)
+                )
+            );
         }
         final boolean addedHiddenMainTabsShortcuts = addHiddenMainTabsShortcuts(io);
         if (ApplicationLoader.applicationLoaderInstance != null) {
