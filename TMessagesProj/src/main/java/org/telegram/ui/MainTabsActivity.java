@@ -60,7 +60,6 @@ import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.ui.Components.Bulletin;
-import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FolderDrawable;
 import org.telegram.ui.Components.HintsController;
@@ -90,7 +89,6 @@ import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
@@ -1302,29 +1300,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         final boolean drawerOn = NekoConfig.navigationDrawerEnabled.Bool();
         if (tabType == MainTabsConfigManager.TabType.SETTINGS) {
-            final boolean showGhost = NekoConfig.showGhostInDrawer.Bool();
-            final boolean ghostInDrawer = drawerOn && showGhost;
             final boolean nSettingsInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemNSettings().Bool();
             final boolean browserInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemBrowser().Bool();
             final boolean restartInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemRestartApp().Bool();
 
             ItemOptions o = ItemOptions.makeOptions(this, button);
             boolean addedAny = false;
-            if (showGhost && !ghostInDrawer) {
-                final String msg = NekoConfig.isGhostModeActive()
-                    ? getString(R.string.DisableGhostMode)
-                    : getString(R.string.EnableGhostMode);
-                o.add(R.drawable.ayu_ghost, msg, () -> presentFragment(new GhostModeActivity()), () -> {
-                    final String toggleMsg = NekoConfig.isGhostModeActive()
-                        ? getString(R.string.GhostModeDisabled)
-                        : getString(R.string.GhostModeEnabled);
-                    NekoConfig.toggleGhostMode();
-                    BulletinFactory.of(contentView, resourceProvider).createSuccessBulletin(toggleMsg).show();
-                    NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
-                });
-                o.addGap();
-                addedAny = true;
-            }
             if (!nSettingsInDrawer) {
                 o.add(R.drawable.msg_settings, getString(R.string.NekoSettings), () -> presentFragment(new NekoSettingsActivity()));
                 addedAny = true;
