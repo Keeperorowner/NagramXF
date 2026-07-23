@@ -47,10 +47,15 @@ object LlmModelUtil {
     fun isOpenaiCompatibleReasoning(model: String?): Boolean {
         val base = getBaseModelName(model).lowercase()
         return base.contains("gemini") && base.contains("flash")
-                || base.startsWith("nemotron-3")
-                || base.startsWith("grok-4.3")
-                || base.startsWith("gpt-oss")
                 || (base.startsWith("gpt-5") && !base.contains("instant") && !base.contains("chat"))
+                || base.startsWith("gpt-oss")
+                || base.startsWith("grok-4.3")
+                || base.startsWith("glm-5")
+                || base.startsWith("hy3")
+                || base.startsWith("inkling")
+                || base.startsWith("kimi-k2.5") || base.startsWith("kimi-k2.6") || base.startsWith("kimi-k3")
+                || base.startsWith("nemotron-3")
+                || base.startsWith("qwen3")
     }
 
     @JvmStatic
