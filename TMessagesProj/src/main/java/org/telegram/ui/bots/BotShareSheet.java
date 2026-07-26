@@ -158,7 +158,7 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                                 if (webPages != null && webPages.containsKey(pendingId)) {
                                     final TLRPC.WebPage webpage = webPages.get(pendingId);
                                     if (delegateToRemove[0] != null) {
-                                        NotificationCenter.getInstance(currentAccount).addObserver(delegateToRemove[0], NotificationCenter.didReceivedWebpagesInUpdates);
+                                        NotificationCenter.getInstance(currentAccount).removeObserver(delegateToRemove[0], NotificationCenter.didReceivedWebpagesInUpdates);
                                         delegateToRemove[0] = null;
                                     }
                                     whenLoaded.run(webpage instanceof TLRPC.TL_webPage ? webpage : null);
@@ -181,7 +181,7 @@ public class BotShareSheet extends BottomSheetWithRecyclerListView {
                 reqId[0] = -1;
             }
             if (delegateToRemove[0] != null) {
-                NotificationCenter.getInstance(currentAccount).addObserver(delegateToRemove[0], NotificationCenter.didReceivedWebpagesInUpdates);
+                NotificationCenter.getInstance(currentAccount).removeObserver(delegateToRemove[0], NotificationCenter.didReceivedWebpagesInUpdates);
                 delegateToRemove[0] = null;
             }
         };
