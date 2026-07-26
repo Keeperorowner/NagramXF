@@ -47,16 +47,17 @@ public final class OpenAICompatClient {
         if (key.isEmpty()) {
             return new LlmResponse<>(null, getString(R.string.ApiKeyNotSet), 0, 0);
         }
+        if (key.indexOf('\r') >= 0 || key.indexOf('\n') >= 0) {
+            return new LlmResponse<>(null, "Invalid API key", 0, 0);
+        }
 
         long start = System.currentTimeMillis();
 
-        Request request = new Request.Builder()
+        try (Response response = httpClient.newCall(new Request.Builder()
                 .url(requestBaseUrl + "/models")
                 .header("Authorization", "Bearer " + key)
                 .get()
-                .build();
-
-        try (Response response = httpClient.newCall(request).execute()) {
+                .build()).execute()) {
             String body = response.body().string();
             long duration = System.currentTimeMillis() - start;
             int code = response.code();
@@ -118,17 +119,18 @@ public final class OpenAICompatClient {
         if (key.isEmpty()) {
             return new LlmResponse<>(null, getString(R.string.ApiKeyNotSet), 0, 0);
         }
+        if (key.indexOf('\r') >= 0 || key.indexOf('\n') >= 0) {
+            return new LlmResponse<>(null, "Invalid API key", 0, 0);
+        }
 
         long start = System.currentTimeMillis();
 
         RequestBody requestBody = RequestBody.create(requestJson, HttpClient.MEDIA_TYPE_JSON);
-        Request request = new Request.Builder()
+        try (Response response = client.newCall(new Request.Builder()
                 .url(requestBaseUrl + "/chat/completions")
                 .header("Authorization", "Bearer " + key)
                 .post(requestBody)
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
+                .build()).execute()) {
             String body = response.body().string();
             long duration = System.currentTimeMillis() - start;
             int code = response.code();
