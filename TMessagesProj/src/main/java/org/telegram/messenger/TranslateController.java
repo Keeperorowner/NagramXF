@@ -287,11 +287,7 @@ public class TranslateController extends BaseController {
     }
 
     public static String currentLanguage() {
-        String lang = currentPluralLanguage();
-        if (lang != null) {
-            lang = lang.split("_")[0];
-        }
-        return lang;
+        return currentPluralLanguage().split("_")[0];
     }
 
     public String getDialogTranslateTo(long dialogId) {
