@@ -1149,6 +1149,13 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+
+    val builtInFolders =
+        addConfig(
+            "BuiltInFolders",
+            ConfigItem.configTypeString,
+            ""
+        )
     val translatorKeepMarkdown =
         addConfig(
             "TranslatorKeepMarkdown",
@@ -1374,36 +1381,6 @@ object NaConfig {
     val showTranslateMessageLLM =
         addConfig(
             "TranslateMessageLLM",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val shortcutsAdministrators =
-        addConfig(
-            "ChannelAdministrators",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val shortcutsRecentActions =
-        addConfig(
-            "EventLog",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val shortcutsStatistics =
-        addConfig(
-            "Statistics",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val shortcutsPermissions =
-        addConfig(
-            "ChannelPermissions",
-            ConfigItem.configTypeBool,
-            false
-        )
-    val shortcutsMembers =
-        addConfig(
-            "GroupMembers",
             ConfigItem.configTypeBool,
             false
         )
