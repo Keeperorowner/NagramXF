@@ -298,4 +298,10 @@
     <string name="BuiltInFolderBasicGroups">Basic Groups</string>
     <string name="BuiltInFolderSupergroups">Supergroups</string>
     <string name="BuiltInFolderAdmin">Administrator</string>
+    <!-- Sidebar menu manager -->
+    <string name="MainMenuItems">Sidebar items</string>
+    <string name="MainMenuHiddenItems">Hidden items</string>
+    <string name="MainMenuAddDivider">Add divider</string>
+    <string name="MainMenuDivider">Divider</string>
+    <string name="MainMenuItemsInfo">Long-press and drag to reorder. Tap an item to hide it, or tap a hidden item to bring it back. Tap a divider to remove it.</string>
 </resources>

@@ -1101,6 +1101,24 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val drawerItemGhost =
+        addConfig(
+            "DrawerItemGhost",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val mainMenuLayout =
+        addConfig(
+            "MainMenuLayout",
+            ConfigItem.configTypeString,
+            ""
+        )
+    val mainMenuHiddenItems =
+        addConfig(
+            "MainMenuHiddenItems",
+            ConfigItem.configTypeString,
+            ""
+        )
     val hideArchive =
         addConfig(
             "HideArchive",
