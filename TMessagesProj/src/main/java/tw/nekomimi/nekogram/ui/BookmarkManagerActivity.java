@@ -121,6 +121,7 @@ public class BookmarkManagerActivity extends BaseFragment {
     private final BlurredBackgroundSourceRenderNode tabsBackgroundSourceGlass;
     private final BlurredBackgroundDrawableViewFactory tabsBackgroundDrawableFactory;
     private ViewPositionWatcher tabsViewPositionWatcher;
+    private int bottomInset;
 
     private final DownscaleScrollableNoiseSuppressor scrollableViewNoiseSuppressor;
     private IBlur3Capture blur3Capture;
@@ -181,6 +182,7 @@ public class BookmarkManagerActivity extends BaseFragment {
         actionBar.setAllowOverlayTitle(false);
         actionBar.setClipContent(true);
         actionBar.setCastShadows(false);
+        actionBar.setAddToContainer(false);
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -333,6 +335,7 @@ public class BookmarkManagerActivity extends BaseFragment {
         final int tabsHeight = dp(TABS_CONTAINER_HEIGHT_DP);
         contentLayout.addView(emptyView, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, topContentOffset + tabsHeight, 0, 0));
         contentLayout.addView(tabsContainer, LayoutHelper.createFrameMarginPx(LayoutHelper.MATCH_PARENT, TABS_CONTAINER_HEIGHT_DP, Gravity.TOP, dp(4), topContentOffset, dp(4), 0));
+        contentLayout.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
         updateTabsStyle();
         setPageTab(viewPages[0], selectedTabId, false);
         updateBlur3Capture();
@@ -342,6 +345,23 @@ public class BookmarkManagerActivity extends BaseFragment {
         invalidateGestureExclusion();
 
         return fragmentView;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        bottomInset = bottom;
+        if (viewPages != null) {
+            for (ViewPage page : viewPages) {
+                if (page != null && page.listView != null) {
+                    page.listView.setPadding(0, dp(TABS_CONTAINER_HEIGHT_DP) + getTopContentOffset(), 0, bottomInset);
+                }
+            }
+        }
     }
 
     @Override
