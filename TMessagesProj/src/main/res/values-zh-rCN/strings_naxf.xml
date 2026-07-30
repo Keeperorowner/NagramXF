@@ -278,4 +278,14 @@
     <string name="SaveReadDateAbout">记录你的发出消息被阅读的时间，该时间会显示在消息信息中。</string>
     <string name="AyuReadDate">已读</string>
     <string name="AyuReadDateUnknown">未知</string>
+    <!-- Built-in local folders -->
+    <string name="BuiltInFolders">内置文件夹</string>
+    <string name="BuiltInFoldersInfo">内置文件夹在本机生成，不会同步到 Telegram，名称和图标也不可修改。</string>
+    <string name="LocalFolder">本地文件夹</string>
+    <string name="LocalFolderEditInfo">内置文件夹不可编辑。如需调整，可以在这里删除后重新添加。</string>
+    <string name="BuiltInFolderUnread">未读</string>
+    <string name="BuiltInFolderUnmuted">未静音</string>
+    <string name="BuiltInFolderBasicGroups">普通群组</string>
+    <string name="BuiltInFolderSupergroups">超级群组</string>
+    <string name="BuiltInFolderAdmin">管理员</string>
 </resources>

@@ -81,6 +81,7 @@ import tw.nekomimi.nekogram.filters.AyuFilter;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.helper.LocalFolderHelper;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
@@ -129,7 +130,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public final static int LAST_DB_VERSION = 176;
+    public final static int LAST_DB_VERSION = 177;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
 
@@ -594,7 +595,7 @@ public class MessagesStorage extends BaseController {
         database.executeFast("CREATE INDEX IF NOT EXISTS folder_id_idx_4_dialogs ON dialogs(folder_id);").stepThis().dispose();
         database.executeFast("CREATE INDEX IF NOT EXISTS flags_idx_4_dialogs ON dialogs(flags);").stepThis().dispose();
 
-        database.executeFast("CREATE TABLE dialog_filter_neko(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, emoticon TEXT, color INTEGER DEFAULT -1, entities BLOB, noanimate INTEGER)").stepThis().dispose();
+        database.executeFast("CREATE TABLE dialog_filter_neko(id INTEGER PRIMARY KEY, ord INTEGER, unread_count INTEGER, flags INTEGER, title TEXT, emoticon TEXT, color INTEGER DEFAULT -1, entities BLOB, noanimate INTEGER, type INTEGER DEFAULT 0, local INTEGER DEFAULT 0)").stepThis().dispose();
         database.executeFast("CREATE TABLE dialog_filter_ep(id INTEGER, peer INTEGER, PRIMARY KEY (id, peer))").stepThis().dispose();
         database.executeFast("CREATE TABLE dialog_filter_pin_v2(id INTEGER, peer INTEGER, pin INTEGER, PRIMARY KEY (id, peer))").stepThis().dispose();
 
@@ -2596,7 +2597,7 @@ public class MessagesStorage extends BaseController {
 
                 usersToLoad.add(getUserConfig().getClientUserId());
 
-                filtersCursor = database.queryFinalized("SELECT id, ord, unread_count, flags, title, emoticon, color, entities, noanimate FROM dialog_filter_neko WHERE 1");
+                filtersCursor = database.queryFinalized("SELECT id, ord, unread_count, flags, title, emoticon, color, entities, noanimate, type, local FROM dialog_filter_neko WHERE 1");
 
                 boolean updateCounters = false;
                 boolean hasDefaultFilter = false;
@@ -2616,6 +2617,8 @@ public class MessagesStorage extends BaseController {
                         buff.reuse();
                     }
                     filter.title_noanimate = filtersCursor.intValue(8) == 1;
+                    filter.type = filtersCursor.intValue(9);
+                    filter.local = filtersCursor.intValue(10) == 1;
                     dialogFilters.add(filter);
                     dialogFiltersMap.put(filter.id, filter);
                     filtersById.put(filter.id, filter);
@@ -2685,7 +2688,7 @@ public class MessagesStorage extends BaseController {
                     dialogFiltersMap.put(filter.id, filter);
                     filtersById.put(filter.id, filter);
 
-                    state = database.executeFast("REPLACE INTO dialog_filter_neko VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    state = database.executeFast("REPLACE INTO dialog_filter_neko VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     state.bindInteger(1, filter.id);
                     state.bindInteger(2, filter.order);
                     state.bindInteger(3, filter.unreadCount);
@@ -2698,6 +2701,8 @@ public class MessagesStorage extends BaseController {
                     entitiesVector.serializeToStream(entitiesBuffer);
                     state.bindByteBuffer(8, entitiesBuffer);
                     state.bindInteger(9, filter.title_noanimate ? 1 : 0);
+                    state.bindInteger(10, filter.type);
+                    state.bindInteger(11, filter.local ? 1 : 0);
                     state.stepThis().dispose();
                     state = null;
                     entitiesBuffer.reuse();
@@ -2756,6 +2761,9 @@ public class MessagesStorage extends BaseController {
     private int[][] bots = new int[][]{new int[2], new int[2]};
     private int[][] channels = new int[][]{new int[2], new int[2]};
     private int[][] groups = new int[][]{new int[2], new int[2]};
+    // NagramX: split out for the built-in basic-groups (21) and supergroups (22) folders
+    private int[][] basicGroups = new int[][]{new int[2], new int[2]};
+    private int[][] megagroups = new int[][]{new int[2], new int[2]};
     private int[][] communities = new int[][]{new int[2], new int[2]};
     private int[] mentionChannels = new int[2];
     private int[] mentionGroups = new int[2];
@@ -2767,7 +2775,7 @@ public class MessagesStorage extends BaseController {
         try {
             for (int a = 0; a < 2; a++) {
                 for (int b = 0; b < 2; b++) {
-                    contacts[a][b] = nonContacts[a][b] = bots[a][b] = channels[a][b] = groups[a][b] = communities[a][b] = 0;
+                    contacts[a][b] = nonContacts[a][b] = bots[a][b] = channels[a][b] = groups[a][b] = basicGroups[a][b] = megagroups[a][b] = communities[a][b] = 0;
                 }
             }
             dialogsWithMentions.clear();
@@ -2938,7 +2946,13 @@ public class MessagesStorage extends BaseController {
                     } else if (ChatObject.isChannel(chat) && !chat.megagroup) {
                         channels[idx1][idx2]++;
                     } else {
+                        // NagramX: keep the basic/super split so the built-in folders can count them
                         groups[idx1][idx2]++;
+                        if (chat.megagroup) {
+                            megagroups[idx1][idx2]++;
+                        } else {
+                            basicGroups[idx1][idx2]++;
+                        }
                     }
                     chatsDict.put(chat.id, chat);
                 }
@@ -2962,6 +2976,15 @@ public class MessagesStorage extends BaseController {
                 if (a < N) {
                     filter = dialogFilters.get(a);
                     if (filter.pendingUnreadCount >= 0) {
+                        continue;
+                    }
+                    // NagramX: the admin folder's membership depends on the user's rights per chat, not on
+                    // flag buckets, so count it directly from the loaded chats
+                    if (filter.local && filter.type == MessagesController.DIALOG_FILTER_TYPE_ADMIN) {
+                        filter.pendingUnreadCount = countAdminUnread(filter, chatsDict, mutedDialogs, archivedDialogs, dialogsWithUnread);
+                        if (apply) {
+                            filter.unreadCount = filter.pendingUnreadCount;
+                        }
                         continue;
                     }
                     flags = filter.flags;
@@ -3007,16 +3030,25 @@ public class MessagesStorage extends BaseController {
                     }
                 }
                 if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) != 0) {
+                    int[][] bucket = groups;
+                    // NagramX: the built-in basic-groups (21) / supergroups (22) folders only count one half
+                    if (filter != null && filter.local) {
+                        if (filter.type == MessagesController.DIALOG_FILTER_TYPE_GROUPS) {
+                            bucket = basicGroups;
+                        } else if (filter.type == MessagesController.DIALOG_FILTER_TYPE_MEGAGROUPS) {
+                            bucket = megagroups;
+                        }
+                    }
                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_ONLY_ARCHIVED) == 0) {
-                        unreadCount += groups[0][0];
+                        unreadCount += bucket[0][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
-                            unreadCount += groups[0][1];
+                            unreadCount += bucket[0][1];
                         }
                     }
                     if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) == 0) {
-                        unreadCount += groups[1][0];
+                        unreadCount += bucket[1][0];
                         if ((flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) == 0) {
-                            unreadCount += groups[1][1];
+                            unreadCount += bucket[1][1];
                         }
                     }
                 }
@@ -3189,6 +3221,45 @@ public class MessagesStorage extends BaseController {
         }
     }
 
+    // NagramX: count unread chats the user administers, for the built-in admin folder.
+    // Membership is "creator or has admin rights", which the flag buckets cannot express, so we walk
+    // the chats loaded by calcUnreadCounters and honour its exclude-archived / exclude-muted flags.
+    private int countAdminUnread(MessagesController.DialogFilter filter,
+                                 LongSparseArray<TLRPC.Chat> chatsDict,
+                                 LongSparseArray<Boolean> mutedDialogs,
+                                 LongSparseArray<Boolean> archivedDialogs,
+                                 LongSparseArray<Integer> dialogsWithUnread) {
+        if (chatsDict == null || chatsDict.size() == 0) {
+            return 0;
+        }
+        int flags = filter.flags;
+        boolean excludeArchived = (flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_ARCHIVED) != 0;
+        boolean excludeMuted = (flags & MessagesController.DIALOG_FILTER_FLAG_EXCLUDE_MUTED) != 0;
+        int unread = 0;
+        for (int i = 0, N = chatsDict.size(); i < N; i++) {
+            TLRPC.Chat chat = chatsDict.valueAt(i);
+            if (chat == null || ChatObject.isNotInChat(chat) || ChatObject.isCommunity(chat)) {
+                continue;
+            }
+            if (!chat.creator && !ChatObject.hasAdminRights(chat)) {
+                continue;
+            }
+            long did = -chat.id;
+            if (dialogsWithUnread.indexOfKey(did) < 0) {
+                continue;
+            }
+            if (excludeArchived && archivedDialogs.indexOfKey(did) >= 0) {
+                continue;
+            }
+            // mirror the bucket logic: a muted chat still counts when it has an unread mention
+            if (excludeMuted && mutedDialogs.indexOfKey(did) >= 0 && dialogsWithMentions.indexOfKey(did) < 0) {
+                continue;
+            }
+            unread++;
+        }
+        return unread;
+    }
+
     private void saveDialogFilterInternal(MessagesController.DialogFilter filter, boolean atBegin, boolean peers) {
         SQLitePreparedStatement state = null;
         try {
@@ -3205,7 +3276,7 @@ public class MessagesStorage extends BaseController {
                 dialogFiltersMap.put(filter.id, filter);
             }
 
-            state = database.executeFast("REPLACE INTO dialog_filter_neko VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            state = database.executeFast("REPLACE INTO dialog_filter_neko VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             state.bindInteger(1, filter.id);
             state.bindInteger(2, filter.order);
             state.bindInteger(3, filter.unreadCount);
@@ -3223,6 +3294,8 @@ public class MessagesStorage extends BaseController {
             entitiesVector.serializeToStream(entitiesBuffer);
             state.bindByteBuffer(8, entitiesBuffer);
             state.bindInteger(9, filter.title_noanimate ? 1 : 0);
+            state.bindInteger(10, filter.type);
+            state.bindInteger(11, filter.local ? 1 : 0);
             state.step();
             state.dispose();
             entitiesBuffer.reuse();
@@ -3305,6 +3378,10 @@ public class MessagesStorage extends BaseController {
                 SparseArray<MessagesController.DialogFilter> filtersToDelete = new SparseArray<>();
                 for (int a = 0, N = dialogFilters.size(); a < N; a++) {
                     MessagesController.DialogFilter filter = dialogFilters.get(a);
+                    // NagramX: local folders are not known to the server, never delete them here
+                    if (filter.local) {
+                        continue;
+                    }
                     filtersToDelete.put(filter.id, filter);
                 }
                 ArrayList<Integer> filtersOrder = new ArrayList<>();
@@ -3637,7 +3714,8 @@ public class MessagesStorage extends BaseController {
         for (int a = 0, N = dialogFilters.size(); a < N; a++) {
             MessagesController.DialogFilter filter = dialogFilters.get(a);
             int order = filtersOrder.indexOf(filter.id);
-            if (filter.order != order) {
+            // NagramX: local folders are absent from the server order, keep their own order
+            if (order > -1 && filter.order != order) {
                 filter.order = order;
                 anythingChanged = true;
                 orderChanged = true;
@@ -3720,6 +3798,8 @@ public class MessagesStorage extends BaseController {
 
     public void saveDialogFiltersOrder() {
         ArrayList<MessagesController.DialogFilter> filtersFinal = new ArrayList<>(getMessagesController().dialogFilters);
+        // NagramX: mirror the on-screen order of the built-in folders back into the synced recipe
+        LocalFolderHelper.saveOrderFromFilters(filtersFinal);
         storageQueue.postRunnable(() -> {
             dialogFilters.clear();
             dialogFiltersMap.clear();

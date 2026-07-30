@@ -288,4 +288,14 @@
     <string name="SaveReadDateAbout">Record when your outgoing messages are read. The read time is shown in the message info.</string>
     <string name="AyuReadDate">Read</string>
     <string name="AyuReadDateUnknown">Unknown</string>
+    <!-- Built-in local folders -->
+    <string name="BuiltInFolders">Built-in Folders</string>
+    <string name="BuiltInFoldersInfo">Built-in folders are generated on this device and are not synced to Telegram. Their name and icon can\'t be changed.</string>
+    <string name="LocalFolder">Local folder</string>
+    <string name="LocalFolderEditInfo">Built-in folders can\'t be edited. Remove it here and add it again to change your mind.</string>
+    <string name="BuiltInFolderUnread">Unread</string>
+    <string name="BuiltInFolderUnmuted">Unmuted</string>
+    <string name="BuiltInFolderBasicGroups">Basic Groups</string>
+    <string name="BuiltInFolderSupergroups">Supergroups</string>
+    <string name="BuiltInFolderAdmin">Administrator</string>
 </resources>

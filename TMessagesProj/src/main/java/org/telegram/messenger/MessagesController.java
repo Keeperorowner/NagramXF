@@ -144,6 +144,7 @@ import tw.nekomimi.nekogram.helpers.LocalNameHelper;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.helper.LocalFolderHelper;
 import xyz.nextalone.nagram.helper.LocalPremiumStatusHelper;
 
 import com.radolyn.ayugram.AyuConstants;
@@ -893,23 +894,41 @@ public class MessagesController extends BaseController implements NotificationCe
         getStoriesController().onPremiumChanged();
     }
 
+    /**
+     * NagramX: number of folders that actually exist on the server. Built-in local folders must not
+     * count against any of the folder limits shown to the user.
+     */
+    public int getRemoteFiltersCount() {
+        int count = 0;
+        for (int i = 0; i < dialogFilters.size(); i++) {
+            if (!dialogFilters.get(i).local) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     public void lockFiltersInternal() {
         boolean changed = false;
-        if (!getUserConfig().isPremium() && dialogFilters.size() - 1 > dialogFiltersLimitDefault) {
-            int n = dialogFilters.size() - 1 - dialogFiltersLimitDefault;
+        int remoteCount = getRemoteFiltersCount();
+        if (!getUserConfig().isPremium() && remoteCount - 1 > dialogFiltersLimitDefault) {
+            int n = remoteCount - 1 - dialogFiltersLimitDefault;
             ArrayList<DialogFilter> filtersSortedById = new ArrayList<>(dialogFilters);
             Collections.reverse(filtersSortedById);
+            int lockedCount = 0;
             for (int i = 0; i < filtersSortedById.size(); i++) {
-                if (i < n) {
-                    if (!filtersSortedById.get(i).locked) {
+                DialogFilter filter = filtersSortedById.get(i);
+                if (!filter.local && lockedCount < n) {
+                    lockedCount++;
+                    if (!filter.locked) {
                         changed = true;
                     }
-                    filtersSortedById.get(i).locked = !NekoConfig.localPremium.Bool();
+                    filter.locked = !NekoConfig.localPremium.Bool();
                 } else {
-                    if (filtersSortedById.get(i).locked) {
+                    if (filter.locked) {
                         changed = true;
                     }
-                    filtersSortedById.get(i).locked = false;
+                    filter.locked = false;
                 }
             }
         }
@@ -1292,6 +1311,21 @@ public class MessagesController extends BaseController implements NotificationCe
     public static int DIALOG_FILTER_FLAG_CHATLIST = 0x00000200;
     public static int DIALOG_FILTER_FLAG_CHATLIST_ADMIN = 0x00000400;
 
+    // NagramX: built-in local folders. A filter with type != NONE is generated from the
+    // user's settings instead of the server, so its name, icon and flags are derived from
+    // the type and it is never sent to (or deleted by) the server.
+    public static final int DIALOG_FILTER_TYPE_NONE = 0;
+    public static final int DIALOG_FILTER_TYPE_USERS = 20;
+    public static final int DIALOG_FILTER_TYPE_GROUPS = 21;
+    public static final int DIALOG_FILTER_TYPE_MEGAGROUPS = 22;
+    public static final int DIALOG_FILTER_TYPE_GROUPS_ALL = 23;
+    public static final int DIALOG_FILTER_TYPE_CHANNELS = 24;
+    public static final int DIALOG_FILTER_TYPE_BOTS = 25;
+    public static final int DIALOG_FILTER_TYPE_FAVS = 26;
+    public static final int DIALOG_FILTER_TYPE_ADMIN = 27;
+    public static final int DIALOG_FILTER_TYPE_UNREAD = 28;
+    public static final int DIALOG_FILTER_TYPE_UNMUTED = 29;
+
     public static class DialogFilter {
         public int id;
         public String name;
@@ -1308,6 +1342,11 @@ public class MessagesController extends BaseController implements NotificationCe
         public ArrayList<TLRPC.Dialog> dialogsForward = new ArrayList<>();
         public int color;
         public boolean title_noanimate;
+
+        // NagramX: local (device-only) folder, never synced to the server
+        public boolean local;
+        // NagramX: DIALOG_FILTER_TYPE_*, only meaningful when local is true
+        public int type;
 
         public ArrayList<TL_chatlists.TL_exportedChatlistInvite> invites = null;
 
@@ -1374,10 +1413,24 @@ public class MessagesController extends BaseController implements NotificationCe
                     } else if (ChatObject.isChatCollapsedInCommunity(accountInstance.getCurrentAccount(), chat)) {
                         return false;
                     } else if (ChatObject.isChannel(chat) && !chat.megagroup) {
+                        // NagramX: the built-in admin folder lists channels the user administers too
+                        if (type == DIALOG_FILTER_TYPE_ADMIN) {
+                            return chat.creator || ChatObject.hasAdminRights(chat);
+                        }
                         if ((flags & DIALOG_FILTER_FLAG_CHANNELS) != 0) {
                             return true;
                         }
                     } else {
+                        // NagramX: built-in folders may want only basic groups or only supergroups.
+                        if (type == DIALOG_FILTER_TYPE_MEGAGROUPS) {
+                            return chat.megagroup && (flags & DIALOG_FILTER_FLAG_GROUPS) != 0;
+                        }
+                        if (type == DIALOG_FILTER_TYPE_GROUPS) {
+                            return !chat.megagroup && (flags & DIALOG_FILTER_FLAG_GROUPS) != 0;
+                        }
+                        if (type == DIALOG_FILTER_TYPE_ADMIN) {
+                            return chat.creator || ChatObject.hasAdminRights(chat);
+                        }
                         if ((flags & DIALOG_FILTER_FLAG_GROUPS) != 0) {
                             return true;
                         }
@@ -2289,6 +2342,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     putUsers(users, true);
                     putChats(chats, true);
                     dialogFiltersLoaded = true;
+                    // NagramX: rebuild the built-in local folders from the recipe on every load
+                    LocalFolderHelper.ensureLocalFilters(currentAccount);
                     getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
                     if (remote == 0) {
                         loadRemoteFilters(false);
@@ -2612,7 +2667,14 @@ public class MessagesController extends BaseController implements NotificationCe
             dialogFilters.add(filter);
         }
         dialogFiltersById.put(filter.id, filter);
-        if (dialogFilters.size() == 1 && SharedConfig.getChatSwipeAction(currentAccount) != SwipeGestureSettingsView.SWIPE_GESTURE_FOLDERS) {
+        // NagramX: only a real (server) folder being the first one flips the swipe gesture setting
+        int nonLocalCount = 0;
+        for (int a = 0, N = dialogFilters.size(); a < N; a++) {
+            if (!dialogFilters.get(a).local) {
+                nonLocalCount++;
+            }
+        }
+        if (nonLocalCount == 1 && SharedConfig.getChatSwipeAction(currentAccount) != SwipeGestureSettingsView.SWIPE_GESTURE_FOLDERS) {
             SharedConfig.updateChatListSwipeSetting(SwipeGestureSettingsView.SWIPE_GESTURE_FOLDERS);
         }
         lockFiltersInternal();
@@ -2685,6 +2747,10 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void removeFilter(DialogFilter filter) {
+        if (filter.local) {
+            // NagramX: take it out of the recipe too, otherwise ensureLocalFilters() rebuilds it
+            LocalFolderHelper.disableFolder(filter.type);
+        }
         dialogFilters.remove(filter);
         dialogFiltersById.remove(filter.id);
         getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);

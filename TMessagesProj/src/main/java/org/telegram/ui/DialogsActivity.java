@@ -3753,9 +3753,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         builder.setMessage(LocaleController.getString(R.string.FilterDeleteAlert));
                         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                         builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog2, which2) -> {
-                            TLRPC.TL_messages_updateDialogFilter req = new TLRPC.TL_messages_updateDialogFilter();
-                            req.id = dialogFilter.id;
-                            getConnectionsManager().sendRequest(req, null);
+                            // NagramX: local folders only exist on this device, drop them without an RPC
+                            if (!dialogFilter.local) {
+                                TLRPC.TL_messages_updateDialogFilter req = new TLRPC.TL_messages_updateDialogFilter();
+                                req.id = dialogFilter.id;
+                                getConnectionsManager().sendRequest(req, null);
+                            }
                             getMessagesController().removeFilter(dialogFilter);
                             getMessagesStorage().deleteDialogFilter(dialogFilter);
                         });
@@ -3975,7 +3978,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                                 filterTabsView.setIsEditing(true);
                                 showDoneItem(true);
                             })
-                            .add(R.drawable.msg_edit, defaultTab ? LocaleController.getString(R.string.FilterEditAll) : LocaleController.getString(R.string.FilterEdit), () -> {
+                            // NagramX: a built-in local folder is defined by its type, editing it would be reverted
+                            .addIf(defaultTab || dialogFilter == null || !dialogFilter.local, R.drawable.msg_edit, defaultTab ? LocaleController.getString(R.string.FilterEditAll) : LocaleController.getString(R.string.FilterEdit), () -> {
                                 presentFragment(defaultTab ? new FiltersSetupActivity() : new FilterCreateActivity(dialogFilter));
                             })
                             .addIf(dialogFilter != null && !dialogs.isEmpty(), muteAll ? R.drawable.msg_mute : R.drawable.msg_unmute, muteAll ? getString(R.string.FilterMuteAll) : getString(R.string.FilterUnmuteAll), () -> {
