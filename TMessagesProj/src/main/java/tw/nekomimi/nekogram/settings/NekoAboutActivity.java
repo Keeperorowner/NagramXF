@@ -264,14 +264,13 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
                     if (position == versionRow) {
                         detailCell.setMultilineDetail(true);
                         detailCell.setTextAndValue(getSimpleVersion(), getString(R.string.NaxAboutDesc), false);
-                    } else if (position == updatesRow) {
-                        detailCell.setMultilineDetail(false);
-                        detailCell.setTextAndValueAndIcon(getString(R.string.CheckUpdate), getUpdateChannelDetail(), R.drawable.msg_retry, true);
                     }
                     break;
                 case TYPE_TEXT:
                     TextCell textCell = (TextCell) holder.itemView;
-                    if (position == toggleLogsRow) {
+                    if (position == updatesRow) {
+                        textCell.setTextAndValueAndIcon(getString(R.string.CheckUpdate), getUpdateChannelDetail(), R.drawable.msg_retry, true);
+                    } else if (position == toggleLogsRow) {
                         textCell.setTextAndIcon(BuildVars.LOGS_ENABLED ? getString(R.string.DebugMenuDisableLogs) : getString(R.string.DebugMenuEnableLogs), R.drawable.bug, sendLogsRow != -1);
                     } else if (position == sendLogsRow) {
                         textCell.setTextAndIcon(getString(R.string.DebugSendLogs), R.drawable.ic_upward, true);
@@ -303,7 +302,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == infoHeaderRow || position == linksHeaderRow) {
                 return TYPE_HEADER;
-            } else if (position == versionRow || position == updatesRow) {
+            } else if (position == versionRow) {
                 return TYPE_DETAIL_SETTINGS;
             } else if (position == linksShadowRow) {
                 return TYPE_SHADOW;
