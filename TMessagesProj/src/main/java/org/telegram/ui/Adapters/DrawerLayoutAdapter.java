@@ -31,7 +31,7 @@ import java.util.Collections;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
-import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.helper.DrawerMenuHelper;
 
 public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter implements NotificationCenter.NotificationCenterDelegate {
 
@@ -239,67 +239,26 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         if (!UserConfig.getInstance(UserConfig.selectedAccount).isClientActivated()) {
             return;
         }
-        int newGroupIcon = R.drawable.msg_groups;
-        int newChannelIcon = R.drawable.msg_channel;
-        int contactsIcon = R.drawable.msg_contacts;
-        int callsIcon = R.drawable.msg_calls;
-        int recentChatsIcon = R.drawable.msg_recent;
-        int savedIcon = R.drawable.msg_saved;
-        int settingsIcon = R.drawable.msg_settings_old;
 
-        UserConfig me = UserConfig.getInstance(UserConfig.selectedAccount);
-        items.add(new Item(
-                nkbtnGhostMode,
-                NekoConfig.isGhostModeActive()
-                        ? LocaleController.getString(R.string.DisableGhostMode)
-                        : LocaleController.getString(R.string.EnableGhostMode),
-                R.drawable.ayu_ghost
-        ));
-        items.add(null);
-
-        boolean showMyProfile = NaConfig.INSTANCE.getDrawerItemMyProfile().Bool();
-        if (showMyProfile) {
-            items.add(new Item(16, LocaleController.getString(R.string.MyProfile), R.drawable.left_status_profile));
+        // Configurable rows, rendered in the order chosen in the sidebar manager.
+        for (int id : DrawerMenuHelper.getLayout()) {
+            if (id == DrawerMenuHelper.DIVIDER) {
+                if (!items.isEmpty() && items.get(items.size() - 1) != null) {
+                    items.add(null);
+                }
+                continue;
+            }
+            Item item = buildItemForId(id);
+            if (item != null) {
+                items.add(item);
+            }
         }
-        boolean showSetEmojiStatus = me != null && me.isPremium() && NaConfig.INSTANCE.getDrawerItemSetEmojiStatus().Bool();
-        if (showSetEmojiStatus) {
-            items.add(new Item(
-                    15,
-                    me.getEmojiStatus() != null
-                            ? LocaleController.getString(R.string.ChangeEmojiStatus)
-                            : LocaleController.getString(R.string.SetEmojiStatus),
-                    me.getEmojiStatus() != null ? R.drawable.msg_status_edit : R.drawable.msg_status_set
-            ));
-        }
-        boolean showArchivedChats = NaConfig.INSTANCE.getDrawerItemArchivedChats().Bool();
-        if (showArchivedChats) {
-            items.add(new Item(nkbtnArchivedChats, LocaleController.getString(R.string.ArchivedChats), R.drawable.msg_archive));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemNewGroup().Bool()) {
-            items.add(new Item(2, LocaleController.getString(R.string.NewGroup), newGroupIcon));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemNewChannel().Bool()) {
-            items.add(new Item(4, LocaleController.getString(R.string.NewChannel), newChannelIcon));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemContacts().Bool()) {
-            items.add(new Item(6, LocaleController.getString(R.string.Contacts), contactsIcon));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemCalls().Bool()) {
-            items.add(new Item(10, LocaleController.getString(R.string.Calls), callsIcon));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemRecentChats().Bool()) {
-            items.add(new Item(nkbtnRecentChats, LocaleController.getString(R.string.RecentChats), recentChatsIcon));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemSaved().Bool()) {
-            items.add(new Item(11, LocaleController.getString(R.string.SavedMessages), savedIcon));
-        }
-        if (NaConfig.INSTANCE.getShowAddToBookmark().Bool()) {
-            items.add(new Item(nkbtnBookmarks, LocaleController.getString(R.string.BookmarksManager), R.drawable.msg_fave));
-        }
-        if (NaConfig.INSTANCE.getDrawerItemSettings().Bool()) {
-            items.add(new Item(8, LocaleController.getString(R.string.Settings), settingsIcon));
+        // Strip any dangling divider left at the end of the configurable section.
+        while (!items.isEmpty() && items.get(items.size() - 1) == null) {
+            items.remove(items.size() - 1);
         }
 
+        // Attach-menu bots are server-driven (not user-configurable): appended after the configurable rows.
         TLRPC.TL_attachMenuBots menuBots = MediaDataController.getInstance(UserConfig.selectedAccount).getAttachMenuBots();
         if (menuBots != null && menuBots.bots != null) {
             boolean addedDivider = false;
@@ -315,31 +274,66 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
                 items.add(new Item(bot));
             }
         }
+    }
 
-        boolean showNSettings = NaConfig.INSTANCE.getDrawerItemNSettings().Bool();
-        boolean showBrowser = NaConfig.INSTANCE.getDrawerItemBrowser().Bool();
-        boolean showQrLogin = NaConfig.INSTANCE.getDrawerItemQrLogin().Bool();
-        boolean showSessions = NaConfig.INSTANCE.getDrawerItemSessions().Bool();
-        boolean showRestartApp = NaConfig.INSTANCE.getDrawerItemRestartApp().Bool();
-        if (showNSettings || showBrowser || showQrLogin || showSessions) {
-            items.add(null);
+    /**
+     * Builds a drawer {@link Item} for a configurable row id, or {@code null} when the
+     * row should not be shown (unknown id, or a premium-only row for a non-premium user).
+     * Shared by the drawer and the sidebar manager.
+     */
+    public static Item buildItemForId(int id) {
+        if (id == nkbtnGhostMode) {
+            return new Item(
+                    nkbtnGhostMode,
+                    NekoConfig.isGhostModeActive()
+                            ? LocaleController.getString(R.string.DisableGhostMode)
+                            : LocaleController.getString(R.string.EnableGhostMode),
+                    R.drawable.ayu_ghost
+            );
+        } else if (id == 16) {
+            return new Item(16, LocaleController.getString(R.string.MyProfile), R.drawable.left_status_profile);
+        } else if (id == 15) {
+            UserConfig me = UserConfig.getInstance(UserConfig.selectedAccount);
+            if (me == null || !me.isPremium()) {
+                return null;
+            }
+            return new Item(
+                    15,
+                    me.getEmojiStatus() != null
+                            ? LocaleController.getString(R.string.ChangeEmojiStatus)
+                            : LocaleController.getString(R.string.SetEmojiStatus),
+                    me.getEmojiStatus() != null ? R.drawable.msg_status_edit : R.drawable.msg_status_set
+            );
+        } else if (id == nkbtnArchivedChats) {
+            return new Item(nkbtnArchivedChats, LocaleController.getString(R.string.ArchivedChats), R.drawable.msg_archive);
+        } else if (id == 2) {
+            return new Item(2, LocaleController.getString(R.string.NewGroup), R.drawable.msg_groups);
+        } else if (id == 4) {
+            return new Item(4, LocaleController.getString(R.string.NewChannel), R.drawable.msg_channel);
+        } else if (id == 6) {
+            return new Item(6, LocaleController.getString(R.string.Contacts), R.drawable.msg_contacts);
+        } else if (id == 10) {
+            return new Item(10, LocaleController.getString(R.string.Calls), R.drawable.msg_calls);
+        } else if (id == nkbtnRecentChats) {
+            return new Item(nkbtnRecentChats, LocaleController.getString(R.string.RecentChats), R.drawable.msg_recent);
+        } else if (id == 11) {
+            return new Item(11, LocaleController.getString(R.string.SavedMessages), R.drawable.msg_saved);
+        } else if (id == nkbtnBookmarks) {
+            return new Item(nkbtnBookmarks, LocaleController.getString(R.string.BookmarksManager), R.drawable.msg_fave);
+        } else if (id == 8) {
+            return new Item(8, LocaleController.getString(R.string.Settings), R.drawable.msg_settings_old);
+        } else if (id == nkbtnSettings) {
+            return new Item(nkbtnSettings, LocaleController.getString(R.string.NekoSettings), R.drawable.nagramx_outline);
+        } else if (id == nkbtnBrowser) {
+            return new Item(nkbtnBrowser, LocaleController.getString(R.string.InappBrowser), R.drawable.web_browser);
+        } else if (id == nkbtnQrLogin) {
+            return new Item(nkbtnQrLogin, LocaleController.getString(R.string.ImportLogin), R.drawable.msg_qrcode);
+        } else if (id == nkbtnSessions) {
+            return new Item(nkbtnSessions, LocaleController.getString(R.string.Devices), R.drawable.msg2_devices);
+        } else if (id == nkbtnRestartApp) {
+            return new Item(nkbtnRestartApp, LocaleController.getString(R.string.RestartApp), R.drawable.msg_retry);
         }
-        if (showNSettings) {
-            items.add(new Item(nkbtnSettings, LocaleController.getString(R.string.NekoSettings), R.drawable.nagramx_outline));
-        }
-        if (showBrowser) {
-            items.add(new Item(nkbtnBrowser, LocaleController.getString(R.string.InappBrowser), R.drawable.web_browser));
-        }
-        if (showQrLogin) {
-            items.add(new Item(nkbtnQrLogin, LocaleController.getString(R.string.ImportLogin), R.drawable.msg_qrcode));
-        }
-        if (showSessions) {
-            items.add(new Item(nkbtnSessions, LocaleController.getString(R.string.Devices), R.drawable.msg2_devices));
-        }
-        if (showRestartApp) {
-            items.add(null);
-            items.add(new Item(nkbtnRestartApp, LocaleController.getString(R.string.RestartApp), R.drawable.msg_retry));
-        }
+        return null;
     }
 
     public boolean click(View view, int position) {

@@ -29,6 +29,7 @@ import tw.nekomimi.nekogram.settings.NekoGeneralSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoPasscodeSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity;
+import tw.nekomimi.nekogram.settings.SidebarMenuActivity;
 import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 
 public class SettingsHelper {
@@ -98,6 +99,10 @@ public class SettingsHelper {
                 case "tabs":
                     fragment = nekox_fragment = new MainTabsCustomizeActivity();
                     break;
+                case "sidebar":
+                case "drawer":
+                    fragment = neko_fragment = new SidebarMenuActivity();
+                    break;
                 case "regexfilters":
                 case "regex":
                     fragment = nekox_fragment = new RegexFiltersSettingActivity();
@@ -108,6 +113,17 @@ public class SettingsHelper {
                 default:
                     unknown.run();
                     return;
+            }
+        }
+        // The navigation-drawer toggle moved into the sidebar manager; forward its old deep link.
+        if (fragment instanceof NekoAppearanceSettingsActivity) {
+            String navRow = uri.getQueryParameter("r");
+            if (TextUtils.isEmpty(navRow)) {
+                navRow = uri.getQueryParameter("row");
+            }
+            if ("navigationDrawerEnabled".equals(navRow)) {
+                fragment = neko_fragment = new SidebarMenuActivity();
+                nekox_fragment = null;
             }
         }
         callback.presentFragment(fragment);
