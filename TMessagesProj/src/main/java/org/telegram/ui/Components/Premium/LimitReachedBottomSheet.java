@@ -1786,7 +1786,8 @@ public class LimitReachedBottomSheet extends BottomSheetWithRecyclerListView imp
             float percent = .5f, position = .5f;
 
             if (type == TYPE_FOLDERS) {
-                currentValue = MessagesController.getInstance(currentAccount).dialogFilters.size() - 1;
+                // NagramX: built-in local folders do not consume the server folder quota
+                currentValue = MessagesController.getInstance(currentAccount).getRemoteFiltersCount() - 1;
             } else if (type == TYPE_ACCOUNTS) {
                 currentValue = UserConfig.getActivatedAccountsCount();
             } else if (type == TYPE_PIN_DIALOGS) {

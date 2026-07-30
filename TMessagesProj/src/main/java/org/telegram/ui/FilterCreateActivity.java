@@ -812,6 +812,13 @@ public class FilterCreateActivity extends BaseFragment {
             builder.setMessage(LocaleController.getString(R.string.FilterDeleteAlert));
             builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
             builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog, which) -> {
+                if (filter.local) {
+                    // NagramX: local folders only exist on this device, drop them without an RPC
+                    getMessagesController().removeFilter(filter);
+                    getMessagesStorage().deleteDialogFilter(filter);
+                    finishFragment();
+                    return;
+                }
                 AlertDialog progressDialog = null;
                 if (getParentActivity() != null) {
                     progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
@@ -1082,6 +1089,10 @@ public class FilterCreateActivity extends BaseFragment {
             TLRPC.TL_messages_updateDialogFiltersOrder req = new TLRPC.TL_messages_updateDialogFiltersOrder();
             ArrayList<MessagesController.DialogFilter> filters = fragment.getMessagesController().getDialogFilters();
             for (int a = 0, N = filters.size(); a < N; a++) {
+                // NagramX: the server does not know local folders, sending their ids breaks the order
+                if (filters.get(a).local) {
+                    continue;
+                }
                 req.order.add(filters.get(a).id);
             }
             fragment.getConnectionsManager().sendRequest(req, null);
@@ -1102,6 +1113,14 @@ public class FilterCreateActivity extends BaseFragment {
             progressDialog.show();
         } else {
             progressDialog = null;
+        }
+        if (filter.local) {
+            // NagramX: local folders live only on this device, apply them without an RPC
+            if (progressDialog != null) {
+                progressDialog.dismiss();
+            }
+            processAddFilter(filter, newFilterFlags, newFilterEmoticon, newFilterName, newFilterNameEntities, newFilterNoanimate, newFilterColor, newAlwaysShow, newNeverShow, creatingNew, atBegin, hasUserChanged, resetUnreadCounter, fragment, onFinish);
+            return;
         }
         TLRPC.TL_messages_updateDialogFilter req = new TLRPC.TL_messages_updateDialogFilter();
         req.id = filter.id;

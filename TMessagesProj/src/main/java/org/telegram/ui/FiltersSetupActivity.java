@@ -74,6 +74,7 @@ import java.util.ArrayList;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.folder.FolderIconHelper;
+import xyz.nextalone.nagram.helper.LocalFolderHelper;
 
 public class FiltersSetupActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
 
@@ -467,6 +468,12 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 info.append(LocaleController.getString(R.string.FilterNoChats));
             }
 
+            // NagramX: built-in local folders show "Local folder: <contents>" like the recommendations
+            if (filter.local) {
+                info.setLength(0);
+                info.append(LocalFolderHelper.getSubtitle(filter));
+            }
+
             String name = filter.name;
             if (filter.isDefault()) {
                 name = LocaleController.getString(R.string.FilterAllChats);
@@ -560,11 +567,17 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         oldItems.addAll(items);
         items.clear();
 
-        ArrayList<TLRPC.TL_dialogFilterSuggested> suggestedFilters = getMessagesController().suggestedFilters;
         ArrayList<MessagesController.DialogFilter> dialogFilters = getMessagesController().getDialogFilters();
+        // NagramX: offer the built-in local folders next to the server's recommendations. They are not
+        // subject to the folder-count cap, otherwise a disabled one could never be turned back on.
+        ArrayList<TLRPC.TL_dialogFilterSuggested> suggestedFilters = new ArrayList<>();
+        if (dialogFilters.size() < 10) {
+            suggestedFilters.addAll(getMessagesController().suggestedFilters);
+        }
+        suggestedFilters.addAll(LocalFolderHelper.getSuggestions());
         items.add(ItemInner.asHint());
         items.add(ItemInner.asHintInfo(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.CreateNewFilterInfo))));
-        if (!suggestedFilters.isEmpty() && dialogFilters.size() < 10) {
+        if (!suggestedFilters.isEmpty()) {
             int start = items.size();
             items.add(ItemInner.asHeader(LocaleController.getString(R.string.FilterRecommended)));
             for (int i = 0; i < suggestedFilters.size(); ++i) {
@@ -589,7 +602,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
         } else {
             filtersSectionStart = filtersSectionEnd = -1;
         }
-        if (dialogFilters.size() < getMessagesController().dialogFiltersLimitPremium) {
+        if (getMessagesController().getRemoteFiltersCount() < getMessagesController().dialogFiltersLimitPremium) {
             items.add(ItemInner.asButton(LocaleController.getString(R.string.CreateNewFilter)));
         }
         items.add(ItemInner.asShadow(null));
@@ -620,6 +633,10 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
             ArrayList<MessagesController.DialogFilter> filters = getMessagesController().getDialogFilters();
             for (int a = 0, N = filters.size(); a < N; a++) {
                 MessagesController.DialogFilter filter = filters.get(a);
+                // NagramX: the server does not know local folders, sending their ids breaks the order
+                if (filter.local) {
+                    continue;
+                }
                 req.order.add(filter.id);
             }
             getConnectionsManager().sendRequest(req, (response, error) -> {
@@ -706,6 +723,11 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                 if (filter == null || filter.isDefault()) {
                     return;
                 }
+                if (filter.local) {
+                    // NagramX: a built-in folder is defined by its type, editing it would be reverted
+                    BulletinFactory.of(this).createSimpleBulletin(R.raw.info, LocaleController.getString(R.string.LocalFolderEditInfo)).show();
+                    return;
+                }
                 if (filter.locked) {
                     showDialog(new LimitReachedBottomSheet(this, context, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
                 } else {
@@ -729,7 +751,7 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
     }
 
     public void createFolder(INavigationLayout navigationLayout) {
-        final int count = getMessagesController().getDialogFilters().size();
+        final int count = getMessagesController().getRemoteFiltersCount();
         if (
             count - 1 >= getMessagesController().dialogFiltersLimitDefault && !getUserConfig().isPremium() ||
             count >= getMessagesController().dialogFiltersLimitPremium
@@ -920,13 +942,17 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                         FilterCell cell = (FilterCell) v.getParent();
                         MessagesController.DialogFilter filter = cell.getCurrentFilter();
                         ItemOptions options = ItemOptions.makeOptions(FiltersSetupActivity.this, cell);
-                        options.add(R.drawable.msg_edit, LocaleController.getString(R.string.FilterEditItem), () -> {
-                            if (filter.locked) {
-                                showDialog(new LimitReachedBottomSheet(FiltersSetupActivity.this, mContext, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
-                            } else {
-                                presentFragment(new FilterCreateActivity(filter));
-                            }
-                        });
+                        if (!filter.local) {
+                            // NagramX: a built-in folder's name, icon and rules come from its type,
+                            // ensureLocalFilters() would revert any edit on the next load
+                            options.add(R.drawable.msg_edit, LocaleController.getString(R.string.FilterEditItem), () -> {
+                                if (filter.locked) {
+                                    showDialog(new LimitReachedBottomSheet(FiltersSetupActivity.this, mContext, LimitReachedBottomSheet.TYPE_FOLDERS, currentAccount, null));
+                                } else {
+                                    presentFragment(new FilterCreateActivity(filter));
+                                }
+                            });
+                        }
                         options.add(R.drawable.msg_delete, LocaleController.getString(R.string.FilterDeleteItem), true, () -> {
                             if (filter.isChatlist()) {
                                 FolderBottomSheet.showForDeletion(FiltersSetupActivity.this, filter.id, success -> {
@@ -940,6 +966,12 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                             builder.setMessage(LocaleController.getString(R.string.FilterDeleteAlert));
                             builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
                             builder.setPositiveButton(LocaleController.getString(R.string.Delete), (dialog2, which2) -> {
+                                if (filter.local) {
+                                    // NagramX: local folders only exist on this device, drop them without an RPC
+                                    getMessagesController().removeFilter(filter);
+                                    getMessagesStorage().deleteDialogFilter(filter);
+                                    return;
+                                }
                                 AlertDialog progressDialog = null;
                                 if (getParentActivity() != null) {
                                     progressDialog = new AlertDialog(getParentActivity(), AlertDialog.ALERT_TYPE_SPINNER);
@@ -990,6 +1022,14 @@ public class FiltersSetupActivity extends BaseFragment implements NotificationCe
                     SuggestedFilterCell suggestedFilterCell = new SuggestedFilterCell(mContext);
                     suggestedFilterCell.setAddOnClickListener(v -> {
                         TLRPC.TL_dialogFilterSuggested suggested = suggestedFilterCell.getSuggestedFilter();
+                        LocalFolderHelper.FolderType localType = LocalFolderHelper.folderTypeOf(suggested);
+                        if (localType != null) {
+                            // NagramX: a built-in folder is enabled in the recipe, not created on the server
+                            LocalFolderHelper.setFolderEnabled(localType, true);
+                            LocalFolderHelper.ensureLocalFilters(currentAccount);
+                            updateRows(true);
+                            return;
+                        }
                         MessagesController.DialogFilter filter = new MessagesController.DialogFilter();
                         filter.name = suggested.filter.title.text;
                         filter.entities = suggested.filter.title.entities;
