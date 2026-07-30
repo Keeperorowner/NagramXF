@@ -288,4 +288,10 @@
     <string name="BuiltInFolderBasicGroups">普通群组</string>
     <string name="BuiltInFolderSupergroups">超级群组</string>
     <string name="BuiltInFolderAdmin">管理员</string>
+    <!-- Sidebar menu manager -->
+    <string name="MainMenuItems">侧边栏项目</string>
+    <string name="MainMenuHiddenItems">已隐藏项目</string>
+    <string name="MainMenuAddDivider">添加分隔线</string>
+    <string name="MainMenuDivider">分隔线</string>
+    <string name="MainMenuItemsInfo">长按拖拽可排序，点按项目可将其隐藏，点按已隐藏项目可将其恢复，点按分隔线可将其移除。</string>
 </resources>
