@@ -14202,39 +14202,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
-    private boolean addHiddenMainTabsShortcuts(ItemOptions io) {
-        if (mainTabsActivityController == null || NaConfig.INSTANCE.getMainTabsDisplayMode().Int() != MainTabsHelper.BOTTOM_BAR_MODE_HIDE) {
-            return false;
-        }
-
-        io.addGap();
-        io.add(R.drawable.tabs_reorder, getString(R.string.MainTabsCustomize), () -> presentFragment(new MainTabsCustomizeActivity()));
-        if (NekoConfig.navigationDrawerEnabled.Bool()) {
-            io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
-                Bundle args = new Bundle();
-                args.putInt("folderId", 1);
-                presentFragment(new DialogsActivity(args));
-            });
-        }
-        if (MainTabsConfigManager.isTabEnabled(MainTabsConfigManager.TabType.CONTACTS)) {
-            io.add(R.drawable.msg_contacts, getString(R.string.MainTabsContacts), () -> {
-                Bundle args = new Bundle();
-                args.putBoolean("needPhonebook", true);
-                args.putBoolean("needFinishFragment", false);
-                presentFragment(new ContactsActivity(args));
-            });
-        }
-        if (MainTabsConfigManager.isTabEnabled(MainTabsConfigManager.TabType.CALLS)) {
-            io.add(R.drawable.msg_calls, getString(R.string.MainTabsCalls), () -> {
-                Bundle args = new Bundle();
-                args.putBoolean("needFinishFragment", false);
-                presentFragment(new CallLogActivity(args));
-            });
-        }
-        io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> presentFragment(new SettingsActivity()));
-        return true;
-    }
-
     /**
      * Populates the overflow ("three dots") menu with the configured main-menu items,
      * driven by the same {@link DrawerMenuHelper} layout as the navigation drawer —
@@ -14416,7 +14383,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (!NekoConfig.navigationDrawerEnabled.Bool()) {
             addConfiguredMainMenuItems(io);
         }
-        final boolean addedHiddenMainTabsShortcuts = addHiddenMainTabsShortcuts(io);
         if (ApplicationLoader.applicationLoaderInstance != null) {
             ApplicationLoader.applicationLoaderInstance.addItemOptions(io);
         }
@@ -14444,12 +14410,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
-        if (getUserConfig().showCallsTab && !addedHiddenMainTabsShortcuts) {
-            io.add(R.drawable.msg_settings_old, getString(R.string.Settings), () -> {
-                presentFragment(new SettingsActivity());
-            });
-        }
-
         if (proxyMenuSubItem != null) {
             proxyMenuSubItem.subtextView.setTextColor(getThemedColor(Theme.key_groupcreate_sectionText));
             proxyMenuSubItem.setOnClickListener(v -> {

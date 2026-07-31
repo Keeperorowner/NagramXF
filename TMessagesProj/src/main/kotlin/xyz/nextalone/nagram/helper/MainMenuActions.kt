@@ -25,6 +25,7 @@ import org.telegram.ui.Adapters.DrawerLayoutAdapter
 import tw.nekomimi.nekogram.ChatHistoryActivity
 import tw.nekomimi.nekogram.helpers.AppRestartHelper
 import tw.nekomimi.nekogram.settings.GhostModeActivity
+import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity
 import tw.nekomimi.nekogram.utils.BrowserUtils
@@ -88,6 +89,8 @@ object MainMenuActions {
             id == DrawerLayoutAdapter.nkbtnBrowser -> BrowserUtils.openBrowserHome(null, true)
             id == DrawerLayoutAdapter.nkbtnSessions ->
                 fragment.presentFragment(SessionsActivity(SessionsActivity.TYPE_DEVICES))
+            id == DrawerLayoutAdapter.nkbtnMainTabsCustomize ->
+                fragment.presentFragment(MainTabsCustomizeActivity())
             id == DrawerLayoutAdapter.nkbtnRestartApp -> AppRestartHelper.triggerRebirth(
                 ApplicationLoader.applicationContext,
                 Intent(ApplicationLoader.applicationContext, LaunchActivity::class.java)

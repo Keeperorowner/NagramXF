@@ -56,6 +56,7 @@ object DrawerMenuHelper {
         Entry(DrawerLayoutAdapter.nkbtnBrowser, R.string.InappBrowser, R.drawable.web_browser),
         Entry(DrawerLayoutAdapter.nkbtnQrLogin, R.string.ImportLogin, R.drawable.msg_qrcode),
         Entry(DrawerLayoutAdapter.nkbtnSessions, R.string.Devices, R.drawable.msg2_devices),
+        Entry(DrawerLayoutAdapter.nkbtnMainTabsCustomize, R.string.MainTabsCustomize, R.drawable.tabs_reorder),
         Entry(DrawerLayoutAdapter.nkbtnRestartApp, R.string.RestartApp, R.drawable.msg_retry)
     )
 
@@ -79,7 +80,7 @@ object DrawerMenuHelper {
         DrawerLayoutAdapter.nkbtnArchivedChats, ID_NEW_CHANNEL,
         DrawerLayoutAdapter.nkbtnBookmarks, DrawerLayoutAdapter.nkbtnBrowser,
         DrawerLayoutAdapter.nkbtnQrLogin, DrawerLayoutAdapter.nkbtnSessions,
-        DrawerLayoutAdapter.nkbtnRestartApp
+        DrawerLayoutAdapter.nkbtnMainTabsCustomize, DrawerLayoutAdapter.nkbtnRestartApp
     )
 
     // --- persistence -------------------------------------------------------
@@ -87,13 +88,47 @@ object DrawerMenuHelper {
     @JvmStatic
     fun getLayout(): MutableList<Int> {
         ensureMigrated()
-        return decode(NaConfig.mainMenuLayout.String())
+        val layout = decode(NaConfig.mainMenuLayout.String())
+        val hidden = decode(NaConfig.mainMenuHiddenItems.String())
+        if (sanitize(layout, hidden)) {
+            save(layout, hidden)
+        }
+        return layout
     }
 
     @JvmStatic
     fun getHidden(): MutableList<Int> {
         ensureMigrated()
-        return decode(NaConfig.mainMenuHiddenItems.String())
+        val hidden = decode(NaConfig.mainMenuHiddenItems.String())
+        val layout = decode(NaConfig.mainMenuLayout.String())
+        if (sanitize(layout, hidden)) {
+            save(layout, hidden)
+        }
+        return hidden
+    }
+
+    /**
+     * Drops unknown ids (e.g. legacy ids no longer in the registry) from the layout and
+     * makes sure every configurable item lives in exactly one of the two lists — new
+     * items are appended to the hidden list so they can be enabled from the manager.
+     */
+    private fun sanitize(layout: MutableList<Int>, hidden: MutableList<Int>): Boolean {
+        var changed = false
+        val iterator = layout.iterator()
+        while (iterator.hasNext()) {
+            val id = iterator.next()
+            if (id != DIVIDER && entryFor(id) == null) {
+                iterator.remove()
+                changed = true
+            }
+        }
+        for (entry in entries) {
+            if (!layout.contains(entry.id) && !hidden.contains(entry.id)) {
+                hidden.add(entry.id)
+                changed = true
+            }
+        }
+        return changed
     }
 
     @JvmStatic
@@ -144,6 +179,11 @@ object DrawerMenuHelper {
         put(DrawerLayoutAdapter.nkbtnQrLogin, NaConfig.drawerItemQrLogin.Bool())
         put(DrawerLayoutAdapter.nkbtnSessions, NaConfig.drawerItemSessions.Bool())
         put(DrawerLayoutAdapter.nkbtnRestartApp, NaConfig.drawerItemRestartApp.Bool())
+
+        // Introduced after the legacy toggles; default to hidden, the manager can enable it.
+        if (!hidden.contains(DrawerLayoutAdapter.nkbtnMainTabsCustomize)) {
+            hidden.add(DrawerLayoutAdapter.nkbtnMainTabsCustomize)
+        }
 
         // Re-insert the structural dividers so the migrated drawer keeps the stock look:
         // one right after Ghost, one right before Neko settings.
