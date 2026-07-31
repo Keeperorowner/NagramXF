@@ -162,6 +162,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Adapters.DialogsAdapter;
 import org.telegram.ui.Adapters.DialogsSearchAdapter;
+import org.telegram.ui.Adapters.DrawerLayoutAdapter;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.Cells.ActiveGiftAuctionsHintCell;
 import org.telegram.ui.Cells.AnimatedStatusView;
@@ -308,6 +309,8 @@ import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import org.telegram.ui.web.WebBrowserSettings;
 import com.radolyn.ayugram.AyuGhostConfig;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.helper.DrawerMenuHelper;
+import xyz.nextalone.nagram.helper.MainMenuActions;
 import xyz.nextalone.nagram.ui.folders.FoldersHelper;
 
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, FloatingDebugProvider, FactorAnimator.Target, MainTabsActivity.TabFragmentDelegate {
@@ -14232,6 +14235,51 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         return true;
     }
 
+    /**
+     * Populates the overflow ("three dots") menu with the configured main-menu items,
+     * driven by the same {@link DrawerMenuHelper} layout as the navigation drawer —
+     * mirroring ayuGram, where one layout drives both surfaces. Used when the drawer
+     * is disabled, so these shortcuts live in the overflow menu instead.
+     */
+    private void addConfiguredMainMenuItems(ItemOptions io) {
+        boolean lastWasGap = true;
+        boolean addedAny = false;
+        for (int id : DrawerMenuHelper.getLayout()) {
+            if (id == DrawerMenuHelper.DIVIDER) {
+                if (addedAny && !lastWasGap) {
+                    io.addGap();
+                    lastWasGap = true;
+                }
+                continue;
+            }
+            if (!MainMenuActions.isSupported(id)) {
+                continue;
+            }
+            DrawerMenuHelper.Entry entry = DrawerMenuHelper.entryFor(id);
+            if (entry == null) {
+                continue;
+            }
+            final String label;
+            if (id == DrawerLayoutAdapter.nkbtnGhostMode) {
+                label = NekoConfig.isGhostModeActive()
+                        ? getString(R.string.DisableGhostMode)
+                        : getString(R.string.EnableGhostMode);
+            } else {
+                label = getString(entry.getLabelRes());
+            }
+            final int itemId = id;
+            if (id == DrawerLayoutAdapter.nkbtnGhostMode || id == DrawerLayoutAdapter.nkbtnBrowser) {
+                io.add(entry.getIconRes(), label,
+                        () -> MainMenuActions.longClickItem(itemId, DialogsActivity.this, currentAccount),
+                        () -> MainMenuActions.openItem(itemId, DialogsActivity.this, currentAccount));
+            } else {
+                io.add(entry.getIconRes(), label, () -> MainMenuActions.openItem(itemId, DialogsActivity.this, currentAccount));
+            }
+            addedAny = true;
+            lastWasGap = false;
+        }
+    }
+
     private void showItemOptions() {
         ItemOptions io = ItemOptions.makeOptions(this, optionsItem);
         io.setColors(getThemedColor(Theme.key_actionBarDefaultTitle), getThemedColor(Theme.key_actionBarDefaultTitle));
@@ -14286,25 +14334,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
 
-        if (!NekoConfig.navigationDrawerEnabled.Bool()) {
-            final String ghostMsg = NekoConfig.isGhostModeActive()
-                    ? getString(R.string.DisableGhostMode)
-                    : getString(R.string.EnableGhostMode);
-            io.add(R.drawable.ayu_ghost, ghostMsg, () -> presentFragment(new GhostModeActivity()), () -> {
-                final String toggleMsg = NekoConfig.isGhostModeActive()
-                        ? getString(R.string.GhostModeDisabled)
-                        : getString(R.string.GhostModeEnabled);
-                NekoConfig.toggleGhostMode();
-                BulletinFactory.of(DialogsActivity.this).createSuccessBulletin(toggleMsg).show();
-                NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+        if (NekoConfig.navigationDrawerEnabled.Bool()) {
+            io.add(R.drawable.msg_recent, getString(R.string.RecentChats), () -> {
+                presentFragment(new ChatHistoryActivity());
             });
             io.addGap();
         }
-
-        io.add(R.drawable.msg_recent, getString(R.string.RecentChats), () -> {
-            presentFragment(new ChatHistoryActivity());
-        });
-        io.addGap();
 
         final boolean isCurrentThemeDark;
         if (resourceProvider != null) {
@@ -14354,54 +14389,32 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     });
                 });
         io.addGap();
-        io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
-            Bundle args = new Bundle();
-            presentFragment(new GroupCreateActivity(args));
-        });
-        io.add(R.drawable.msg_channel_create, getString(R.string.NewChannel), () -> {
-            SharedPreferences channelPrefs = MessagesController.getGlobalMainSettings();
-            if (!BuildVars.DEBUG_VERSION && channelPrefs.getBoolean("channel_intro", false)) {
+        if (NekoConfig.navigationDrawerEnabled.Bool()) {
+            io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
                 Bundle args = new Bundle();
-                args.putInt("step", 0);
-                presentFragment(new ChannelCreateActivity(args));
-            } else {
-                presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANNEL_CREATE));
-                channelPrefs.edit().putBoolean("channel_intro", true).apply();
-            }
-        });
-        if (MainTabsHelper.isContactsTabHidden()) {
-            io.add(R.drawable.menu_contacts, getString(R.string.Contacts), () -> {
-                Bundle args = new Bundle();
-                args.putBoolean("needPhonebook", true);
-                presentFragment(new ContactsActivity(args));
+                presentFragment(new GroupCreateActivity(args));
             });
-        }
-        if (!NekoConfig.navigationDrawerEnabled.Bool()) {
-            io.addGap();
-            io.add(R.drawable.msg_archive, getString(R.string.ArchivedChats), () -> {
-                Bundle args = new Bundle();
-                args.putInt("folderId", 1);
-                presentFragment(new DialogsActivity(args));
+            io.add(R.drawable.msg_channel_create, getString(R.string.NewChannel), () -> {
+                SharedPreferences channelPrefs = MessagesController.getGlobalMainSettings();
+                if (!BuildVars.DEBUG_VERSION && channelPrefs.getBoolean("channel_intro", false)) {
+                    Bundle args = new Bundle();
+                    args.putInt("step", 0);
+                    presentFragment(new ChannelCreateActivity(args));
+                } else {
+                    presentFragment(new ActionIntroActivity(ActionIntroActivity.ACTION_TYPE_CHANNEL_CREATE));
+                    channelPrefs.edit().putBoolean("channel_intro", true).apply();
+                }
             });
-            io.add(R.drawable.outline_saved_24, getString(R.string.SavedMessages), () -> {
-                Bundle args = new Bundle();
-                args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
-                presentFragment(new ChatActivity(args));
-            });
-            if (NaConfig.INSTANCE.getShowAddToBookmark().Bool()) {
-                io.add(R.drawable.msg_fave, getString(R.string.BookmarksManager), () -> {
-                    presentFragment(new BookmarkManagerActivity());
+            if (MainTabsHelper.isContactsTabHidden()) {
+                io.add(R.drawable.menu_contacts, getString(R.string.Contacts), () -> {
+                    Bundle args = new Bundle();
+                    args.putBoolean("needPhonebook", true);
+                    presentFragment(new ContactsActivity(args));
                 });
             }
-            io.addGap();
-            io.add(R.drawable.msg_settings, getString(R.string.NekoSettings), () -> presentFragment(new NekoSettingsActivity()));
-            io.add(R.drawable.web_browser, getString(R.string.InappBrowser), () -> presentFragment(new WebBrowserSettings(null)), () -> BrowserUtils.openBrowserHome(null, true));
-            io.add(R.drawable.msg_retry, getString(R.string.RestartApp), () ->
-                AppRestartHelper.triggerRebirth(
-                    ApplicationLoader.applicationContext,
-                    new Intent(ApplicationLoader.applicationContext, LaunchActivity.class)
-                )
-            );
+        }
+        if (!NekoConfig.navigationDrawerEnabled.Bool()) {
+            addConfiguredMainMenuItems(io);
         }
         final boolean addedHiddenMainTabsShortcuts = addHiddenMainTabsShortcuts(io);
         if (ApplicationLoader.applicationLoaderInstance != null) {
