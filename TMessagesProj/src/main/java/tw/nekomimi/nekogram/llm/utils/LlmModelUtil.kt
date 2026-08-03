@@ -30,8 +30,15 @@ object LlmModelUtil {
         return base.contains("gemma4") || base.contains("gemma-4")
     }
 
+    @JvmStatic
     fun isGemini3(model: String?): Boolean {
         return getBaseModelName(model).lowercase().startsWith("gemini-3")
+    }
+
+    @JvmStatic
+    fun isGeminiLegacy(model: String?): Boolean {
+        val base = getBaseModelName(model).lowercase()
+        return base.startsWith("gemini-2") || base.startsWith("gemini-3-") || base.startsWith("gemini-3.1")
     }
 
     @JvmStatic
@@ -39,6 +46,7 @@ object LlmModelUtil {
         return getBaseModelName(model).lowercase().startsWith("deepseek-v4")
     }
 
+    @JvmStatic
     fun isReasoning(model: String?): Boolean {
         return isOpenaiCompatibleReasoning(model) || isGemma4(model) || isDeepSeekV4(model)
     }
@@ -65,6 +73,7 @@ object LlmModelUtil {
             base.startsWith("gpt-oss") -> "low"
             base.startsWith("gpt-5.") -> "none"
             base.startsWith("gpt-5") -> "minimal"
+            base.startsWith("gemini") && (base.endsWith("latest") || !isGeminiLegacy(model)) -> "minimal"
             isGemma4(model) -> "minimal"
             else -> "none"
         }
@@ -107,6 +116,10 @@ object LlmModelUtil {
         return when (providerPreset) {
             LlmPresetRegistry.OPENROUTER -> {
                 when (routerProvider) {
+                    "google" -> {
+                        requestJson.put("reasoning", JSONObject().put("effort", getReasoningEffort(model)))
+                        return true
+                    }
                     "openai" -> {
                         if (model?.contains("gpt-oss") ?: return false) {
                             requestJson.put("reasoning", JSONObject().put("effort", "minimal"))
@@ -171,7 +184,7 @@ object LlmModelUtil {
     @JvmStatic
     fun supportsTemperature(model: String?): Boolean {
         val base = getBaseModelName(model).lowercase()
-        return !base.startsWith("gpt-5")
+        return !base.startsWith("gpt-5") && (!base.startsWith("gemini") || isGeminiLegacy(model))
     }
 
     @JvmStatic
