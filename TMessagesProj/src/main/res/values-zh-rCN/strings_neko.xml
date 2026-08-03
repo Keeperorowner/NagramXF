@@ -54,6 +54,8 @@
     <string name="UnlimitedPinnedDialogsAbout">关闭同步以无限置顶聊天。</string>
     <string name="OpenArchiveOnPull">下拉打开“已归档聊天”</string>
     <string name="HideKeyboardOnChatScroll">滚动浏览时隐藏键盘</string>
+    <string name="iOSMessageInputField">iOS 风格消息输入框</string>
+    <string name="iOSMessageInputFieldNotice">将附件图标移到左侧，并将按钮拆分为独立气泡。开启后「附件菜单模式」不生效</string>
     <string name="UserRestrictionsSendStickers2">发送贴纸</string>
     <string name="UserRestrictionsSendGifs">发送 GIF</string>
     <string name="CheckAllAdministrated">添加管理的群组与频道</string>
