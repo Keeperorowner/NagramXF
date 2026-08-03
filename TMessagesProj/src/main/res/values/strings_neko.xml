@@ -54,6 +54,8 @@
     <string name="UnlimitedPinnedDialogsAbout">Pin unlimited dialogs by turn their sync off.</string>
     <string name="OpenArchiveOnPull">Open \"Archived Chats\" on Pull-Down</string>
     <string name="HideKeyboardOnChatScroll">Hide Keyboard on Scroll</string>
+    <string name="iOSMessageInputField">iOS-styled message input field</string>
+    <string name="iOSMessageInputFieldNotice">Moves the attachment icon to the left and splits buttons into separate bubbles. Overrides the attach-enter-menu mode while enabled</string>
     <string name="UserRestrictionsSendStickers2">Send Stickers</string>
     <string name="UserRestrictionsSendGifs">Send GIFs</string>
     <string name="CheckAllAdministrated">Add administrated</string>
