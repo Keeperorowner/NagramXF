@@ -76,6 +76,49 @@ public class ChatInputViewsContainer extends FrameLayout {
     public boolean drawInputBackground = true;
     public BlurredBackgroundDrawable blurredBackgroundDrawable;
     private BlurredBackgroundDrawable underKeyboardBackgroundDrawable;
+
+    public static final int INPUT_SIDE_BUBBLE_SIZE = 44;
+
+    private BlurredBackgroundDrawable leftBubbleDrawable;
+    private BlurredBackgroundDrawable rightBubbleDrawable;
+    private boolean leftBubbleVisible;
+    private boolean rightBubbleVisible;
+    private int leftBubbleLeft, leftBubbleRight;
+    private int rightBubbleLeft, rightBubbleRight;
+
+    public void setLeftBubbleDrawable(BlurredBackgroundDrawable drawable) {
+        leftBubbleDrawable = drawable;
+        leftBubbleDrawable.setRadius(dp(INPUT_BUBBLE_RADIUS));
+    }
+
+    public void setRightBubbleDrawable(BlurredBackgroundDrawable drawable) {
+        rightBubbleDrawable = drawable;
+        rightBubbleDrawable.setRadius(dp(INPUT_BUBBLE_RADIUS));
+    }
+
+    public void setLeftBubbleBounds(int left, int right) {
+        leftBubbleLeft = left;
+        leftBubbleRight = right;
+        leftBubbleVisible = true;
+        invalidate();
+    }
+
+    public void setRightBubbleBounds(int left, int right) {
+        rightBubbleLeft = left;
+        rightBubbleRight = right;
+        rightBubbleVisible = true;
+        invalidate();
+    }
+
+    private int sideBubblesAlpha = 255;
+
+    public void setSideBubblesAlpha(int alpha) {
+        if (sideBubblesAlpha != alpha) {
+            sideBubblesAlpha = alpha;
+            invalidate();
+        }
+    }
+
     public void setInputIslandBubbleDrawable(BlurredBackgroundDrawable drawable) {
         blurredBackgroundDrawable = drawable;
         blurredBackgroundDrawable.setPadding(dp(7));
@@ -93,6 +136,12 @@ public class ChatInputViewsContainer extends FrameLayout {
     public void updateColors() {
         blurredBackgroundDrawable.updateColors();
         underKeyboardBackgroundDrawable.updateColors();
+        if (leftBubbleDrawable != null) {
+            leftBubbleDrawable.updateColors();
+        }
+        if (rightBubbleDrawable != null) {
+            rightBubbleDrawable.updateColors();
+        }
         invalidate();
     }
 
@@ -271,6 +320,20 @@ public class ChatInputViewsContainer extends FrameLayout {
         blurredBackgroundDrawable.setBounds(tmpRect);
         if (drawInputBackground)
             blurredBackgroundDrawable.draw(canvas);
+
+        final int sideBubbleBottom = blurTop + (int) bubbleInputTranlationY + inputBubbleHeightRound;
+        if (leftBubbleDrawable != null && leftBubbleVisible) {
+            tmpRect.set(leftBubbleLeft, sideBubbleBottom - dp(INPUT_SIDE_BUBBLE_SIZE), leftBubbleRight, sideBubbleBottom);
+            leftBubbleDrawable.setBounds(tmpRect);
+            leftBubbleDrawable.setAlpha(sideBubblesAlpha);
+            leftBubbleDrawable.draw(canvas);
+        }
+        if (rightBubbleDrawable != null && rightBubbleVisible) {
+            tmpRect.set(rightBubbleLeft, sideBubbleBottom - dp(INPUT_SIDE_BUBBLE_SIZE), rightBubbleRight, sideBubbleBottom);
+            rightBubbleDrawable.setBounds(tmpRect);
+            rightBubbleDrawable.setAlpha(sideBubblesAlpha);
+            rightBubbleDrawable.draw(canvas);
+        }
 
         if (needDrawInAppKeyboard) {
             underKeyboardBackgroundDrawable.draw(canvas);
