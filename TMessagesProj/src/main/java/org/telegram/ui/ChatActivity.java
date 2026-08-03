@@ -5079,8 +5079,7 @@ public class ChatActivity extends BaseFragment implements
             glassBackgroundDrawableFactory,
             BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
             ChatObject.isForum(currentChat));
-        //actionBar.setChatAvatarContainer(avatarContainer);
-        //avatarContainer.setActionBar(actionBar);
+        actionBar.setChatAvatarContainer(avatarContainer);
 
         fadeDrawable = new BlurredBackgroundWithFadeDrawable(
                 navbarContentDrawableFactory.create(chatInputViewsContainer, null));
@@ -29812,9 +29811,14 @@ public class ChatActivity extends BaseFragment implements
             chatInputViewsContainer.setVisibility(View.VISIBLE);
             chatInputViewsContainer.setBackgroundWithFadeDrawable(fadeDrawable);
         } else {
-            chatActivityEnterView.setVisibility(View.VISIBLE);
-            chatActivityEnterView.setFieldFocused(false);
-            bottomChannelButtonsLayout.setVisibility(View.INVISIBLE);
+            if (botUser != null && currentUser != null && currentUser.bot || currentUser != null && currentUser.id == UserObject.VERIFY || chatMode == MODE_SAVED && getSavedDialogId() != getUserConfig().getClientUserId()) {
+                bottomChannelButtonsLayout.setVisibility(View.VISIBLE);
+                chatActivityEnterView.setVisibility(View.INVISIBLE);
+            } else {
+                chatActivityEnterView.setVisibility(View.VISIBLE);
+                chatActivityEnterView.setFieldFocused(false);
+                bottomChannelButtonsLayout.setVisibility(View.INVISIBLE);
+            }
             chatInputViewsContainer.setVisibility(View.VISIBLE);
             chatInputViewsContainer.setBackgroundWithFadeDrawable(fadeDrawable);
         }
@@ -34067,7 +34071,7 @@ public class ChatActivity extends BaseFragment implements
                     bottomContainer.setTag(R.id.fit_width_tag, 1);
                     GroupedIconsView groupedIconsView = new GroupedIconsView(getContext(), ChatActivity.this, themeDelegate, selectedObject, this.lastMessageMenuStatus.allowReply, this.lastMessageMenuStatus.allowReplyPm, this.lastMessageMenuStatus.allowEdit, this.lastMessageMenuStatus.allowDelete, this.lastMessageMenuStatus.allowForward, this.lastMessageMenuStatus.allowCopy, this.lastMessageMenuStatus.allowCopyPhoto, this.lastMessageMenuStatus.allowCopyLink, this.lastMessageMenuStatus.allowCopyLinkPm);
                     bottomContainer.addView(groupedIconsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, 0));
-                    scrimPopupContainerLayout.addView(bottomContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
+                    scrimPopupContainerLayout.addView(bottomContainer, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
                     scrimPopupContainerLayout.applyViewBottom(bottomContainer);
 
                     if (showDirectForwardHint) {
@@ -34084,7 +34088,7 @@ public class ChatActivity extends BaseFragment implements
                         hintContainer.setBackground(hintDrawable);
                         hintContainer.setTag(R.id.fit_width_tag, 1);
                         hintContainer.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
-                        scrimPopupContainerLayout.addView(hintContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
+                        scrimPopupContainerLayout.addView(hintContainer, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
                         scrimPopupContainerLayout.applyViewBottom(hintContainer);
                     }
                 } else if (showDirectForwardHint) {
@@ -34103,7 +34107,7 @@ public class ChatActivity extends BaseFragment implements
                     fl.setBackground(shadowDrawable2);
                     fl.setTag(R.id.fit_width_tag, 1);
                     fl.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
-                    scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
+                    scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
                     scrimPopupContainerLayout.applyViewBottom(fl);
                 }
 
@@ -34126,7 +34130,7 @@ public class ChatActivity extends BaseFragment implements
                     FrameLayout fl = new FrameLayout(contentView.getContext());
                     fl.setBackground(shadowDrawable2);
                     fl.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
-                    scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, -8, isReactionsAvailable ? 36 : 0, 0));
+                    scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, -8, isReactionsAvailable ? 36 : 0, 0));
                     scrimPopupContainerLayout.applyViewBottom(fl);
                 }
 

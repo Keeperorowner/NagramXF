@@ -7,6 +7,8 @@ import android.app.Activity;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -102,6 +104,10 @@ public class SettingsHelper {
                 case "sidebar":
                 case "drawer":
                     fragment = neko_fragment = new SidebarMenuActivity();
+                    break;
+                case "pillstack":
+                case "pills":
+                    fragment = neko_fragment = new PillStackPreferencesActivity();
                     break;
                 case "regexfilters":
                 case "regex":

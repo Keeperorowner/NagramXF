@@ -14235,6 +14235,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 label = getString(entry.getLabelRes());
             }
             final int itemId = id;
+            if (!addedAny) {
+                // Lead the section with a gap only when it actually yields an item; otherwise
+                // the gap would dangle at the bottom of the overflow menu (visible in dark theme).
+                io.addGap();
+            }
             if (id == DrawerLayoutAdapter.nkbtnGhostMode || id == DrawerLayoutAdapter.nkbtnBrowser) {
                 io.add(entry.getIconRes(), label,
                         () -> MainMenuActions.longClickItem(itemId, DialogsActivity.this, currentAccount),
@@ -14355,7 +14360,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_NIGHT));
                     });
                 });
-        io.addGap();
+        // Only separate from the theme-switch row when the drawer-enabled shortcut rows below
+        // actually exist; the drawer-off section leads its own gap (addConfiguredMainMenuItems).
+        io.addGapIf(NekoConfig.navigationDrawerEnabled.Bool());
         if (NekoConfig.navigationDrawerEnabled.Bool()) {
             io.add(R.drawable.outline_groups_24, getString(R.string.NewGroup), () -> {
                 Bundle args = new Bundle();

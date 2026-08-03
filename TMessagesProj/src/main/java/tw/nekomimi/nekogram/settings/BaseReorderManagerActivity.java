@@ -131,6 +131,11 @@ public abstract class BaseReorderManagerActivity extends BaseNekoSettingsActivit
         }
 
         @Override
+        public void onMoved(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, int fromPos,
+                            @NonNull RecyclerView.ViewHolder target, int toPos, int x, int y) {
+        }
+
+        @Override
         public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
         }
 
@@ -143,7 +148,6 @@ public abstract class BaseReorderManagerActivity extends BaseNekoSettingsActivit
                     listView.setDraggingChild(viewHolder.itemView);
                     viewHolder.itemView.setBackground(Theme.createRoundRectDrawable(dp(16), getThemedColor(Theme.key_windowBackgroundWhite)));
                     viewHolder.itemView.setPressed(true);
-                    viewHolder.itemView.bringToFront();
                 }
             }
         }
