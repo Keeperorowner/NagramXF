@@ -11,6 +11,7 @@ import android.widget.ImageView;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
@@ -70,11 +71,18 @@ public class ActionRow extends FrameLayout {
                 if (childCount == 0) {
                     return;
                 }
-                int extraSpace = (right - left) - AndroidUtilities.dp(childCount * ITEM_SIZE_DP + HORIZONTAL_PADDING_DP * 2);
+                int width = right - left;
+                int extraSpace = width - AndroidUtilities.dp(childCount * ITEM_SIZE_DP + HORIZONTAL_PADDING_DP * 2);
                 int divider = Math.max(1, childCount - 1);
                 for (int i = 0; i < childCount; i++) {
-                    int childLeft = AndroidUtilities.dp(i * ITEM_SIZE_DP + HORIZONTAL_PADDING_DP) + extraSpace * i / divider;
                     View child = getChildAt(i);
+                    int childLeft;
+                    if (LocaleController.isRTL) {
+                        int childRight = width - AndroidUtilities.dp(i * ITEM_SIZE_DP + HORIZONTAL_PADDING_DP) - extraSpace * i / divider;
+                        childLeft = childRight - child.getMeasuredWidth();
+                    } else {
+                        childLeft = AndroidUtilities.dp(i * ITEM_SIZE_DP + HORIZONTAL_PADDING_DP) + extraSpace * i / divider;
+                    }
                     int childTop = (bottom - top - child.getMeasuredHeight()) / 2;
                     child.layout(childLeft, childTop, childLeft + child.getMeasuredWidth(), childTop + child.getMeasuredHeight());
                 }
@@ -135,7 +143,7 @@ public class ActionRow extends FrameLayout {
         }
         imageView.setTag(actionItem);
         imageView.setAlpha(0.0f);
-        imageView.setTranslationX(AndroidUtilities.dp(12));
+        imageView.setTranslationX(AndroidUtilities.dp(LocaleController.isRTL ? -12 : 12));
         parent.addView(imageView, LayoutHelper.createFrame(ITEM_SIZE_DP, ITEM_SIZE_DP, 51));
         imageView.post(() -> imageView.animate()
                 .alpha(actionItem.enabled ? 1.0f : 0.5f)

@@ -326,6 +326,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
     private boolean forceCrossfade;
     private boolean useRoundRadius = true;
     private final int[] roundRadius = new int[4];
+    private boolean roundRadiusExplicitlySet;
     private int[] emptyRoundRadius;
     private boolean isRoundRect = true;
     private Object mark;
@@ -1082,7 +1083,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
             ((ClipRoundedDrawable) drawable).setRadii(r[0], r[1], r[2], r[3]);
         } else if ((hasRoundRadius() || gradientShader != null) && (drawable instanceof BitmapDrawable || drawable instanceof AvatarDrawable)) {
             if (drawable instanceof AvatarDrawable) {
-                ((AvatarDrawable) drawable).setRoundRadius(r[0]);
+                ((AvatarDrawable) drawable).setRoundRadius(roundRadiusExplicitlySet ? r[0] : -1);
             } else {
                 BitmapDrawable bitmapDrawable = (BitmapDrawable) drawable;
                 if (bitmapDrawable instanceof RLottieDrawable) {
@@ -2544,6 +2545,7 @@ public class ImageReceiver implements NotificationCenter.NotificationCenterDeleg
         boolean changed = false;
         int firstValue = value[0];
         isRoundRect = true;
+        roundRadiusExplicitlySet = true;
         for (int a = 0; a < roundRadius.length; a++) {
             if (roundRadius[a] != value[a]) {
                 changed = true;

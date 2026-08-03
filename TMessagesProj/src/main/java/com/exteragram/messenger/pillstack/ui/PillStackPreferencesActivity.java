@@ -72,6 +72,11 @@ public class PillStackPreferencesActivity extends BaseReorderManagerActivity {
     }
 
     @Override
+    protected String getKey() {
+        return "pillstack";
+    }
+
+    @Override
     public boolean onFragmentCreate() {
         for (PillRegistry.PillInfo info : PillRegistry.getRegisteredPills()) {
             itemDetails.put(info.id(), new ItemInfo(info.name(), info.iconRes(), info.iconColorTop(), info.iconColorBottom()));
@@ -173,7 +178,7 @@ public class PillStackPreferencesActivity extends BaseReorderManagerActivity {
             activeHeaderRow = addRow();
             activeRowStart = rowCount;
             for (int i = 0; i < PillStackConfig.activePills.size(); i++) {
-                addRow("active_" + PillStackConfig.activePills.get(i));
+                addRow();
             }
             activeRowEnd = rowCount - 1;
         }
@@ -187,7 +192,7 @@ public class PillStackPreferencesActivity extends BaseReorderManagerActivity {
             hiddenHeaderRow = addRow();
             hiddenRowStart = rowCount;
             for (int i = 0; i < PillStackConfig.hiddenPills.size(); i++) {
-                addRow("hidden_" + PillStackConfig.hiddenPills.get(i));
+                addRow();
             }
             hiddenRowEnd = rowCount - 1;
         }
@@ -372,6 +377,8 @@ public class PillStackPreferencesActivity extends BaseReorderManagerActivity {
                         cell.setText(info.name, shouldDrawDivider(position));
                         cell.setColorfulIcon(info.iconColorTop, info.iconColorBottom, info.iconRes);
                         applyReorderHandle(cell);
+                    } else {
+                        cell.setText("", shouldDrawDivider(position));
                     }
                     break;
                 }

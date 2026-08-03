@@ -14,16 +14,22 @@ public class Service implements Serializable {
     private String model;
     private String key;
     private int protocol;
+    private boolean reasoningEnabled;
 
     public Service(String url, String model, String key) {
-        this(url, model, key, PROTOCOL_OPENAI);
+        this(url, model, key, PROTOCOL_OPENAI, false);
     }
 
     public Service(String url, String model, String key, int protocol) {
+        this(url, model, key, protocol, false);
+    }
+
+    public Service(String url, String model, String key, int protocol, boolean reasoningEnabled) {
         this.url = url;
         this.model = model;
         this.key = key;
         this.protocol = protocol;
+        this.reasoningEnabled = reasoningEnabled;
     }
 
     public String getUrl() {
@@ -51,6 +57,14 @@ public class Service implements Serializable {
 
     public void setProtocol(int protocol) {
         this.protocol = protocol;
+    }
+
+    public boolean isReasoningEnabled() {
+        return reasoningEnabled;
+    }
+
+    public void setReasoningEnabled(boolean reasoningEnabled) {
+        this.reasoningEnabled = reasoningEnabled;
     }
 
     @Override

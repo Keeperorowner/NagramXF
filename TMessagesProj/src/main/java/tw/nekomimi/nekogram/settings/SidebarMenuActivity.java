@@ -357,7 +357,7 @@ public class SidebarMenuActivity extends BaseReorderManagerActivity {
                 }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    cell.setTextAndCheck(getString(R.string.HomeDrawer), NekoConfig.navigationDrawerEnabled.Bool(), true);
+                    cell.setTextAndCheck(getString(R.string.HomeDrawer), NekoConfig.navigationDrawerEnabled.Bool(), false);
                     break;
                 }
                 case TYPE_INFO_PRIVACY: {

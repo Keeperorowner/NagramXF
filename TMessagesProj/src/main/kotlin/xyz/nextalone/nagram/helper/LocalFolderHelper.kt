@@ -112,29 +112,29 @@ object LocalFolderHelper {
         }
     }
 
-    /** Short type summary shown under the name, e.g. "Contacts, Non Contacts". */
     @JvmStatic
     fun getDescription(type: FolderType): String = when (type) {
         FolderType.USERS ->
             LocaleController.getString(R.string.FilterContacts) + ", " + LocaleController.getString(R.string.FilterNonContacts)
-        FolderType.GROUPS -> LocaleController.getString(R.string.FilterGroups)
+        FolderType.GROUPS ->
+            LocaleController.getString(R.string.FilterGroups) + ", " + LocaleController.getString(R.string.BuiltInFolderSupergroups)
         FolderType.SUPERGROUPS -> LocaleController.getString(R.string.BuiltInFolderSupergroups)
-        FolderType.BASIC_GROUPS -> LocaleController.getString(R.string.BuiltInFolderBasicGroups)
+        FolderType.BASIC_GROUPS -> LocaleController.getString(R.string.FilterGroups)
         FolderType.CHANNELS -> LocaleController.getString(R.string.FilterChannels)
         FolderType.BOTS -> LocaleController.getString(R.string.FilterBots)
-        FolderType.ADMIN -> LocaleController.getString(R.string.BuiltInFolderAdmin)
+        FolderType.ADMIN -> ""
         FolderType.UNREAD -> LocaleController.getString(R.string.BuiltInFolderUnread)
         FolderType.UNMUTED -> LocaleController.getString(R.string.BuiltInFolderUnmuted)
     }
 
-    /**
-     * The second line under a local folder in the chat-folders screen: the "Local folder" tag plus
-     * what the folder contains, and how many chats the user added or removed as exceptions.
-     */
     @JvmStatic
     fun getSubtitle(filter: MessagesController.DialogFilter): String {
         val type = FolderType.of(filter.type) ?: return ""
-        var subtitle = LocaleController.getString(R.string.LocalFolder) + ": " + getDescription(type)
+        val description = getDescription(type)
+        var subtitle = LocaleController.getString(R.string.LocalFolder)
+        if (description.isNotEmpty()) {
+            subtitle += " " + description
+        }
         val exceptions = filter.alwaysShow.size + filter.neverShow.size
         if (exceptions > 0) {
             subtitle += ", " + LocaleController.formatPluralString("Exception", exceptions)
@@ -244,7 +244,12 @@ object LocalFolderHelper {
 
             val suggested = TLRPC.TL_dialogFilterSuggested()
             suggested.filter = filter
-            suggested.description = LocaleController.getString(R.string.LocalFolder) + ": " + getDescription(state.type)
+            val description = getDescription(state.type)
+            suggested.description = if (description.isEmpty()) {
+                LocaleController.getString(R.string.LocalFolder)
+            } else {
+                LocaleController.getString(R.string.LocalFolder) + ": " + description
+            }
             result.add(suggested)
         }
         return result

@@ -23,7 +23,6 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarLayout;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
@@ -42,6 +41,7 @@ import org.telegram.ui.Components.BlurredRecyclerView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.FlickerLoadingView;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
@@ -134,10 +134,15 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             var holder = listView.findViewHolderForAdapterPosition(position);
             var key = getKey();
             if (key != null && holder != null && listAdapter.isEnabled(holder) && rowMapReverse.containsKey(position)) {
-                showDialog(new AlertDialog.Builder(context).setItems(new CharSequence[]{getString(R.string.CopyLink)}, (dialogInterface, i) -> {
+                ItemOptions options = ItemOptions.makeOptions(this, view);
+                if (listView != null) {
+                    options.setScrimViewBackground(listView.getClipBackground(view));
+                }
+                options.add(R.drawable.msg_link2, getString(R.string.CopyLink), () -> {
                     AndroidUtilities.addToClipboard(String.format(Locale.getDefault(), "https://%s/nasettings/%s?r=%s", getMessagesController().linkPrefix, getKey(), rowMapReverse.get(position)));
                     BulletinFactory.of(BaseNekoSettingsActivity.this).createCopyLinkBulletin().show();
-                }).create());
+                });
+                options.show();
                 return true;
             }
             return false;

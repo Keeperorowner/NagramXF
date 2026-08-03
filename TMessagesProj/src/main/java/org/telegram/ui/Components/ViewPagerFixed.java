@@ -2272,7 +2272,11 @@ public class ViewPagerFixed extends FrameLayout {
                     if (filter.local) {
                         continue;
                     }
-                    req.order.add(filters.get(a).id);
+                    if (filter.isDefault()) {
+                        req.order.add(0);
+                    } else {
+                        req.order.add(filter.id);
+                    }
                 }
                 ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(req, (response, error) -> {
 

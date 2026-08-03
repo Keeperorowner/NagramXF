@@ -6,6 +6,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 
@@ -142,10 +143,15 @@ public class ChatScrimPopupContainerLayout extends LinearLayout {
                     newWidth = popupWidth;
                 }
             }
-            int newRightMargin = popupWindowLayout.getSwipeBack() != null ? AndroidUtilities.dp(36) + safeSwipeBackWidthDiff : AndroidUtilities.dp(36);
-            if (layoutParams.width != newWidth || layoutParams.rightMargin != newRightMargin) {
+            int newSideMargin = popupWindowLayout.getSwipeBack() != null ? AndroidUtilities.dp(36) + safeSwipeBackWidthDiff : AndroidUtilities.dp(36);
+            int currentSideMargin = LocaleController.isRTL ? layoutParams.leftMargin : layoutParams.rightMargin;
+            if (layoutParams.width != newWidth || currentSideMargin != newSideMargin) {
                 layoutParams.width = newWidth;
-                layoutParams.rightMargin = newRightMargin;
+                if (LocaleController.isRTL) {
+                    layoutParams.leftMargin = newSideMargin;
+                } else {
+                    layoutParams.rightMargin = newSideMargin;
+                }
                 needsRemeasure = true;
             }
             if (progressToSwipeBack > 0.0f) {

@@ -3385,6 +3385,50 @@ public class MessagesStorage extends BaseController {
                     filtersToDelete.put(filter.id, filter);
                 }
                 ArrayList<Integer> filtersOrder = new ArrayList<>();
+                HashSet<Integer> serverCloudIds = new HashSet<>();
+                for (int a = 0, N = vector.size(); a < N; a++) {
+                    int id = vector.get(a).id;
+                    if (id != 0) {
+                        serverCloudIds.add(id);
+                    }
+                }
+                ArrayList<Integer> prevOrder = new ArrayList<>();
+                HashMap<Integer, Integer> prevAnchor = new HashMap<>();
+                int lastAnchor = 0;
+                for (int a = 0, N = dialogFilters.size(); a < N; a++) {
+                    MessagesController.DialogFilter filter = dialogFilters.get(a);
+                    prevOrder.add(filter.id);
+                    if (filter.local) {
+                        prevAnchor.put(filter.id, lastAnchor);
+                    } else {
+                        lastAnchor = filter.id;
+                    }
+                }
+                for (int a = 0, N = vector.size(); a < N; a++) {
+                    int cloudId = vector.get(a).id;
+                    filtersOrder.add(cloudId);
+                    for (int b = 0, M = prevOrder.size(); b < M; b++) {
+                        int id = prevOrder.get(b);
+                        Integer anchor = prevAnchor.get(id);
+                        if (anchor != null && anchor == cloudId) {
+                            filtersOrder.add(id);
+                        }
+                    }
+                }
+                for (int b = 0, M = prevOrder.size(); b < M; b++) {
+                    int id = prevOrder.get(b);
+                    Integer anchor = prevAnchor.get(id);
+                    if (anchor != null && !filtersOrder.contains(id)) {
+                        if (serverCloudIds.contains(anchor) || anchor == 0) {
+                            int idx = filtersOrder.indexOf(anchor);
+                            if (idx >= 0) {
+                                filtersOrder.add(idx + 1, id);
+                                continue;
+                            }
+                        }
+                        filtersOrder.add(0, id);
+                    }
+                }
 
                 ArrayList<Long> usersToLoad = new ArrayList<>();
                 HashMap<Long, TLRPC.InputPeer> usersToLoadMap = new HashMap<>();
@@ -3398,7 +3442,6 @@ public class MessagesStorage extends BaseController {
                 HashSet<Integer> filtersUnreadCounterReset = new HashSet<>();
                 for (int a = 0, N = vector.size(); a < N; a++) {
                     TLRPC.DialogFilter newFilter = (TLRPC.DialogFilter) vector.get(a);
-                    filtersOrder.add(newFilter.id);
                     int newFlags = 0;
                     if (newFilter.contacts) {
                         newFlags |= MessagesController.DIALOG_FILTER_FLAG_CONTACTS;
@@ -3643,6 +3686,13 @@ public class MessagesStorage extends BaseController {
                     }
                 }
 
+                for (int a = 0, N = vector.size(); a < N; a++) {
+                    int id = vector.get(a).id;
+                    if (!filtersOrder.contains(id)) {
+                        filtersOrder.add(id);
+                    }
+                }
+
                 TLRPC.messages_Dialogs dialogs;
                 if (!dialogsToLoad.isEmpty()) {
                     dialogs = loadDialogsByIds(TextUtils.join(",", dialogsToLoad), usersToLoad, chatsToLoad, new ArrayList<>());
@@ -3714,7 +3764,6 @@ public class MessagesStorage extends BaseController {
         for (int a = 0, N = dialogFilters.size(); a < N; a++) {
             MessagesController.DialogFilter filter = dialogFilters.get(a);
             int order = filtersOrder.indexOf(filter.id);
-            // NagramX: local folders are absent from the server order, keep their own order
             if (order > -1 && filter.order != order) {
                 filter.order = order;
                 anythingChanged = true;
