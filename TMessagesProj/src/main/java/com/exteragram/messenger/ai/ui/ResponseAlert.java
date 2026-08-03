@@ -8,6 +8,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Layout;
@@ -46,12 +47,14 @@ import com.exteragram.messenger.ai.network.GenerationCallback;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.LinkifyPort;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
+import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.ActionBarPopupWindow;
@@ -72,15 +75,23 @@ import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.TypingDotsDrawable;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import io.noties.markwon.AbstractMarkwonPlugin;
+import io.noties.markwon.Markwon;
+import io.noties.markwon.core.CorePlugin;
+import io.noties.markwon.core.MarkwonTheme;
+import io.noties.markwon.ext.strikethrough.StrikethroughPlugin;
+import io.noties.markwon.ext.tables.TablePlugin;
+import io.noties.markwon.ext.tables.TableTheme;
+import io.noties.markwon.html.HtmlPlugin;
+import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin;
 
 public abstract class ResponseAlert extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
-
-    private static final Pattern URL_PATTERN = Pattern.compile("\\[([^]]+)]\\((https?://[^)]+)\\)");
 
     private final PaddedAdapter adapter;
     private final Client client;
@@ -92,6 +103,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
     private final RecyclerListView listView;
     private final LoadingTextView loadingTextView;
     private final ButtonWithCounterView mainButton;
+    private final Markwon markwon;
     private Utilities.Callback2<String, CharSequence> onInsertPress;
     private Utilities.CallbackReturn<URLSpan, Boolean> onLinkPress;
     private String prompt;
@@ -100,6 +112,8 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
     private Spanned spannedPrompt;
     private final LinkSpanDrawable.LinksTextView textView;
     private final FrameLayout textViewContainer;
+    private final ThinkingDotsView thinkingDotsView;
+    private boolean thinkingVisible;
     private boolean useHistory;
 
     @Override
@@ -112,6 +126,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         this.client = client;
         this.imagePath = imagePath;
         this.useHistory = useHistory;
+        this.markwon = createMarkwon(context);
         this.backgroundPaddingLeft = 0;
         fixNavigationBar();
 
@@ -124,6 +139,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         loadingTextView.setTextSize(1, SharedConfig.fontSize);
         loadingTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
         loadingTextView.setLinkTextColor(Theme.multAlpha(getThemedColor(Theme.key_dialogTextBlack), 0.2f));
+        thinkingDotsView = new ThinkingDotsView(context, getThemedColor(Theme.key_dialogTextBlack));
         setPrompt(str.trim());
 
         textViewContainer = new FrameLayout(context) {
@@ -302,18 +318,136 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
     private CharSequence formatResponse(CharSequence response) {
         if (response == null) return "";
         if (AiConfig.showResponseOnly || spannedPrompt == null) {
-            return replaceLinks(response);
+            return formatMarkdown(response);
         }
-        return new SpannableStringBuilder(spannedPrompt).append("\n\n").append(replaceLinks(response));
+        return new SpannableStringBuilder(spannedPrompt).append("\n\n").append(formatMarkdown(response));
+    }
+
+    private CharSequence formatMarkdown(CharSequence text) {
+        if (TextUtils.isEmpty(text)) return text;
+        try {
+            text = markwon.toMarkdown(text.toString());
+        } catch (Exception ignored) {
+        }
+        return replaceLinks(replaceMarkdownLinks(text));
+    }
+
+    private CharSequence replaceMarkdownLinks(CharSequence text) {
+        SpannableStringBuilder sb = new SpannableStringBuilder(text);
+        for (URLSpan span : sb.getSpans(0, sb.length(), URLSpan.class)) {
+            int start = sb.getSpanStart(span);
+            int end = sb.getSpanEnd(span);
+            int flags = sb.getSpanFlags(span);
+            if (start >= 0 && end >= 0) {
+                String url = span.getURL();
+                sb.removeSpan(span);
+                sb.setSpan(createUrlSpan(url), start, end, flags);
+            }
+        }
+        return sb;
+    }
+
+    private ClickableSpan createUrlSpan(final String url) {
+        return new ClickableSpan() {
+            @Override
+            public void onClick(@NonNull View widget) {
+                if (onLinkPress != null) {
+                    if (Boolean.TRUE.equals(onLinkPress.run(new URLSpan(url)))) {
+                        dismiss();
+                    }
+                } else if (fragment != null) {
+                    AlertsCreator.showOpenUrlAlert(fragment, url, false, false);
+                }
+            }
+
+            @Override
+            public void updateDrawState(@NonNull TextPaint ds) {
+                int alpha = Math.min(ds.getAlpha(), (ds.getColor() >> 24) & 0xFF);
+                ds.setUnderlineText(false);
+                ds.setColor(Theme.getColor(Theme.key_dialogTextLink));
+                ds.setAlpha(alpha);
+            }
+        };
+    }
+
+    private Markwon createMarkwon(Context context) {
+        final int textColor = getThemedColor(Theme.key_dialogTextBlack);
+        final int linkColor = getThemedColor(Theme.key_dialogTextLink);
+        int grayColor = getThemedColor(Theme.key_windowBackgroundGray);
+        final int codeBg = ColorUtils.blendARGB(grayColor, textColor, 0.04f);
+        final int codeBlockBg = ColorUtils.blendARGB(grayColor, textColor, 0.06f);
+        final int tableBorder = Theme.multAlpha(textColor, 0.16f);
+        final int tableHeader = Theme.multAlpha(textColor, 0.08f);
+        final int tableOdd = Theme.multAlpha(textColor, 0.04f);
+
+        return Markwon.builderNoCore(context)
+                .usePlugin(CorePlugin.create().hasExplicitMovementMethod(true))
+                .usePlugin(new AbstractMarkwonPlugin() {
+                    @Override
+                    public void configureTheme(@NonNull MarkwonTheme.Builder builder) {
+                        builder.linkColor(linkColor)
+                                .isLinkUnderlined(false)
+                                .blockMargin(AndroidUtilities.dp(16))
+                                .blockQuoteWidth(AndroidUtilities.dp(3))
+                                .blockQuoteColor(linkColor)
+                                .listItemColor(textColor)
+                                .bulletListItemStrokeWidth(AndroidUtilities.dp(1))
+                                .bulletWidth(AndroidUtilities.dp(4))
+                                .codeTextColor(textColor)
+                                .codeBlockTextColor(textColor)
+                                .codeBackgroundColor(codeBg)
+                                .codeBlockBackgroundColor(codeBlockBg)
+                                .codeBlockMargin(AndroidUtilities.dp(12))
+                                .codeTextSize(AndroidUtilities.dp((int) (SharedConfig.fontSize * 0.92f)))
+                                .codeBlockTextSize(AndroidUtilities.dp((int) (SharedConfig.fontSize * 0.92f)))
+                                .codeTypeface(Typeface.MONOSPACE)
+                                .codeBlockTypeface(Typeface.MONOSPACE)
+                                .headingBreakHeight(0)
+                                .headingBreakColor(Theme.multAlpha(textColor, 0.12f))
+                                .headingTextSizeMultipliers(new float[]{1.25f, 1.18f, 1.12f, 1.06f, 1.0f, 1.0f})
+                                .thematicBreakColor(Theme.multAlpha(textColor, 0.12f))
+                                .thematicBreakHeight(AndroidUtilities.dp(1));
+                    }
+                })
+                .usePlugin(MarkwonInlineParserPlugin.create())
+                .usePlugin(StrikethroughPlugin.create())
+                .usePlugin(TablePlugin.create(builder -> builder
+                        .tableCellPadding(AndroidUtilities.dp(8))
+                        .tableBorderWidth(AndroidUtilities.dp(1))
+                        .tableBorderColor(tableBorder)
+                        .tableHeaderRowBackgroundColor(tableHeader)
+                        .tableOddRowBackgroundColor(tableOdd)))
+                .usePlugin(HtmlPlugin.create())
+                .build();
+    }
+
+    private void setFormattedResponse(CharSequence text) {
+        CharSequence response = formatResponse(text);
+        if (response instanceof Spanned) {
+            markwon.setParsedMarkdown(textView, (Spanned) response);
+        } else {
+            textView.setText(response);
+        }
     }
 
     private void generate() {
+        currentResponse = null;
+        stopThinking();
+        if (AiController.getInstance().getSelected().isReasoningEnabled() && AiConfig.responseStreaming) {
+            showThinking();
+        }
         currentRequestId = client.getResponse(prompt, useHistory, AiConfig.responseStreaming, imagePath, new GenerationCallback() {
+            @Override
+            public void onThinking() {
+                showThinking();
+            }
+
             @Override
             public void onResponse(String response) {
                 if (TextUtils.isEmpty(response)) return;
+                stopThinking();
                 currentResponse = response;
-                textView.setText(formatResponse(response));
+                setFormattedResponse(response);
                 adapter.updateMainView(textViewContainer);
                 updateMainButton(false);
             }
@@ -321,13 +455,15 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             @Override
             public void onChunk(String chunk) {
                 if (TextUtils.isEmpty(chunk)) return;
+                stopThinking();
                 currentResponse = chunk;
-                textView.setText(formatResponse(chunk));
+                setFormattedResponse(chunk);
                 adapter.updateMainView(textViewContainer);
             }
 
             @Override
             public void onError(int code, String message) {
+                stopThinking();
                 AiController.showErrorBulletin(containerView, resourcesProvider, code);
                 adapter.updateMainView(textViewContainer);
                 updateMainButton(false, true);
@@ -335,40 +471,50 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         });
     }
 
+    private void showThinking() {
+        if (thinkingVisible || !TextUtils.isEmpty(currentResponse)) return;
+        thinkingVisible = true;
+        thinkingDotsView.start();
+        adapter.updateMainView(thinkingDotsView);
+    }
+
+    private void stopThinking() {
+        thinkingVisible = false;
+        thinkingDotsView.stop();
+    }
+
     public CharSequence replaceLinks(CharSequence text) {
         if (text == null) return "";
         SpannableStringBuilder sb = new SpannableStringBuilder();
-        Matcher m = URL_PATTERN.matcher(text);
+        Matcher matcher = LinkifyPort.WEB_URL.matcher(text);
         int end = 0;
-        while (m.find()) {
-            sb.append(text, end, m.start());
-            String label = m.group(1);
-            final String url = m.group(2);
-            sb.append(label != null ? label : "");
-            sb.setSpan(new ClickableSpan() {
-                @Override
-                public void onClick(@NonNull View widget) {
-                    if (onLinkPress != null) {
-                        if (Boolean.TRUE.equals(onLinkPress.run(new URLSpan(url)))) {
-                            dismiss();
-                        }
-                    } else if (fragment != null) {
-                        AlertsCreator.showOpenUrlAlert(fragment, url, false, false);
-                    }
-                }
-
-                @Override
-                public void updateDrawState(@NonNull TextPaint ds) {
-                    int alpha = Math.min(ds.getAlpha(), (ds.getColor() >> 24) & 0xFF);
-                    ds.setUnderlineText(false);
-                    ds.setColor(Theme.getColor(Theme.key_dialogTextLink));
-                    ds.setAlpha(alpha);
-                }
-            }, sb.length() - (label != null ? label.length() : 0), sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            end = m.end();
+        while (matcher.find()) {
+            if (hasClickableSpan(text, matcher.start(), matcher.end())) {
+                sb.append(text, end, matcher.end());
+                end = matcher.end();
+            } else {
+                sb.append(text, end, matcher.start());
+                String label = matcher.group(1);
+                String url = matcher.group(2);
+                sb.append(label != null ? label : "");
+                sb.setSpan(createUrlSpan(url), label != null ? sb.length() - label.length() : 0, sb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                end = matcher.end();
+            }
         }
         sb.append(text, end, text.length());
         return Emoji.replaceEmoji((CharSequence) sb, textView.getPaint().getFontMetricsInt(), false, null);
+    }
+
+    private boolean hasClickableSpan(CharSequence text, int start, int end) {
+        if (text instanceof Spanned) {
+            Spanned spanned = (Spanned) text;
+            for (ClickableSpan span : spanned.getSpans(start, end, ClickableSpan.class)) {
+                if (spanned.getSpanStart(span) < end && spanned.getSpanEnd(span) > start) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean hasEnoughHeight() {
@@ -435,6 +581,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
     @Override
     public void dismiss() {
         super.dismiss();
+        stopThinking();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
     }
 
@@ -809,6 +956,63 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             super.onMeasure(
                     MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
                     MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(78), MeasureSpec.EXACTLY));
+        }
+    }
+
+
+    private static class ThinkingDotsView extends View {
+        private final TypingDotsDrawable drawable;
+
+        public ThinkingDotsView(Context context, int color) {
+            super(context);
+            drawable = new TypingDotsDrawable(true);
+            drawable.setCallback(this);
+            drawable.setIgnoreAnimationLocks();
+            drawable.setColor(color);
+        }
+
+        public void start() {
+            if (drawable.isStarted()) return;
+            drawable.start();
+        }
+
+        public void stop() {
+            drawable.stop();
+        }
+
+        @Override
+        public boolean verifyDrawable(@NonNull Drawable who) {
+            return super.verifyDrawable(who) || who == drawable;
+        }
+
+        @Override
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), AndroidUtilities.dp(42));
+        }
+
+        @Override
+        protected void onAttachedToWindow() {
+            super.onAttachedToWindow();
+            if (drawable.isStarted()) invalidate();
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            DrawableUtils.setBounds(drawable, AndroidUtilities.dp(22), h / 2f, 19);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            drawable.draw(canvas);
+            if (drawable.isStarted()) invalidate();
+        }
+
+        @Override
+        protected void onDetachedFromWindow() {
+            super.onDetachedFromWindow();
+            stop();
         }
     }
 

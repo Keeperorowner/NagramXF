@@ -151,7 +151,9 @@ object DrawerMenuHelper {
     private fun ensureMigrated() {
         if (migrated) return
         migrated = true
-        if (NaConfig.mainMenuLayout.String().isNotEmpty()) return
+        if (NaConfig.mainMenuLayout.String().isNotEmpty()
+            || NaConfig.mainMenuHiddenItems.String().isNotEmpty()
+        ) return
         migrateFromLegacyToggles()
     }
 

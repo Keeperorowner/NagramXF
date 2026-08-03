@@ -255,6 +255,9 @@
     <string name="AIChatFetchModels">Получить список моделей</string>
     <string name="AIChatTestConnection">Проверить подключение</string>
     <string name="AIChatTestSuccess">Подключение успешно</string>
+    <string name="AIChatReasoning">Режим рассуждения</string>
+    <string name="AIChatReasoningInfo">Включить расширенное мышление для моделей рассуждения (o1, o3, Gemini Thinking и др.)</string>
+    <string name="AIChatTemperature">Температура</string>
     <string name="AIChatAddRole">Добавить роль</string>
     <string name="AIChatAddRoleHint">Нажмите, чтобы добавить свою роль</string>
     <string name="AIChatRolesInfo">Роли определяют характер и поведение ИИ.</string>

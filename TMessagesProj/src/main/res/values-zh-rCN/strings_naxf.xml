@@ -234,6 +234,9 @@
     <string name="AIChatFetchModels">获取模型列表</string>
     <string name="AIChatTestConnection">测试连接</string>
     <string name="AIChatTestSuccess">连接成功</string>
+    <string name="AIChatReasoning">推理模式</string>
+    <string name="AIChatReasoningInfo">为推理模型启用扩展思考（o1、o3、Gemini Thinking 等）</string>
+    <string name="AIChatTemperature">温度</string>
     <string name="AIChatAddRole">添加角色</string>
     <string name="AIChatAddRoleHint">点击添加自定义角色</string>
     <string name="AIChatRolesInfo">角色定义 AI 的个性和行为。</string>

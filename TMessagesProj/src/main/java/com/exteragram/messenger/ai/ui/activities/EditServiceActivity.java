@@ -31,6 +31,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
@@ -51,6 +52,8 @@ public class EditServiceActivity extends BaseFragment {
     private OutlineTextContainerView urlFieldContainer;
     private OutlineTextContainerView modelFieldContainer;
     private OutlineTextContainerView keyFieldContainer;
+    private TextCheckCell reasoningCell;
+    private boolean reasoningEnabled;
     private View doneButton;
     private ButtonWithCounterView testButton;
     private ButtonWithCounterView fetchModelsButton;
@@ -153,10 +156,21 @@ public class EditServiceActivity extends BaseFragment {
         testButton.setOnClickListener(v -> testConnection());
         layout.addView(testButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 24, 24, 24, 0));
 
+        reasoningCell = new TextCheckCell(context, getResourceProvider());
+        reasoningCell.setBackground(Theme.getSelectorDrawable(false));
+        reasoningCell.setTextAndCheck(LocaleController.getString(R.string.AIChatReasoning), reasoningEnabled, false);
+        reasoningCell.setOnClickListener(v -> {
+            reasoningEnabled = !reasoningEnabled;
+            reasoningCell.setChecked(reasoningEnabled);
+        });
+        layout.addView(reasoningCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+
         if (currentService != null) {
             if (urlField != null) urlField.setText(currentService.getUrl());
             modelField.setText(currentService.getModel());
             keyField.setText(currentService.getKey() != null ? currentService.getKey() : "");
+            reasoningEnabled = currentService.isReasoningEnabled();
+            reasoningCell.setChecked(reasoningEnabled);
         } else {
             if (urlField != null) {
                 urlField.setText(isCustom ? AiConfig.DEFAULT_SERVICE.getUrl() : ProviderPresets.PRESET_URLS[presetIndex]);
@@ -336,7 +350,7 @@ public class EditServiceActivity extends BaseFragment {
 
     private void saveConfig() {
         String url = getEffectiveUrl();
-        Service service = new Service(url, modelField.getText().toString().trim(), keyField.getText().toString().trim(), Service.PROTOCOL_OPENAI);
+        Service service = new Service(url, modelField.getText().toString().trim(), keyField.getText().toString().trim(), Service.PROTOCOL_OPENAI, reasoningEnabled);
 
         if (!AiController.getInstance().contains(service)) {
             Client client = new Client.Builder()

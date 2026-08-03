@@ -239,6 +239,9 @@
     <string name="AIChatFetchModels">Fetch Models</string>
     <string name="AIChatTestConnection">Test Connection</string>
     <string name="AIChatTestSuccess">Connection successful</string>
+    <string name="AIChatReasoning">Reasoning Mode</string>
+    <string name="AIChatReasoningInfo">Enable extended thinking for reasoning models (o1, o3, Gemini Thinking, etc.)</string>
+    <string name="AIChatTemperature">Temperature</string>
     <string name="AIChatAddRole">Add Role</string>
     <string name="AIChatRolesInfo">Roles define the AI personality and behavior.</string>
     <string name="AIChatSuggestedRoles">Suggested</string>

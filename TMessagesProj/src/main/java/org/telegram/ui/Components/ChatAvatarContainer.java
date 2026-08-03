@@ -591,6 +591,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         return false;
     }
 
+    public boolean useSeparateAvatarPill() {
+        return glassMode && isCentered() && !isPreviewMode();
+    }
+
     protected boolean canSearch() {
         return false;
     }
@@ -901,6 +905,9 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         avatarImageView.layout(avatarLeft, 1 + viewTop, avatarLeft + avatarImageView.getMeasuredWidth(), 1 + viewTop + avatarImageView.getMeasuredHeight());
 
         int l = leftPadding + (avatarImageView.getVisibility() == VISIBLE && !isCentered() ? dp(glassMode ? 49.66f : 55) : (isCentered() ? 0 : dp(glassMode ? 13 : 1))) + (isCentered() ? 0 : rightAvatarPadding);
+        if (isCentered() && glassMode && !isPreviewMode()) {
+            l += dp(6);
+        }
         if (isPreviewMode() && isCentered()) {
             l += dp(AndroidUtilities.isTablet() ? 80 : 72) / 2;
         }

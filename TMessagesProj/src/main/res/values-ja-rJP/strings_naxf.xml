@@ -257,6 +257,9 @@
     <string name="AIChatFetchModels">モデル一覧を取得</string>
     <string name="AIChatTestConnection">接続テスト</string>
     <string name="AIChatTestSuccess">接続成功</string>
+    <string name="AIChatReasoning">推論モード</string>
+    <string name="AIChatReasoningInfo">推論モデルの拡張思考を有効にする（o1、o3、Gemini Thinking など）</string>
+    <string name="AIChatTemperature">温度</string>
     <string name="AIChatAddRole">ロールを追加</string>
     <string name="AIChatAddRoleHint">タップしてカスタムロールを追加</string>
     <string name="AIChatRolesInfo">ロールは AI の性格と動作を定義します。</string>

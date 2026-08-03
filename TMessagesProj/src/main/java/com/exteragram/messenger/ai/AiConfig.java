@@ -36,11 +36,13 @@ public abstract class AiConfig {
     public static final ConfigItem responseStreamingConfig = new ConfigItem("aiChat_responseStreaming", ConfigItem.configTypeBool, true);
     public static final ConfigItem showResponseOnlyConfig = new ConfigItem("aiChat_showResponseOnly", ConfigItem.configTypeBool, false);
     public static final ConfigItem insertAsQuoteConfig = new ConfigItem("aiChat_insertAsQuote", ConfigItem.configTypeBool, true);
+    public static final ConfigItem temperatureConfig = new ConfigItem("aiChat_temperature", ConfigItem.configTypeInt, 10);
 
     public static boolean saveHistory;
     public static boolean responseStreaming;
     public static boolean showResponseOnly;
     public static boolean insertAsQuote;
+    public static int temperature;
 
     private static boolean configLoaded;
 
@@ -60,11 +62,13 @@ public abstract class AiConfig {
             responseStreamingConfig.value = nekoPrefs.getBoolean(responseStreamingConfig.key, (boolean) responseStreamingConfig.defaultValue);
             showResponseOnlyConfig.value = nekoPrefs.getBoolean(showResponseOnlyConfig.key, (boolean) showResponseOnlyConfig.defaultValue);
             insertAsQuoteConfig.value = nekoPrefs.getBoolean(insertAsQuoteConfig.key, (boolean) insertAsQuoteConfig.defaultValue);
+            temperatureConfig.value = nekoPrefs.getInt(temperatureConfig.key, (int) temperatureConfig.defaultValue);
 
             saveHistory = saveHistoryConfig.Bool();
             responseStreaming = responseStreamingConfig.Bool();
             showResponseOnly = showResponseOnlyConfig.Bool();
             insertAsQuote = insertAsQuoteConfig.Bool();
+            temperature = temperatureConfig.Int();
 
             configLoaded = true;
         }
@@ -75,6 +79,7 @@ public abstract class AiConfig {
         responseStreaming = responseStreamingConfig.Bool();
         showResponseOnly = showResponseOnlyConfig.Bool();
         insertAsQuote = insertAsQuoteConfig.Bool();
+        temperature = temperatureConfig.Int();
     }
 
     public static void saveConversationHistory(ArrayList<Message> history) {
