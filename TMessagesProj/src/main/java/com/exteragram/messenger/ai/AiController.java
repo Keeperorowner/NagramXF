@@ -25,6 +25,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import tw.nekomimi.nekogram.llm.LlmConfig;
+import xyz.nextalone.nagram.NaConfig;
+
 public class AiController {
 
     private final List<Role> roles = new ArrayList<>();
@@ -44,6 +47,9 @@ public class AiController {
     }
 
     public static boolean canUseAI() {
+        if (AiConfig.useLlmProvider) {
+            return LlmConfig.isLLMTranslatorAvailable();
+        }
         return !TextUtils.isEmpty(getInstance().getSelected().getKey());
     }
 
@@ -157,10 +163,24 @@ public class AiController {
     }
 
     public Service getSelected() {
+        if (AiConfig.useLlmProvider) {
+            Service llmService = getLlmProviderService();
+            if (llmService != null) return llmService;
+        }
         for (Service s : services) {
             if (s.isSelected()) return s;
         }
         return services.isEmpty() ? AiConfig.DEFAULT_SERVICE : services.get(0);
+    }
+
+    private static Service getLlmProviderService() {
+        if (!LlmConfig.isLLMTranslatorAvailable()) return null;
+        int preset = NaConfig.INSTANCE.getLlmProviderPreset().Int();
+        String url = LlmConfig.getEffectiveBaseUrl(preset);
+        String model = LlmConfig.getEffectiveModelName(preset);
+        String key = LlmConfig.getFirstApiKey(preset);
+        if (TextUtils.isEmpty(url) || TextUtils.isEmpty(model) || TextUtils.isEmpty(key)) return null;
+        return new Service(url, model, key, Service.PROTOCOL_OPENAI, false);
     }
 
     public void saveServices() {

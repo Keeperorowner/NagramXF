@@ -210,6 +210,7 @@
     <string name="AIChat">AI 聊天</string>
     <string name="AIChatInfo">配置服务，角色和历史记录</string>
     <string name="AIChatServices">服务</string>
+    <string name="AIChatUseLlmProvider">与 AI 翻译共用服务商</string>
     <string name="AIChatRoles">角色</string>
     <string name="AIChatMessageHistory">消息历史</string>
     <string name="AIChatHistoryInfo">启用后，AI 将记住对话中的先前消息。</string>

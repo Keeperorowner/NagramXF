@@ -36,6 +36,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
 import tw.nekomimi.nekogram.settings.BaseNekoXSettingsActivity;
+import tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
@@ -46,15 +47,17 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
 
     private final AbstractConfigCell headerGeneral = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.General)));
     private final ConfigCellTextCheckIcon servicesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatServices", getString(R.string.AIChatServices), R.drawable.msg_language, true, () -> presentFragment(new ServicesActivity())));
+    private final AbstractConfigCell useLlmProviderRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.useLlmProviderConfig, null, getString(R.string.AIChatUseLlmProvider), R.drawable.magic_stick, true, null));
     private final ConfigCellTextCheckIcon rolesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatRoles", getString(R.string.AIChatRoles), R.drawable.msg_openprofile, true, () -> presentFragment(new RolesActivity())));
     private final AbstractConfigCell saveHistoryRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.saveHistoryConfig, getString(R.string.AIChatMessageHistory), R.drawable.msg_discuss, false));
+
+    private final AbstractConfigCell headerTemperature = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIChatTemperature)));
+    private final AbstractConfigCell temperatureRow = cellGroup.appendCell(new ConfigCellCustom("AiChatTemperature", ConfigCellCustom.CUSTOM_ITEM_AiChatTemperature, false));
 
     private final AbstractConfigCell headerOther = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIChatOther)));
     private final AbstractConfigCell responseStreamingRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.responseStreamingConfig, null, getString(R.string.AIChatResponseStreaming)));
     private final AbstractConfigCell showResponseOnlyRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.showResponseOnlyConfig, null, getString(R.string.AIChatShowResponseOnly)));
     private final AbstractConfigCell insertAsQuoteRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.insertAsQuoteConfig, null, getString(R.string.AIChatInsertAsQuote)));
-    private final AbstractConfigCell headerTemperature = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIChatTemperature)));
-    private final AbstractConfigCell temperatureRow = cellGroup.appendCell(new ConfigCellCustom("AiChatTemperature", ConfigCellCustom.CUSTOM_ITEM_AiChatTemperature, false));
 
     public AiPreferencesActivity() {
         addRowsToMap(cellGroup);
@@ -141,6 +144,20 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
 
     @Override
     protected void handleCellClick(View view, int position, float x, float y) {
+        if (position >= 0 && position < cellGroup.rows.size() && cellGroup.rows.get(position) == servicesRow && AiConfig.useLlmProvider) {
+            presentFragment(new NekoTranslatorSettingsActivity());
+            return;
+        }
+        if (position >= 0 && position < cellGroup.rows.size() && cellGroup.rows.get(position) == useLlmProviderRow) {
+            AiConfig.useLlmProviderConfig.toggleConfigBool();
+            AiConfig.syncFields();
+            AiConfig.clearConversationHistory();
+            servicesRow.setValue(getEndpointValue());
+            if (view instanceof TextCell textCell) {
+                textCell.setChecked(AiConfig.useLlmProviderConfig.Bool());
+            }
+            return;
+        }
         if (position >= 0 && position < cellGroup.rows.size() && cellGroup.rows.get(position) == saveHistoryRow) {
             AiConfig.saveHistoryConfig.toggleConfigBool();
             AiConfig.syncFields();
