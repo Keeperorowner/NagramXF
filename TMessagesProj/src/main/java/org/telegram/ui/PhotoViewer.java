@@ -13276,7 +13276,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 animatorSet.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
                 animatorSet.start();
                 photoPaintView.updatePlusEmojiKeyboardButton();
-            });
+            }).useInsets().useMinusNavbar();
             paintKeyboardNotifier.ignore(currentEditMode != EDIT_MODE_PAINT);
             photoPaintView = new LPhotoPaintView(parentActivity, parentActivity, currentAccount, bitmap, isCurrentVideo ? null : centerImage.getBitmap(), centerImage.getOrientation(), editState.mediaEntities, state, () -> paintingOverlay.hideBitmap(), resourcesProvider) {
                 @Override
@@ -17242,7 +17242,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                     boolean autoDownload = (DownloadController.getInstance(currentAccount).getAutodownloadMask() & DownloadController.AUTODOWNLOAD_TYPE_PHOTO) != 0;
                     boolean needFullImage = autoDownload || currentIndex == index || FileLoader.getInstance(currentAccount).getPathToAttach(fileLocation, true).exists();
-                    ImageLocation imageThumbLocation = ImageLocation.getForPhoto(FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 80), photo);
+                    ImageLocation imageThumbLocation = placeHolder == null
+                        ? ImageLocation.getForPhoto(FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 80), photo)
+                        : null;
                     BitmapDrawable thumbPlaceHolder = placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null;
                     ImageLocation imageLocation = needFullImage ? ImageLocation.getForPhoto(fileLocation, photo) : null;
                     imageReceiver.setImage(imageLocation, null, imageThumbLocation, "b", thumbPlaceHolder, size[0], null, pageBlocksAdapter.getParentObject(), 1);

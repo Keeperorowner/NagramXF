@@ -4044,6 +4044,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         TLRPC.User user = getUserConfig().getCurrentUser();
                         if (user == null) return;
                         ItemOptions itemOptions = ItemOptions.makeOptions(this, actionsView);
+                        itemOptions.setLongPressSelectionEnabled(false);
                         itemOptions.setGravity(Gravity.LEFT);
                         itemOptions.add(R.drawable.msg_qrcode, getString(R.string.QrCode), () -> {
                             Bundle args = new Bundle();
@@ -7377,6 +7378,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             var options = ItemOptions.makeOptions(this, view)
                     .setScrimViewBackground(bg)
+                    .setLongPressSelectionEnabled(false)
                     .addIf(!self, R.drawable.msg_discussion, getString(R.string.SendMessage), () -> {
                         presentFragment(ChatActivity.of(user.id));
                     })
@@ -7685,6 +7687,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             final ItemOptions o = ItemOptions.makeOptions(this, view);
             o.setScrimViewBackground(listView.getClipBackground(view));
+            o.setLongPressSelectionEnabled(false);
             if (position == phoneRow) {
                 if (userInfo != null && userInfo.phone_calls_available) {
                     o.add(R.drawable.msg_calls, getString(R.string.CallViaTelegram), () -> {
@@ -17033,6 +17036,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean editNotes(View view, int position) {
         final ItemOptions o = ItemOptions.makeOptions(this, view);
         o.setScrimViewBackground(listView.getClipBackground(view));
+        o.setLongPressSelectionEnabled(false);
         o.addIf(userInfo != null, R.drawable.msg_copy, getString(R.string.Copy), () -> {
             if (userInfo == null) return;
             final CharSequence text = MessageObject.formatTextWithEntities(userInfo.note, false);
@@ -17110,6 +17114,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         final ItemOptions itemOptions = ItemOptions.makeOptions(this, cell);
         itemOptions.setScrimViewBackground(listView.getClipBackground(cell));
+        itemOptions.setLongPressSelectionEnabled(false);
         itemOptions.setGravity(Gravity.LEFT);
 
         if (position == bizLocationRow && userFull.business_location != null) {
