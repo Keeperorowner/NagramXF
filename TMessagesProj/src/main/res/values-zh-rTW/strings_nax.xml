@@ -80,10 +80,13 @@
     <string name="MessageSavingSaveMediaInPublicGroups">公開群組</string>
     <string name="MessageSavingSaveMediaInPrivateGroups">私有群組</string>
     <string name="TelegramUIAutoTranslate">自動翻譯</string>
-    <string name="TranslatorMode">手動翻譯顯示類型</string>
+    <string name="TranslatorMode">追加</string>
     <string name="TranslatorModeAppend">追加</string>
     <string name="TranslatorModeInline">替換</string>
     <string name="TranslatorModePopup">彈窗</string>
+    <string name="TranslatorWithOriginalTextOff">關閉</string>
+    <string name="TranslatorWithOriginalTextManualOnly">手動</string>
+    <string name="TranslatorWithOriginalTextOn">開啟</string>
     <string name="Translated">已翻譯</string>
     <string name="ProviderRealMicrosoftTranslator">微軟翻譯</string>
     <string name="TranslatorSettings">翻譯</string>
@@ -328,4 +331,6 @@
     <string name="MainTabsHideContacts">隱藏聯絡人標籤頁</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">顯示訊息預覽</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">在密碼鎖定狀態下仍顯示通知內容。</string>
+    <string name="DeepLTranslateKey">DeepL API 金鑰</string>
+    <string name="DeepLTranslateKeyNotice">設定 DeepL API 金鑰，留空則使用內建金鑰。</string>
 </resources>
