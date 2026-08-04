@@ -10780,7 +10780,9 @@ public class Theme {
     }
 
     public static Paint fillingPaint(int color) {
-        PAINT_FILLING.setColor(color);
+        if (PAINT_FILLING.getColor() != color) {
+            PAINT_FILLING.setColor(color);
+        }
         return PAINT_FILLING;
     }
 
