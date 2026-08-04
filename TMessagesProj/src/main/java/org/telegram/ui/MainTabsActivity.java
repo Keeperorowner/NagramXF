@@ -17,7 +17,11 @@ import android.graphics.RectF;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextUtils;
+import android.text.TextPaint;
+import android.text.style.ReplacementSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -40,6 +44,8 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
+import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LiteMode;
 import org.telegram.messenger.LocaleController;
@@ -435,7 +441,75 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             : 0;
     }
 
-    public void openAccountSelector(View button) {
+    private boolean hasUnmutedUnreadDialogs(MessagesController.DialogFilter folder) {
+        final MessagesController messagesController = getMessagesController();
+        final ArrayList<TLRPC.Dialog> dialogs = folder.isDefault()
+                ? messagesController.getDialogs(0)
+                : messagesController.getAllDialogs();
+        for (int i = 0; i < dialogs.size(); i++) {
+            final TLRPC.Dialog dialog = dialogs.get(i);
+            if (!folder.isDefault()) {
+                long dialogId = dialog.id;
+                if (DialogObject.isEncryptedDialog(dialogId)) {
+                    final TLRPC.EncryptedChat encryptedChat = messagesController.getEncryptedChat(DialogObject.getEncryptedChatId(dialogId));
+                    if (encryptedChat != null) {
+                        dialogId = encryptedChat.user_id;
+                    }
+                }
+                if (!folder.includesDialog(getAccountInstance(), dialogId, dialog)) {
+                    continue;
+                }
+            }
+            if ((messagesController.getDialogUnreadCount(dialog) > 0 || dialog.unread_mark)
+                    && !messagesController.isDialogMuted(dialog.id, 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private class FolderCounterSpan extends ReplacementSpan {
+
+        private static final float HEIGHT_DP = 17.333f;
+        private final String count;
+        private final boolean hasUnmutedUnreadDialogs;
+        private final TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final float counterWidth;
+
+        FolderCounterSpan(int count, boolean hasUnmutedUnreadDialogs) {
+            this.count = String.valueOf(count);
+            this.hasUnmutedUnreadDialogs = hasUnmutedUnreadDialogs;
+            textPaint.setTextSize(AndroidUtilities.dpf2(11));
+            textPaint.setTypeface(AndroidUtilities.bold());
+            counterWidth = Math.max(dp(HEIGHT_DP - 10), textPaint.measureText(this.count)) + dp(10);
+        }
+
+        @Override
+        public int getSize(@NonNull Paint paint, CharSequence text, int start, int end, @Nullable Paint.FontMetricsInt fm) {
+            return (int) Math.ceil(dp(5) + counterWidth);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas, CharSequence text, int start, int end, float x, int top, int y, int bottom, @NonNull Paint paint) {
+            final float left = x + dp(5);
+            final float centerY = (top + bottom) / 2f + dp(1);
+            final float halfHeight = dp(HEIGHT_DP) / 2f;
+            backgroundPaint.setColor(getThemedColor(
+                hasUnmutedUnreadDialogs ?
+                    Theme.key_featuredStickers_addButton :
+                    Theme.key_chats_tabUnreadUnactiveBackground
+            ));
+            textPaint.setColor(getThemedColor(Theme.key_actionBarDefault));
+            AndroidUtilities.rectTmp.set(left, centerY - halfHeight, left + counterWidth, centerY + halfHeight);
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, halfHeight, halfHeight, backgroundPaint);
+            final Paint.FontMetrics fontMetrics = textPaint.getFontMetrics();
+            final float baseline = centerY - (fontMetrics.ascent + fontMetrics.descent) / 2f;
+            canvas.drawText(count, left + (counterWidth - textPaint.measureText(count)) / 2f, baseline, textPaint);
+        }
+    }
+
+    public boolean openAccountSelector(View button) {
         final ArrayList<Integer> accountNumbers = new ArrayList<>();
 
         accountNumbers.clear();
@@ -504,6 +578,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         o.show();
 
         HintsController.Hint.AccountSwitchHint.doNotShowAgain();
+
+        return true;
     }
 
     public LinearLayout accountView(int account, boolean selected) {
@@ -1352,6 +1428,28 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 title = Emoji.replaceEmoji(title, folderItem.getTextView().getPaint().getFontMetricsInt(), false);
                 if (!folder.isDefault()) {
                     title = MessageObject.replaceAnimatedEmoji(title, folder.entities, folderItem.getTextView().getPaint().getFontMetricsInt());
+                }
+                final int unreadCount = folder.isDefault()
+                        ? MessagesStorage.getInstance(currentAccount).getMainUnreadCount()
+                        : folder.unreadCount;
+                if (unreadCount > 0) {
+                    final SpannableStringBuilder titleWithCounter = new SpannableStringBuilder(title);
+                    final int counterStart = titleWithCounter.length();
+                    titleWithCounter.append(String.valueOf(unreadCount));
+                    titleWithCounter.setSpan(
+                            new FolderCounterSpan(unreadCount, hasUnmutedUnreadDialogs(folder)),
+                            counterStart,
+                            titleWithCounter.length(),
+                            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    );
+                    title = titleWithCounter;
+                    folderItem.setContentDescription(
+                            TextUtils.concat(
+                                    folder.isDefault() ? getString(R.string.FilterAllChats) : folder.name,
+                                    "\n",
+                                    LocaleController.formatPluralString("AccDescrUnreadCount", unreadCount)
+                            )
+                    );
                 }
                 folderItem.setEmojiCacheType(folder.title_noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES);
                 final int color = getMessagesController().folderTags ? folder.color : -1;
