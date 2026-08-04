@@ -310,4 +310,23 @@
     <string name="SaveReadDateAbout">Сохранять дату, когда ваши исходящие сообщения были прочитаны. Время отображается в информации о сообщении.</string>
     <string name="AyuReadDate">Прочитано</string>
     <string name="AyuReadDateUnknown">Неизвестно</string>
+    <string name="BuiltInFolders">Встроенные папки</string>
+    <string name="BuiltInFoldersInfo">Встроенные папки создаются на этом устройстве и не синхронизируются с Telegram. Их название и значок нельзя изменить.</string>
+    <string name="LocalFolder">Локальная папка</string>
+    <string name="LocalFolderEditInfo">Встроенные папки нельзя редактировать. Если передумали, удалите её здесь и добавьте заново.</string>
+    <string name="BuiltInFolderUnread">Непрочитанные</string>
+    <string name="BuiltInFolderUnmuted">Со звуком</string>
+    <string name="BuiltInFolderBasicGroups">Обычные группы</string>
+    <string name="BuiltInFolderSupergroups">Супергруппы</string>
+    <string name="BuiltInFolderAdmin">Администратор</string>
+    <string name="MainMenuItems">Элементы бокового меню</string>
+    <string name="MainMenuHiddenItems">Скрытые элементы</string>
+    <string name="MainMenuAddDivider">Добавить разделитель</string>
+    <string name="MainMenuDivider">Разделитель</string>
+    <string name="MainMenuItemsInfo">Нажмите и перетащите, чтобы изменить порядок. Нажмите на элемент, чтобы скрыть его, или на скрытый элемент, чтобы вернуть его. Нажмите на разделитель, чтобы удалить его.</string>
+    <string name="NowPlayingStatsFmUsername">Имя пользователя Stats.fm</string>
+    <string name="NowPlayingNotWhitelistedInfo">Ваша карточка видна только на этом устройстве. Карточки суппортеров из белого списка видны всем.</string>
+    <string name="NowPlayingBindSuccess">Привязано</string>
+    <string name="AyuSpySettings">Настройки слежки</string>
+    <string name="AyuMomentsCustomHeader">Своё</string>
 </resources>

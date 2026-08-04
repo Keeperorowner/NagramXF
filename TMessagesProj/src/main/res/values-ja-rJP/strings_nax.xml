@@ -79,10 +79,13 @@
     <string name="MessageSavingSaveMediaInPublicGroups">パブリックグループで保存</string>
     <string name="MessageSavingSaveMediaInPrivateGroups">プライベートグループで保存</string>
     <string name="TelegramUIAutoTranslate">チャット全体を翻訳</string>
-    <string name="TranslatorMode">手動翻訳表示タイプ</string>
+    <string name="TranslatorMode">原文付き</string>
     <string name="TranslatorModeAppend">追加</string>
     <string name="TranslatorModeInline">置換</string>
     <string name="TranslatorModePopup">ポップアップ</string>
+    <string name="TranslatorWithOriginalTextOff">オフ</string>
+    <string name="TranslatorWithOriginalTextManualOnly">マニュアルのみ</string>
+    <string name="TranslatorWithOriginalTextOn">オン</string>
     <string name="Translated">翻訳済み</string>
     <string name="ProviderRealMicrosoftTranslator">Microsoft 翻訳</string>
     <string name="TranslatorSettings">翻訳</string>
@@ -326,4 +329,6 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">パスコードロックが有効な場合でも通知内容を表示します。</string>
     <string name="StickerSavedHint">ステッカーを保存しました。</string>
     <string name="StickerCopied">ステッカーをコピーしました。</string>
+    <string name="DeepLTranslateKey">DeepL API キー</string>
+    <string name="DeepLTranslateKeyNotice">DeepL API キーを設定します。組み込みの認証情報を使用する場合は空白のままにしてください。</string>
 </resources>
