@@ -245,6 +245,7 @@
     <string name="AIChat">AI 聊天</string>
     <string name="AIChatInfo">設定服務、角色與歷史記錄</string>
     <string name="AIChatServices">服務</string>
+    <string name="AIChatUseLlmProvider">與 AI 翻譯共用服務商</string>
     <string name="AIChatRoles">角色</string>
     <string name="AIChatMessageHistory">訊息歷史</string>
     <string name="AIChatHistoryInfo">啟用後，AI 將記住對話中的先前訊息。</string>

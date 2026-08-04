@@ -2,21 +2,31 @@ package tw.nekomimi.nekogram.llm.net;
 
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.text.TextUtils;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 import tw.nekomimi.nekogram.llm.utils.LlmModelUtil;
+import tw.nekomimi.nekogram.llm.utils.ReasoningContentFilter;
 import tw.nekomimi.nekogram.utils.HttpClient;
 
 public final class OpenAICompatClient {
@@ -38,18 +48,38 @@ public final class OpenAICompatClient {
         }
     }
 
-    public static LlmResponse<List<String>> fetchModels(String baseUrl, String apiKey) {
+    public interface StreamCallback {
+        void onChunk(String accumulatedContent);
+
+        void onThinking();
+
+        void onComplete(String fullContent);
+
+        void onError(int httpCode, String error);
+    }
+
+    private static String validateRequest(String baseUrl, String apiKey) {
         String requestBaseUrl = baseUrl != null ? baseUrl.trim() : "";
         if (requestBaseUrl.isEmpty()) {
-            return new LlmResponse<>(null, "Empty base URL", 0, 0);
+            return "Empty base URL";
         }
         String key = apiKey != null ? apiKey.trim() : "";
         if (key.isEmpty()) {
-            return new LlmResponse<>(null, getString(R.string.ApiKeyNotSet), 0, 0);
+            return getString(R.string.ApiKeyNotSet);
         }
         if (key.indexOf('\r') >= 0 || key.indexOf('\n') >= 0) {
-            return new LlmResponse<>(null, "Invalid API key", 0, 0);
+            return "Invalid API key";
         }
+        return null;
+    }
+
+    public static LlmResponse<List<String>> fetchModels(String baseUrl, String apiKey) {
+        String validationError = validateRequest(baseUrl, apiKey);
+        if (validationError != null) {
+            return new LlmResponse<>(null, validationError, 0, 0);
+        }
+        String requestBaseUrl = baseUrl.trim();
+        String key = apiKey.trim();
 
         long start = System.currentTimeMillis();
 
@@ -111,27 +141,31 @@ public final class OpenAICompatClient {
     }
 
     private static LlmResponse<String> chatCompletions(String baseUrl, String apiKey, String requestJson, OkHttpClient client) {
-        String requestBaseUrl = baseUrl != null ? baseUrl.trim() : "";
-        if (requestBaseUrl.isEmpty()) {
-            return new LlmResponse<>(null, "Empty base URL", 0, 0);
+        String validationError = validateRequest(baseUrl, apiKey);
+        if (validationError != null) {
+            return new LlmResponse<>(null, validationError, 0, 0);
         }
-        String key = apiKey != null ? apiKey.trim() : "";
-        if (key.isEmpty()) {
-            return new LlmResponse<>(null, getString(R.string.ApiKeyNotSet), 0, 0);
-        }
-        if (key.indexOf('\r') >= 0 || key.indexOf('\n') >= 0) {
-            return new LlmResponse<>(null, "Invalid API key", 0, 0);
-        }
+        return executeChatCompletions(newChatCompletionsCall(client, baseUrl, apiKey, requestJson));
+    }
 
-        long start = System.currentTimeMillis();
-
+    public static Call newChatCompletionsCall(OkHttpClient client, String baseUrl, String apiKey, String requestJson) {
+        if (validateRequest(baseUrl, apiKey) != null) {
+            return null;
+        }
         RequestBody requestBody = RequestBody.create(requestJson, HttpClient.MEDIA_TYPE_JSON);
-        try (Response response = client.newCall(new Request.Builder()
-                .url(requestBaseUrl + "/chat/completions")
-                .header("Authorization", "Bearer " + key)
+        Request request = new Request.Builder()
+                .url(baseUrl.trim() + "/chat/completions")
+                .header("Authorization", "Bearer " + apiKey.trim())
                 .post(requestBody)
-                .build()).execute()) {
-            String body = response.body().string();
+                .build();
+        return client.newCall(request);
+    }
+
+    public static LlmResponse<String> executeChatCompletions(Call call) {
+        long start = System.currentTimeMillis();
+        try (Response response = call.execute()) {
+            ResponseBody responseBody = response.body();
+            String body = responseBody != null ? responseBody.string() : "";
             long duration = System.currentTimeMillis() - start;
             int code = response.code();
             if (!response.isSuccessful()) {
@@ -145,6 +179,141 @@ public final class OpenAICompatClient {
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
             return new LlmResponse<>(null, e.toString(), duration, 0);
+        }
+    }
+
+    public static void streamChatCompletions(Call call, int minChunkSize, StreamCallback callback) {
+        int chunkLimit = Math.max(1, minChunkSize);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                if (!call.isCanceled()) {
+                    callback.onError(0, e.toString());
+                }
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) {
+                try (Response ignored = response) {
+                    if (!response.isSuccessful()) {
+                        ResponseBody errorBody = response.body();
+                        callback.onError(response.code(), formatHttpError(response.code(), errorBody != null ? errorBody.string() : ""));
+                        return;
+                    }
+                    ResponseBody body = response.body();
+                    if (body == null) {
+                        callback.onError(response.code(), "Empty response body");
+                        return;
+                    }
+                    readStream(call, body, chunkLimit, callback);
+                } catch (Exception e) {
+                    if (!call.isCanceled()) {
+                        callback.onError(0, e.toString());
+                    }
+                }
+            }
+        });
+    }
+
+    private static void readStream(Call call, ResponseBody body, int chunkLimit, StreamCallback callback) {
+        StringBuilder fullResponse = new StringBuilder();
+        ReasoningContentFilter reasoningFilter = new ReasoningContentFilter();
+        boolean reasoningNotified = false;
+        Exception streamError = null;
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(body.byteStream()))) {
+            int chunkSize = 0;
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (call.isCanceled()) return;
+                if (line.isEmpty() || !line.startsWith("data: ")) continue;
+
+                String data = line.substring(6).trim();
+                if (data.equals("[DONE]")) {
+                    String remaining = reasoningFilter.flush();
+                    if (!TextUtils.isEmpty(remaining)) {
+                        fullResponse.append(remaining);
+                    }
+                    if (chunkSize > 0) {
+                        callback.onChunk(fullResponse.toString());
+                    }
+                    break;
+                }
+
+                StreamResponsePart part = parseStreamResponsePart(data);
+                if (part.hasReasoning && !reasoningNotified) {
+                    reasoningNotified = true;
+                    callback.onThinking();
+                }
+
+                String content = part.content;
+                if (!TextUtils.isEmpty(content)) {
+                    String filtered = reasoningFilter.filter(content);
+                    if (reasoningFilter.consumeReasoningSignal() && !reasoningNotified) {
+                        reasoningNotified = true;
+                        callback.onThinking();
+                    }
+                    if (!TextUtils.isEmpty(filtered)) {
+                        fullResponse.append(filtered);
+                        chunkSize += filtered.length();
+                        if (chunkSize >= chunkLimit) {
+                            callback.onChunk(fullResponse.toString());
+                            chunkSize = 0;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+            streamError = e;
+        }
+
+        if (call.isCanceled()) return;
+        String finalResponse = fullResponse.toString().trim();
+        if (!finalResponse.isEmpty()) {
+            callback.onComplete(finalResponse);
+        } else if (streamError != null) {
+            callback.onError(0, streamError.toString());
+        } else {
+            callback.onComplete("");
+        }
+    }
+
+    private static StreamResponsePart parseStreamResponsePart(String data) {
+        try {
+            JSONObject json = new JSONObject(data);
+            JSONArray choices = json.optJSONArray("choices");
+            if (choices != null && choices.length() > 0) {
+                JSONObject delta = choices.getJSONObject(0).optJSONObject("delta");
+                if (delta == null) return new StreamResponsePart("", false);
+                Object content = delta.opt("content");
+                String text = (content == null || content == JSONObject.NULL) ? "" : content.toString();
+                return new StreamResponsePart(text, hasReasoning(delta));
+            }
+        } catch (Exception ignored) {
+        }
+        return new StreamResponsePart("", false);
+    }
+
+    private static boolean hasReasoning(JSONObject delta) {
+        return hasValue(delta, "reasoning") || hasValue(delta, "reasoning_content") || hasValue(delta, "reasoning_details");
+    }
+
+    private static boolean hasValue(JSONObject obj, String key) {
+        if (obj == null || !obj.has(key) || obj.isNull(key)) return false;
+        Object val = obj.opt(key);
+        if (val instanceof String) return !TextUtils.isEmpty((String) val);
+        if (val instanceof JSONArray) return ((JSONArray) val).length() > 0;
+        return val != null && val != JSONObject.NULL;
+    }
+
+    private static class StreamResponsePart {
+        final String content;
+        final boolean hasReasoning;
+
+        StreamResponsePart(String content, boolean hasReasoning) {
+            this.content = content;
+            this.hasReasoning = hasReasoning;
         }
     }
 

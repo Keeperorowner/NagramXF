@@ -16,8 +16,6 @@ import com.exteragram.messenger.ai.data.Suggestions;
 import com.exteragram.messenger.ai.network.Client;
 import com.exteragram.messenger.ai.network.GenerationCallback;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -35,11 +33,10 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import tw.nekomimi.nekogram.llm.net.OpenAICompatClient;
+import tw.nekomimi.nekogram.llm.utils.LlmUrlNormalizer;
 
 public class EditServiceActivity extends BaseFragment {
 
@@ -232,7 +229,7 @@ public class EditServiceActivity extends BaseFragment {
     }
 
     private void fetchModels() {
-        String url = getEffectiveUrl();
+        String url = LlmUrlNormalizer.normalizeBaseUrl(getEffectiveUrl());
         String key = keyField.getText().toString().trim();
         if (TextUtils.isEmpty(url) || TextUtils.isEmpty(key)) {
             if (TextUtils.isEmpty(key)) AndroidUtilities.shakeView(keyFieldContainer);
@@ -241,63 +238,20 @@ public class EditServiceActivity extends BaseFragment {
         }
 
         fetchModelsButton.setLoading(true);
-        String modelsEndpoint = url.endsWith("/") ? url + "models" : url + "/models";
 
         new Thread(() -> {
-            try {
-                OkHttpClient client = new OkHttpClient.Builder()
-                        .connectTimeout(15, TimeUnit.SECONDS)
-                        .readTimeout(30, TimeUnit.SECONDS)
-                        .build();
-
-                Request request = new Request.Builder()
-                        .url(modelsEndpoint)
-                        .addHeader("Authorization", "Bearer " + key)
-                        .get()
-                        .build();
-
-                try (Response response = client.newCall(request).execute()) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        String body = response.body().string();
-                        JSONObject json = new JSONObject(body);
-                        JSONArray data = json.optJSONArray("data");
-                        if (data == null) data = json.optJSONArray("models");
-
-                        if (data != null && data.length() > 0) {
-                            ArrayList<String> models = new ArrayList<>();
-                            for (int i = 0; i < data.length(); i++) {
-                                JSONObject model = data.getJSONObject(i);
-                                String id = model.optString("id", model.optString("name", ""));
-                                if (!TextUtils.isEmpty(id)) {
-                                    models.add(id);
-                                }
-                            }
-                            models.sort(String::compareToIgnoreCase);
-                            AndroidUtilities.runOnUIThread(() -> {
-                                fetchModelsButton.setLoading(false);
-                                showModelPicker(models);
-                            });
-                        } else {
-                            AndroidUtilities.runOnUIThread(() -> {
-                                fetchModelsButton.setLoading(false);
-                                BulletinFactory.of(EditServiceActivity.this).createErrorBulletin("No models found").show();
-                            });
-                        }
-                    } else {
-                        final int code = response.code();
-                        AndroidUtilities.runOnUIThread(() -> {
-                            fetchModelsButton.setLoading(false);
-                            BulletinFactory.of(EditServiceActivity.this).createErrorBulletin("Error: " + code).show();
-                        });
-                    }
+            OpenAICompatClient.LlmResponse<List<String>> response = OpenAICompatClient.fetchModels(url, key);
+            AndroidUtilities.runOnUIThread(() -> {
+                fetchModelsButton.setLoading(false);
+                if (response.isSuccess() && response.data() != null) {
+                    ArrayList<String> models = new ArrayList<>(response.data());
+                    models.sort(String::compareToIgnoreCase);
+                    showModelPicker(models);
+                } else {
+                    String error = response.error() != null ? response.error() : "Network error";
+                    BulletinFactory.of(EditServiceActivity.this).createErrorBulletin(error).show();
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
-                AndroidUtilities.runOnUIThread(() -> {
-                    fetchModelsButton.setLoading(false);
-                    BulletinFactory.of(EditServiceActivity.this).createErrorBulletin(e.getMessage() != null ? e.getMessage() : "Network error").show();
-                });
-            }
+            });
         }).start();
     }
 

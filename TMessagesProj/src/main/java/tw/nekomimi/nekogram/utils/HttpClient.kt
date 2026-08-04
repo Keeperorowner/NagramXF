@@ -1,5 +1,6 @@
 package tw.nekomimi.nekogram.utils
 
+import okhttp3.Dns
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -25,6 +26,17 @@ object HttpClient {
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .callTimeout(60, TimeUnit.SECONDS)
+            .build()
+    }
+
+    val llmStreamInstance: OkHttpClient by lazy {
+        instance.newBuilder()
+            .dns { hostname ->
+                DnsFactory.lookup(hostname).ifEmpty { Dns.SYSTEM.lookup(hostname) }
+            }
+            .connectTimeout(1, TimeUnit.MINUTES)
+            .readTimeout(5, TimeUnit.MINUTES)
+            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
     }
 

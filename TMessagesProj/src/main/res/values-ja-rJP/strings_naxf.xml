@@ -233,6 +233,7 @@
     <string name="AIChat">AI チャット</string>
     <string name="AIChatInfo">サービス、ロール、履歴を設定</string>
     <string name="AIChatServices">サービス</string>
+    <string name="AIChatUseLlmProvider">AI 翻訳のプロバイダーを使用</string>
     <string name="AIChatRoles">ロール</string>
     <string name="AIChatMessageHistory">メッセージ履歴</string>
     <string name="AIChatHistoryInfo">有効にすると、AI は会話の以前のメッセージを記憶します。</string>
