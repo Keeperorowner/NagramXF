@@ -79,10 +79,13 @@
     <string name="MessageSavingSaveMediaInPublicGroups">… в публичных группах</string>
     <string name="MessageSavingSaveMediaInPrivateGroups">… в частных группах</string>
     <string name="TelegramUIAutoTranslate">Переводить чаты целиком</string>
-    <string name="TranslatorMode">Поведение при ручном переводе</string>
+    <string name="TranslatorMode">С исходным текстом</string>
     <string name="TranslatorModeAppend">Добавлять</string>
     <string name="TranslatorModeInline">Заменять</string>
     <string name="TranslatorModePopup">Всплывающее окно</string>
+    <string name="TranslatorWithOriginalTextOff">Выкл.</string>
+    <string name="TranslatorWithOriginalTextManualOnly">Только вручную</string>
+    <string name="TranslatorWithOriginalTextOn">Вкл.</string>
     <string name="Translated">переведено</string>
     <string name="ProviderRealMicrosoftTranslator">Microsoft</string>
     <string name="TranslatorSettings">Переводчик</string>
@@ -328,4 +331,6 @@
     <string name="StickerCopied">Стикер скопирован в буфер обмена.</string>
     <string name="MainTabsForceOpenChats">Всегда искать в чатах</string>
     <string name="MainTabsForceOpenChatsDesc">Если включено, кнопка поиска всегда открывает поиск по чатам. Если выключено, открывается контекстный поиск для текущего экрана (например, «Настройки» или «Контакты»).</string>
+    <string name="DeepLTranslateKey">Ключ API DeepL</string>
+    <string name="DeepLTranslateKeyNotice">Настройте ключ API DeepL. Оставьте поле пустым, чтобы использовать встроенные учётные данные.</string>
 </resources>

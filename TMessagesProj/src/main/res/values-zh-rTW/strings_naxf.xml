@@ -319,4 +319,18 @@
     <string name="SaveReadDateAbout">記錄你的發出訊息被閱讀的時間，該時間會顯示在訊息資訊中。</string>
     <string name="AyuReadDate">已讀</string>
     <string name="AyuReadDateUnknown">未知</string>
+    <string name="BuiltInFolders">內置文件夾</string>
+    <string name="BuiltInFoldersInfo">內置文件夾在本機生成，不會同步到 Telegram，名稱和圖示也不可修改。</string>
+    <string name="LocalFolder">本機文件夾</string>
+    <string name="LocalFolderEditInfo">內置文件夾不可編輯。如需調整，可以在這裡刪除後重新新增。</string>
+    <string name="BuiltInFolderUnread">未讀</string>
+    <string name="BuiltInFolderUnmuted">未靜音</string>
+    <string name="BuiltInFolderBasicGroups">一般群組</string>
+    <string name="BuiltInFolderSupergroups">超級群組</string>
+    <string name="BuiltInFolderAdmin">管理員</string>
+    <string name="MainMenuItems">側邊欄項目</string>
+    <string name="MainMenuHiddenItems">已隱藏項目</string>
+    <string name="MainMenuAddDivider">新增分隔線</string>
+    <string name="MainMenuDivider">分隔線</string>
+    <string name="MainMenuItemsInfo">長按拖曳可排序，點按項目可將其隱藏，點按已隱藏項目可將其復原，點按分隔線可將其移除。</string>
 </resources>
