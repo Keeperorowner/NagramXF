@@ -231,6 +231,7 @@
     <string name="AIChat">ИИ-чат</string>
     <string name="AIChatInfo">Настройка сервисов, ролей и истории</string>
     <string name="AIChatServices">Сервисы</string>
+    <string name="AIChatUseLlmProvider">Провайдер ИИ-переводчика</string>
     <string name="AIChatRoles">Роли</string>
     <string name="AIChatMessageHistory">История сообщений</string>
     <string name="AIChatHistoryInfo">Если включено, ИИ будет помнить предыдущие сообщения в диалоге.</string>

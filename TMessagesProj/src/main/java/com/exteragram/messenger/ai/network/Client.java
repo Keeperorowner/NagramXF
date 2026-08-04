@@ -10,7 +10,6 @@ import com.exteragram.messenger.ai.AiController;
 import com.exteragram.messenger.ai.data.Message;
 import com.exteragram.messenger.ai.data.Role;
 import com.exteragram.messenger.ai.data.Service;
-import com.exteragram.messenger.utils.network.ExteraHttpClient;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -19,18 +18,11 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
 
-import tw.nekomimi.nekogram.utils.DnsFactory;
-
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -39,13 +31,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import okhttp3.Call;
-import okhttp3.Dns;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import tw.nekomimi.nekogram.llm.net.OpenAICompatClient;
+import tw.nekomimi.nekogram.llm.utils.LlmModelUtil;
+import tw.nekomimi.nekogram.llm.utils.LlmUrlNormalizer;
+import tw.nekomimi.nekogram.llm.utils.ReasoningContentFilter;
+import tw.nekomimi.nekogram.utils.HttpClient;
 
 public class Client {
 
@@ -53,9 +43,7 @@ public class Client {
     private static final int MAX_IMAGE_SIZE = 4 * 1024 * 1024;
     private static final int MAX_HISTORY_MESSAGES = 32;
     private static final int MAX_HISTORY_CHARS = 24000;
-    private static final MediaType JSON_TYPE = MediaType.parse("application/json");
 
-    private final OkHttpClient httpClient;
     private final Service serviceOverride;
     private final Role roleOverride;
     private final AtomicBoolean isGenerating = new AtomicBoolean(false);
@@ -65,14 +53,6 @@ public class Client {
     private Client(Builder builder) {
         this.serviceOverride = builder.serviceOverride;
         this.roleOverride = builder.roleOverride;
-        this.httpClient = ExteraHttpClient.INSTANCE.getClient().newBuilder()
-                .dns(hostname -> {
-                    List<InetAddress> addresses = DnsFactory.lookup(hostname);
-                    return addresses.isEmpty() ? Dns.SYSTEM.lookup(hostname) : addresses;
-                })
-                .connectTimeout(1, TimeUnit.MINUTES)
-                .readTimeout(5, TimeUnit.MINUTES)
-                .build();
     }
 
     private Service getSelectedService() {
@@ -105,47 +85,33 @@ public class Client {
             }
 
             Service service = getSelectedService();
+            String baseUrl = resolveBaseUrl(service);
             ArrayList<Message> conversationHistory = new ArrayList<>();
             if (useHistory) {
                 conversationHistory.addAll(trimConversationHistory(AiConfig.getConversationHistory()));
             }
 
             Message userMessage = new Message("user", prompt, imageData, mimeType);
-            Request request = createRequest(service, userMessage, stream, useHistory, conversationHistory);
-            if (request == null) {
+            String requestJson = createRequestJson(service, baseUrl, userMessage, stream, useHistory, conversationHistory);
+            if (baseUrl == null || requestJson == null) {
                 notifyErrorAndFinish(requestId, callback, 500, "Failed to create request body");
                 return;
             }
 
-            Call call = httpClient.newCall(request);
+            Call call = OpenAICompatClient.newChatCompletionsCall(HttpClient.INSTANCE.getLlmStreamInstance(), baseUrl, service.getKey(), requestJson);
+            if (call == null) {
+                notifyErrorAndFinish(requestId, callback, 500, "Failed to create request");
+                return;
+            }
             activeCalls.put(requestId, call);
 
-            try (Response response = call.execute()) {
+            if (stream) {
+                streamResponse(call, requestId, useHistory, conversationHistory, callback);
+            } else {
+                OpenAICompatClient.LlmResponse<String> response = OpenAICompatClient.executeChatCompletions(call);
                 if (!activeRequests.containsKey(requestId)) return;
-
-                if (!response.isSuccessful()) {
-                    if (response.body() != null) {
-                        try {
-                            FileLog.e("AI_ERROR_RESPONSE_BODY (" + response.code() + "): " + response.body().string());
-                        } catch (IOException e) {
-                            FileLog.e("AI_ERROR_READING_RESPONSE_BODY: ", e);
-                        }
-                    }
-                    notifyErrorAndFinish(requestId, callback, response.code(),
-                            response.message().toLowerCase(Locale.ROOT));
-                    return;
-                }
-
-                ResponseBody body = response.body();
-                if (body == null) {
-                    notifyErrorAndFinish(requestId, callback, 500, "Response body is null");
-                    return;
-                }
-
-                if (stream) {
-                    handleStreamResponse(body, requestId, userMessage, useHistory, conversationHistory, service, callback);
-                } else {
-                    String content = parseResponseContent(body.string());
+                if (response.isSuccess()) {
+                    String content = ReasoningContentFilter.stripReasoningMarkup(response.data());
                     if (content == null || content.trim().isEmpty()) {
                         notifyErrorAndFinish(requestId, callback, 500, "Failed to parse response");
                     } else {
@@ -155,6 +121,9 @@ public class Client {
                         }
                         notifyResponseAndFinish(requestId, callback, content.trim());
                     }
+                } else {
+                    FileLog.e("AI Error: " + response.error());
+                    notifyErrorAndFinish(requestId, callback, response.httpCode() != 0 ? response.httpCode() : 500, response.error());
                 }
             }
         } catch (Exception e) {
@@ -163,16 +132,52 @@ public class Client {
         }
     }
 
+    private void streamResponse(Call call, String requestId, boolean useHistory,
+                                ArrayList<Message> conversationHistory, GenerationCallback callback) {
+        OpenAICompatClient.streamChatCompletions(call, STREAM_SYMBOLS_LIMIT, new OpenAICompatClient.StreamCallback() {
+            @Override
+            public void onChunk(String chunk) {
+                sendStreamChunk(requestId, chunk, callback);
+            }
 
-    private Request createRequest(Service service, Message userMessage, boolean stream, boolean useHistory, ArrayList<Message> conversationHistory) {
+            @Override
+            public void onThinking() {
+                notifyThinking(requestId, callback);
+            }
+
+            @Override
+            public void onComplete(String fullContent) {
+                if (TextUtils.isEmpty(fullContent)) {
+                    finishRequest(requestId);
+                    return;
+                }
+                if (useHistory) {
+                    conversationHistory.add(new Message("assistant", fullContent));
+                    AiConfig.saveConversationHistory(conversationHistory);
+                }
+                notifyResponseAndFinish(requestId, callback, fullContent);
+            }
+
+            @Override
+            public void onError(int code, String error) {
+                FileLog.e("AI Stream Error: " + error);
+                notifyErrorAndFinish(requestId, callback, code != 0 ? code : 500, error);
+            }
+        });
+    }
+
+
+    private static String resolveBaseUrl(Service service) {
         String url = service.getUrl();
         if (TextUtils.isEmpty(url)) return null;
-
         if (url.contains("generativelanguage.googleapis")) {
-            url = "https://generativelanguage.googleapis.com/v1beta/openai/";
+            url = "https://generativelanguage.googleapis.com/v1beta/openai";
         }
-        String endpoint = url.endsWith("/") ? url + "chat/completions" : url + "/chat/completions";
+        String normalized = LlmUrlNormalizer.normalizeBaseUrl(url);
+        return TextUtils.isEmpty(normalized) ? null : normalized;
+    }
 
+    private String createRequestJson(Service service, String baseUrl, Message userMessage, boolean stream, boolean useHistory, ArrayList<Message> conversationHistory) {
         try {
             JSONObject json = new JSONObject();
             JSONArray messages = new JSONArray();
@@ -193,71 +198,22 @@ public class Client {
             }
             messages.put(createMessageObject(userMessage));
 
-            json.put("model", service.getModel());
+            String model = service.getModel();
+            json.put("model", model);
             json.put("messages", messages);
             json.put("stream", stream);
-            json.put("temperature", AiConfig.temperature / 10.0f);
+            if (LlmModelUtil.supportsTemperature(model)) {
+                json.put("temperature", AiConfig.temperature / 10.0f);
+            }
             json.put("max_tokens", 4096);
-            applyReasoningConfig(json, service, url);
-
-            return new Request.Builder()
-                    .url(endpoint)
-                    .addHeader("Content-Type", "application/json")
-                    .addHeader("Authorization", "Bearer " + service.getKey())
-                    .post(RequestBody.create(json.toString(), JSON_TYPE))
-                    .build();
+            if (!service.isReasoningEnabled()) {
+                LlmModelUtil.applyReasoningParameters(json, baseUrl, model);
+            }
+            return json.toString();
         } catch (Exception e) {
             FileLog.e(e);
             return null;
         }
-    }
-
-    private void applyReasoningConfig(JSONObject json, Service service, String url) throws JSONException {
-        if (service.isReasoningEnabled()) return;
-
-        String model = service.getModel() != null ? service.getModel().toLowerCase(Locale.ROOT) : "";
-        String urlLower = url != null ? url.toLowerCase(Locale.ROOT) : "";
-
-        if (urlLower.contains("openrouter.ai")) {
-            json.put("reasoning", new JSONObject().put("effort", "none"));
-            return;
-        }
-
-        if (urlLower.contains("generativelanguage.googleapis") && isGeminiReasoningModel(model)) {
-            json.put("reasoning_effort", getGeminiReasoningEffort(model));
-        } else if (urlLower.contains("api.openai.com") && isOpenAiReasoningModel(model)) {
-            json.put("reasoning_effort", getOpenAiReasoningEffort(model));
-        }
-    }
-
-    private boolean isGeminiReasoningModel(String model) {
-        String m = stripProviderPrefix(model);
-        return m.startsWith("gemini-2.5") || m.startsWith("gemini-3") || m.contains("thinking");
-    }
-
-    private String getGeminiReasoningEffort(String model) {
-        if (model.contains("gemini-2.5") && !model.contains("pro")) return "none";
-        return "minimal";
-    }
-
-    private boolean isOpenAiReasoningModel(String model) {
-        String m = stripProviderPrefix(model);
-        if (m.contains("gpt-5-chat")) return false;
-        return m.startsWith("gpt-5") || m.startsWith("o1") || m.startsWith("o3") || m.startsWith("o4");
-    }
-
-    private String getOpenAiReasoningEffort(String model) {
-        String m = stripProviderPrefix(model);
-        if (m.startsWith("gpt-5.1") || m.startsWith("gpt-5.2") || m.startsWith("gpt-5.3")
-                || m.startsWith("gpt-5.4") || m.startsWith("gpt-5.5")) {
-            return "none";
-        }
-        return "minimal";
-    }
-
-    private String stripProviderPrefix(String model) {
-        int idx = model.indexOf('/');
-        return idx >= 0 ? model.substring(idx + 1) : model;
     }
 
     private JSONObject createMessageObject(Message message) throws JSONException {
@@ -277,138 +233,6 @@ public class Client {
             obj.put("content", message.content());
         }
         return obj;
-    }
-
-
-    private void handleStreamResponse(ResponseBody body, String requestId, Message userMessage, boolean useHistory,
-                                      ArrayList<Message> conversationHistory, Service service, GenerationCallback callback) {
-        StringBuilder fullResponse = new StringBuilder();
-        ReasoningContentFilter reasoningFilter = new ReasoningContentFilter();
-        boolean reasoningNotified = false;
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(body.byteStream()))) {
-            int chunkSize = 0;
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (!activeRequests.containsKey(requestId)) break;
-                if (TextUtils.isEmpty(line)) continue;
-                if (!line.startsWith("data: ")) continue;
-
-                String data = line.substring(6).trim();
-                if (data.equals("[DONE]")) {
-                    String remaining = reasoningFilter.flush();
-                    if (!TextUtils.isEmpty(remaining)) {
-                        fullResponse.append(remaining);
-                    }
-                    if (chunkSize > 0) {
-                        sendStreamChunk(requestId, fullResponse.toString(), callback);
-                    }
-                    break;
-                }
-
-                StreamResponsePart part = parseStreamResponsePart(data);
-                if (part.hasReasoning && !reasoningNotified) {
-                    reasoningNotified = true;
-                    notifyThinking(requestId, callback);
-                }
-
-                String content = part.content;
-                if (!TextUtils.isEmpty(content)) {
-                    String filtered = reasoningFilter.filter(content);
-                    if (reasoningFilter.consumeReasoningSignal() && !reasoningNotified) {
-                        reasoningNotified = true;
-                        notifyThinking(requestId, callback);
-                    }
-                    if (!TextUtils.isEmpty(filtered)) {
-                        fullResponse.append(filtered);
-                        chunkSize += filtered.length();
-                        if (chunkSize >= STREAM_SYMBOLS_LIMIT) {
-                            sendStreamChunk(requestId, fullResponse.toString(), callback);
-                            chunkSize = 0;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-
-        String finalResponse = fullResponse.toString().trim();
-        if (!TextUtils.isEmpty(finalResponse)) {
-            if (useHistory) {
-                conversationHistory.add(new Message("assistant", finalResponse));
-                AiConfig.saveConversationHistory(conversationHistory);
-            }
-            notifyResponseAndFinish(requestId, callback, finalResponse);
-        } else {
-            finishRequest(requestId);
-        }
-    }
-
-    private StreamResponsePart parseStreamResponsePart(String data) {
-        try {
-            JSONObject json = new JSONObject(data);
-            JSONArray choices = json.optJSONArray("choices");
-            if (choices != null && choices.length() > 0) {
-                JSONObject delta = choices.getJSONObject(0).optJSONObject("delta");
-                if (delta == null) return new StreamResponsePart("", false);
-                Object content = delta.opt("content");
-                String text = (content == null || content == JSONObject.NULL) ? "" : content.toString();
-                return new StreamResponsePart(text, hasReasoning(delta));
-            }
-        } catch (Exception ignored) {
-        }
-        return new StreamResponsePart("", false);
-    }
-
-    private boolean hasReasoning(JSONObject delta) {
-        return hasValue(delta, "reasoning") || hasValue(delta, "reasoning_content") || hasValue(delta, "reasoning_details");
-    }
-
-    private boolean hasValue(JSONObject obj, String key) {
-        if (obj == null || !obj.has(key) || obj.isNull(key)) return false;
-        Object val = obj.opt(key);
-        if (val instanceof String) return !TextUtils.isEmpty((String) val);
-        if (val instanceof JSONArray) return ((JSONArray) val).length() > 0;
-        return val != null && val != JSONObject.NULL;
-    }
-
-
-    private String parseResponseContent(String body) {
-        try {
-            JSONObject json = new JSONObject(body);
-            JSONArray choices = json.optJSONArray("choices");
-            if (choices != null && choices.length() > 0) {
-                JSONObject msgObj = choices.getJSONObject(0).optJSONObject("message");
-                if (msgObj != null && msgObj.has("content") && !msgObj.isNull("content")) {
-                    Object content = msgObj.opt("content");
-                    if (content != null) {
-                        return stripReasoningMarkup(content.toString());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return null;
-    }
-
-    private String stripReasoningMarkup(String text) {
-        StringBuilder sb = new StringBuilder(text.length());
-        String lower = text.toLowerCase(Locale.ROOT);
-        int i = 0;
-        while (i < text.length()) {
-            int openIdx = lower.indexOf("<think>", i);
-            if (openIdx < 0) {
-                sb.append(text, i, text.length());
-                break;
-            }
-            sb.append(text, i, openIdx);
-            int closeIdx = lower.indexOf("</think>", openIdx + 7);
-            if (closeIdx < 0) break;
-            i = closeIdx + 8;
-        }
-        return trimLeading(sb.toString());
     }
 
 
@@ -489,12 +313,6 @@ public class Client {
         }
     }
 
-
-    private String trimLeading(String str) {
-        int i = 0;
-        while (i < str.length() && Character.isWhitespace(str.charAt(i))) i++;
-        return str.substring(i);
-    }
 
     private void sendStreamChunk(String requestId, String chunk, GenerationCallback callback) {
         if (TextUtils.isEmpty(chunk)) return;
@@ -589,89 +407,6 @@ public class Client {
         ImagePayload(byte[] data, String mimeType) {
             this.data = data;
             this.mimeType = mimeType;
-        }
-    }
-
-    private static class StreamResponsePart {
-        final String content;
-        final boolean hasReasoning;
-
-        StreamResponsePart(String content, boolean hasReasoning) {
-            this.content = content;
-            this.hasReasoning = hasReasoning;
-        }
-    }
-
-    public static class ReasoningContentFilter {
-        private boolean inReasoning;
-        private String pending = "";
-        private boolean reasoningSignal;
-
-        public String filter(String input) {
-            if (TextUtils.isEmpty(input)) return null;
-            String text = pending + input;
-            pending = "";
-            StringBuilder sb = new StringBuilder(text.length());
-            int i = 0;
-            while (i < text.length()) {
-                String lower = text.toLowerCase(Locale.ROOT);
-                if (inReasoning) {
-                    reasoningSignal = true;
-                    int closeIdx = lower.indexOf("</think>", i);
-                    if (closeIdx < 0) {
-                        pending = getCloseTagPrefix(text, i);
-                        return sb.toString();
-                    }
-                    i = closeIdx + 8;
-                    inReasoning = false;
-                } else {
-                    int openIdx = lower.indexOf("<think>", i);
-                    if (openIdx < 0) {
-                        pending = getOpenTagPrefix(text, i);
-                        reasoningSignal = !sb.toString().isEmpty();
-                        int end = text.length() - pending.length();
-                        if (end > i) sb.append(text, i, end);
-                        return sb.toString();
-                    }
-                    sb.append(text, i, openIdx);
-                    i = openIdx + 7;
-                    inReasoning = true;
-                    reasoningSignal = true;
-                }
-            }
-            return sb.toString();
-        }
-
-        public boolean consumeReasoningSignal() {
-            boolean signal = reasoningSignal;
-            reasoningSignal = false;
-            return signal;
-        }
-
-        public String flush() {
-            String result = inReasoning ? "" : pending;
-            pending = "";
-            return result;
-        }
-
-        private String getOpenTagPrefix(String text, int from) {
-            String lower = text.toLowerCase(Locale.ROOT);
-            for (int len = Math.min(6, text.length() - from); len > 0; len--) {
-                if ("<think>".startsWith(lower.substring(text.length() - len))) {
-                    return text.substring(text.length() - len);
-                }
-            }
-            return "";
-        }
-
-        private String getCloseTagPrefix(String text, int from) {
-            String lower = text.toLowerCase(Locale.ROOT);
-            for (int len = Math.min(7, text.length() - from); len > 0; len--) {
-                if ("</think>".startsWith(lower.substring(text.length() - len))) {
-                    return text.substring(text.length() - len);
-                }
-            }
-            return "";
         }
     }
 

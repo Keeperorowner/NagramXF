@@ -81,6 +81,8 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 
+import tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity;
+
 import io.noties.markwon.AbstractMarkwonPlugin;
 import io.noties.markwon.Markwon;
 import io.noties.markwon.core.CorePlugin;
@@ -860,6 +862,12 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
 
         public void openModelSelect() {
             if (client.isGenerating()) return;
+            if (AiConfig.useLlmProvider) {
+                if (fragment != null) {
+                    fragment.presentFragment(new NekoTranslatorSettingsActivity());
+                }
+                return;
+            }
             final ArrayList<Service> services = AiConfig.getServices();
             ActionBarPopupWindow.ActionBarPopupWindowLayout layout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext()) {
                 @Override
