@@ -16,14 +16,16 @@ Includes most features from exteraGram and AyuGram.
 
 ## Compilation Guide
 
-1. Obtain API credentials (`TELEGRAM_APP_ID` and `TELEGRAM_APP_HASH`) from [Telegram Developer Portal](https://my.telegram.org/auth). Create `local.properties` in the project root with:
+1. Clone with submodules (`--recursive`), or run `git submodule update --init` in an existing clone. The native libraries (`dav1d`, `ffmpeg`, `libvpx`) under `TMessagesProj/jni/third_party/` are required for native builds.
+
+2. Obtain API credentials (`TELEGRAM_APP_ID` and `TELEGRAM_APP_HASH`) from [Telegram Developer Portal](https://my.telegram.org/auth). Create `local.properties` in the project root with:
 
    ```properties
    TELEGRAM_APP_ID=<your_telegram_app_id>
    TELEGRAM_APP_HASH=<your_telegram_app_hash>
    ```
 
-2. For APK signing: Replace `release.keystore` with your keystore and add signing configuration to `local.properties`:
+3. For APK signing: Replace `release.keystore` with your keystore and add signing configuration to `local.properties`:
 
    ```properties
    KEYSTORE_PASS=<your_keystore_password>
@@ -31,9 +33,9 @@ Includes most features from exteraGram and AyuGram.
    ALIAS_PASS=<your_alias_password>
    ```
 
-3. For FCM support: Replace `TMessagesProj/google-services.json` with your own configuration file.
+4. For FCM support: Replace `TMessagesProj/google-services.json` with your own configuration file.
 
-4. Open the project in Android Studio to start building.
+5. Open the project in Android Studio to start building.
 
 ## Notice
 
