@@ -121,8 +121,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         menu.addItem(MENU_SEARCH, R.drawable.ic_ab_search, resourcesProvider);
         overflowItem = menu.addItem(MENU_OVERFLOW, R.drawable.ic_ab_other, resourcesProvider);
         overflowItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
-        overflowItem.addSubItem(MENU_IMPORT, R.drawable.msg_photo_settings, getString(R.string.ImportSettings));
-        overflowItem.addSubItem(MENU_EXPORT, R.drawable.msg_instant_link, getString(R.string.BackupSettings));
+        overflowItem.addSubItem(MENU_IMPORT, R.drawable.import_solar, getString(R.string.ImportSettings));
+        overflowItem.addSubItem(MENU_EXPORT, R.drawable.export_solar, getString(R.string.BackupSettings));
         overflowItem.addColoredGap();
         ActionBarMenuSubItem resetSub = overflowItem.addSubItem(MENU_RESET, R.drawable.msg_reset, getString(R.string.ResetSettings));
         int red = Theme.getColor(Theme.key_text_RedRegular, resourcesProvider);
