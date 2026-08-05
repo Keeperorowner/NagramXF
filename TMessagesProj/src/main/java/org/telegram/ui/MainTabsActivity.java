@@ -27,10 +27,12 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -93,6 +95,7 @@ import java.util.List;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import tw.nekomimi.nekogram.folder.FolderIconHelper;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
@@ -1419,11 +1422,18 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         ItemOptions o = ItemOptions.makeOptions(this, button);
 
+        ActionBarMenuSubItem checkedItem = null;
         if (hasFolders) {
+            final int selectedFolderIndex = dialogsActivity != null ? dialogsActivity.getSelectedFilterIndex() : -1;
             for (int i = 0; i < filters.size(); i++) {
                 final MessagesController.DialogFilter folder = filters.get(i);
-                final ActionBarMenuSubItem folderItem = new ActionBarMenuSubItem(getParentActivity(), 2, false, false, getResourceProvider());
+                final boolean checked = i == selectedFolderIndex;
+                final ActionBarMenuSubItem folderItem = new ActionBarMenuSubItem(getParentActivity(), 2, i == 0, i == filters.size() - 1, getResourceProvider());
                 folderItem.setPadding(dp(18), 0, dp(18), 0);
+                folderItem.setChecked(checked);
+                if (checked) {
+                    checkedItem = folderItem;
+                }
                 CharSequence title = folder.isDefault() ? getString(R.string.FilterAllChats) : folder.name;
                 title = Emoji.replaceEmoji(title, folderItem.getTextView().getPaint().getFontMetricsInt(), false);
                 if (!folder.isDefault()) {
@@ -1453,12 +1463,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 }
                 folderItem.setEmojiCacheType(folder.title_noanimate ? AnimatedEmojiDrawable.CACHE_TYPE_NOANIMATE_FOLDER : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES);
                 final int color = getMessagesController().folderTags ? folder.color : -1;
-                folderItem.setTextAndIcon(title, 0, new FolderDrawable(getContext(), R.drawable.msg_folders, color));
+                folderItem.setTextAndIcon(title, 0, new FolderDrawable(getContext(), FolderIconHelper.getTabIcon(folder.isDefault() ? "\uD83D\uDCAC" : folder.emoticon), color));
                 folderItem.getTextView().setEmojiColor(getThemedColor(Theme.key_featuredStickers_addButton));
                 folderItem.setMinimumWidth(160);
                 int folderId = folder.id;
                 folderItem.setOnClickListener(e -> {
                     o.dismiss();
+                    if (checked) {
+                        return;
+                    }
                     if (dialogsActivity != null && viewPager != null) {
                         int chatsPosition = getTabIndex(MainTabsConfigManager.TabType.CHATS);
                         if (viewPager.getCurrentPosition() == chatsPosition) {
@@ -1480,8 +1493,36 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             presentFragment(new MainTabsCustomizeActivity())
         );
         setupPopupMenuStyle(o);
+        o.translate(-dp(8), 0);
+        o.setMaxHeight(dp(400));
+        o.setGravity(Gravity.LEFT);
         o.show();
+
+        if (checkedItem != null) {
+            final ActionBarMenuSubItem item = checkedItem;
+            item.post(() -> scrollItemIntoView(item));
+        }
         return true;
+    }
+
+    private static void scrollItemIntoView(View item) {
+        ViewParent parent = item.getParent();
+        while (parent != null && !(parent instanceof ScrollView)) {
+            parent = parent.getParent();
+        }
+        if (!(parent instanceof ScrollView)) {
+            return;
+        }
+        final ScrollView scrollView = (ScrollView) parent;
+        final int top = item.getTop();
+        final int bottom = item.getBottom();
+        final int scrollY = scrollView.getScrollY();
+        final int height = scrollView.getHeight();
+        if (top < scrollY) {
+            scrollView.smoothScrollTo(0, top);
+        } else if (bottom > scrollY + height) {
+            scrollView.smoothScrollTo(0, bottom - height);
+        }
     }
 
     private void setupPopupMenuStyle(ItemOptions options) {
