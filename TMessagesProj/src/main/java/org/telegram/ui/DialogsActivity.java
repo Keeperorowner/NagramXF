@@ -7097,6 +7097,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    public int getSelectedFilterIndex() {
+        return filterTabsView != null ? filterTabsView.getCurrentTabId() : -1;
+    }
+
     public void switchToCurrentSelectedMode(boolean animated) {
         for (int a = 0; a < viewPages.length; a++) {
             viewPages[a].listView.stopScroll();
