@@ -89,7 +89,7 @@ import tw.nekomimi.nekogram.helpers.ChatsHelper;
 import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.utils.AlertUtil;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 
 public class PhotoAlbumPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -441,7 +441,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                     finishFragment();
                 });
             } else {
-                sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
+                sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0);
                 finishFragment();
             }
         });
@@ -495,7 +495,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                             itemCells[a].setTextAndIcon(LocaleController.getString(R.string.ScheduleMessage), R.drawable.msg_calendar2);
                         }
                     } else {
-                        boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
+                        boolean sendWithoutSoundNax = AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound();
                         itemCells[a].setTextAndIcon(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
                     }
                     itemCells[a].setMinimumWidth(AndroidUtilities.dp(196));
@@ -514,7 +514,7 @@ public class PhotoAlbumPickerActivity extends BaseFragment implements Notificati
                                 finishFragment();
                             });
                         } else if (num == 2) {
-                            sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
+                            sendSelectedPhotos(selectedPhotos, selectedPhotosOrder, AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0);
                             finishFragment();
                         }
                     });

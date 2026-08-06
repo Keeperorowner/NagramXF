@@ -140,7 +140,6 @@ import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
-import com.radolyn.ayugram.proprietary.AyuHistoryHook;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
 import com.radolyn.ayugram.ui.AyuMessageHistory;
 import com.radolyn.ayugram.ui.AyuViewDeleted;
@@ -419,7 +418,7 @@ import tw.nekomimi.nekogram.ui.components.GroupedIconsView;
 import tw.nekomimi.nekogram.utils.AlertUtil;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
 import tw.nekomimi.nekogram.utils.ProxyUtil;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.ToggleResult;
 import xyz.nextalone.nagram.helper.BookmarksHelper;
@@ -4145,7 +4144,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                     if (str.length() != 0) {
                         SendMessagesHelper.getInstance(currentAccount)
-                                .sendMessage(str.toString(), dialog_id, replyTo, getThreadMessage(), null, false, null, null, null, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, null, false);
+                                .sendMessage(str.toString(), dialog_id, replyTo, getThreadMessage(), null, false, null, null, null, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, null, false);
                         MessagesController.getInstance(currentAccount).deleteMessages(toDeleteMessagesIds, null, null, dialog_id, 0, true, MODE_DEFAULT);
                     }
                     clearSelectionMode();
@@ -21658,7 +21657,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void sendUriAsDocument(Uri uri) {
-        sendUriAsDocument(uri, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
+        sendUriAsDocument(uri, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0);
     }
     private void sendUriAsDocument(Uri uri, boolean notify, int schedule_date) {
         if (uri == null) {
@@ -22415,112 +22414,11 @@ public class ChatActivity extends BaseFragment implements
                 dropPhotoAction = action;
             }
         }
-        // --- AyuGram history hook start
-        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
-            long dialogId = getDialogId();
-            long topicId = getTopicId();
-
-            boolean isReplyChatComment = isReplyChatComment();
-            boolean isThreadChat = isThreadChat();
-            boolean isChannelComment = (isReplyChatComment || (isThreadChat && !isTopic));
-
-            int minVal = isSecretChat() ? Integer.MAX_VALUE : 0;
-            int maxVal = isSecretChat() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-
-            long startId = minVal; // top message (startId < endId)
-            // ...deleted messages
-            long endId = minVal; // bottom message
-
-            Pair<Integer, Integer> msgIds = AyuHistoryHook.getMinAndMaxIds(messArr);
-
-            if (!DialogObject.isEncryptedDialog(dialogId)) {
-                if (!messArr.isEmpty()) {
-                    int msg1 = msgIds.first; // smaller
-                    int msg2 = msgIds.second; // bigger
-
-                    startId = Math.min(msg1, msg2);
-                    endId = Math.max(msg1, msg2);
-
-                    TLRPC.Dialog dialog = getMessagesController().getDialog(dialogId);
-
-                    TLRPC.TL_forumTopic topic = null;
-                    if (isTopic) {
-                        TLRPC.ChatFull chatFull = getCurrentChatInfo();
-                        if (chatFull != null) {
-                            topic = getMessagesController().getTopicsController().findTopic(chatFull.id, getTopicId());
-                        } else if (currentChat != null) {
-                            topic = getMessagesController().getTopicsController().findTopic(currentChat.id, getTopicId());
-                        }
-                    }
-
-                    Pair<Integer, Integer> minMaxRes = getMessagesStorage().getMinAndMaxForDialog(dialogId);
-                    if (dialog != null && DialogObject.isUserDialog(dialogId) && (startId == endId && endId == dialog.top_message) && messArr.size() <= 1) { // empty user dialog, so load as much as we can
-                        startId = minVal;
-                        endId = maxVal;
-                    } else if (isChannelComment) { // deleted messages loading in comments
-                        startId = threadMaxOutboxReadId == 0 ? minVal : threadMessageId;
-                        endId = threadMaxOutboxReadId == 0 ? minVal : threadMaxOutboxReadId;
-                    } else if (dialog != null && (dialog.top_message == endId || (minMaxRes.second == endId && dialog.top_message <= minMaxRes.second)) || topic != null && topic.top_message == endId) { // allows loading messages that are under bottom messages
-                        endId = maxVal; // startId is the smallest in the current batch
-                    } else if (messArr.size() == 1 && messArr.get(0).messageOwner instanceof TLRPC.TL_messageService) { // TL_messageService
-                        startId = minVal;
-                        endId = AyuUtils.getMinRealId(messages);
-                    } else if (messArr.size() < count && !isCache && (load_type == 2 || load_type == 1) && !messArr.isEmpty()) { // allows loading messages that are uppermore than the dialog
-                        startId = minVal;
-                        endId = Math.min(msg1, msg2);
-                    }
-                } else {
-                    if (!messages.isEmpty() && load_type != 1) { // for loading uppermore
-                        startId = minVal;
-                        endId = AyuUtils.getMinRealId(messages);
-                    } else if (DialogObject.isUserDialog(dialogId)) { // empty(new) user dialog, so load as much as we can
-                        startId = minVal;
-                        endId = maxVal;
-                    }
-                    if (isCache) {
-                        startId = minVal;
-                        endId = minVal;
-                    }
-                }
-            } else { // works for secret chats only, because they're all cached
-                Pair<Integer, Integer> secretRes = getMessagesStorage().getMinAndMaxForDialog(dialogId);
-                int secretStartId = secretRes.second; // bigger
-                int secretEndId = secretRes.first; // smaller
-
-                int msg1 = msgIds.second; // bigger
-                int msg2 = msgIds.first; // smaller
-
-                if (Math.abs(secretStartId - secretEndId) == 1 || (secretStartId == msg1 && secretEndId == msg2)) { // empty dialog, so load as much as we can
-                    startId = minVal;
-                    endId = maxVal;
-                } else if (secretStartId == msg1) { // loaded up to top
-                    startId = minVal;
-                    endId = msg2;
-                } else if (secretEndId == msg2) { // loaded up to bottom
-                    startId = msg1;
-                    endId = maxVal;
-                } else { // just between some messages
-                    startId = msg1;
-                    endId = msg2;
-                }
-            }
-
-            if (startId > endId) {
-                long t = startId;
-                startId = endId;
-                endId = t;
-            }
-
-            if (!isChannelComment && !isInScheduleMode() && chatMode != MODE_PINNED && (startId != minVal || endId != minVal)) {
-                boolean needToReset = messArr.size() == count;
-                int limit = 200;
-                AyuHistoryHook.doHookAsync(currentAccount, startId, endId, dialogId, limit, topicId, load_type, isChannelComment, threadMessageId, isTopic);
-                if (needToReset) {
-                    count = messArr.size();
-                }
-            }
+        // --- AyuGram history hook: merge now done in MessagesController.processLoadedMessages on stage thread ---
+        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && messArr.size() == count) {
+            count = messArr.size();
         }
-        // --- AyuGram history hook end
+        // --- AyuGram history hook end ---
 
         for (int a = 0; a < messArr.size(); a++) {
             MessageObject obj = messArr.get(a);
@@ -40297,19 +40195,9 @@ public class ChatActivity extends BaseFragment implements
                     msg.replyMessageObject.skipAyuFiltering = !hideFilteredMessages;
                 }
                 if (hideFilteredMessages) {
-                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
-                        long fromId = msg.getFromChatId();
-                        if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                            revealShowFilteredMenuItem();
-                            return -1000;
-                        }
-                        if (msg.replyMessageObject != null) {
-                            fromId = msg.replyMessageObject.getFromChatId();
-                            if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                                revealShowFilteredMenuItem();
-                                return -1000;
-                            }
-                        }
+                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat) && AyuFilter.isIgnoredBlockedMessage(msg)) {
+                        revealShowFilteredMenuItem();
+                        return -1000;
                     }
                     {
                         var filterGroup = getGroup(msg.getGroupId());
@@ -40336,17 +40224,8 @@ public class ChatActivity extends BaseFragment implements
                             continue;
                         }
                         if (hideFilteredMessages) {
-                            if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat)) {
-                                long fromId = m.getFromChatId();
-                                if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                                    continue;
-                                }
-                                if (m.replyMessageObject != null) {
-                                    fromId = m.replyMessageObject.getFromChatId();
-                                    if (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId)) {
-                                        continue;
-                                    }
-                                }
+                            if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(currentChat) && AyuFilter.isIgnoredBlockedMessage(m)) {
+                                continue;
                             }
                             var g = getGroup(m.getGroupId());
                             if (g == null) {
@@ -41583,7 +41462,7 @@ public class ChatActivity extends BaseFragment implements
             final boolean isSavedMessages = did == UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
             final ArrayList<MessageObject> finalArrayList = arrayList;
             Runnable delayedRunnalble = () -> {
-                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(finalArrayList, did, false, false, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, null, -1, 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
+                int result = SendMessagesHelper.getInstance(currentAccount).sendMessage(finalArrayList, did, false, false, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, null, -1, 0, getSendMonoForumPeerId(), getSendMessageSuggestionParams());
                 AlertsCreator.showSendMediaAlert(result, ChatActivity.this, null);
             };
 
@@ -46818,8 +46697,7 @@ public class ChatActivity extends BaseFragment implements
             Integer end = ids.get(ids.size() - 1);
             for (int i = 0; i < messages.size(); i++) {
                 int msgId = messages.get(i).getId();
-                long fromId = messages.get(i).getFromChatId();
-                if (AyuFilter.shouldHideIgnoredBlockedMessages() && (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId))) {
+                if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(messages.get(i))) {
                     continue;
                 }
                 {

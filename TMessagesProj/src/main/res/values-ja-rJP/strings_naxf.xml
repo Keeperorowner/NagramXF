@@ -321,6 +321,11 @@
     <string name="MainTabsForceOpenChats">常にチャット内で検索</string>
     <string name="MainTabsForceOpenChatsDesc">オンにすると、検索ボタンは常にチャット検索を開きます。オフにすると、現在の画面（設定や連絡先など）のコンテキスト検索を開きます。</string>
     <string name="AyuSpySettings">スパイ設定</string>
+    <string name="AyuStatsHeader">統計</string>
+    <string name="AyuStatsDeletedMessages">削除済みメッセージ</string>
+    <string name="AyuStatsDeletedDialogs">削除済みダイアログ</string>
+    <string name="AyuStatsReadMarks">既読記録</string>
+    <string name="AyuStatsLastSeen">オンライン記録</string>
     <string name="AyuMomentsCustomHeader">カスタム</string>
     <string name="SuggestGhostModeBeforeViewingStory">ストーリーを見る前にゴーストモードを提案</string>
     <string name="SuggestGhostModeBeforeStoryTitle">ゴーストモード</string>

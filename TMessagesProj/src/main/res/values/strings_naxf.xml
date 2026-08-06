@@ -150,6 +150,11 @@
     <string name="AyuMoments" translatable="false">AyuMoments</string>
     <string name="AyuMomentsPreviewMessage">Do your best, leave the rest to fate</string>
     <string name="AyuSpySettings">Spy Settings</string>
+    <string name="AyuStatsHeader">Statistics</string>
+    <string name="AyuStatsDeletedMessages">Deleted messages</string>
+    <string name="AyuStatsDeletedDialogs">Deleted dialogs</string>
+    <string name="AyuStatsReadMarks">Read marks</string>
+    <string name="AyuStatsLastSeen">Last seen records</string>
     <string name="AyuMomentsCustomHeader">Custom</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>
     <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>

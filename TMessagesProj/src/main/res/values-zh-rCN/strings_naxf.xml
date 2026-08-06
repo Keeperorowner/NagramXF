@@ -136,6 +136,11 @@
     <string name="SingleCornerRadiusInfo">话题群组会采用与聊天消息相同的头像形状。</string>
     <string name="BlurOptions">模糊选项</string>
     <string name="AyuSpySettings">间谍设置</string>
+    <string name="AyuStatsHeader">统计</string>
+    <string name="AyuStatsDeletedMessages">已删消息</string>
+    <string name="AyuStatsDeletedDialogs">已删对话</string>
+    <string name="AyuStatsReadMarks">已读记录</string>
+    <string name="AyuStatsLastSeen">上线记录</string>
     <string name="AyuMomentsCustomHeader">自定义</string>
     <string name="AyuMomentsPreviewMessage">尽人事，听天命</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>

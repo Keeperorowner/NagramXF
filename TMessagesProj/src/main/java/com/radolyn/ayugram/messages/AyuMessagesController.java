@@ -22,13 +22,18 @@ import com.radolyn.ayugram.database.entities.DeletedMessageFull;
 import com.radolyn.ayugram.database.entities.DeletedMessageReaction;
 import com.radolyn.ayugram.database.entities.EditedMessage;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
+import com.radolyn.ayugram.utils.LastSeenHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_iv;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,6 +41,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
+
 
 import tw.nekomimi.nekogram.utils.FileUtil;
 import xyz.nextalone.nagram.NaConfig;
@@ -54,12 +60,15 @@ public class AyuMessagesController {
     private static AyuMessagesController instance;
     private EditedMessageDao editedMessageDao;
     private DeletedMessageDao deletedMessageDao;
+    private final DeletedDialogService deletedDialogService;
 
     private AyuMessagesController() {
         initializeAttachmentsFolder();
         AyuSavePreferences.loadAllExclusions();
 
         refreshDaos();
+        deletedDialogService = new DeletedDialogService();
+        scheduleRestoreDeletedDialogs();
     }
 
     private static File getDefaultAttachmentsPath() {
@@ -117,6 +126,60 @@ public class AyuMessagesController {
     private void refreshDaos() {
         editedMessageDao = AyuData.getEditedMessageDao();
         deletedMessageDao = AyuData.getDeletedMessageDao();
+    }
+
+    private void scheduleRestoreDeletedDialogs() {
+        AndroidUtilities.runOnUIThread(() -> {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    deletedDialogService.loadAndRestore(a);
+                }
+            }
+        }, 2000);
+    }
+
+    public void onDialogDeleted(int account, long dialogId) {
+        deletedDialogService.onDialogDeleted(account, dialogId);
+    }
+
+    public MessageObject getLastMessageCached(int account, long dialogId) {
+        return deletedDialogService.getLastMessageCached(account, dialogId);
+    }
+
+    public MessageObject getLastMessageCached(long dialogId) {
+        return getLastMessageCached(UserConfig.selectedAccount, dialogId);
+    }
+
+    public DeletedDialogService getDeletedDialogService() {
+        return deletedDialogService;
+    }
+
+    public void onOfficialDialogsLoaded(int account, ArrayList<Long> dialogIds) {
+        deletedDialogService.onOfficialDialogsLoaded(account, dialogIds);
+    }
+
+    public void updateDeletedDialogsFolder(int account, ArrayList<Long> dialogIds, int folderId) {
+        deletedDialogService.updateDeletedDialogsFolder(account, dialogIds, folderId);
+    }
+
+    public void deleteDialogRecord(int account, long userId, long dialogId) {
+        deletedDialogService.deleteDialogRecord(account, userId, dialogId);
+    }
+
+    public void deleteDialogRecord(long userId, long dialogId) {
+        int account = UserConfig.selectedAccount;
+        long selfUserId = UserConfig.getInstance(account).clientUserId;
+        if (userId != selfUserId) {
+            outer:
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()
+                        && UserConfig.getInstance(a).clientUserId == userId) {
+                    account = a;
+                    break outer;
+                }
+            }
+        }
+        deletedDialogService.deleteDialogRecord(account, userId, dialogId);
     }
 
     private <T> T withDaoRetry(String tag, Callable<T> callable) {
@@ -184,6 +247,7 @@ public class AyuMessagesController {
     public static void refreshAfterDatabaseChange() {
         if (instance != null) {
             instance.refreshDaos();
+            instance.scheduleRestoreDeletedDialogs();
         }
     }
 
@@ -271,7 +335,7 @@ public class AyuMessagesController {
 
         boolean sameMedia = isSameMedia(newMessage, force, oldMessage);
 
-        if (sameMedia && TextUtils.equals(oldMessage.message, newMessage.message)) {
+        if (!shouldSaveEdit(oldMessage, newMessage, sameMedia)) {
             return;
         }
 
@@ -306,7 +370,90 @@ public class AyuMessagesController {
                 }
         );
 
+        if (NaConfig.INSTANCE.getSaveLocalLastSeen().Bool() && newMessage.from_id != null) {
+            long fromUserId = MessageObject.getPeerId(newMessage.from_id);
+            if (fromUserId > 0) {
+                int ts = newMessage.edit_date != 0 ? newMessage.edit_date : newMessage.date;
+                if (ts <= 0) {
+                    ts = ConnectionsManager.getInstance(prefs.getAccountId()).getCurrentTime();
+                }
+                LastSeenHelper.saveLastSeen(prefs.getAccountId(), fromUserId, ts);
+            }
+        }
+
         AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(prefs.getAccountId()).postNotificationName(AyuConstants.MESSAGE_EDITED_NOTIFICATION, prefs.getDialogId(), prefs.getMessageId()));
+    }
+
+    public static boolean shouldSaveEdit(TLRPC.Message oldMessage, TLRPC.Message newMessage, boolean sameMedia) {
+        if (oldMessage == null || newMessage == null) {
+            return false;
+        }
+        if (!sameMedia) {
+            return true;
+        }
+        if (!TextUtils.equals(oldMessage.message, newMessage.message)) {
+            return true;
+        }
+        if (!isSameEntities(oldMessage, newMessage)) {
+            return true;
+        }
+        return !isSameRichMessage(oldMessage, newMessage);
+    }
+
+    private static boolean isSameEntities(TLRPC.Message oldMessage, TLRPC.Message newMessage) {
+        ArrayList<TLRPC.MessageEntity> oldEntities = oldMessage.entities;
+        ArrayList<TLRPC.MessageEntity> newEntities = newMessage.entities;
+        boolean oldEmpty = oldEntities == null || oldEntities.isEmpty();
+        boolean newEmpty = newEntities == null || newEntities.isEmpty();
+        if (oldEmpty && newEmpty) {
+            return true;
+        }
+        if (oldEmpty != newEmpty) {
+            return false;
+        }
+        if (oldEntities.size() != newEntities.size()) {
+            return false;
+        }
+        return Arrays.equals(AyuMessageUtils.serializeMultiple(oldEntities), AyuMessageUtils.serializeMultiple(newEntities));
+    }
+
+    private static boolean isSameRichMessage(TLRPC.Message oldMessage, TLRPC.Message newMessage) {
+        TL_iv.RichMessage oldRich = oldMessage.rich_message;
+        TL_iv.RichMessage newRich = newMessage.rich_message;
+        if (oldRich == newRich) {
+            return true;
+        }
+        if (oldRich == null || newRich == null) {
+            return false;
+        }
+        NativeByteBuffer bufOld = null;
+        NativeByteBuffer bufNew = null;
+        try {
+            bufOld = new NativeByteBuffer(oldRich.getObjectSize());
+            bufNew = new NativeByteBuffer(newRich.getObjectSize());
+            oldRich.serializeToStream(bufOld);
+            newRich.serializeToStream(bufNew);
+            bufOld.rewind();
+            bufNew.rewind();
+            if (bufOld.remaining() != bufNew.remaining()) {
+                return false;
+            }
+            byte[] bytesOld = new byte[bufOld.remaining()];
+            byte[] bytesNew = new byte[bufNew.remaining()];
+            bufOld.buffer.get(bytesOld);
+            bufNew.buffer.get(bytesNew);
+            return Arrays.equals(bytesOld, bytesNew);
+        } catch (Exception e) {
+            FileLog.e("isSameRichMessage", e);
+            return false;
+        } finally {
+            if (bufOld != null) {
+                bufOld.reuse();
+            }
+            if (bufNew != null) {
+                bufNew.reuse();
+            }
+        }
     }
 
     private static boolean isSameMedia(TLRPC.Message newMessage, boolean force, TLRPC.Message oldMessage) {
@@ -381,6 +528,35 @@ public class AyuMessagesController {
 
         if (msg != null && msg.reactions != null) {
             processDeletedReactions(fakeMsgId, msg.reactions);
+        }
+
+        updateLastMessageCache(prefs, msg);
+    }
+
+    private void updateLastMessageCache(AyuSavePreferences prefs, TLRPC.Message msg) {
+        if (msg == null) {
+            return;
+        }
+        int account = prefs.getAccountId();
+        long dialogId = prefs.getDialogId();
+        MessageObject existing = deletedDialogService.getLastMessageCached(account, dialogId);
+        if (existing != null && existing.messageOwner.id >= msg.id) {
+            return;
+        }
+        try {
+            DeletedMessage dm = new DeletedMessage();
+            AyuMessageUtils.map(prefs, dm);
+            AyuMessageUtils.mapMedia(prefs, dm, false);
+            TLRPC.TL_message tl = new TLRPC.TL_message();
+            AyuMessageUtils.map(dm, tl, account);
+            AyuMessageUtils.mapMedia(dm, tl, account);
+            tl.ayuDeleted = true;
+            MessageObject mo = new MessageObject(account, tl, false, false);
+            if (!android.text.TextUtils.isEmpty(mo.messageText)) {
+                deletedDialogService.putLastMessage(account, dialogId, mo);
+            }
+        } catch (Throwable e) {
+            FileLog.e("updateLastMessageCache", e);
         }
     }
 
@@ -541,6 +717,12 @@ public class AyuMessagesController {
         if (mergeDialogId != 0) {
             deletedMessageDao.delete(mergeDialogId);
             editedMessageDao.delete(mergeDialogId);
+        }
+
+        long userId = UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
+        deleteDialogRecord(userId, dialogId);
+        if (mergeDialogId != 0) {
+            deleteDialogRecord(userId, mergeDialogId);
         }
 
         // Clean up media files

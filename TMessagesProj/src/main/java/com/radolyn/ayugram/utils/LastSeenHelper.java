@@ -1,8 +1,8 @@
 package com.radolyn.ayugram.utils;
 
 import com.radolyn.ayugram.database.AyuData;
-import com.radolyn.ayugram.database.dao.LastSeenDao;
-import com.radolyn.ayugram.database.entities.LastSeenEntity;
+import com.radolyn.ayugram.database.dao.SpyDao;
+import com.radolyn.ayugram.database.entities.SpyLastSeen;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -42,17 +42,17 @@ public class LastSeenHelper {
         }
         AyuQueues.lastSeenQueue.postRunnable(() -> {
             int cutoff = (int) (System.currentTimeMillis() / 1000) - CLEANUP_DAYS * 24 * 60 * 60;
-            LastSeenDao dao = AyuData.getLastSeenDao();
+            SpyDao dao = AyuData.getSpyDao();
             if (dao == null) {
                 return;
             }
-            dao.deleteOlderThan(cutoff);
-            List<LastSeenEntity> all = dao.getAll();
+            dao.deleteOldLastSeen(cutoff);
+            List<SpyLastSeen> all = dao.getAllLastSeen();
             synchronized (cache) {
-                for (LastSeenEntity e : all) {
+                for (SpyLastSeen e : all) {
                     int cached = cache.get(e.userId, 0);
-                    if (cached < e.lastSeen) {
-                        cache.put(e.userId, e.lastSeen);
+                    if (cached < e.lastSeenDate) {
+                        cache.put(e.userId, e.lastSeenDate);
                     }
                 }
                 for (int i = cache.size() - 1; i >= 0; i--) {
@@ -132,7 +132,7 @@ public class LastSeenHelper {
             return;
         }
 
-        List<LastSeenEntity> toWrite;
+        List<SpyLastSeen> toWrite;
         synchronized (pending) {
             if (pending.size() == 0) {
                 flushScheduled = false;
@@ -140,19 +140,19 @@ public class LastSeenHelper {
             }
             toWrite = new ArrayList<>(pending.size());
             for (int i = 0; i < pending.size(); i++) {
-                LastSeenEntity e = new LastSeenEntity();
+                SpyLastSeen e = new SpyLastSeen();
                 e.userId = pending.keyAt(i);
-                e.lastSeen = pending.valueAt(i);
+                e.lastSeenDate = pending.valueAt(i);
                 toWrite.add(e);
             }
             pending.clear();
         }
 
-        LastSeenDao dao = AyuData.getLastSeenDao();
+        SpyDao dao = AyuData.getSpyDao();
         boolean ok = false;
         try {
             if (dao != null) {
-                dao.upsertAll(toWrite);
+                dao.upsertLastSeenAll(toWrite);
                 ok = true;
             }
         } catch (Exception e) {
@@ -171,13 +171,13 @@ public class LastSeenHelper {
         }
     }
 
-    private static void requeuePending(List<LastSeenEntity> toRequeue) {
+    private static void requeuePending(List<SpyLastSeen> toRequeue) {
         synchronized (pending) {
             for (int i = 0; i < toRequeue.size(); i++) {
-                LastSeenEntity e = toRequeue.get(i);
+                SpyLastSeen e = toRequeue.get(i);
                 int existing = pending.get(e.userId, 0);
-                if (existing < e.lastSeen) {
-                    pending.put(e.userId, e.lastSeen);
+                if (existing < e.lastSeenDate) {
+                    pending.put(e.userId, e.lastSeenDate);
                 }
             }
         }

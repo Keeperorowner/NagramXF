@@ -1,8 +1,6 @@
 package com.radolyn.ayugram.proprietary;
 
 import android.text.TextUtils;
-import android.util.Pair;
-import android.util.SparseArray;
 
 import androidx.collection.LongSparseArray;
 
@@ -11,210 +9,132 @@ import com.radolyn.ayugram.database.entities.DeletedMessageReaction;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
-import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
-import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.tgnet.TLRPC.MessageReplyHeader;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 public abstract class AyuHistoryHook {
 
-    public static void doHookAsync(int currentAccount, long startId, long endId, long dialogId, int limit, long topicId, int loadType, boolean isChannelComment, long threadMessageId, boolean isTopic) {
-        MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
-        MessagesController messagesController = MessagesController.getInstance(currentAccount);
-        storage.getStorageQueue().postRunnable(() -> {
-            long clientUserId = UserConfig.getInstance(currentAccount).clientUserId;
-            AyuMessagesController ayuController = AyuMessagesController.getInstance();
-            LongSparseArray<TLRPC.TL_message> messagesById = new LongSparseArray<>();
-            Set<Long> groupIds = new HashSet<>();
-            Set<Integer> replyIds = new HashSet<>();
-            List<DeletedMessageFull> deletedMessages;
-
-            if (isChannelComment) {
-                deletedMessages = ayuController.getThreadMessages(clientUserId, dialogId, threadMessageId, startId, endId, limit);
-            } else if (isTopic && topicId != 0) {
-                deletedMessages = ayuController.getTopicMessages(clientUserId, dialogId, topicId, startId, endId, limit);
-            } else {
-                deletedMessages = ayuController.getMessages(clientUserId, dialogId, startId, endId, limit);
-            }
-
-            if (deletedMessages.isEmpty()) {
-                return;
-            }
-
-            ArrayList<Long> usersToLoad = new ArrayList<>();
-            ArrayList<Long> chatsToLoad = new ArrayList<>();
-            for (DeletedMessageFull deletedMessageFull : deletedMessages) {
-                if (hasContent(deletedMessageFull)) {
-                    TLRPC.TL_message mappedMessage = map(deletedMessageFull, currentAccount);
-                    long groupId = mappedMessage.grouped_id;
-                    if (groupId != 0) {
-                        groupIds.add(groupId);
-                    }
-                    MessageReplyHeader replyHeader = mappedMessage.reply_to;
-                    if (replyHeader != null) {
-                        replyIds.add(replyHeader.reply_to_msg_id);
-                    }
-
-                    messagesById.put(mappedMessage.id, mappedMessage);
-                    MessagesStorage.addUsersAndChatsFromMessage(mappedMessage, usersToLoad, chatsToLoad, null);
-                }
-            }
-
-            ArrayList<Long> uniqueGroupIds = new ArrayList<>(groupIds);
-            for (DeletedMessageFull groupedMessageFull : ayuController.getMessagesGroupedIn(clientUserId, dialogId, uniqueGroupIds)) {
-                if (hasContent(groupedMessageFull)) {
-                    if (!messagesById.containsKey(groupedMessageFull.message.messageId)) {
-                        TLRPC.TL_message mappedMessage = map(groupedMessageFull, currentAccount);
-                        MessageReplyHeader replyHeader = mappedMessage.reply_to;
-                        if (replyHeader != null) {
-                            replyIds.add(replyHeader.reply_to_msg_id);
-                        }
-                        messagesById.put(mappedMessage.id, mappedMessage);
-                        MessagesStorage.addUsersAndChatsFromMessage(mappedMessage, usersToLoad, chatsToLoad, null);
-                    }
-                }
-            }
-
-            ArrayList<Integer> uniqueReplyIds = new ArrayList<>(replyIds);
-            for (DeletedMessageFull replyMessageFull : ayuController.getMessagesByIds(clientUserId, dialogId, uniqueReplyIds)) {
-                if (hasContent(replyMessageFull)) {
-                    if (!messagesById.containsKey(replyMessageFull.message.messageId)) {
-                        TLRPC.TL_message mappedMessage = map(replyMessageFull, currentAccount);
-                        messagesById.put(mappedMessage.id, mappedMessage);
-                        MessagesStorage.addUsersAndChatsFromMessage(mappedMessage, usersToLoad, chatsToLoad, null);
-                    }
-                }
-            }
-
-            ArrayList<TLRPC.User> fetchedUsers = new ArrayList<>();
-            ArrayList<TLRPC.Chat> fetchedChats = new ArrayList<>();
-            try {
-                if (!usersToLoad.isEmpty()) {
-                    ArrayList<Long> missingUserIds = new ArrayList<>();
-                    for (Long userId : usersToLoad) {
-                        TLRPC.User user = messagesController.getUser(userId);
-                        if (user != null) {
-                            fetchedUsers.add(user);
-                        } else {
-                            missingUserIds.add(userId);
-                        }
-                    }
-                    if (!missingUserIds.isEmpty()) {
-                        storage.getUsersInternal(missingUserIds, fetchedUsers);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-            try {
-                if (!chatsToLoad.isEmpty()) {
-                    ArrayList<Long> missingChatIds = new ArrayList<>();
-                    for (Long chatId : chatsToLoad) {
-                        TLRPC.Chat chat = messagesController.getChat(chatId);
-                        if (chat != null) {
-                            fetchedChats.add(chat);
-                        } else {
-                            missingChatIds.add(chatId);
-                        }
-                    }
-                    if (!missingChatIds.isEmpty()) {
-                        storage.getChatsInternal(TextUtils.join(",", missingChatIds), fetchedChats);
-                    }
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
-
-            LongSparseArray<TLRPC.User> usersById = new LongSparseArray<>();
-            LongSparseArray<TLRPC.Chat> chatsById = new LongSparseArray<>();
-            for (TLRPC.User user : fetchedUsers) {
-                usersById.put(user.id, user);
-            }
-            for (TLRPC.Chat chat : fetchedChats) {
-                chatsById.put(chat.id, chat);
-            }
-
-            Comparator<MessageObject> messageComparator = AyuHistoryHook::doHook_compareMessages;
-            if (loadType == 1) {
-                messageComparator = messageComparator.reversed();
-            }
-
-            final ArrayList<MessageObject> messageObjects = new ArrayList<>();
-            for (int i = 0; i < messagesById.size(); i++) {
-                messageObjects.add(createMessageObject(currentAccount, messagesById.get(messagesById.keyAt(i)), usersById, chatsById, messagesController));
-            }
-
-            SparseArray<MessageObject> indexById = new SparseArray<>(messageObjects.size());
-            for (MessageObject messageObj : messageObjects) {
-                indexById.put(messageObj.getId(), messageObj);
-            }
-            for (int idx = 0; idx < messageObjects.size(); idx++) {
-                MessageObject messageObj = messageObjects.get(idx);
-                if (messageObj.messageOwner.reply_to != null) {
-                    int replyId = messageObj.messageOwner.reply_to.reply_to_msg_id;
-                    MessageObject candidate = indexById.get(replyId);
-                    if (candidate != null) {
-                        messageObj.messageOwner.replyMessage = candidate.messageOwner;
-                        messageObj.replyMessageObject = candidate;
-                    }
-                }
-            }
-
-            messageObjects.sort(messageComparator);
-
-            AndroidUtilities.runOnUIThread(() -> {
-                // MessagesController.getInstance(currentAccount).updateInterfaceWithMessages(dialogId, messageObjects, 0);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.didReceiveNewMessages, dialogId, messageObjects, false, 0);
-                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.replyMessagesDidLoad, dialogId, messageObjects, null);
-            });
-        });
-    }
-
-    public static Pair<Integer, Integer> getMinAndMaxIds(ArrayList<MessageObject> messages) {
-        int minId = ConnectionsManager.DEFAULT_DATACENTER_ID;
+    public static void doHookSync(
+            int currentAccount,
+            TLRPC.messages_Messages messagesRes,
+            LongSparseArray<TLRPC.User> usersDict,
+            LongSparseArray<TLRPC.Chat> chatsDict,
+            long dialogId, long topicId, int loadType,
+            boolean isChannelComment, long threadMessageId, boolean isTopic
+    ) {
+        if (messagesRes.messages.isEmpty()) {
+            return;
+        }
+        int minId = Integer.MAX_VALUE;
         int maxId = Integer.MIN_VALUE;
-        for (MessageObject messageObj : messages) {
-            if (!messageObj.isSending()) {
-                int messageId = messageObj.getId();
-                if (messageId < minId) {
-                    minId = messageId;
-                }
-                if (messageId > maxId) {
-                    maxId = messageId;
-                }
+        for (int i = 0; i < messagesRes.messages.size(); i++) {
+            int id = messagesRes.messages.get(i).id;
+            if (id > 0) {
+                if (id < minId) minId = id;
+                if (id > maxId) maxId = id;
             }
         }
-        return new Pair<>(minId, maxId);
-    }
+        if (minId == Integer.MAX_VALUE) {
+            minId = 0;
+            maxId = Integer.MAX_VALUE;
+        }
 
-    private static int doHook_compareMessages(MessageObject a, MessageObject b) {
-        int aId = a.getId();
-        int bId = b.getId();
-        int aDate = a.messageOwner.date;
-        int bDate = b.messageOwner.date;
-        if (aId > 0 && bId > 0) {
-            return Integer.compare(bId, aId);
-        } else if (aId >= 0 || bId >= 0) {
-            return Integer.compare(bDate, aDate);
+        long clientUserId = UserConfig.getInstance(currentAccount).clientUserId;
+        AyuMessagesController ayuController = AyuMessagesController.getInstance();
+        Set<Integer> existingIds = new HashSet<>();
+        for (int i = 0; i < messagesRes.messages.size(); i++) {
+            existingIds.add(messagesRes.messages.get(i).id);
+        }
+
+        List<DeletedMessageFull> deletedMessages;
+        if (isChannelComment) {
+            deletedMessages = ayuController.getThreadMessages(clientUserId, dialogId, threadMessageId, minId, maxId, 200);
+        } else if (isTopic && topicId != 0) {
+            deletedMessages = ayuController.getTopicMessages(clientUserId, dialogId, topicId, minId, maxId, 200);
         } else {
-            if (aDate != bDate) {
-                return Integer.compare(bDate, aDate);
-            } else {
-                return Integer.compare(aId, bId);
+            deletedMessages = ayuController.getMessages(clientUserId, dialogId, minId, maxId, 200);
+        }
+        if (deletedMessages.isEmpty()) {
+            return;
+        }
+
+        Set<Long> groupIds = new HashSet<>();
+        Set<Integer> replyIds = new HashSet<>();
+        ArrayList<Long> usersToLoad = new ArrayList<>();
+        ArrayList<Long> chatsToLoad = new ArrayList<>();
+
+        for (DeletedMessageFull full : deletedMessages) {
+            if (!hasContent(full) || existingIds.contains(full.message.messageId)) {
+                continue;
+            }
+            TLRPC.TL_message msg = map(full, currentAccount);
+            existingIds.add(msg.id);
+            messagesRes.messages.add(msg);
+            if (msg.grouped_id != 0) groupIds.add(msg.grouped_id);
+            if (msg.reply_to != null) replyIds.add(msg.reply_to.reply_to_msg_id);
+            MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, null);
+        }
+
+        if (!groupIds.isEmpty()) {
+            for (DeletedMessageFull full : ayuController.getMessagesGroupedIn(clientUserId, dialogId, new ArrayList<>(groupIds))) {
+                if (!hasContent(full) || existingIds.contains(full.message.messageId)) {
+                    continue;
+                }
+                TLRPC.TL_message msg = map(full, currentAccount);
+                existingIds.add(msg.id);
+                messagesRes.messages.add(msg);
+                if (msg.reply_to != null) replyIds.add(msg.reply_to.reply_to_msg_id);
+                MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, null);
             }
         }
+
+        if (!replyIds.isEmpty()) {
+            for (DeletedMessageFull full : ayuController.getMessagesByIds(clientUserId, dialogId, new ArrayList<>(replyIds))) {
+                if (!hasContent(full) || existingIds.contains(full.message.messageId)) {
+                    continue;
+                }
+                TLRPC.TL_message msg = map(full, currentAccount);
+                existingIds.add(msg.id);
+                messagesRes.messages.add(msg);
+                MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, null);
+            }
+        }
+
+        MessagesController messagesController = MessagesController.getInstance(currentAccount);
+        try {
+            for (Long uid : usersToLoad) {
+                if (usersDict.indexOfKey(uid) >= 0) continue;
+                TLRPC.User user = messagesController.getUser(uid);
+                if (user != null) {
+                    usersDict.put(user.id, user);
+                    messagesRes.users.add(user);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        try {
+            for (Long cid : chatsToLoad) {
+                if (chatsDict.indexOfKey(cid) >= 0) continue;
+                TLRPC.Chat chat = messagesController.getChat(cid);
+                if (chat != null) {
+                    chatsDict.put(chat.id, chat);
+                    messagesRes.chats.add(chat);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+
+        messagesRes.messages.sort((a, b) -> Integer.compare(b.id, a.id));
     }
 
     private static TLRPC.TL_message map(DeletedMessageFull deletedMessageFull, int accountId) {
@@ -249,13 +169,6 @@ public abstract class AyuHistoryHook {
         tlMessage.ayuDeleted = true;
         AyuMessageUtils.mapMedia(deletedMessageFull.message, tlMessage, accountId);
         return tlMessage;
-    }
-
-    private static MessageObject createMessageObject(int currentAccount, TLRPC.TL_message message, LongSparseArray<TLRPC.User> usersById, LongSparseArray<TLRPC.Chat> chatsById, MessagesController messagesController) {
-        MessageObject messageObj = new MessageObject(currentAccount, message, usersById, chatsById, false, true);
-        messageObj.setIsRead();
-        messageObj.setContentIsRead();
-        return messageObj;
     }
 
     private static boolean hasContent(DeletedMessageFull messageFull) {

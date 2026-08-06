@@ -14,9 +14,9 @@ import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.radolyn.ayugram.AyuConstants;
+import com.radolyn.ayugram.database.dao.DeletedDialogDao;
 import com.radolyn.ayugram.database.dao.DeletedMessageDao;
 import com.radolyn.ayugram.database.dao.EditedMessageDao;
-import com.radolyn.ayugram.database.dao.LastSeenDao;
 import com.radolyn.ayugram.database.dao.RegexFilterDao;
 import com.radolyn.ayugram.database.dao.SpyDao;
 import com.radolyn.ayugram.messages.AyuMessagesController;
@@ -46,7 +46,7 @@ public class AyuData {
     private static AyuDatabase database;
     private static EditedMessageDao editedMessageDao;
     private static DeletedMessageDao deletedMessageDao;
-    private static LastSeenDao lastSeenDao;
+    private static DeletedDialogDao deletedDialogDao;
     private static SpyDao spyDao;
     private static RegexFilterDao regexFilterDao;
     private static final int IO_BUFFER_SIZE = 16 * 1024;
@@ -169,6 +169,40 @@ public class AyuData {
         }
     };
 
+    private static final Migration MIGRATION_30_31 = new Migration(30, 31) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `DeletedDialog` (" +
+                    "`fakeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`userId` INTEGER NOT NULL, " +
+                    "`dialogId` INTEGER NOT NULL, " +
+                    "`peerId` INTEGER NOT NULL, " +
+                    "`folderId` INTEGER, " +
+                    "`topMessage` INTEGER NOT NULL, " +
+                    "`lastMessageDate` INTEGER NOT NULL, " +
+                    "`flags` INTEGER NOT NULL, " +
+                    "`entityCreateDate` INTEGER NOT NULL)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_DeletedDialog_userId_dialogId` ON `DeletedDialog` (`userId`, `dialogId`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_DeletedDialog_userId_entityCreateDate` ON `DeletedDialog` (`userId`, `entityCreateDate`)");
+        }
+    };
+
+    private static final Migration MIGRATION_31_32 = new Migration(31, 32) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `SpyLastSeen` (" +
+                    "`userId` INTEGER NOT NULL, " +
+                    "`lastSeenDate` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`userId`))");
+            try {
+                database.execSQL("INSERT OR REPLACE INTO SpyLastSeen (userId, lastSeenDate) " +
+                        "SELECT userId, lastSeen FROM LastSeenEntity");
+            } catch (Exception ignored) {
+            }
+            database.execSQL("DROP TABLE IF EXISTS LastSeenEntity");
+        }
+    };
+
     static {
         create();
     }
@@ -178,12 +212,12 @@ public class AyuData {
             return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigrationOnDowngrade()
-                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
+                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32)
                     .build();
         }
         return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                 .allowMainThreadQueries()
-                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
+                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32)
                 .build();
     }
 
@@ -195,7 +229,7 @@ public class AyuData {
 
         editedMessageDao = database.editedMessageDao();
         deletedMessageDao = database.deletedMessageDao();
-        lastSeenDao = database.lastSeenDao();
+        deletedDialogDao = database.deletedDialogDao();
         spyDao = database.spyDao();
         regexFilterDao = database.regexFilterDao();
         AyuMessagesController.refreshAfterDatabaseChange();
@@ -214,8 +248,8 @@ public class AyuData {
         return deletedMessageDao;
     }
 
-    public static LastSeenDao getLastSeenDao() {
-        return lastSeenDao;
+    public static DeletedDialogDao getDeletedDialogDao() {
+        return deletedDialogDao;
     }
 
     public static SpyDao getSpyDao() {
@@ -255,7 +289,7 @@ public class AyuData {
         database = null;
         editedMessageDao = null;
         deletedMessageDao = null;
-        lastSeenDao = null;
+        deletedDialogDao = null;
         spyDao = null;
         regexFilterDao = null;
     }

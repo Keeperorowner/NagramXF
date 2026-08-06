@@ -118,7 +118,7 @@ import tw.nekomimi.nekogram.llm.LlmConfig;
 import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.utils.AlertUtil;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 
 public class PhotoPickerActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -406,7 +406,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
 
         @Override
         public boolean cancelButtonPressed() {
-            delegate.actionButtonPressed(true, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
+            delegate.actionButtonPressed(true, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0);
             finishFragment();
             return true;
         }
@@ -1084,7 +1084,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 if (chatActivity != null && chatActivity.isInScheduleMode()) {
                     AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendSelectedPhotos(notify, scheduleDate, 0));
                 } else {
-                    sendSelectedPhotos(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
+                    sendSelectedPhotos(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0);
                 }
             });
             writeButton.setOnLongClickListener(view -> {
@@ -1135,7 +1135,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                                 itemCells[a].setTextAndIcon(LocaleController.getString(R.string.ScheduleMessage), R.drawable.msg_calendar2);
                             }
                         } else if (num == 1) {
-                            boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
+                            boolean sendWithoutSoundNax = AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound();
                             itemCells[a].setTextAndIcon(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
                         } else if (num == 2) {
                             String languageText = Translator.getInputTranslateLangForChat(ChatsHelper.getChatId()).toUpperCase();
@@ -1158,7 +1158,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                             if (num == 0) {
                                 AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendSelectedPhotos(notify, scheduleDate, 0));
                             } else if (num == 1) {
-                                sendSelectedPhotos(AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
+                                sendSelectedPhotos(AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0);
                             } else if (num == 2 || num == 3) {
                                 translateComment(Translator.getInputTranslateLangLocaleForChat(ChatsHelper.getChatId()), num == 3 ? 0 : Translator.providerLLMTranslator);
                             }

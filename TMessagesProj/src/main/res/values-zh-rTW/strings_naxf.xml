@@ -86,6 +86,11 @@
     <string name="RemoveMessageTail">移除訊息氣泡尾巴</string>
     <string name="BlurOptions">模糊選項</string>
     <string name="AyuSpySettings">間諜設定</string>
+    <string name="AyuStatsHeader">統計</string>
+    <string name="AyuStatsDeletedMessages">已刪訊息</string>
+    <string name="AyuStatsDeletedDialogs">已刪對話</string>
+    <string name="AyuStatsReadMarks">已讀記錄</string>
+    <string name="AyuStatsLastSeen">上線記錄</string>
     <string name="AyuMomentsCustomHeader">自訂</string>
     <string name="AyuMomentsPreviewMessage">盡人事，聽天命</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>

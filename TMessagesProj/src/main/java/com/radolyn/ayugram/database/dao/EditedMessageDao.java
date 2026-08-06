@@ -47,4 +47,7 @@ public interface EditedMessageDao {
 
     @Insert
     void insert(EditedMessage revision);
+
+    @Query("SELECT COUNT(*) FROM editedmessage")
+    int getTotalCount();
 }

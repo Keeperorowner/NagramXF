@@ -82,6 +82,10 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private ListAdapter listAdapter;
     private long totalDeviceSize = -1L;
     private int[] attachmentLimitPresetIndices = new int[0];
+    private int statsDeletedMessages = -1;
+    private int statsDeletedDialogs = -1;
+    private int statsReadMarks = -1;
+    private int statsLastSeen = -1;
 
     private final CellGroup cellGroup = new CellGroup(this);
 
@@ -101,6 +105,12 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell attachmentLimitInfoRow = cellGroup.appendCell(new ConfigCellCustom("AttachmentFolderSizeLimitInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell exportDatabaseRow = cellGroup.appendCell(new ConfigCellCustom("ExportDatabaseRow", CellGroup.ITEM_TYPE_TEXT_CHECK_ICON, true));
     private final AbstractConfigCell importDatabaseRow = cellGroup.appendCell(new ConfigCellCustom("ImportDatabaseRow", CellGroup.ITEM_TYPE_TEXT_CHECK_ICON, true));
+    private final AbstractConfigCell dividerStats = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell headerStats = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AyuStatsHeader)));
+    private final AbstractConfigCell statsDeletedMessagesRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsDeletedMessages", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell statsDeletedDialogsRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsDeletedDialogs", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell statsReadMarksRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsReadMarks", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell statsLastSeenRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsLastSeen", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell dividerClearData = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell clearDataRow = cellGroup.appendCell(new ConfigCellCustom("ClearSavedDataRow", CellGroup.ITEM_TYPE_TEXT_CHECK_ICON, true));
 
@@ -134,6 +144,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
         calculateTotalDeviceSize();
         super.onFragmentCreate();
         AyuData.loadSizes(this::refreshAyuDataSize);
+        loadStats();
         return true;
     }
 
@@ -194,6 +205,13 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
             showClearSavedDataDialog();
             return;
         }
+        if (position == cellGroup.rows.indexOf(statsDeletedMessagesRow)
+                || position == cellGroup.rows.indexOf(statsDeletedDialogsRow)
+                || position == cellGroup.rows.indexOf(statsReadMarksRow)
+                || position == cellGroup.rows.indexOf(statsLastSeenRow)) {
+            loadStats();
+            return;
+        }
         super.onCustomCellClick(view, position, x, y);
     }
 
@@ -245,6 +263,50 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
 
     public void refreshAyuDataSize() {
         notifyRowChanged(clearDataRow);
+        loadStats();
+    }
+
+    private void loadStats() {
+        Utilities.globalQueue.postRunnable(() -> {
+            int deletedMessages = 0;
+            int deletedDialogs = 0;
+            int readMarks = 0;
+            int lastSeen = 0;
+            try {
+                if (AyuData.getDeletedMessageDao() != null) {
+                    deletedMessages = AyuData.getDeletedMessageDao().getTotalCount();
+                }
+                if (AyuData.getDeletedDialogDao() != null) {
+                    deletedDialogs = AyuData.getDeletedDialogDao().getDeletedCount();
+                }
+                if (AyuData.getSpyDao() != null) {
+                    readMarks = AyuData.getSpyDao().getReadCount();
+                }
+                if (AyuData.getSpyDao() != null) {
+                    lastSeen = AyuData.getSpyDao().getLastSeenCount();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            int finalDeletedMessages = deletedMessages;
+            int finalDeletedDialogs = deletedDialogs;
+            int finalReadMarks = readMarks;
+            int finalLastSeen = lastSeen;
+            AndroidUtilities.runOnUIThread(() -> {
+                statsDeletedMessages = finalDeletedMessages;
+                statsDeletedDialogs = finalDeletedDialogs;
+                statsReadMarks = finalReadMarks;
+                statsLastSeen = finalLastSeen;
+                notifyRowChanged(statsDeletedMessagesRow);
+                notifyRowChanged(statsDeletedDialogsRow);
+                notifyRowChanged(statsReadMarksRow);
+                notifyRowChanged(statsLastSeenRow);
+            });
+        });
+    }
+
+    private String formatStat(int value) {
+        return value < 0 ? "..." : String.valueOf(value);
     }
 
     private boolean isSwitchTap(View view, float x) {
@@ -880,6 +942,18 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
                 TextCell textCell = (TextCell) holder.itemView;
                 textCell.setTextAndValueAndIcon(getString(R.string.ClearSavedMessageData), getClearValueText(), R.drawable.msg_clear, false);
                 textCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
+            } else if (row == statsDeletedMessagesRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsDeletedMessages), formatStat(statsDeletedMessages), true);
+            } else if (row == statsDeletedDialogsRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsDeletedDialogs), formatStat(statsDeletedDialogs), true);
+            } else if (row == statsReadMarksRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsReadMarks), formatStat(statsReadMarks), true);
+            } else if (row == statsLastSeenRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsLastSeen), formatStat(statsLastSeen), false);
             }
         }
     }

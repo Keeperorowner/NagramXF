@@ -152,6 +152,11 @@
     <string name="GhostReadMessage">既読をつける</string>
     <string name="GhostModeExcludeRead">既読を除外</string>
     <string name="GhostModeExcludeTyping">入力を除外</string>
+    <string name="GhostModeExceptionDefault">デフォルト</string>
+    <string name="GhostModeExceptionForceBlockRead">既読を強制ブロック</string>
+    <string name="GhostModeExceptionForceAllowRead">既読を強制許可</string>
+    <string name="GhostModeExceptionForceBlockTyping">入力を強制ブロック</string>
+    <string name="GhostModeExceptionForceAllowTyping">入力を強制許可</string>
     <string name="SendWithSound">通知音ありで送信</string>
     <string name="PerformanceClass">デバイスのパフォーマンスクラス</string>
     <string name="PerformanceClassHigh">ハイエンド</string>

@@ -54,6 +54,12 @@ public interface DeletedMessageDao {
     List<DeletedMessageFull> getLatestMessages(long userId, long dialogId, int limit);
 
     @Transaction
+    @Query("SELECT t.* FROM deletedmessage t " +
+            "JOIN (SELECT dialogId, MAX(messageId) AS max_messageId FROM deletedmessage WHERE userId = :userId GROUP BY dialogId) m " +
+            "ON t.dialogId = m.dialogId AND t.messageId = m.max_messageId AND t.userId = :userId")
+    List<DeletedMessageFull> getLastMessages(long userId);
+
+    @Transaction
     @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId < :before ORDER BY messageId DESC LIMIT :limit")
     List<DeletedMessageFull> getOlderMessagesBefore(long userId, long dialogId, int before, int limit);
 
@@ -73,6 +79,9 @@ public interface DeletedMessageDao {
 
     @Query("SELECT COUNT(*) FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId")
     int countByDialog(long userId, long dialogId);
+
+    @Query("SELECT COUNT(*) FROM deletedmessage")
+    int getTotalCount();
 
     @Query("SELECT EXISTS(SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND topicId = :topicId AND messageId = :msgId)")
     boolean exists(long userId, long dialogId, long topicId, int msgId);
