@@ -16,7 +16,17 @@ Includes most features from exteraGram and AyuGram.
 
 ## Compilation Guide
 
-1. Clone with submodules (`--recursive`), or run `git submodule update --init` in an existing clone. The native libraries (`dav1d`, `ffmpeg`, `libvpx`) under `TMessagesProj/jni/third_party/` are required for native builds.
+1. Clone the repository with its submodules:
+
+    ```bash
+    git clone --recursive --shallow-submodules https://github.com/Keeperorowner/NagramXF.git NagramXF
+    ```
+
+    If you already cloned the repository without submodules, run:
+
+    ```bash
+    git submodule update --init --recursive --depth=1
+    ```
 
 2. Obtain API credentials (`TELEGRAM_APP_ID` and `TELEGRAM_APP_HASH`) from [Telegram Developer Portal](https://my.telegram.org/auth). Create `local.properties` in the project root with:
 
@@ -35,11 +45,18 @@ Includes most features from exteraGram and AyuGram.
 
 4. For FCM support: Replace `TMessagesProj/google-services.json` with your own configuration file.
 
-5. Open the project in Android Studio to start building.
+5. Replace project-specific metadata:
+
+    - Set your Google Maps API key in the `com.google.android.maps.v2.API_KEY` meta-data entry in `TMessagesProj/src/main/AndroidManifest.xml`.
+    - Set `BaseRemoteHelper.CHANNEL_METADATA_ID` in `TMessagesProj/src/main/java/tw/nekomimi/nekogram/helpers/remote/BaseRemoteHelper.java` to your metadata channel's numeric ID, without the `-100` prefix.
+
+6. Open the project in Android Studio to start building.
 
 ## Notice
 
 This project reverse-engineered and uses some code from closed-source projects.
+
+For the functionality obtained through reverse engineering in this section, I listed the original developers as the contributors.
 
 ## Acknowledgments
 
