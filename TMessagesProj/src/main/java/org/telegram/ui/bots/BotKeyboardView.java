@@ -77,10 +77,11 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
 
         scrollView = new ScrollView(context);
         scrollView.setClipToPadding(false);
-        addView(scrollView);
+        scrollView.setFillViewport(true);
+        addView(scrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         frameLayout = new FrameLayout(context);
-        scrollView.addView(frameLayout);
+        scrollView.addView(frameLayout, new ScrollView.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         updateColors();
     }
 
@@ -139,7 +140,7 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
             ButtonsLayout container = new ButtonsLayout(getContext());
             container.setOrientation(VERTICAL);
             container.setAlpha(0);
-            frameLayout.addView(container);
+            frameLayout.addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             isFullSize = !buttons.resize;
             buttonHeight = !isFullSize ? 44 : (int) Math.max(44, (panelHeight - dp(BORDER_MARGIN * 2) - (botButtons.rows.size() - 1) * dp(MIDDLE_MARGIN)) / botButtons.rows.size() / AndroidUtilities.density);
@@ -316,6 +317,10 @@ public class BotKeyboardView extends LinearLayout implements InAppKeyboardInsetV
     public void onItemChanged(ReplaceAnimator<?> animato) {
         for (ListAnimator.Entry<ButtonsLayout> entry : animator) {
             final float visibility = entry.getVisibility();
+            if (entry.item.getMeasuredWidth() > 0) {
+                entry.item.setPivotX(entry.item.getMeasuredWidth() / 2f);
+            }
+            entry.item.setPivotY(0f);
             final float scale = lerp(0.7f, 1f, visibility);
             entry.item.setAlpha(visibility);
             entry.item.setScaleX(scale);

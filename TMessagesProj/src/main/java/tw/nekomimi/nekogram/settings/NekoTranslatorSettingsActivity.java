@@ -199,6 +199,7 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
             "7",
             "10",
     }, null));
+    private final AbstractConfigCell dividerLlmTemperature = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerTemperature = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.LlmTemperature)));
     private final AbstractConfigCell temperatureValueRow = cellGroup.appendCell(new ConfigCellCustom(getString(R.string.LlmTemperature), ConfigCellCustom.CUSTOM_ITEM_Temperature, false));
     private final AbstractConfigCell dividerAITranslatorSettings = cellGroup.appendCell(new ConfigCellDivider());
@@ -636,6 +637,7 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.appendCell(llmUseContextRow);
         cellGroup.appendCell(llmUseContextInAutoTranslateRow);
         cellGroup.appendCell(llmContextSizeRow);
+        cellGroup.appendCell(dividerLlmTemperature);
         cellGroup.appendCell(headerTemperature);
         cellGroup.appendCell(temperatureValueRow);
         cellGroup.appendCell(dividerAITranslatorSettings);
@@ -695,6 +697,7 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
         boolean showTemperature = LlmModelUtil.supportsTemperature(modelName);
         if (listAdapter == null) {
             if (!showTemperature) {
+                cellGroup.rows.remove(dividerLlmTemperature);
                 cellGroup.rows.remove(headerTemperature);
                 cellGroup.rows.remove(temperatureValueRow);
             }
@@ -704,9 +707,10 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
         if (showTemperature) {
             final int index = cellGroup.rows.indexOf(NaConfig.INSTANCE.getLlmUseContext().Bool() ? llmContextSizeRow : llmUseContextRow);
             if (!cellGroup.rows.contains(headerTemperature)) {
-                cellGroup.rows.add(index + 1, headerTemperature);
-                cellGroup.rows.add(index + 2, temperatureValueRow);
-                listAdapter.notifyItemRangeInserted(index + 1, 2);
+                cellGroup.rows.add(index + 1, dividerLlmTemperature);
+                cellGroup.rows.add(index + 2, headerTemperature);
+                cellGroup.rows.add(index + 3, temperatureValueRow);
+                listAdapter.notifyItemRangeInserted(index + 1, 3);
                 changed = true;
             }
         } else {
@@ -714,7 +718,8 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
             if (temperatureRowIndex != -1) {
                 cellGroup.rows.remove(headerTemperature);
                 cellGroup.rows.remove(temperatureValueRow);
-                listAdapter.notifyItemRangeRemoved(temperatureRowIndex, 2);
+                boolean dividerRemoved = cellGroup.rows.remove(dividerLlmTemperature);
+                listAdapter.notifyItemRangeRemoved(dividerRemoved ? temperatureRowIndex - 1 : temperatureRowIndex, dividerRemoved ? 3 : 2);
                 changed = true;
             }
         }

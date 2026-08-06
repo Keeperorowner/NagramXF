@@ -9017,7 +9017,10 @@ public class ChatActivity extends BaseFragment implements
             }
         });
         bottomChannelButtonsLayout.setOnButtonsTotalWidthChanged((l, r) -> {
-            if (chatActivityEnterView == null || !chatActivityEnterView.isIOSInputStyle()) {
+            final boolean iosInputActive = chatActivityEnterView != null
+                && chatActivityEnterView.isIOSInputStyle()
+                && bottomViewsVisibilityController.getVisibility(MESSAGE_INPUT_CONTAINER) > 0.01f;
+            if (!iosInputActive) {
                 chatInputViewsContainer.setInputBubbleOffsets(l, r);
             }
         });

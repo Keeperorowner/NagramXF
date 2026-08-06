@@ -441,7 +441,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == experimentRow) {
                         textCell.setTextAndIcon(getString(R.string.Experimental), R.drawable.msg_fave, true);
                     } else if (position == cloudSyncRow) {
-                        textCell.setTextAndIcon(getString(R.string.CloudConfig), R.drawable.sync_outline_28, true);
+                        textCell.setTextAndIcon(getString(R.string.CloudConfig), R.drawable.msg_retry, true);
                     } else if (position == aboutRow) {
                         textCell.setTextAndIcon(getString(R.string.About), R.drawable.msg_info, true);
                     }

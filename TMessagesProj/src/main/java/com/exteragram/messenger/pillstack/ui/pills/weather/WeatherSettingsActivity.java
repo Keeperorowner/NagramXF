@@ -36,6 +36,7 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
 
     private int topViewRow;
     private int pillStackRow;
+    private int pillStackShadowRow;
 
     private int locationHeaderRow;
     private int useCurrentRow;
@@ -73,6 +74,7 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
         topViewRow = -1;
         pillStackRow = addRow();
 
+        pillStackShadowRow = -1;
         locationHeaderRow = -1;
         useCurrentRow = -1;
         pickLocationRow = -1;
@@ -81,6 +83,7 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
         locationActionNoticeRow = -1;
 
         if (PillStackConfig.activePills.contains(PillStackConfig.PillType.WEATHER.id)) {
+            pillStackShadowRow = addRow();
             locationHeaderRow = addRow();
             useCurrentRow = addRow();
             pickLocationRow = addRow();
@@ -209,7 +212,9 @@ public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
             int viewType = holder.getItemViewType();
             switch (viewType) {
                 case TYPE_HEADER: {
-                    ((HeaderCell) holder.itemView).setText(getString(R.string.WeatherLocation));
+                    HeaderCell headerCell = (HeaderCell) holder.itemView;
+                    headerCell.applySeparatedHeadersStyle();
+                    headerCell.setText(getString(R.string.WeatherLocation));
                     break;
                 }
                 case TYPE_TEXT: {

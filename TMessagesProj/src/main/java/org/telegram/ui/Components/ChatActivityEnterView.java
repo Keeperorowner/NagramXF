@@ -9913,13 +9913,9 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         if (doneButton != null && doneButton.getVisibility() == VISIBLE) {
             layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, doneButton.width() - dp(DEFAULT_HEIGHT)));
         }
-        if (isIOSInputStyle() && emojiButton != null) {
-            FrameLayout.LayoutParams emojiLp = (FrameLayout.LayoutParams) emojiButton.getLayoutParams();
-            if (emojiLp != null && (emojiLp.gravity & Gravity.RIGHT) == Gravity.RIGHT) {
-                layoutParams.rightMargin = Math.max(layoutParams.rightMargin, dp(49));
-            }
-        }
-        if (oldRightMargin != layoutParams.rightMargin) {
+        if (isIOSInputStyle()) {
+            updateIOSEmojiButtonLayout();
+        } else if (oldRightMargin != layoutParams.rightMargin) {
             messageEditText.setLayoutParams(layoutParams);
         }
         if (recordedAudioPanel != null) {
@@ -11234,7 +11230,14 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             openKeyboard();
             if (messageEditText != null) {
                 FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
-                layoutParams.rightMargin = dp(4);
+                int rightMargin = dp(4);
+                if (isIOSInputStyle() && emojiButton != null) {
+                    FrameLayout.LayoutParams emojiLp = (FrameLayout.LayoutParams) emojiButton.getLayoutParams();
+                    if (emojiLp != null && (emojiLp.gravity & Gravity.RIGHT) == Gravity.RIGHT) {
+                        rightMargin = dp(49);
+                    }
+                }
+                layoutParams.rightMargin = rightMargin;
                 messageEditText.setLayoutParams(layoutParams);
             }
             if (recordedAudioPanel != null) {
@@ -14082,6 +14085,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 animatingContentType = POPUP_CONTENT_BOT_KEYBOARD;
                 MessagesController.getMainSettings(currentAccount).edit().remove("closed_botkeyboard_" + getTopicKeyString()).apply();
             }
+            updateSideBubbles();
             currentPopupContentType = contentType;
 
             if (keyboardHeight <= 0) {
@@ -14273,6 +14277,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 }
                 botKeyboardViewVisible = false;
             }
+            updateSideBubbles();
             if (contentType == POPUP_CONTENT_BOT_KEYBOARD && botButtonsMessageObject != null) {
                 MessagesController.getMainSettings(currentAccount).edit().putInt("closed_botkeyboard_" + getTopicKeyString(), botButtonsMessageObject.getId()).apply();
             }
@@ -16185,6 +16190,20 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         updateSideBubbles();
     }
 
+    private int getIOSSendBubbleWidth() {
+        int sendWidth = dp(DEFAULT_HEIGHT);
+        final boolean textSendActive = sendButton != null && sendButton.starsPrice <= 0
+            && messageEditText != null && messageEditText.getText() != null
+            && !TextUtils.isEmpty(messageEditText.getText().toString().trim());
+        if (textSendActive && sendButton != null) {
+            sendWidth = Math.max(sendWidth, sendButton.width() - dp(12));
+        }
+        if (slowModeButton != null && slowModeButton.getVisibility() == VISIBLE) {
+            sendWidth = Math.max(sendWidth, slowModeButton.getMeasuredWidth());
+        }
+        return sendWidth;
+    }
+
     public void updateInputBubbles(final ChatInputViewsContainer container) {
         if (attachBubble == null || sendButtonContainer == null) {
             return;
@@ -16193,13 +16212,12 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             attachBubble.post(this::updateSideBubbles);
             return;
         }
-        container.getLocationInWindow(containerLoc);
-        attachBubble.getLocationInWindow(tmpLoc);
-        final int left = tmpLoc[0] - containerLoc[0];
+        final int islandPad = dp(7);
+        final int left = (int) ((attachBubble.getLeft() + attachBubble.getTranslationX()) - container.getLeft()) + islandPad;
         container.setLeftBubbleBounds(left, left + attachBubble.getWidth());
-        sendButtonContainer.getLocationInWindow(tmpLoc);
-        final int right = tmpLoc[0] - containerLoc[0] + sendButtonContainer.getWidth();
-        int sendWidth = sendButton != null ? Math.max(dp(DEFAULT_HEIGHT), sendButton.width() - dp(12)) : dp(DEFAULT_HEIGHT);
+        final int sendWidth = getIOSSendBubbleWidth();
+        final int right = (int) ((sendButtonContainer.getLeft() + sendButtonContainer.getTranslationX()) - container.getLeft())
+            + islandPad + sendButtonContainer.getWidth();
         container.setRightBubbleBounds(right - sendWidth, right);
     }
 
@@ -16211,12 +16229,36 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             attachBubble.post(this::updateSideBubbles);
             return;
         }
-        final int sendWidth = sendButton != null ? Math.max(dp(DEFAULT_HEIGHT), sendButton.width() - dp(12)) : dp(DEFAULT_HEIGHT);
+        final int sendWidth = getIOSSendBubbleWidth();
         container.setInputBubbleOffsets(
             Math.round(dp(50) * progress),
             Math.round((dp(50) + Math.max(0, sendWidth - dp(DEFAULT_HEIGHT))) * progress));
         updateInputBubbles(container);
         container.setSideBubblesAlpha((int) (progress * 255));
+        updateIOSEmojiButtonLayout();
+    }
+
+    private void updateIOSEmojiButtonLayout() {
+        if (messageEditText == null || !isIOSInputStyle() || emojiButton == null) {
+            return;
+        }
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) messageEditText.getLayoutParams();
+        FrameLayout.LayoutParams emojiLp = (FrameLayout.LayoutParams) emojiButton.getLayoutParams();
+        if (emojiLp == null || (emojiLp.gravity & Gravity.RIGHT) != Gravity.RIGHT) {
+            return;
+        }
+        final int extra = Math.max(0, getIOSSendBubbleWidth() - dp(DEFAULT_HEIGHT));
+        final int emojiRight = dp(3);
+        if (emojiLp.rightMargin != emojiRight) {
+            emojiLp.rightMargin = emojiRight;
+            emojiButton.setLayoutParams(emojiLp);
+        }
+        emojiButton.setTranslationX(-extra);
+        final int editRight = dp(49) + extra;
+        if (layoutParams.rightMargin != editRight) {
+            layoutParams.rightMargin = editRight;
+            messageEditText.setLayoutParams(layoutParams);
+        }
     }
 
     private void updateSideBubbles() {
@@ -16227,9 +16269,16 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
         if (attachButton != null && isIOSInputStyle() && recordedPanelShown) {
             attachButton.setAlpha(0.0f);
         }
-        if (!isIOSInputStyle() || recordedPanelShown) {
+        if (!isIOSInputStyle()) {
+            return;
+        }
+        if (recordedPanelShown) {
             updateBubbleOffsetsAndPositions(parentFragment.chatInputViewsContainer, 0f);
         } else if (!recordingAudioVideo) {
+            if (bubblesProgress <= 0f) {
+                parentFragment.chatInputViewsContainer.setSideBubblesAlpha(0);
+                return;
+            }
             updateBubbleOffsetsAndPositions(parentFragment.chatInputViewsContainer, bubblesProgress);
         }
     }
