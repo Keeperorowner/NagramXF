@@ -63,7 +63,6 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell forceOpenChatsDividerRow = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell forceOpenChatsRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsForceOpenChats", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell forceOpenChatsInfoRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsForceOpenChatsDesc", CellGroup.ITEM_TYPE_TEXT, false));
-    private final AbstractConfigCell shadowRow = cellGroup.appendCell(new ConfigCellDivider());
 
     public MainTabsCustomizeActivity() {
         addRowsToMap(cellGroup);

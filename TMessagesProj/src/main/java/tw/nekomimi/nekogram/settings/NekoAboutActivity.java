@@ -188,7 +188,7 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
             Browser.openUrl(getParentActivity(), "tg://update");
             return Unit.INSTANCE;
         });
-        builder.addItem(getString(R.string.AutoCheckUpdateSwitch) + " - " + getUpdateChannelDetail(), R.drawable.sync_outline_28, (it) -> {
+        builder.addItem(getString(R.string.AutoCheckUpdateSwitch) + " - " + getUpdateChannelDetail(), R.drawable.msg_channel, (it) -> {
             showUpdateChannelDialog();
             return Unit.INSTANCE;
         });

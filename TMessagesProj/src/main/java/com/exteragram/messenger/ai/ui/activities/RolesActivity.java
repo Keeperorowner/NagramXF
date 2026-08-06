@@ -36,6 +36,7 @@ public class RolesActivity extends BaseNekoSettingsActivity {
     private int suggestedHeaderRow;
     private int suggestedStartRow;
     private int suggestedEndRow;
+    private int suggestedShadowRow;
     private int customHeaderRow;
     private int customStartRow;
     private int customEndRow;
@@ -160,11 +161,13 @@ public class RolesActivity extends BaseNekoSettingsActivity {
         rowCount += suggestedRoles.size();
         suggestedEndRow = rowCount;
         if (!customRoles.isEmpty()) {
+            suggestedShadowRow = rowCount++;
             customHeaderRow = rowCount++;
             customStartRow = rowCount;
             rowCount += customRoles.size();
             customEndRow = rowCount;
         } else {
+            suggestedShadowRow = -1;
             customHeaderRow = -1;
             customStartRow = -1;
             customEndRow = -1;
@@ -210,6 +213,7 @@ public class RolesActivity extends BaseNekoSettingsActivity {
                 }
             } else if (type == TYPE_HEADER) {
                 HeaderCell cell = (HeaderCell) holder.itemView;
+                cell.applySeparatedHeadersStyle();
                 if (position == suggestedHeaderRow) {
                     cell.setText(LocaleController.getString(R.string.AIChatSuggestedRoles));
                 } else if (position == customHeaderRow) {
@@ -221,6 +225,7 @@ public class RolesActivity extends BaseNekoSettingsActivity {
         @Override
         public int getItemViewType(int position) {
             if (position == suggestedHeaderRow || position == customHeaderRow) return TYPE_HEADER;
+            if (position == suggestedShadowRow) return TYPE_SHADOW;
             return VIEW_TYPE_RADIO;
         }
 
