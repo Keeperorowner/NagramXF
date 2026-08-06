@@ -153,6 +153,11 @@
     <string name="GhostReadMessage">標記已讀</string>
     <string name="GhostModeExcludeRead">排除已讀</string>
     <string name="GhostModeExcludeTyping">排除輸入</string>
+    <string name="GhostModeExceptionDefault">預設</string>
+    <string name="GhostModeExceptionForceBlockRead">強制阻斷已讀</string>
+    <string name="GhostModeExceptionForceAllowRead">強制放行已讀</string>
+    <string name="GhostModeExceptionForceBlockTyping">強制阻斷輸入</string>
+    <string name="GhostModeExceptionForceAllowTyping">強制放行輸入</string>
     <string name="SendWithSound">有聲傳送</string>
     <string name="PerformanceClass">裝置效能等級</string>
     <string name="PerformanceClassHigh">高</string>

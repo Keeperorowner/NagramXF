@@ -12,17 +12,18 @@ package com.radolyn.ayugram.database;
 import androidx.room.Database;
 import androidx.room.RoomDatabase;
 
+import com.radolyn.ayugram.database.dao.DeletedDialogDao;
 import com.radolyn.ayugram.database.dao.DeletedMessageDao;
 import com.radolyn.ayugram.database.dao.EditedMessageDao;
-import com.radolyn.ayugram.database.dao.LastSeenDao;
 import com.radolyn.ayugram.database.dao.RegexFilterDao;
 import com.radolyn.ayugram.database.dao.SpyDao;
+import com.radolyn.ayugram.database.entities.DeletedDialog;
 import com.radolyn.ayugram.database.entities.DeletedMessage;
 import com.radolyn.ayugram.database.entities.DeletedMessageReaction;
 import com.radolyn.ayugram.database.entities.EditedMessage;
-import com.radolyn.ayugram.database.entities.LastSeenEntity;
 import com.radolyn.ayugram.database.entities.RegexFilter;
 import com.radolyn.ayugram.database.entities.RegexFilterGlobalExclusion;
+import com.radolyn.ayugram.database.entities.SpyLastSeen;
 import com.radolyn.ayugram.database.entities.SpyMessageContentsRead;
 import com.radolyn.ayugram.database.entities.SpyMessageRead;
 
@@ -30,18 +31,21 @@ import com.radolyn.ayugram.database.entities.SpyMessageRead;
         EditedMessage.class,
         DeletedMessage.class,
         DeletedMessageReaction.class,
-        LastSeenEntity.class,
+        DeletedDialog.class,
+        SpyLastSeen.class,
         SpyMessageRead.class,
         SpyMessageContentsRead.class,
         RegexFilter.class,
         RegexFilterGlobalExclusion.class
-}, version = 30)
+}, version = AyuDatabase.VERSION)
 public abstract class AyuDatabase extends RoomDatabase {
+    public static final int VERSION = 34;
+
     public abstract EditedMessageDao editedMessageDao();
 
     public abstract DeletedMessageDao deletedMessageDao();
 
-    public abstract LastSeenDao lastSeenDao();
+    public abstract DeletedDialogDao deletedDialogDao();
 
     public abstract SpyDao spyDao();
 

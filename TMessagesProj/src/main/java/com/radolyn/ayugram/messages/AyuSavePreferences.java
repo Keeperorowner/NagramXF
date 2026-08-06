@@ -17,6 +17,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 
+import me.vkryl.core.BitwiseUtils;
+
 import tw.nekomimi.nekogram.NekoConfig;
 
 import java.util.Map;
@@ -62,9 +64,32 @@ public class AyuSavePreferences {
         }
 
         this.dialogId = msg.dialog_id;
-        this.topicId = MessageObject.getTopicId(accountId, msg, false);
+        this.topicId = resolveTopicId(accountId, msg);
         this.messageId = msg.id;
         this.requestCatchTime = (int) (System.currentTimeMillis() / 1000);
+    }
+
+    /**
+     * 解析消息归属的话题 id。
+     *
+     * <p>必须显式告知对话类型：monoForum（频道私信）的归属信息在 {@code saved_peer_id}，
+     * 不带该标记时 {@link MessageObject#getTopicId} 会直接返回 0，导致这些消息全部
+     * 存到 topicId=0 下、读取时按错误的列去匹配而永远查不出来。
+     */
+    private static long resolveTopicId(int accountId, TLRPC.Message msg) {
+        long dialogId = msg.dialog_id != 0 ? msg.dialog_id : MessageObject.getDialogId(msg);
+        MessagesController messagesController = MessagesController.getInstance(accountId);
+        int forumFlags = 0;
+        try {
+            if (messagesController.isMonoForum(dialogId)) {
+                forumFlags = BitwiseUtils.setFlag(forumFlags, MessagesStorage.FORUM_TYPE_DIRECT, true);
+            } else if (messagesController.isForum(dialogId)) {
+                forumFlags = BitwiseUtils.setFlag(forumFlags, MessagesStorage.FORUM_TYPE_CHAT, true);
+            }
+        } catch (Exception ignored) {
+            // 拿不到对话信息时退回不带标记的解析
+        }
+        return MessageObject.getTopicId(accountId, msg, forumFlags);
     }
 
     public static boolean saveDeletedMessageFor(int accountId, long dialogId, MessageObject messageObject) {

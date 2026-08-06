@@ -328,5 +328,10 @@
     <string name="NowPlayingNotWhitelistedInfo">Ваша карточка видна только на этом устройстве. Карточки суппортеров из белого списка видны всем.</string>
     <string name="NowPlayingBindSuccess">Привязано</string>
     <string name="AyuSpySettings">Настройки слежки</string>
+    <string name="AyuStatsHeader">Статистика</string>
+    <string name="AyuStatsDeletedMessages">Удалённые сообщения</string>
+    <string name="AyuStatsDeletedDialogs">Удалённые диалоги</string>
+    <string name="AyuStatsReadMarks">Отметки о прочтении</string>
+    <string name="AyuStatsLastSeen">Записи о последнем посещении</string>
     <string name="AyuMomentsCustomHeader">Своё</string>
 </resources>

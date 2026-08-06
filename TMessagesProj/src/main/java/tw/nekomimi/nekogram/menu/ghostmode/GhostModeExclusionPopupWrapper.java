@@ -33,35 +33,69 @@ public class GhostModeExclusionPopupWrapper {
         }
 
         defaultItem = ActionBarMenuItem.addItem(windowLayout, 0, getString(R.string.Default), true, resourcesProvider);
-        defaultItem.setChecked(!AyuGhostPreferences.getGhostModeTypingExclusion(chatId) && !AyuGhostPreferences.getGhostModeReadExclusion(chatId));
         defaultItem.setOnClickListener(view -> {
-            AyuGhostPreferences.setGhostModeTypingExclusion(chatId, false);
-            AyuGhostPreferences.setGhostModeReadExclusion(chatId, false);
+            AyuGhostPreferences.setReadException(chatId, AyuGhostPreferences.TYPE_DEFAULT);
+            AyuGhostPreferences.setTypingException(chatId, AyuGhostPreferences.TYPE_DEFAULT);
             updateItems();
         });
 
-        readExclusionItem = ActionBarMenuItem.addItem(windowLayout, 0, getString(R.string.GhostModeExcludeRead), true, resourcesProvider);
-        readExclusionItem.setChecked(AyuGhostPreferences.getGhostModeReadExclusion(chatId));
+        readExclusionItem = ActionBarMenuItem.addItem(windowLayout, 0, getReadLabel(AyuGhostPreferences.getReadException(chatId)), true, resourcesProvider);
         readExclusionItem.setOnClickListener(view -> {
-            AyuGhostPreferences.setGhostModeReadExclusion(chatId, !AyuGhostPreferences.getGhostModeReadExclusion(chatId));
+            int next = nextType(AyuGhostPreferences.getReadException(chatId));
+            AyuGhostPreferences.setReadException(chatId, next);
             updateItems();
         });
 
-        typingExclusionItem = ActionBarMenuItem.addItem(windowLayout, 0, getString(R.string.GhostModeExcludeTyping), true, resourcesProvider);
-        typingExclusionItem.setChecked(AyuGhostPreferences.getGhostModeTypingExclusion(chatId));
+        typingExclusionItem = ActionBarMenuItem.addItem(windowLayout, 0, getTypingLabel(AyuGhostPreferences.getTypingException(chatId)), true, resourcesProvider);
         typingExclusionItem.setOnClickListener(view -> {
-            AyuGhostPreferences.setGhostModeTypingExclusion(chatId, !AyuGhostPreferences.getGhostModeTypingExclusion(chatId));
+            int next = nextType(AyuGhostPreferences.getTypingException(chatId));
+            AyuGhostPreferences.setTypingException(chatId, next);
             updateItems();
         });
+
+        updateItems();
     }
 
     public void updateItems() {
-        boolean readExcluded = AyuGhostPreferences.getGhostModeReadExclusion(chatId);
-        boolean typingExcluded = AyuGhostPreferences.getGhostModeTypingExclusion(chatId);
+        int readType = AyuGhostPreferences.getReadException(chatId);
+        int typingType = AyuGhostPreferences.getTypingException(chatId);
 
-        defaultItem.setChecked(!typingExcluded && !readExcluded);
-        readExclusionItem.setChecked(readExcluded);
-        typingExclusionItem.setChecked(typingExcluded);
+        defaultItem.setChecked(readType == AyuGhostPreferences.TYPE_DEFAULT && typingType == AyuGhostPreferences.TYPE_DEFAULT);
 
+        readExclusionItem.setText(getReadLabel(readType));
+        readExclusionItem.setChecked(readType != AyuGhostPreferences.TYPE_DEFAULT);
+
+        typingExclusionItem.setText(getTypingLabel(typingType));
+        typingExclusionItem.setChecked(typingType != AyuGhostPreferences.TYPE_DEFAULT);
+    }
+
+    private static int nextType(int type) {
+        if (type == AyuGhostPreferences.TYPE_DEFAULT) {
+            return AyuGhostPreferences.TYPE_FORCE_BLOCK;
+        }
+        if (type == AyuGhostPreferences.TYPE_FORCE_BLOCK) {
+            return AyuGhostPreferences.TYPE_FORCE_ALLOW;
+        }
+        return AyuGhostPreferences.TYPE_DEFAULT;
+    }
+
+    private static String getReadLabel(int type) {
+        if (type == AyuGhostPreferences.TYPE_FORCE_BLOCK) {
+            return getString(R.string.GhostModeExceptionForceBlockRead);
+        }
+        if (type == AyuGhostPreferences.TYPE_FORCE_ALLOW) {
+            return getString(R.string.GhostModeExceptionForceAllowRead);
+        }
+        return getString(R.string.GhostModeExcludeRead) + ": " + getString(R.string.GhostModeExceptionDefault);
+    }
+
+    private static String getTypingLabel(int type) {
+        if (type == AyuGhostPreferences.TYPE_FORCE_BLOCK) {
+            return getString(R.string.GhostModeExceptionForceBlockTyping);
+        }
+        if (type == AyuGhostPreferences.TYPE_FORCE_ALLOW) {
+            return getString(R.string.GhostModeExceptionForceAllowTyping);
+        }
+        return getString(R.string.GhostModeExcludeTyping) + ": " + getString(R.string.GhostModeExceptionDefault);
     }
 }

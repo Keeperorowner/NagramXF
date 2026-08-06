@@ -1,7 +1,8 @@
 package com.radolyn.ayugram.utils;
 
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import com.radolyn.ayugram.AyuWorker;
+import com.radolyn.ayugram.utils.network.TLRPCWrappedBypass;
 
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -80,14 +81,13 @@ public class AyuGhostUtils {
         }
 
         AyuState.setAllowReadPacket(true, 1);
-        ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+        ConnectionsManager.getInstance(account).sendRequest(new TLRPCWrappedBypass(req), (response, error) -> {
             if (error == null) {
                 if (response instanceof TLRPC.TL_messages_affectedMessages res) {
                     MessagesController.getInstance(account).processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
                 }
                 if (internal) FileLog.d("GhostMode: Read-after-send request completed.");
-                // Go offline after sending
-                if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account) && !internal) {
+                if (AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline() && !internal) {
                     AyuWorker.setOnline(account, true);
                 }
             }
@@ -137,14 +137,13 @@ public class AyuGhostUtils {
         }
 
         AyuState.setAllowReadPacket(true, 1);
-        ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> {
+        ConnectionsManager.getInstance(account).sendRequest(new TLRPCWrappedBypass(req), (response, error) -> {
             if (error == null) {
                 if (response instanceof TLRPC.TL_messages_affectedMessages res) {
                     messagesController.processNewDifferenceParams(-1, res.pts, -1, res.pts_count);
                 }
                 if (internal) FileLog.d("GhostMode: Read-after-send request completed.");
-                // Go offline after sending
-                if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account) && !internal) {
+                if (AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline() && !internal) {
                     AyuWorker.setOnline(account, true);
                 }
             }
@@ -159,7 +158,7 @@ public class AyuGhostUtils {
         TL_account.updateStatus offlineRequest = new TL_account.updateStatus();
         offlineRequest.offline = offline;
 
-        ConnectionsManager.getInstance(account).sendRequest(offlineRequest, (response, error) -> FileLog.d("GhostMode: Status request completed."));
+        ConnectionsManager.getInstance(account).sendRequest(new TLRPCWrappedBypass(offlineRequest), (response, error) -> FileLog.d("GhostMode: Status request completed."));
     }
 
 
@@ -169,84 +168,112 @@ public class AyuGhostUtils {
 
 
     public static InterceptResult interceptRequest(TLObject object, RequestDelegate onCompleteOrig, int account) {
-        Long dialogId = extractDialogId(object);
-        boolean readExcluded = dialogId != null && AyuGhostPreferences.getGhostModeReadExclusion(dialogId);
-        boolean typingExcluded = dialogId != null && AyuGhostPreferences.getGhostModeTypingExclusion(dialogId);
+        if (object instanceof TLRPCWrappedBypass) {
+            return InterceptResult.Proceed(onCompleteOrig);
+        }
 
-        // Block typing if disabled
-        if (!AyuGhostConfig.isSendUploadProgress(account) && (object instanceof TLRPC.TL_messages_setTyping || object instanceof TLRPC.TL_messages_setEncryptedTyping)) {
-            if (!typingExcluded) {
+        Long dialogId = extractDialogId(object);
+        int readType = dialogId != null ? AyuGhostPreferences.getReadException(dialogId) : AyuGhostPreferences.TYPE_DEFAULT;
+        int typingType = dialogId != null ? AyuGhostPreferences.getTypingException(dialogId) : AyuGhostPreferences.TYPE_DEFAULT;
+
+        if (object instanceof TLRPC.TL_messages_setTyping || object instanceof TLRPC.TL_messages_setEncryptedTyping) {
+            boolean block;
+            if (!AyuGhostController.getInstance(account).isSendUploadProgress()) {
+                block = AyuGhostPreferences.shouldBlockWhenGlobalDisabled(typingType);
+            } else {
+                block = AyuGhostPreferences.shouldBlockWhenGlobalEnabled(typingType);
+            }
+            if (block) {
                 FileLog.d("GhostMode: Blocking typing status request.");
                 return InterceptResult.Blocked(onCompleteOrig);
             }
         }
 
-        // Block read receipts if disabled
-        if (!AyuGhostConfig.isSendReadMessagePackets(account) && (isReadMessageRequest(object))) {
-            if (!AyuState.getAllowReadPacket() && !readExcluded) {
+        if (isReadMessageRequest(object)) {
+            boolean block;
+            if (!AyuGhostController.getInstance(account).isSendReadMessagePackets()) {
+                block = !AyuState.getAllowReadPacket() && AyuGhostPreferences.shouldBlockWhenGlobalDisabled(readType);
+            } else {
+                block = AyuGhostPreferences.shouldBlockWhenGlobalEnabled(readType);
+            }
+            if (block) {
                 FileLog.d("GhostMode: Blocking read status request and sending fake response.");
                 sendFakeReadResponse(onCompleteOrig);
                 return InterceptResult.Blocked(onCompleteOrig);
             }
         }
-        if (!AyuGhostConfig.isSendReadStoriesPackets(account) && isReadStoriesRequest(object)) {
-            if (!readExcluded) {
+        if (isReadStoriesRequest(object)) {
+            boolean block;
+            if (!AyuGhostController.getInstance(account).isSendReadStoriesPackets()) {
+                block = AyuGhostPreferences.shouldBlockWhenGlobalDisabled(readType);
+            } else {
+                block = AyuGhostPreferences.shouldBlockWhenGlobalEnabled(readType);
+            }
+            if (block) {
                 FileLog.d("GhostMode: Blocking story read request.");
                 return InterceptResult.Blocked(onCompleteOrig);
             }
         }
 
-        // Force offline if online status sending disabled
-        if (!AyuGhostConfig.isSendOnlinePackets(account) && object instanceof TL_account.updateStatus updateStatus) {
+        if (!AyuGhostController.getInstance(account).isSendOnlinePackets() && object instanceof TL_account.updateStatus updateStatus) {
             FileLog.d("GhostMode: Forcing offline status in updateStatus request.");
             updateStatus.offline = true;
         }
 
-        // Handle Mark read after sending
-        handleReadAfterSend(object, account);
-
-        // Go offline after sending
-        RequestDelegate effectiveOnComplete = handleOfflineAfterSend(object, onCompleteOrig, account);
+        RequestDelegate effectiveOnComplete = wrapOnComplete(object, onCompleteOrig, account);
 
         return InterceptResult.Proceed(effectiveOnComplete);
     }
 
-    private static void handleReadAfterSend(TLObject object, int account) {
-        if (AyuGhostConfig.isMarkReadAfterSend(account) && !AyuGhostConfig.isSendReadMessagePackets(account)) {
-            TLRPC.InputPeer peer = extractPeerFromSendObject(object);
+    private static RequestDelegate wrapOnComplete(TLObject object, RequestDelegate onCompleteOrig, int account) {
+        boolean markReadAfter = shouldHandleReadAfterSend(object, account);
+        boolean goOfflineAfter = shouldHandleOfflineAfterSend(object, account);
+        if (!markReadAfter && !goOfflineAfter) {
+            return onCompleteOrig;
+        }
 
-            if (peer != null) {
+        TLRPC.InputPeer peer = extractPeerFromSendObject(object);
+        return (response, error) -> {
+            if (onCompleteOrig != null) {
+                Utilities.stageQueue.postRunnable(() -> onCompleteOrig.run(response, error));
+            }
+            if (markReadAfter && peer != null) {
                 var dialogId = AyuGhostUtils.getDialogId(peer);
-                if (AyuGhostPreferences.getGhostModeReadExclusion(dialogId)) {
-                    return;
-                }
                 MessagesStorage.getInstance(account).getStorageQueue().postRunnable(() ->
-                    MessagesStorage.getInstance(account).getDialogMaxMessageId(dialogId, maxId ->
-                        markReadOnServer(account, maxId, peer, true)
-                    )
+                        MessagesStorage.getInstance(account).getDialogMaxMessageId(dialogId, maxId ->
+                                markReadOnServer(account, maxId, peer, true)
+                        )
                 );
             }
-        }
-    }
-
-    private static RequestDelegate handleOfflineAfterSend(TLObject object, RequestDelegate onCompleteOrig, int account) {
-        if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account) && isMessageSendRequest(object)) {
-            TLRPC.InputPeer peer = extractPeerFromSendObject(object);
-            if (peer != null && AyuGhostPreferences.getGhostModeTypingExclusion(getDialogId(peer))) {
-                return onCompleteOrig;
-            }
-            FileLog.d("GhostMode: Wrapping callback for offline-after-send via AyuWorker.");
-
-            return (response, error) -> {
-                if (onCompleteOrig != null) {
-                    Utilities.stageQueue.postRunnable(() -> onCompleteOrig.run(response, error));
-                }
-
+            if (goOfflineAfter) {
                 FileLog.d("GhostMode: Triggering AyuWorker periodic offline schedule.");
                 AyuWorker.setOnline(account, true);
-            };
+            }
+        };
+    }
+
+    private static boolean shouldHandleReadAfterSend(TLObject object, int account) {
+        return AyuGhostController.getInstance(account).isMarkReadAfterSend()
+                && !AyuGhostController.getInstance(account).isSendReadMessagePackets()
+                && isAfterActionRequest(object);
+    }
+
+    private static boolean shouldHandleOfflineAfterSend(TLObject object, int account) {
+        if (!AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline() || !isMessageSendRequest(object)) {
+            return false;
         }
-        return onCompleteOrig;
+        TLRPC.InputPeer peer = extractPeerFromSendObject(object);
+        if (peer != null && AyuGhostPreferences.getTypingException(getDialogId(peer)) == AyuGhostPreferences.TYPE_FORCE_ALLOW) {
+            return false;
+        }
+        FileLog.d("GhostMode: Wrapping callback for offline-after-send via AyuWorker.");
+        return true;
+    }
+
+    private static boolean isAfterActionRequest(TLObject object) {
+        return isMessageSendRequest(object)
+                || object instanceof TLRPC.TL_messages_sendReaction
+                || object instanceof TLRPC.TL_messages_sendVote;
     }
 
     private static Long extractDialogId(TLObject object) {
@@ -266,6 +293,23 @@ public class AyuGhostUtils {
             return getDialogId(obj.peer);
         } else if (object instanceof TLRPC.TL_messages_sendMultiMedia obj) {
             return getDialogId(obj.peer);
+        } else if (object instanceof TLRPC.TL_messages_forwardMessages obj) {
+            return getDialogId(obj.to_peer);
+        } else if (object instanceof TLRPC.TL_messages_sendInlineBotResult obj) {
+            return getDialogId(obj.peer);
+        } else if (object instanceof TLRPC.TL_messages_sendReaction obj) {
+            return getDialogId(obj.peer);
+        } else if (object instanceof TLRPC.TL_messages_sendVote obj) {
+            return getDialogId(obj.peer);
+        } else if (object instanceof TLRPC.TL_messages_editMessage obj) {
+            return getDialogId(obj.peer);
+        } else if (object instanceof TLRPC.TL_messages_readSavedHistory obj) {
+            return getDialogId(obj.peer);
+        } else if (object instanceof TLRPC.TL_messages_markDialogUnread obj) {
+            if (obj.peer instanceof TLRPC.TL_inputDialogPeer dialogPeer) {
+                return getDialogId(dialogPeer.peer);
+            }
+            return null;
         } else if (object instanceof TL_stories.TL_stories_readStories obj) {
             return getDialogId(obj.peer);
         } else if (object instanceof TL_stories.TL_stories_incrementStoryViews obj) {
@@ -302,6 +346,16 @@ public class AyuGhostUtils {
             return ((TLRPC.TL_messages_sendMedia) object).peer;
         } else if (object instanceof TLRPC.TL_messages_sendMultiMedia) {
             return ((TLRPC.TL_messages_sendMultiMedia) object).peer;
+        } else if (object instanceof TLRPC.TL_messages_forwardMessages) {
+            return ((TLRPC.TL_messages_forwardMessages) object).to_peer;
+        } else if (object instanceof TLRPC.TL_messages_sendInlineBotResult) {
+            return ((TLRPC.TL_messages_sendInlineBotResult) object).peer;
+        } else if (object instanceof TLRPC.TL_messages_sendReaction) {
+            return ((TLRPC.TL_messages_sendReaction) object).peer;
+        } else if (object instanceof TLRPC.TL_messages_sendVote) {
+            return ((TLRPC.TL_messages_sendVote) object).peer;
+        } else if (object instanceof TLRPC.TL_messages_editMessage) {
+            return ((TLRPC.TL_messages_editMessage) object).peer;
         }
         return null;
     }
@@ -313,6 +367,8 @@ public class AyuGhostUtils {
                 object instanceof TLRPC.TL_messages_readMessageContents ||
                 object instanceof TLRPC.TL_channels_readMessageContents ||
                 object instanceof TLRPC.TL_channels_readHistory ||
+                object instanceof TLRPC.TL_messages_readSavedHistory ||
+                object instanceof TLRPC.TL_messages_markDialogUnread ||
                 object instanceof TLRPC.TL_messages_getMessagesViews obj && obj.increment;
     }
 
@@ -324,7 +380,12 @@ public class AyuGhostUtils {
     private static boolean isMessageSendRequest(TLObject object) {
         return object instanceof TLRPC.TL_messages_sendMessage ||
                 object instanceof TLRPC.TL_messages_sendMedia ||
-                object instanceof TLRPC.TL_messages_sendMultiMedia;
+                object instanceof TLRPC.TL_messages_sendMultiMedia ||
+                object instanceof TLRPC.TL_messages_forwardMessages ||
+                object instanceof TLRPC.TL_messages_sendInlineBotResult ||
+                object instanceof TLRPC.TL_messages_sendReaction ||
+                object instanceof TLRPC.TL_messages_sendVote ||
+                object instanceof TLRPC.TL_messages_editMessage;
     }
 
     public record InterceptResult(boolean blockRequest, RequestDelegate effectiveOnComplete) {
@@ -339,10 +400,10 @@ public class AyuGhostUtils {
         }
 
     public static boolean maybeSuggestGhostBeforeStory(android.content.Context context, int account, long dialogId, Runnable onProceed) {
-        if (!AyuGhostConfig.isSuggestGhostModeBeforeViewingStory(account)) {
+        if (!AyuGhostController.getInstance(account).isSuggestGhostModeBeforeViewingStory()) {
             return false;
         }
-        if (AyuGhostConfig.isGhostModeActive(account)) {
+        if (AyuGhostController.getInstance(account).isGhostModeActive()) {
             return false;
         }
         long selfUserId = UserConfig.getInstance(account).getClientUserId();
@@ -361,7 +422,7 @@ public class AyuGhostUtils {
         dlg.setTitle(LocaleController.getString(R.string.SuggestGhostModeBeforeStoryTitle));
         dlg.setMessage(LocaleController.getString(R.string.SuggestGhostModeBeforeStoryMessage));
         dlg.setPositiveButton(LocaleController.getString(R.string.SuggestGhostModeBeforeStoryEnable), (d, w) -> {
-            AyuGhostConfig.setGhostMode(account, true);
+            AyuGhostController.getInstance(account).setGhostMode(true);
             if (onProceed != null) {
                 onProceed.run();
             }

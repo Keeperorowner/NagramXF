@@ -308,7 +308,7 @@ import tw.nekomimi.nekogram.utils.BrowserUtils;
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import org.telegram.ui.web.WebBrowserSettings;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.helper.DrawerMenuHelper;
 import xyz.nextalone.nagram.helper.MainMenuActions;
@@ -9712,6 +9712,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         getMessagesController().reportSpam(did, u, null, null, false);
                     }
                     if (delete) {
+                        com.radolyn.ayugram.utils.AyuState.setAllowDeleteDialogs(true, 1);
                         getMessagesController().deleteDialog(did, 0, true);
                     }
                     getMessagesController().blockPeer(did);
@@ -9987,6 +9988,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void performDeleteOrClearDialogAction(int action, long selectedDialog, TLRPC.Chat chat, boolean isBot, boolean revoke) {
+        com.radolyn.ayugram.utils.AyuState.setAllowDeleteDialogs(true, 1);
         if (action == clear) {
             getMessagesController().deleteDialog(selectedDialog, 1, revoke);
         } else {
@@ -11104,6 +11106,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
 
             Runnable deleteRunnable = () -> {
+                com.radolyn.ayugram.utils.AyuState.setAllowDeleteDialogs(true, 1);
                 if (chat != null) {
                     if (ChatObject.isNotInChat(chat)) {
                         getMessagesController().deleteDialog(dialogId, 0, revoke);
@@ -12399,7 +12402,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         sendPopupLayout2.setupRadialSelectors(getThemedColor(Theme.key_dialogButtonSelector));
 
         ActionBarMenuSubItem sendWithoutSound = new ActionBarMenuSubItem(parentActivity, true, true, resourcesProvider);
-        boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
+        boolean sendWithoutSoundNax = AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound();
         sendWithoutSound.setTextAndIcon(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
         sendWithoutSound.setMinimumWidth(dp(196));
         sendWithoutSound.setOnClickListener(v -> {

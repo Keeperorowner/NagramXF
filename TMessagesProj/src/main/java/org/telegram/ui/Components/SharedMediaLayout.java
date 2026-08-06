@@ -9121,6 +9121,8 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     msg.quick_reply_shortcut_id = omsg.quick_reply_shortcut_id;
                     msg.effect = omsg.effect;
                     msg.noforwards = omsg.noforwards;
+                    // AyuGram: 已删除标记必须一起复制，否则媒体查看器里会丢掉转发/保存限制
+                    msg.ayuDeleted = omsg.ayuDeleted;
                     msg.invert_media = omsg.invert_media;
                     msg.offline = omsg.offline;
                     msg.factcheck = omsg.factcheck;

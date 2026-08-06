@@ -245,7 +245,7 @@ import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.ui.BottomBuilder;
 import tw.nekomimi.nekogram.utils.AlertUtil;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 
 import com.exteragram.messenger.ai.AiConfig;
@@ -3137,7 +3137,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                     }
                                     delegate.toggleVideoRecordingPause();
                                     AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, 1, payStars -> {
-                                        sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, payStars, false);
+                                        sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, payStars, false);
                                     });
                                     return true;
                                 }
@@ -3166,7 +3166,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                         }
                                     }
                                     AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, 1, payStars -> {
-                                        sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, payStars, false);
+                                        sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, payStars, false);
                                     });
                                     return true;
                                 }
@@ -3265,7 +3265,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                     }
                                     delegate.toggleVideoRecordingPause();
                                     AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, 1, payStars -> {
-                                        sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, payStars, false);
+                                        sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, payStars, false);
                                     });
                                     return true;
                                 }
@@ -3286,7 +3286,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                         slideText.setEnabled(false);
                                     }
                                     AlertsCreator.ensurePaidMessageConfirmation(currentAccount, dialog_id, 1, payStars -> {
-                                        sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, payStars, false);
+                                        sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, payStars, false);
                                     });
                                     return true;
                                 }
@@ -5147,7 +5147,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         if (isInScheduleMode() || parentFragment != null && parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES || animatorEphemeralMessageVisibility.getValue()) {
             return false;
         }
-        boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
+        boolean sendWithoutSoundNax = AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound();
         if (isStories || (messageEditText == null || TextUtils.isEmpty(messageEditText.getText())) && parentFragment != null && parentFragment.messagePreviewParams != null && parentFragment.messagePreviewParams.forwardMessages != null && parentFragment.messagePreviewParams.forwardMessages.messages != null && !parentFragment.messagePreviewParams.forwardMessages.messages.isEmpty()) {
 
             boolean self = parentFragment != null && UserObject.isUserSelf(parentFragment.getCurrentUser());
@@ -5611,7 +5611,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 String markdownButtonStr = withoutMarkdown ? getString(R.string.SendWithMarkdown) : getString(R.string.SendWithoutMarkdown);
                 options.add(markdownButtonDrawable, markdownButtonStr, () -> {
                     sentFromPreview = System.currentTimeMillis();
-                    sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, 0, true, SendMessageInternalParams.markdown(withoutMarkdown));
+                    sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, 0, true, SendMessageInternalParams.markdown(withoutMarkdown));
                     if (!containsSendMessage && messageSendPreview != null) {
                         messageSendPreview.dismiss(true);
                         messageSendPreview = null;
@@ -5623,7 +5623,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             } else if (canSendAsDice(messageEditText.getText().toString(), parentFragment, dialog_id)) {
                 options.add(R.drawable.casino_icon, getString(R.string.SendAsEmoji), () -> {
                     sentFromPreview = System.currentTimeMillis();
-                    sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, 0, true, SendMessageInternalParams.game(false));
+                    sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, 0, true, SendMessageInternalParams.game(false));
                     if (!containsSendMessage && messageSendPreview != null) {
                         messageSendPreview.dismiss(true);
                         messageSendPreview = null;
@@ -5638,7 +5638,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 String markdownButtonStr = shouldUsePangu ? getString(R.string.SendWithPangu) : getString(R.string.SendWithoutPangu);
                 options.add(markdownButtonDrawable, markdownButtonStr, () -> {
                     sentFromPreview = System.currentTimeMillis();
-                    sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, 0, true, SendMessageInternalParams.pangu(shouldUsePangu));
+                    sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, 0, true, SendMessageInternalParams.pangu(shouldUsePangu));
                     if (!containsSendMessage && messageSendPreview != null) {
                         messageSendPreview.dismiss(true);
                         messageSendPreview = null;
@@ -8201,7 +8201,7 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             }, resourcesProvider);
             return true;
         } else {
-            return sendMessageInternal(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0, 0, true);
+            return sendMessageInternal(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0, 0, true);
         }
     }
 

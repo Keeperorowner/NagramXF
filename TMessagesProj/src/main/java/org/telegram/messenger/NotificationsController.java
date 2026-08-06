@@ -1085,10 +1085,7 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     continue;
                 }
-                if (AyuFilter.shouldHideIgnoredBlockedMessages() && (getMessagesController().blockePeers.indexOfKey(messageObject.getFromChatId()) >= 0 || AyuFilter.isCustomFilteredPeer(messageObject.getFromChatId()))) {
-                    continue;
-                }
-                if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
+                if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(messageObject)) {
                     continue;
                 }
                 // Ghost Mode: Schedule Messages — suppress notifications for our own scheduled-delivery messages.
@@ -5304,10 +5301,7 @@ public class NotificationsController extends BaseController implements Notificat
                         FileLog.d("showExtraNotifications: ["+dialogId+"] continue; topic id is not equal: topicId=" + topicId + " messageTopicId=" + messageTopicId + "; selfId=" + getUserConfig().getClientUserId());
                         continue;
                     }
-                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && (getMessagesController().blockePeers.indexOfKey(messageObject.getFromChatId()) >= 0 || AyuFilter.isCustomFilteredPeer(messageObject.getFromChatId()))) {
-                        continue;
-                    }
-                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isBlockedChannel(messageObject.getFromChatId())) {
+                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(messageObject)) {
                         continue;
                     }
                     String message = getShortStringForMessage(messageObject, senderName, preview);

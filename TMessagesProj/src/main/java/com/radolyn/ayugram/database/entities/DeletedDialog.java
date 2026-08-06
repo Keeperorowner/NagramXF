@@ -15,13 +15,20 @@ import androidx.room.PrimaryKey;
 
 @Entity(
         indices = {
-                @Index(value = {"userId", "dialogId", "messageId", "entityCreateDate"}),
-                @Index(value = {"userId", "dialogId", "messageId", "mediaPath"}),
-                @Index(value = {"userId", "entityCreateDate"}),
-                @Index(value = {"dialogId", "messageId"})
+                @Index(value = {"userId", "dialogId"}),
+                @Index(value = {"userId", "entityCreateDate"})
         }
 )
-public class EditedMessage extends AyuMessageBase {
+public class DeletedDialog {
     @PrimaryKey(autoGenerate = true)
     public long fakeId;
+
+    public long userId;
+    public long dialogId;
+    public long peerId;
+    public Integer folderId;
+    public int topMessage;
+    public int lastMessageDate;
+    public int flags;
+    public int entityCreateDate;
 }

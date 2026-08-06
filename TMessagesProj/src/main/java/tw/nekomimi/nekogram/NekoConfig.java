@@ -14,8 +14,7 @@ import android.content.SharedPreferences;
 import android.util.Base64;
 import android.util.Pair;
 
-import com.radolyn.ayugram.AyuGhostConfig;
-import com.radolyn.ayugram.utils.AyuGhostUtils;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.UserConfig;
@@ -185,46 +184,46 @@ public class NekoConfig {
 
     // --- Ghost Mode ---
     public static ConfigItem sendReadMessagePackets = ghostDelegate("sendReadMessagePackets", true,
-            () -> AyuGhostConfig.isSendReadMessagePackets(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendReadMessagePackets(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendReadMessagePackets(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendReadMessagePackets(v));
     public static ConfigItem sendReadStoriesPackets = ghostDelegate("sendReadStoriesPackets", true,
-            () -> AyuGhostConfig.isSendReadStoriesPackets(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendReadStoriesPackets(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendReadStoriesPackets(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendReadStoriesPackets(v));
     public static ConfigItem sendOnlinePackets = ghostDelegate("sendOnlinePackets", true,
-            () -> AyuGhostConfig.isSendOnlinePackets(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendOnlinePackets(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendOnlinePackets(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendOnlinePackets(v));
     public static ConfigItem sendUploadProgress = ghostDelegate("sendUploadProgress", true,
-            () -> AyuGhostConfig.isSendUploadProgress(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendUploadProgress(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendUploadProgress(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendUploadProgress(v));
     public static ConfigItem sendOfflinePacketAfterOnline = ghostDelegate("sendOfflinePacketAfterOnline", false,
-            () -> AyuGhostConfig.isSendOfflinePacketAfterOnline(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendOfflinePacketAfterOnline(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendOfflinePacketAfterOnline(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendOfflinePacketAfterOnline(v));
     public static ConfigItem markReadAfterSend = ghostDelegate("markReadAfterSend", true,
-            () -> AyuGhostConfig.isMarkReadAfterSend(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setMarkReadAfterSend(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isMarkReadAfterSend(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setMarkReadAfterSend(v));
     public static ConfigItem useScheduledMessages = ghostDelegate("useScheduledMessages", false,
-            () -> AyuGhostConfig.isUseScheduledMessages(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setUseScheduledMessages(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isUseScheduledMessages(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setUseScheduledMessages(v));
     public static ConfigItem showGhostInDrawer = addConfig("showGhostInDrawer", configTypeBool, false);
     public static ConfigItem showGhostModeStatus = addConfig("showGhostModeStatus", configTypeBool, false);
     public static ConfigItem navigationDrawerEnabled = addConfig("navigationDrawerEnabled", configTypeBool, false);
 
     // --- Locked Status ---
     public static ConfigItem sendReadMessagePacketsLocked = ghostDelegate("sendReadMessagePacketsLocked", false,
-            () -> AyuGhostConfig.isSendReadMessagePacketsLocked(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendReadMessagePacketsLocked(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendReadMessagePacketsLocked(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendReadMessagePacketsLocked(v));
     public static ConfigItem sendReadStoriesPacketsLocked = ghostDelegate("sendReadStoriesPacketsLocked", false,
-            () -> AyuGhostConfig.isSendReadStoriesPacketsLocked(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendReadStoriesPacketsLocked(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendReadStoriesPacketsLocked(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendReadStoriesPacketsLocked(v));
     public static ConfigItem sendOnlinePacketsLocked = ghostDelegate("sendOnlinePacketsLocked", false,
-            () -> AyuGhostConfig.isSendOnlinePacketsLocked(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendOnlinePacketsLocked(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendOnlinePacketsLocked(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendOnlinePacketsLocked(v));
     public static ConfigItem sendUploadProgressLocked = ghostDelegate("sendUploadProgressLocked", false,
-            () -> AyuGhostConfig.isSendUploadProgressLocked(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendUploadProgressLocked(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendUploadProgressLocked(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendUploadProgressLocked(v));
     public static ConfigItem sendOfflinePacketAfterOnlineLocked = ghostDelegate("sendOfflinePacketAfterOnlineLocked", false,
-            () -> AyuGhostConfig.isSendOfflinePacketAfterOnlineLocked(UserConfig.selectedAccount),
-            v -> AyuGhostConfig.setSendOfflinePacketAfterOnlineLocked(UserConfig.selectedAccount, v));
+            () -> AyuGhostController.getInstance(UserConfig.selectedAccount).isSendOfflinePacketAfterOnlineLocked(),
+            v -> AyuGhostController.getInstance(UserConfig.selectedAccount).setSendOfflinePacketAfterOnlineLocked(v));
     // --- Ghost Mode ---
 
     private static ConfigItem ghostDelegate(String key, boolean defaultValue,
@@ -357,21 +356,15 @@ public class NekoConfig {
 
 
     public static boolean isGhostModeActive() {
-        return AyuGhostConfig.isGhostModeActive(UserConfig.selectedAccount);
+        return AyuGhostController.getInstance(UserConfig.selectedAccount).isGhostModeActive();
     }
 
     public static void setGhostMode(boolean enabled) {
-        AyuGhostConfig.setGhostMode(UserConfig.selectedAccount, enabled);
+        AyuGhostController.getInstance(UserConfig.selectedAccount).setGhostMode(enabled);
     }
 
     public static void toggleGhostMode() {
-        boolean newState = !AyuGhostConfig.isGhostModeActive(UserConfig.selectedAccount);
-        AyuGhostConfig.setGhostMode(UserConfig.selectedAccount, newState);
-
-        boolean sendOnlineNow = !newState
-                && !AyuGhostConfig.isSendOfflinePacketAfterOnlineLocked(UserConfig.selectedAccount)
-                && AyuGhostConfig.isSendOfflinePacketAfterOnline(UserConfig.selectedAccount);
-        AyuGhostUtils.performStatusRequest(sendOnlineNow);
+        AyuGhostController.getInstance(UserConfig.selectedAccount).toggleGhostMode();
     }
     // --- Ghost Mode ---
 

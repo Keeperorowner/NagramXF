@@ -41,6 +41,7 @@ public abstract class AyuMessageBase {
     public String replyQuoteText;
     public byte[] replyQuoteEntities; // TL serialized
     public byte[] replyFromSerialized; // TL serialized MessageFwdHeader for quotes
+    public byte[] replySerialized; // TL serialized MessageReplyHeader；replyFlags 为 0 时的兜底
 
     public int entityCreateDate;
 

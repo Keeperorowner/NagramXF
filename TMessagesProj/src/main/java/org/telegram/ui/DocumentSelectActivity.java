@@ -106,7 +106,7 @@ import tw.nekomimi.nekogram.helpers.ChatsHelper;
 import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.translate.TranslatorKt;
 import tw.nekomimi.nekogram.utils.AlertUtil;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 
 public class DocumentSelectActivity extends BaseFragment {
@@ -669,7 +669,7 @@ public class DocumentSelectActivity extends BaseFragment {
             if (chatActivity != null && chatActivity.isInScheduleMode()) {
                 AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendSelectedFiles(notify, scheduleDate));
             } else {
-                sendSelectedFiles(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
+                sendSelectedFiles(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0);
             }
         });
         writeButton.setOnLongClickListener(view -> {
@@ -739,7 +739,7 @@ public class DocumentSelectActivity extends BaseFragment {
                         } else if (num == 1) {
                             AlertsCreator.createScheduleDatePickerDialog(getParentActivity(), chatActivity.getDialogId(), (notify, scheduleDate, scheduleRepeatPeriod) -> sendSelectedFiles(notify, scheduleDate));
                         } else if (num == 2) {
-                            sendSelectedFiles(!AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0);
+                            sendSelectedFiles(!AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0);
                         }
                     });
                     itemCells[a].setOnLongClickListener(v -> {

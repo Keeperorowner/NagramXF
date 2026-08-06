@@ -1,5 +1,7 @@
 package com.radolyn.ayugram;
 
+import com.radolyn.ayugram.controllers.AyuGhostController;
+
 import com.radolyn.ayugram.utils.AyuGhostUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -57,7 +59,7 @@ public class AyuWorker {
     }
 
     private static boolean shouldSendOffline(int account) {
-        if (!AyuGhostConfig.isSendOfflinePacketAfterOnline(account)) {
+        if (!AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline()) {
             return false;
         }
         AtomicBoolean flag = needOffline.get(account);
@@ -77,7 +79,7 @@ public class AyuWorker {
     }
 
     public static void requestLastSeenUpdate(int account) {
-        if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account)) {
+        if (AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline()) {
             AtomicBoolean flag = needOffline.get(account);
             if (flag != null) {
                 flag.set(true);
@@ -94,7 +96,7 @@ public class AyuWorker {
         if (flag != null) {
             flag.set(needOffline);
         }
-        if (AyuGhostConfig.isSendOfflinePacketAfterOnline(account)) {
+        if (AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline()) {
             run();
         }
     }

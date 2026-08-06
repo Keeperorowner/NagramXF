@@ -19,6 +19,9 @@ import androidx.room.PrimaryKey;
                 @Index(value = {"userId", "dialogId", "topicId", "messageId"}),
                 @Index(value = {"userId", "dialogId", "replyMessageId", "messageId"}),
                 @Index(value = {"userId", "dialogId", "groupedId", "messageId"}),
+                @Index(value = {"userId", "dialogId", "topicId", "groupedId", "messageId"}),
+                @Index(value = {"userId", "dialogId", "messageId", "fakeId"}),
+                @Index(value = {"userId", "dialogId", "date"}),
                 @Index(value = {"dialogId"})
         }
 )
