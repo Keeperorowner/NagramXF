@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.database.AyuData;
+import com.radolyn.ayugram.database.AyuDatabaseMerger;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -82,6 +83,10 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private ListAdapter listAdapter;
     private long totalDeviceSize = -1L;
     private int[] attachmentLimitPresetIndices = new int[0];
+    private int statsDeletedMessages = -1;
+    private int statsDeletedDialogs = -1;
+    private int statsReadMarks = -1;
+    private int statsLastSeen = -1;
 
     private final CellGroup cellGroup = new CellGroup(this);
 
@@ -101,6 +106,12 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell attachmentLimitInfoRow = cellGroup.appendCell(new ConfigCellCustom("AttachmentFolderSizeLimitInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell exportDatabaseRow = cellGroup.appendCell(new ConfigCellCustom("ExportDatabaseRow", CellGroup.ITEM_TYPE_TEXT_CHECK_ICON, true));
     private final AbstractConfigCell importDatabaseRow = cellGroup.appendCell(new ConfigCellCustom("ImportDatabaseRow", CellGroup.ITEM_TYPE_TEXT_CHECK_ICON, true));
+    private final AbstractConfigCell dividerStats = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell headerStats = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AyuStatsHeader)));
+    private final AbstractConfigCell statsDeletedMessagesRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsDeletedMessages", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell statsDeletedDialogsRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsDeletedDialogs", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell statsReadMarksRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsReadMarks", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell statsLastSeenRow = cellGroup.appendCell(new ConfigCellCustom("AyuStatsLastSeen", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell dividerClearData = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell clearDataRow = cellGroup.appendCell(new ConfigCellCustom("ClearSavedDataRow", CellGroup.ITEM_TYPE_TEXT_CHECK_ICON, true));
 
@@ -134,6 +145,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
         calculateTotalDeviceSize();
         super.onFragmentCreate();
         AyuData.loadSizes(this::refreshAyuDataSize);
+        loadStats();
         return true;
     }
 
@@ -194,6 +206,13 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
             showClearSavedDataDialog();
             return;
         }
+        if (position == cellGroup.rows.indexOf(statsDeletedMessagesRow)
+                || position == cellGroup.rows.indexOf(statsDeletedDialogsRow)
+                || position == cellGroup.rows.indexOf(statsReadMarksRow)
+                || position == cellGroup.rows.indexOf(statsLastSeenRow)) {
+            loadStats();
+            return;
+        }
         super.onCustomCellClick(view, position, x, y);
     }
 
@@ -245,6 +264,50 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
 
     public void refreshAyuDataSize() {
         notifyRowChanged(clearDataRow);
+        loadStats();
+    }
+
+    private void loadStats() {
+        Utilities.globalQueue.postRunnable(() -> {
+            int deletedMessages = 0;
+            int deletedDialogs = 0;
+            int readMarks = 0;
+            int lastSeen = 0;
+            try {
+                if (AyuData.getDeletedMessageDao() != null) {
+                    deletedMessages = AyuData.getDeletedMessageDao().getTotalCount();
+                }
+                if (AyuData.getDeletedDialogDao() != null) {
+                    deletedDialogs = AyuData.getDeletedDialogDao().getDeletedCount();
+                }
+                if (AyuData.getSpyDao() != null) {
+                    readMarks = AyuData.getSpyDao().getReadCount();
+                }
+                if (AyuData.getSpyDao() != null) {
+                    lastSeen = AyuData.getSpyDao().getLastSeenCount();
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            int finalDeletedMessages = deletedMessages;
+            int finalDeletedDialogs = deletedDialogs;
+            int finalReadMarks = readMarks;
+            int finalLastSeen = lastSeen;
+            AndroidUtilities.runOnUIThread(() -> {
+                statsDeletedMessages = finalDeletedMessages;
+                statsDeletedDialogs = finalDeletedDialogs;
+                statsReadMarks = finalReadMarks;
+                statsLastSeen = finalLastSeen;
+                notifyRowChanged(statsDeletedMessagesRow);
+                notifyRowChanged(statsDeletedDialogsRow);
+                notifyRowChanged(statsReadMarksRow);
+                notifyRowChanged(statsLastSeenRow);
+            });
+        });
+    }
+
+    private String formatStat(int value) {
+        return value < 0 ? "..." : String.valueOf(value);
     }
 
     private boolean isSwitchTap(View view, float x) {
@@ -330,12 +393,114 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
         if (context == null || uri == null) {
             return;
         }
-        new AlertDialog.Builder(context, getResourceProvider())
-                .setTitle(getString(R.string.ImportMessageDatabase))
-                .setMessage(getString(R.string.ImportMessageDatabaseConfirm))
-                .setPositiveButton(getString(R.string.Import), (dialog, which) -> runDatabaseImport(uri))
-                .setNegativeButton(getString(R.string.Cancel), null)
-                .show();
+        // 先探测来源库结构：外部（如 AyuGram）导出的库无法整包替换，只提供合并
+        AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
+        progressDialog.setCanCancel(false);
+        progressDialog.show();
+        Utilities.globalQueue.postRunnable(() -> {
+            boolean canReplace = false;
+            boolean mergeable = false;
+            File probeFile = null;
+            try {
+                probeFile = copyUriToTempFile(uri);
+                if (probeFile != null) {
+                    canReplace = AyuDatabaseMerger.canReplaceWith(probeFile);
+                    mergeable = AyuDatabaseMerger.hasMergeableData(probeFile);
+                }
+            } catch (Exception e) {
+                FileLog.e("confirmImportDatabase probe", e);
+            } finally {
+                if (probeFile != null && probeFile.exists() && !probeFile.delete()) {
+                    probeFile.deleteOnExit();
+                }
+            }
+            boolean finalCanReplace = canReplace;
+            boolean finalMergeable = mergeable;
+            AndroidUtilities.runOnUIThread(() -> {
+                progressDialog.dismiss();
+                Context ctx = getParentActivity();
+                if (ctx == null) {
+                    return;
+                }
+                if (!finalCanReplace && !finalMergeable) {
+                    BulletinFactory.of(this).createErrorBulletin(getString(R.string.ImportMessageDatabaseFailed)).show();
+                    return;
+                }
+                AlertDialog.Builder builder = new AlertDialog.Builder(ctx, getResourceProvider())
+                        .setTitle(getString(R.string.ImportMessageDatabase))
+                        .setNegativeButton(getString(R.string.Cancel), null);
+                if (finalCanReplace) {
+                    builder.setMessage(getString(R.string.ImportMessageDatabaseConfirm))
+                            .setPositiveButton(getString(R.string.ImportModeMerge), (dialog, which) -> runDatabaseMerge(uri))
+                            .setNeutralButton(getString(R.string.ImportModeReplace), (dialog, which) -> runDatabaseImport(uri));
+                } else {
+                    // 结构不兼容，只能合并
+                    builder.setMessage(getString(R.string.ImportMessageDatabaseForeign))
+                            .setPositiveButton(getString(R.string.ImportModeMerge), (dialog, which) -> runDatabaseMerge(uri));
+                }
+                builder.show();
+            });
+        });
+    }
+
+    private void runDatabaseMerge(Uri uri) {
+        Context context = getParentActivity();
+        if (context == null || uri == null) {
+            return;
+        }
+        AlertDialog progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
+        progressDialog.setCanCancel(false);
+        progressDialog.show();
+        Utilities.globalQueue.postRunnable(() -> {
+            boolean success = false;
+            int mergedCount = 0;
+            File tempFile = null;
+            try {
+                tempFile = copyUriToTempFile(uri);
+                if (tempFile != null) {
+                    mergedCount = AyuDatabaseMerger.merge(tempFile, null);
+                    success = true;
+                }
+            } catch (Exception e) {
+                FileLog.e("runDatabaseMerge", e);
+            } finally {
+                if (tempFile != null && tempFile.exists() && !tempFile.delete()) {
+                    tempFile.deleteOnExit();
+                }
+            }
+            boolean finalSuccess = success;
+            int finalMergedCount = mergedCount;
+            AndroidUtilities.runOnUIThread(() -> {
+                progressDialog.dismiss();
+                if (finalSuccess) {
+                    AyuData.loadSizes(this::refreshAyuDataSize);
+                    BulletinFactory.of(this).createSimpleBulletin(R.raw.done,
+                            LocaleController.formatString(R.string.ImportMergeResult, finalMergedCount)).show();
+                } else {
+                    BulletinFactory.of(this).createErrorBulletin(getString(R.string.ImportMessageDatabaseFailed)).show();
+                }
+            });
+        });
+    }
+
+    /**
+     * 把选中的文件落到缓存目录，供结构探测与合并使用。
+     */
+    private File copyUriToTempFile(Uri uri) throws IOException {
+        Context context = getParentActivity();
+        if (context == null) {
+            return null;
+        }
+        File tempFile = new File(AndroidUtilities.getCacheDir(), "ayu_merge_import_" + System.currentTimeMillis() + ".sqlite");
+        try (InputStream inputStream = context.getContentResolver().openInputStream(uri)) {
+            if (inputStream == null || !AyuData.writeImportSourceToFile(inputStream, tempFile)) {
+                if (tempFile.exists() && !tempFile.delete()) {
+                    tempFile.deleteOnExit();
+                }
+                return null;
+            }
+        }
+        return tempFile;
     }
 
     private void runDatabaseExport(Uri uri) {
@@ -880,6 +1045,18 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
                 TextCell textCell = (TextCell) holder.itemView;
                 textCell.setTextAndValueAndIcon(getString(R.string.ClearSavedMessageData), getClearValueText(), R.drawable.msg_clear, false);
                 textCell.setColors(Theme.key_text_RedRegular, Theme.key_text_RedRegular);
+            } else if (row == statsDeletedMessagesRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsDeletedMessages), formatStat(statsDeletedMessages), true);
+            } else if (row == statsDeletedDialogsRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsDeletedDialogs), formatStat(statsDeletedDialogs), true);
+            } else if (row == statsReadMarksRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsReadMarks), formatStat(statsReadMarks), true);
+            } else if (row == statsLastSeenRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuStatsLastSeen), formatStat(statsLastSeen), false);
             }
         }
     }

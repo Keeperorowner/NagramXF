@@ -557,7 +557,7 @@ public class MessageObject {
         if (message.from_id == null) {
             message.flags &= ~256;
         }
-        if (message.from_id == null) {
+        if (message.fwd_from == null) {
             message.flags &= ~4;
         }
         if (message.reply_to == null) {

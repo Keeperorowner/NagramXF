@@ -12,6 +12,7 @@ import com.radolyn.ayugram.database.entities.RegexFilter;
 import com.radolyn.ayugram.database.entities.RegexFilterGlobalExclusion;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
@@ -497,7 +498,37 @@ public class AyuFilter {
         if (isBlockedPeer(msg.currentAccount, msg.getFromChatId())) {
             return true;
         }
+        if (isShadowBannedPeerChain(msg)) {
+            return true;
+        }
         return msg.replyMessageObject != null && isBlockedPeer(msg.currentAccount, msg.replyMessageObject.getFromChatId());
+    }
+
+    private static boolean isShadowBannedPeerChain(MessageObject msg) {
+        if (msg == null || msg.messageOwner == null) {
+            return false;
+        }
+        long viaBotUserId = msg.messageOwner.via_bot_id;
+        if (viaBotUserId != 0L && isBlockedPeer(msg.currentAccount, viaBotUserId)) {
+            return true;
+        }
+        TLRPC.MessageFwdHeader fwd = msg.messageOwner.fwd_from;
+        if (fwd == null) {
+            return false;
+        }
+        if (fwd.from_id != null) {
+            long did = DialogObject.getPeerDialogId(fwd.from_id);
+            if (isBlockedPeer(msg.currentAccount, did)) {
+                return true;
+            }
+        }
+        if (fwd.saved_from_peer != null) {
+            long did = DialogObject.getPeerDialogId(fwd.saved_from_peer);
+            if (isBlockedPeer(msg.currentAccount, did)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isBlockedPeer(int currentAccount, long peerId) {

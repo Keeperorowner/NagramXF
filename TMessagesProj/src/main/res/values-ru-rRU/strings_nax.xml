@@ -152,6 +152,11 @@
     <string name="GhostReadMessage">Прочитать сообщение</string>
     <string name="GhostModeExcludeRead">Исключить прочтение</string>
     <string name="GhostModeExcludeTyping">Исключить ввод текста</string>
+    <string name="GhostModeExceptionDefault">По умолчанию</string>
+    <string name="GhostModeExceptionForceBlockRead">Принудительно блокировать прочтение</string>
+    <string name="GhostModeExceptionForceAllowRead">Принудительно разрешить прочтение</string>
+    <string name="GhostModeExceptionForceBlockTyping">Принудительно блокировать ввод текста</string>
+    <string name="GhostModeExceptionForceAllowTyping">Принудительно разрешить ввод текста</string>
     <string name="SendWithSound">Отправить со звуком</string>
     <string name="PerformanceClass">Класс производительности устройства</string>
     <string name="PerformanceClassHigh">Высокий</string>

@@ -154,6 +154,11 @@
     <string name="GhostReadMessage">标记已读</string>
     <string name="GhostModeExcludeRead">排除已读</string>
     <string name="GhostModeExcludeTyping">排除输入</string>
+    <string name="GhostModeExceptionDefault">默认</string>
+    <string name="GhostModeExceptionForceBlockRead">强制阻断已读</string>
+    <string name="GhostModeExceptionForceAllowRead">强制放行已读</string>
+    <string name="GhostModeExceptionForceBlockTyping">强制阻断输入</string>
+    <string name="GhostModeExceptionForceAllowTyping">强制放行输入</string>
     <string name="SendWithSound">有声发送</string>
     <string name="PerformanceClass">设备性能等级</string>
     <string name="PerformanceClassHigh">高</string>

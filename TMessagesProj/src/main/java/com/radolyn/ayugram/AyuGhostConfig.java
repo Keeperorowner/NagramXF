@@ -3,6 +3,8 @@ package com.radolyn.ayugram;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.radolyn.ayugram.utils.AyuGhostUtils;
+
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
@@ -191,6 +193,24 @@ public abstract class AyuGhostConfig {
 
     public static void setGhostMode(int account, boolean enabled) {
         getGhostModeSettingsForAccount(account).setGhostMode(enabled);
+        applyGhostModeSideEffects(account, enabled);
+    }
+
+    public static void applyGhostModeSideEffects(int account, boolean enabled) {
+        if (account < 0) {
+            return;
+        }
+        if (enabled) {
+            if (isSendOfflinePacketAfterOnline(account) && !isSendOfflinePacketAfterOnlineLocked(account)) {
+                AyuWorker.setOnline(account, true);
+            }
+            AyuGhostUtils.performStatusRequest(account, true);
+        } else {
+            AyuWorker.clearOnline(account);
+            AyuGhostUtils.performStatusRequest(account, false);
+        }
+        NotificationCenter.getInstance(account)
+                .postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 
     public static void toggleGhostMode(int account) {

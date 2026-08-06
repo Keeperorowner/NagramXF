@@ -166,6 +166,11 @@
     <string name="GhostReadMessage">Read Message</string>
     <string name="GhostModeExcludeRead">Exclude Read</string>
     <string name="GhostModeExcludeTyping">Exclude Typing</string>
+    <string name="GhostModeExceptionDefault">Default</string>
+    <string name="GhostModeExceptionForceBlockRead">Force block read</string>
+    <string name="GhostModeExceptionForceAllowRead">Force allow read</string>
+    <string name="GhostModeExceptionForceBlockTyping">Force block typing</string>
+    <string name="GhostModeExceptionForceAllowTyping">Force allow typing</string>
     <string name="SendWithSound">Send with Sound</string>
     <string name="PerformanceClass">Device Performance Class</string>
     <string name="PerformanceClassHigh">High</string>

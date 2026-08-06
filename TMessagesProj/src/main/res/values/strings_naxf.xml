@@ -150,6 +150,11 @@
     <string name="AyuMoments" translatable="false">AyuMoments</string>
     <string name="AyuMomentsPreviewMessage">Do your best, leave the rest to fate</string>
     <string name="AyuSpySettings">Spy Settings</string>
+    <string name="AyuStatsHeader">Statistics</string>
+    <string name="AyuStatsDeletedMessages">Deleted messages</string>
+    <string name="AyuStatsDeletedDialogs">Deleted dialogs</string>
+    <string name="AyuStatsReadMarks">Read marks</string>
+    <string name="AyuStatsLastSeen">Last seen records</string>
     <string name="AyuMomentsCustomHeader">Custom</string>
     <string name="SaveAttachmentsCardTitle">Save Attachments</string>
     <string name="SaveAttachmentsCardSubtitle">Configure chats and limits</string>
@@ -170,6 +175,10 @@
     <string name="ImportMessageDatabaseFailed">Failed to import database</string>
     <string name="ImportMessageDatabaseNotFound">No database backup was found in the current client download folder.</string>
     <string name="ImportMessageDatabaseConfirm">Importing will overwrite the current local Ayu database. Continue?</string>
+    <string name="ImportModeReplace">Replace</string>
+    <string name="ImportModeMerge">Merge</string>
+    <string name="ImportMergeResult">Merged %1$d messages.</string>
+    <string name="ImportMessageDatabaseForeign">This backup comes from another client, so it cannot replace the local database. Its saved messages can still be merged into your current data.</string>
     <string name="ClearSavedMessageData">Clear</string>
     <string name="ClearSavedMessageDataDescription">Choose what you want to clear.</string>
     <string name="ClearSavedMessageDataConfirm">This will delete the local Ayu database and all saved attachments.</string>

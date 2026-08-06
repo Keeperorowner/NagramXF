@@ -18,7 +18,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.radolyn.ayugram.AyuGhostConfig;
 import com.radolyn.ayugram.AyuWorker;
 import com.radolyn.ayugram.preferences.components.AccountCell;
-import com.radolyn.ayugram.utils.AyuGhostUtils;
 import com.radolyn.ayugram.utils.AyuState;
 
 import org.telegram.messenger.AccountInstance;
@@ -130,19 +129,10 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
                             : getString(R.string.GhostModeDisabled);
                     BulletinFactory.of(getLastFragment()).createSuccessBulletin(msg).show();
 
-                    if (currentViewingAccount >= 0) {
-                        if (newState) {
-                            if (!currentSettings.sendOfflinePacketAfterOnlineLocked
-                                    && currentSettings.sendOfflinePacketAfterOnline) {
-                                AyuWorker.setOnline(currentViewingAccount, true);
-                            }
-                            AyuGhostUtils.performStatusRequest(currentViewingAccount, true);
-                        } else {
-                            AyuWorker.clearOnline(currentViewingAccount);
-                            AyuGhostUtils.performStatusRequest(currentViewingAccount, false);
-                        }
-                        currentSettings.postChangedNotification(currentViewingAccount);
-                    }
+                    int account = currentViewingAccount >= 0
+                            ? currentViewingAccount
+                            : UserConfig.selectedAccount;
+                    AyuGhostConfig.applyGhostModeSideEffects(account, newState);
 
                     updateGhostViews();
                 }

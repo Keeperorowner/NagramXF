@@ -206,7 +206,7 @@ public class AyuViewDeleted extends NekoDelegateFragment {
     };
 
     private static boolean hasContent(DeletedMessageFull messageFull) {
-        return messageFull != null && messageFull.message != null && (!TextUtils.isEmpty(messageFull.message.text) || !TextUtils.isEmpty(messageFull.message.mediaPath) || messageFull.message.documentSerialized != null);
+        return messageFull != null && AyuMessageUtils.hasContent(messageFull.message);
     }
 
     private void updateVisibleMessageCells() {
@@ -436,7 +436,10 @@ public class AyuViewDeleted extends NekoDelegateFragment {
                 return;
             }
 
-            Collections.reverse(olderDesc);
+            // 与 loadLatest 保持一致：密聊 id 为负、DESC 已是时间正序，不能再反转
+            if (!isEncrypted) {
+                Collections.reverse(olderDesc);
+            }
             List<DeletedMessageFull> older = new ArrayList<>(olderDesc.size());
             for (DeletedMessageFull m : olderDesc) {
                 if (hasContent(m)) {

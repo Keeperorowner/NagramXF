@@ -3285,22 +3285,19 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         clearingDialog = MessagesController.getInstance(currentAccount).isClearingDialog(dialog.id);
                         groupMessages = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
                         message = groupMessages != null && groupMessages.size() > 0 ? groupMessages.get(0) : null;
+                        if (message == null) {
+                            MessageObject ayuPreview = com.radolyn.ayugram.messages.AyuMessagesController.getInstance().getLastMessageCached(currentAccount, dialog.id);
+                            if (ayuPreview != null) {
+                                message = ayuPreview;
+                            }
+                        }
                         if (message != null) {
                             boolean blocked = false;
-                            boolean replyBlocked = false;
                             if (AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(MessagesController.getInstance(currentAccount).getChat(-dialog.id))) {
-                                blocked = MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(message.getFromChatId()) >= 0;
-                                blocked = blocked || AyuFilter.isCustomFilteredPeer(message.getFromChatId());
-                                blocked = blocked || AyuFilter.isBlockedChannel(message.getFromChatId());
-                                if (message.replyMessageObject != null) {
-                                    long fromId = message.replyMessageObject.getFromChatId();
-                                    replyBlocked = MessagesController.getInstance(currentAccount).blockePeers.indexOfKey(fromId) >= 0;
-                                    replyBlocked = replyBlocked || AyuFilter.isCustomFilteredPeer(fromId);
-                                    replyBlocked = replyBlocked || AyuFilter.isBlockedChannel(fromId);
-                                }
+                                blocked = AyuFilter.isIgnoredBlockedMessage(message);
                             }
                             boolean filteredByRegex = AyuFilter.shouldHideFilteredMessages() && AyuFilter.isFiltered(message, null);
-                            if (blocked || replyBlocked || filteredByRegex) {
+                            if (blocked || filteredByRegex) {
                                 message = filteredDummyMessages[currentAccount];
                                 groupMessages = null;
                             }

@@ -116,6 +116,8 @@ import tw.nekomimi.nekogram.helpers.EntitiesHelper;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.NaConfig;
 
+import com.radolyn.ayugram.proprietary.AyuHistoryHook;
+
 @SuppressWarnings("unchecked")
 public class MediaDataController extends BaseController {
     public final static String
@@ -3717,6 +3719,8 @@ public class MediaDataController extends BaseController {
     public ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
     public ArrayList<MessageObject> searchServerResultMessages = new ArrayList<>();
     public ArrayList<MessageObject> searchLocalResultMessages = new ArrayList<>();
+    // AyuGram: 已删除消息的搜索命中，在 updateSearchResults 里合并
+    public ArrayList<MessageObject> searchDeletedResultMessages = new ArrayList<>();
     private SparseArray<MessageObject>[] searchServerResultMessagesMap = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private ArrayList<MessageObject> deletedFromResultMessages = new ArrayList<>();
     private String lastSearchQuery;
@@ -3745,6 +3749,14 @@ public class MediaDataController extends BaseController {
             MessageObject m = searchLocalResultMessages.get(i);
             if (id == m.getId()) {
                 searchLocalResultMessages.remove(i);
+                i--;
+            }
+        }
+        // AyuGram: 同步移除，否则下次 updateSearchResults 会把它加回来
+        for (int i = 0; i < searchDeletedResultMessages.size(); ++i) {
+            MessageObject m = searchDeletedResultMessages.get(i);
+            if (id == m.getId()) {
+                searchDeletedResultMessages.remove(i);
                 i--;
             }
         }
@@ -3811,6 +3823,25 @@ public class MediaDataController extends BaseController {
                 messageIds.add(m.getId());
             }
         }
+        // --- AyuGram hook: 已删除消息也应出现在聊天内搜索结果里
+        if (!searchDeletedResultMessages.isEmpty()) {
+            boolean addedAny = false;
+            for (int i = 0; i < searchDeletedResultMessages.size(); ++i) {
+                MessageObject m = searchDeletedResultMessages.get(i);
+                if (messageIds.contains(m.getId())) {
+                    continue;
+                }
+                m.isSavedFiltered = true;
+                searchResultMessages.add(m);
+                messageIds.add(m.getId());
+                addedAny = true;
+            }
+            if (addedAny) {
+                // 与上游一致按 id 倒序，避免已删除项固定堆在末尾
+                Collections.sort(searchResultMessages, (a, b) -> Integer.compare(b.getId(), a.getId()));
+            }
+        }
+        // --- AyuGram hook
     }
 
     public int getMask() {
@@ -3832,6 +3863,7 @@ public class MediaDataController extends BaseController {
         searchResultMessages.clear();
         searchServerResultMessages.clear();
         searchLocalResultMessages.clear();
+        searchDeletedResultMessages.clear();
     }
 
     public boolean isMessageFound(int messageId, boolean mergeDialog) {
@@ -3957,6 +3989,15 @@ public class MediaDataController extends BaseController {
             searchLocalResultMessages.clear();
             searchServerResultMessagesMap[0].clear();
             searchServerResultMessagesMap[1].clear();
+            // --- AyuGram hook: 首次查询时同步搜一遍已删除消息
+            searchDeletedResultMessages.clear();
+            if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && !DialogObject.isEncryptedDialog(dialogId)) {
+                searchDeletedResultMessages.addAll(AyuHistoryHook.searchDeletedMessages(currentAccount, dialogId, query, 200));
+                if (mergeDialogId != 0) {
+                    searchDeletedResultMessages.addAll(AyuHistoryHook.searchDeletedMessages(currentAccount, mergeDialogId, query, 200));
+                }
+            }
+            // --- AyuGram hook
             getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsLoading, guid);
         }
         final boolean isHashtag = query != null && (query.trim().startsWith("#") || query.trim().startsWith("$"));
@@ -4548,6 +4589,11 @@ public class MediaDataController extends BaseController {
             }
 
             Utilities.searchQueue.postRunnable(() -> {
+                // --- AyuGram hook: 把已删除的媒体一并显示在媒体页
+                if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && !DialogObject.isEncryptedDialog(dialogId)) {
+                    AyuHistoryHook.injectDeletedMedia(currentAccount, res, dialogId, topicId, type, max_id, min_id);
+                }
+                // --- AyuGram hook
                 LongSparseArray<TLRPC.User> usersDict = new LongSparseArray<>();
                 for (int a = 0; a < res.users.size(); a++) {
                     TLRPC.User u = res.users.get(a);

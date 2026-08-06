@@ -116,7 +116,7 @@ import java.util.List;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MessageHelper;
-import com.radolyn.ayugram.AyuGhostConfig;
+import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 import me.vkryl.core.reference.ReferenceList;
 
@@ -745,7 +745,7 @@ public class ContentPreviewViewer {
                         actions.add(0);
                     }
                     if (delegate.needSend(currentContentType) && !delegate.isInScheduleMode()) {
-                        boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
+                        boolean sendWithoutSoundNax = AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound();
                         items.add(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound));
                         icons.add(sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
                         actions.add(6);
@@ -822,11 +822,11 @@ public class ContentPreviewViewer {
                         int which = (int) v.getTag();
                         if (actions.get(which) == 0) {
                             if (delegate != null) {
-                                delegate.sendSticker(currentDocument, currentQuery, parentObject, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
+                                delegate.sendSticker(currentDocument, currentQuery, parentObject, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0);
                             }
                         } else if (actions.get(which) == 6) {
                             if (delegate != null) {
-                                delegate.sendSticker(currentDocument, currentQuery, parentObject, AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
+                                delegate.sendSticker(currentDocument, currentQuery, parentObject, AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0);
                             }
                         } else if (actions.get(which) == 1) {
                             if (delegate != null) {
@@ -1078,7 +1078,7 @@ public class ContentPreviewViewer {
                     actions.add(0);
                 }
                 if (delegate.needSend(currentContentType) && !delegate.isInScheduleMode()) {
-                    boolean sendWithoutSoundNax = AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount);
+                    boolean sendWithoutSoundNax = AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound();
                     items.add(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound));
                     icons.add(sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
                     actions.add(4);
@@ -1130,9 +1130,9 @@ public class ContentPreviewViewer {
                     }
                     int which = (int) v.getTag();
                     if (actions.get(which) == 0) {
-                        delegate.sendGif(currentDocument != null ? currentDocument : inlineResult, parentObject, !AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount) && actions.get(which) == 0, 0, 0);
+                        delegate.sendGif(currentDocument != null ? currentDocument : inlineResult, parentObject, !AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound() && actions.get(which) == 0, 0, 0);
                     } else if (actions.get(which) == 4) {
-                        delegate.sendGif(currentDocument != null ? currentDocument : inlineResult, parentObject, AyuGhostConfig.isSendWithoutSound(UserConfig.selectedAccount), 0, 0);
+                        delegate.sendGif(currentDocument != null ? currentDocument : inlineResult, parentObject, AyuGhostController.getInstance(UserConfig.selectedAccount).isSendWithoutSound(), 0, 0);
                     } else if (actions.get(which) == 1) {
                         MediaDataController.getInstance(currentAccount).removeRecentGif(currentDocument);
                         delegate.gifAddedOrDeleted();

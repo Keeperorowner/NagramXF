@@ -42,6 +42,81 @@ import xyz.nextalone.nagram.NaConfig;
 public abstract class AyuMessageUtils {
     private static final String TAG = "AyuMessageUtils";
 
+    /**
+     * 已删除/已编辑消息是否还有可渲染内容。
+     *
+     * <p>比单纯判空严一些，因为库里的记录会"变空"：附件被裁剪清理后 mediaPath 会被置 NULL，
+     * 但也存在文件被外部删掉而记录仍在的情况；序列化 blob 也可能是零长。放过这些记录
+     * 会在聊天里留下一个点不开的空气泡。
+     *
+     * @return true 表示有内容值得显示
+     */
+    public static boolean hasContent(AyuMessageBase message) {
+        if (message == null) {
+            return false;
+        }
+        if (!TextUtils.isEmpty(message.text)) {
+            return true;
+        }
+        if (message.documentSerialized != null && message.documentSerialized.length > 0) {
+            return true;
+        }
+        // "/" 是历史遗留的空路径占位值
+        if (TextUtils.isEmpty(message.mediaPath) || "/".equals(message.mediaPath)) {
+            return false;
+        }
+        try {
+            return new File(message.mediaPath).exists();
+        } catch (Throwable ignored) {
+            // 路径不合法（权限、非法字符等）时按无内容处理
+            return false;
+        }
+    }
+
+    /**
+     * 比较两条消息的新旧，返回值 &lt; 0 表示 a 更新（应排在前）。
+     *
+     * <p>不能简单按 id 比：密聊和未发送成功的消息 id 是本地分配的负数，越新越小，
+     * 直接用 {@code id >} 会把更旧的那条当成最新。规则：
+     * <ul>
+     *     <li>都是正 id：id 大的更新；
+     *     <li>都是负 id：id 小的更新（密聊）；
+     *     <li>正负混合：无法比较 id，改按 date。
+     * </ul>
+     */
+    public static int compareMessages(TLRPC.Message a, TLRPC.Message b) {
+        if (a == b) {
+            return 0;
+        }
+        if (a == null) {
+            return 1;
+        }
+        if (b == null) {
+            return -1;
+        }
+        if (a.id > 0 && b.id > 0) {
+            return Integer.compare(b.id, a.id);
+        }
+        if (a.id < 0 && b.id < 0) {
+            return Integer.compare(a.id, b.id);
+        }
+        int byDate = Integer.compare(b.date, a.date);
+        return byDate != 0 ? byDate : Integer.compare(b.id, a.id);
+    }
+
+    /**
+     * candidate 是否比 existing 更新。existing 为空视为 true。
+     */
+    public static boolean isNewerMessage(MessageObject candidate, MessageObject existing) {
+        if (candidate == null || candidate.messageOwner == null) {
+            return false;
+        }
+        if (existing == null || existing.messageOwner == null) {
+            return true;
+        }
+        return compareMessages(candidate.messageOwner, existing.messageOwner) < 0;
+    }
+
     public static final class PseudoReplyResult {
         public final String text;
         public final String caption;
@@ -416,6 +491,23 @@ public abstract class AyuMessageUtils {
             forwardHeader.post_author = source.fwdPostAuthor;
         }
         if ((target.flags & 8) != 0) {
+            // replyFlags 为 0 说明来源库只存了整个 header 的 BLOB（AyuGram 的存法），走兜底反序列化
+            if (source.replyFlags == 0 && source.replySerialized != null && source.replySerialized.length > 0) {
+                NativeByteBuffer data = null;
+                try {
+                    data = new NativeByteBuffer(source.replySerialized.length);
+                    data.put(ByteBuffer.wrap(source.replySerialized));
+                    data.rewind();
+                    target.reply_to = TLRPC.MessageReplyHeader.TLdeserialize(data, data.readInt32(false), false);
+                } catch (Exception e) {
+                    FileLog.e("Failed to deserialize reply_to", e);
+                } finally {
+                    if (data != null) {
+                        data.reuse();
+                    }
+                }
+            }
+            if (target.reply_to == null) {
             TLRPC.MessageReplyHeader replyHeader = new TLRPC.TL_messageReplyHeader();
             target.reply_to = replyHeader;
             replyHeader.flags = source.replyFlags;
@@ -451,6 +543,7 @@ public abstract class AyuMessageUtils {
                         data.reuse();
                     }
                 }
+            }
             }
         }
         target.post_author = source.postAuthor;
@@ -514,6 +607,25 @@ public abstract class AyuMessageUtils {
             out.replyQuote = replyHeader.quote;
             out.replyQuoteText = replyHeader.quote_text;
             out.replyQuoteEntities = serializeMultiple(replyHeader.quote_entities);
+            // 完整 header 兜底，便于与只存 BLOB 的实现互相导入
+            NativeByteBuffer replyData = null;
+            try {
+                int replySize = replyHeader.getObjectSize();
+                if (replySize > 0) {
+                    replyData = new NativeByteBuffer(replySize);
+                    replyHeader.serializeToStream(replyData);
+                    replyData.rewind();
+                    byte[] serialized = new byte[replyData.buffer.remaining()];
+                    replyData.buffer.get(serialized);
+                    out.replySerialized = serialized;
+                }
+            } catch (Exception e) {
+                FileLog.e("Failed to serialize reply_to", e);
+            } finally {
+                if (replyData != null) {
+                    replyData.reuse();
+                }
+            }
             // serialize reply_from for quotes
             if (replyHeader.reply_from != null) {
                 NativeByteBuffer data = null;

@@ -136,6 +136,11 @@
     <string name="SingleCornerRadiusInfo">话题群组会采用与聊天消息相同的头像形状。</string>
     <string name="BlurOptions">模糊选项</string>
     <string name="AyuSpySettings">间谍设置</string>
+    <string name="AyuStatsHeader">统计</string>
+    <string name="AyuStatsDeletedMessages">已删消息</string>
+    <string name="AyuStatsDeletedDialogs">已删对话</string>
+    <string name="AyuStatsReadMarks">已读记录</string>
+    <string name="AyuStatsLastSeen">上线记录</string>
     <string name="AyuMomentsCustomHeader">自定义</string>
     <string name="AyuMomentsPreviewMessage">尽人事，听天命</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>
@@ -155,6 +160,10 @@
     <string name="ImportMessageDatabaseFailed">导入数据库失败</string>
     <string name="ImportMessageDatabaseNotFound">当前客户端下载目录中未找到数据库备份。</string>
     <string name="ImportMessageDatabaseConfirm">导入将覆盖当前本地 Ayu 数据库，是否继续？</string>
+    <string name="ImportModeReplace">覆盖</string>
+    <string name="ImportModeMerge">合并</string>
+    <string name="ImportMergeResult">已合并 %1$d 条消息。</string>
+    <string name="ImportMessageDatabaseForeign">该备份来自其他客户端，无法覆盖本地数据库，但可以把其中已保存的消息合并到当前数据中。</string>
     <string name="ClearSavedMessageData">清空</string>
     <string name="ClearSavedMessageDataDescription">选择要清理的数据。</string>
     <string name="ClearSavedMessageDataConfirm">这将删除本地 Ayu 数据库和所有已保存附件。</string>

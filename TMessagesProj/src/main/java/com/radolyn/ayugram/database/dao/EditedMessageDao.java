@@ -45,6 +45,15 @@ public interface EditedMessageDao {
     @Query("UPDATE editedmessage SET mediaPath = NULL WHERE mediaPath = :mediaPath")
     void clearMediaPath(String mediaPath);
 
+    @Query("UPDATE editedmessage SET mediaPath = NULL, documentType = 0 WHERE mediaPath IS NOT NULL")
+    void clearAllMediaPaths();
+
+    @Query("SELECT DISTINCT mediaPath FROM editedmessage WHERE mediaPath IS NOT NULL AND mediaPath != '' AND mediaPath != '/'")
+    List<String> getAllMediaPaths();
+
     @Insert
     void insert(EditedMessage revision);
+
+    @Query("SELECT COUNT(*) FROM editedmessage")
+    int getTotalCount();
 }

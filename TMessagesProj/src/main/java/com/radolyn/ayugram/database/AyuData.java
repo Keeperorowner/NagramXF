@@ -11,15 +11,19 @@ package com.radolyn.ayugram.database;
 
 import androidx.room.Room;
 import androidx.room.migration.Migration;
+import androidx.sqlite.db.SimpleSQLiteQuery;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import android.database.Cursor;
+
 import com.radolyn.ayugram.AyuConstants;
+import com.radolyn.ayugram.database.dao.DeletedDialogDao;
 import com.radolyn.ayugram.database.dao.DeletedMessageDao;
 import com.radolyn.ayugram.database.dao.EditedMessageDao;
-import com.radolyn.ayugram.database.dao.LastSeenDao;
 import com.radolyn.ayugram.database.dao.RegexFilterDao;
 import com.radolyn.ayugram.database.dao.SpyDao;
 import com.radolyn.ayugram.messages.AyuMessagesController;
+import com.radolyn.ayugram.utils.LastSeenHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -34,6 +38,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.Callable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -44,12 +49,20 @@ import tw.nekomimi.nekogram.utils.FileUtil;
 public class AyuData {
     public static long dbSize, attachmentsSize, totalSize;
     private static AyuDatabase database;
-    private static EditedMessageDao editedMessageDao;
-    private static DeletedMessageDao deletedMessageDao;
-    private static LastSeenDao lastSeenDao;
-    private static SpyDao spyDao;
-    private static RegexFilterDao regexFilterDao;
     private static final int IO_BUFFER_SIZE = 16 * 1024;
+
+    // DAO 全部经 LockedDao 代理：调用时在读锁内现取真实 DAO，因此这些引用永不为 null，
+    // 也不会在 closeDatabase() 之后变成悬空引用。详见 AyuDataLock。
+    private static final EditedMessageDao editedMessageDao =
+            LockedDao.wrap(EditedMessageDao.class, () -> database == null ? null : database.editedMessageDao());
+    private static final DeletedMessageDao deletedMessageDao =
+            LockedDao.wrap(DeletedMessageDao.class, () -> database == null ? null : database.deletedMessageDao());
+    private static final DeletedDialogDao deletedDialogDao =
+            LockedDao.wrap(DeletedDialogDao.class, () -> database == null ? null : database.deletedDialogDao());
+    private static final SpyDao spyDao =
+            LockedDao.wrap(SpyDao.class, () -> database == null ? null : database.spyDao());
+    private static final RegexFilterDao regexFilterDao =
+            LockedDao.wrap(RegexFilterDao.class, () -> database == null ? null : database.regexFilterDao());
 
     private static final Migration MIGRATION_21_22 = new Migration(21, 22) {
         @Override
@@ -169,6 +182,58 @@ public class AyuData {
         }
     };
 
+    private static final Migration MIGRATION_30_31 = new Migration(30, 31) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `DeletedDialog` (" +
+                    "`fakeId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`userId` INTEGER NOT NULL, " +
+                    "`dialogId` INTEGER NOT NULL, " +
+                    "`peerId` INTEGER NOT NULL, " +
+                    "`folderId` INTEGER, " +
+                    "`topMessage` INTEGER NOT NULL, " +
+                    "`lastMessageDate` INTEGER NOT NULL, " +
+                    "`flags` INTEGER NOT NULL, " +
+                    "`entityCreateDate` INTEGER NOT NULL)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_DeletedDialog_userId_dialogId` ON `DeletedDialog` (`userId`, `dialogId`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_DeletedDialog_userId_entityCreateDate` ON `DeletedDialog` (`userId`, `entityCreateDate`)");
+        }
+    };
+
+    private static final Migration MIGRATION_31_32 = new Migration(31, 32) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `SpyLastSeen` (" +
+                    "`userId` INTEGER NOT NULL, " +
+                    "`lastSeenDate` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`userId`))");
+            try {
+                database.execSQL("INSERT OR REPLACE INTO SpyLastSeen (userId, lastSeenDate) " +
+                        "SELECT userId, lastSeen FROM LastSeenEntity");
+            } catch (Exception ignored) {
+            }
+            database.execSQL("DROP TABLE IF EXISTS LastSeenEntity");
+        }
+    };
+
+    private static final Migration MIGRATION_32_33 = new Migration(32, 33) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_DeletedMessage_userId_dialogId_topicId_groupedId_messageId ON DeletedMessage(userId, dialogId, topicId, groupedId, messageId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_DeletedMessage_userId_dialogId_messageId_fakeId ON DeletedMessage(userId, dialogId, messageId, fakeId)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_DeletedMessage_userId_dialogId_date ON DeletedMessage(userId, dialogId, date)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_EditedMessage_userId_dialogId_messageId_mediaPath ON EditedMessage(userId, dialogId, messageId, mediaPath)");
+        }
+    };
+
+    private static final Migration MIGRATION_33_34 = new Migration(33, 34) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE DeletedMessage ADD COLUMN replySerialized BLOB");
+            database.execSQL("ALTER TABLE EditedMessage ADD COLUMN replySerialized BLOB");
+        }
+    };
+
     static {
         create();
     }
@@ -178,34 +243,41 @@ public class AyuData {
             return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                     .allowMainThreadQueries()
                     .fallbackToDestructiveMigrationOnDowngrade()
-                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
+                    .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34)
                     .build();
         }
         return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                 .allowMainThreadQueries()
-                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
+                .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34)
                 .build();
     }
 
     public static synchronized void create() {
-        if (database != null) {
+        boolean created;
+        AyuDataLock.LOCK.writeLock().lock();
+        try {
+            created = database == null;
+            if (created) {
+                database = buildDatabase(true);
+            }
+        } finally {
+            AyuDataLock.LOCK.writeLock().unlock();
+        }
+        if (!created) {
             return;
         }
-        database = buildDatabase(true);
-
-        editedMessageDao = database.editedMessageDao();
-        deletedMessageDao = database.deletedMessageDao();
-        lastSeenDao = database.lastSeenDao();
-        spyDao = database.spyDao();
-        regexFilterDao = database.regexFilterDao();
+        // 回调放到写锁外：它们会走 DAO（需要读锁），也会 post 到别的线程
         AyuMessagesController.refreshAfterDatabaseChange();
         FilterPrefsMigrator.runIfNeeded();
     }
 
-    public static AyuDatabase getDatabase() {
-        return database;
-    }
-
+    /**
+     * 以下 getter 返回的都是 {@link LockedDao} 代理，<b>永不为 null</b>，
+     * 调用点无需判空；数据库关闭期间调用会被读锁挡住，真正不可用时返回安全默认值。
+     *
+     * <p>刻意不提供 {@code getDatabase()}：直接把 {@code AyuDatabase} 交出去会绕过读锁，
+     * 拿到的实例可能随时被 {@link #closeDatabase()} 关闭，正是这些代理要消除的竞态。
+     */
     public static EditedMessageDao getEditedMessageDao() {
         return editedMessageDao;
     }
@@ -214,8 +286,8 @@ public class AyuData {
         return deletedMessageDao;
     }
 
-    public static LastSeenDao getLastSeenDao() {
-        return lastSeenDao;
+    public static DeletedDialogDao getDeletedDialogDao() {
+        return deletedDialogDao;
     }
 
     public static SpyDao getSpyDao() {
@@ -230,6 +302,47 @@ public class AyuData {
         return ApplicationLoader.applicationContext.getDatabasePath(AyuConstants.AYU_DATABASE);
     }
 
+    static File getDatabaseFileInternal() {
+        return getDatabaseFile();
+    }
+
+    /**
+     * 关闭数据库后执行 callable，结束时重新打开。用于需要直接操作数据库文件的场景。
+     *
+     * <p>整段持写锁：期间任何 DAO 调用都会在读锁上等待，而不是撞到已关闭的数据库。
+     */
+    public static synchronized <T> T withClosedDatabase(Callable<T> callable) throws Exception {
+        T result;
+        AyuDataLock.LOCK.writeLock().lock();
+        try {
+            closeDatabase();
+            try {
+                result = callable.call();
+            } finally {
+                reopenDatabaseLocked();
+            }
+        } finally {
+            AyuDataLock.LOCK.writeLock().unlock();
+        }
+        notifyDatabaseChanged();
+        return result;
+    }
+
+    /**
+     * 在已持有写锁的前提下重开数据库。不触发回调——回调必须等写锁释放后再发，
+     * 否则回调里的 DAO 调用会在读锁上等自己持有的写锁。
+     */
+    private static void reopenDatabaseLocked() {
+        if (database == null) {
+            database = buildDatabase(true);
+        }
+    }
+
+    private static void notifyDatabaseChanged() {
+        AyuMessagesController.refreshAfterDatabaseChange();
+        FilterPrefsMigrator.runIfNeeded();
+    }
+
     private static File getWalFile(File dbFile) {
         return new File(dbFile.getAbsolutePath() + "-wal");
     }
@@ -238,10 +351,18 @@ public class AyuData {
         return new File(dbFile.getAbsolutePath() + "-shm");
     }
 
+    /**
+     * 关闭并置空数据库。调用方必须已持有 {@link AyuDataLock} 写锁——
+     * DAO 代理在读锁内读取 database，两者互斥才能保证不会取到已关闭的实例。
+     */
     private static void closeDatabase() {
         if (database != null) {
             try {
-                database.getOpenHelper().getWritableDatabase().execSQL("PRAGMA wal_checkpoint(TRUNCATE)");
+                // PRAGMA wal_checkpoint 返回结果行，必须走 query 而非 execSQL
+                Cursor cursor = database.query(new SimpleSQLiteQuery("PRAGMA wal_checkpoint(TRUNCATE)"));
+                if (cursor != null) {
+                    cursor.close();
+                }
             } catch (Exception e) {
                 FileLog.e(e);
             }
@@ -253,17 +374,19 @@ public class AyuData {
         }
 
         database = null;
-        editedMessageDao = null;
-        deletedMessageDao = null;
-        lastSeenDao = null;
-        spyDao = null;
-        regexFilterDao = null;
+
+        // 内存缓存必须一起失效，否则待写数据会在数据库重建后写回
+        LastSeenHelper.clearCaches();
     }
 
     public static synchronized void clean() {
-        closeDatabase();
-
-        ApplicationLoader.applicationContext.deleteDatabase(AyuConstants.AYU_DATABASE);
+        AyuDataLock.LOCK.writeLock().lock();
+        try {
+            closeDatabase();
+            ApplicationLoader.applicationContext.deleteDatabase(AyuConstants.AYU_DATABASE);
+        } finally {
+            AyuDataLock.LOCK.writeLock().unlock();
+        }
     }
 
     public static synchronized void exportDatabase(OutputStream outputStream) throws IOException {
@@ -271,15 +394,21 @@ public class AyuData {
             throw new IOException("Database export stream is null");
         }
 
-        closeDatabase();
-        try (ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(outputStream))) {
-            File dbFile = getDatabaseFile();
-            addFileToZip(zipOutputStream, dbFile);
-            addFileToZip(zipOutputStream, getWalFile(dbFile));
-            addFileToZip(zipOutputStream, getShmFile(dbFile));
+        AyuDataLock.LOCK.writeLock().lock();
+        try {
+            closeDatabase();
+            try (ZipOutputStream zipOutputStream = new ZipOutputStream(new BufferedOutputStream(outputStream))) {
+                File dbFile = getDatabaseFile();
+                addFileToZip(zipOutputStream, dbFile);
+                addFileToZip(zipOutputStream, getWalFile(dbFile));
+                addFileToZip(zipOutputStream, getShmFile(dbFile));
+            } finally {
+                reopenDatabaseLocked();
+            }
         } finally {
-            create();
+            AyuDataLock.LOCK.writeLock().unlock();
         }
+        notifyDatabaseChanged();
     }
 
     public static synchronized void importDatabase(InputStream inputStream) throws IOException {
@@ -322,17 +451,25 @@ public class AyuData {
                 throw new IOException("Imported backup does not contain a valid database file");
             }
 
-            closeDatabase();
-            backupCurrentDatabaseFiles(backupDir, dbFile);
+            // 替换库文件的整个窗口都持写锁，DAO 读取会在此期间等待而非崩溃
+            AyuDataLock.LOCK.writeLock().lock();
             try {
-                replaceCurrentDatabaseFiles(importDbFile, importWalFile, importShmFile, dbFile);
-                validateImportedDatabaseFiles();
-            } catch (IOException e) {
-                restoreCurrentDatabaseFiles(backupDir, dbFile);
-                throw e;
+                closeDatabase();
+                backupCurrentDatabaseFiles(backupDir, dbFile);
+                try {
+                    replaceCurrentDatabaseFiles(importDbFile, importWalFile, importShmFile, dbFile);
+                    validateImportedDatabaseFiles();
+                } catch (IOException e) {
+                    restoreCurrentDatabaseFiles(backupDir, dbFile);
+                    throw e;
+                } finally {
+                    reopenDatabaseLocked();
+                }
+            } finally {
+                AyuDataLock.LOCK.writeLock().unlock();
             }
         } finally {
-            create();
+            notifyDatabaseChanged();
             if (importDir.exists()) {
                 FileUtil.deleteDirectory(importDir);
             }
@@ -351,6 +488,42 @@ public class AyuData {
             copyStream(fileInputStream, zipOutputStream);
         }
         zipOutputStream.closeEntry();
+    }
+
+    /**
+     * 把导入流落到指定文件。zip 备份取出其中的数据库主文件，裸数据库直接写入。
+     *
+     * @return 是否得到了可用的数据库文件
+     */
+    public static boolean writeImportSourceToFile(InputStream inputStream, File targetFile) throws IOException {
+        if (inputStream == null || targetFile == null) {
+            return false;
+        }
+        BufferedInputStream bufferedInputStream = inputStream instanceof BufferedInputStream
+                ? (BufferedInputStream) inputStream
+                : new BufferedInputStream(inputStream);
+        if (!isZipStream(bufferedInputStream)) {
+            copyStreamToFile(bufferedInputStream, targetFile);
+            return targetFile.length() > 0L;
+        }
+        try (ZipInputStream zipInputStream = new ZipInputStream(bufferedInputStream)) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+                String entryName = new File(entry.getName()).getName();
+                // 合并/探测只需要已 checkpoint 的主库，忽略 -wal / -shm
+                if (AyuConstants.AYU_DATABASE.equals(entryName)) {
+                    copyStreamToFile(zipInputStream, targetFile);
+                    zipInputStream.closeEntry();
+                    return targetFile.length() > 0L;
+                }
+                zipInputStream.closeEntry();
+            }
+        }
+        return false;
     }
 
     private static boolean isZipStream(BufferedInputStream inputStream) throws IOException {

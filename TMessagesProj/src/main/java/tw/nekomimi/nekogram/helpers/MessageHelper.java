@@ -1007,9 +1007,9 @@ public class MessageHelper extends BaseController {
         if (!AyuFilter.shouldHideFilteredMessages() && !AyuFilter.shouldHideIgnoredBlockedMessages()) {
             return false;
         }
-        long fromId = MessageObject.getFromChatId(message);
-        boolean blocked = AyuFilter.shouldHideIgnoredBlockedMessages() && (isBlockedUser(fromId) || AyuFilter.isBlockedChannel(fromId));
-        return blocked || AyuFilter.shouldHideFilteredMessage(new MessageObject(currentAccount, message, false, false), null);
+        MessageObject msgObj = new MessageObject(currentAccount, message, false, false);
+        boolean blocked = AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(msgObj);
+        return blocked || AyuFilter.shouldHideFilteredMessage(msgObj, null);
     }
 
     public static void copyVideoFrameToClipboard(File videoFile, long positionMs, View bulletinContainer, Theme.ResourcesProvider resourcesProvider, Runnable fallbackAction) {

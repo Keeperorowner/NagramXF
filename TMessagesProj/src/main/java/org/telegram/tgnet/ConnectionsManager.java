@@ -404,18 +404,26 @@ public class ConnectionsManager extends BaseController {
         }
 
         // --- Ghost Mode ---
-        AyuGhostUtils.InterceptResult interceptResult = AyuGhostUtils.interceptRequest(object, onCompleteOrig, currentAccount);
-        if (interceptResult.blockRequest()) {
-            FileLog.d("GhostMode: Request " + object.getClass().getSimpleName() + " blocked by handler.");
-            return;
+        TLObject ghostObject = object;
+        RequestDelegate onComplete = onCompleteOrig;
+        if (object instanceof com.radolyn.ayugram.utils.network.TLRPCWrappedBypass) {
+            ghostObject = ((com.radolyn.ayugram.utils.network.TLRPCWrappedBypass) object).inner;
+        } else {
+            AyuGhostUtils.InterceptResult interceptResult = AyuGhostUtils.interceptRequest(object, onCompleteOrig, currentAccount);
+            if (interceptResult.blockRequest()) {
+                FileLog.d("GhostMode: Request " + object.getClass().getSimpleName() + " blocked by handler.");
+                return;
+            }
+            onComplete = interceptResult.effectiveOnComplete();
         }
-        final var onComplete = interceptResult.effectiveOnComplete();
+        final TLObject requestObject = ghostObject;
+        final RequestDelegate finalOnComplete = onComplete;
         // --- Ghost Mode ---
 
         try {
-            NativeByteBuffer buffer = new NativeByteBuffer(object.getObjectSize());
-            object.serializeToStream(buffer);
-            object.freeResources();
+            NativeByteBuffer buffer = new NativeByteBuffer(requestObject.getObjectSize());
+            requestObject.serializeToStream(buffer);
+            requestObject.freeResources();
 
             long startRequestTime = 0;
             if (BuildVars.DEBUG_PRIVATE_VERSION && BuildVars.LOGS_ENABLED || (connectionType & ConnectionTypeDownload) != 0) {
@@ -434,7 +442,7 @@ public class ConnectionsManager extends BaseController {
                         responseSize = buff.limit();
                         int magic = buff.readInt32(true);
                         try {
-                            resp = object.deserializeResponse(buff, magic, true);
+                            resp = requestObject.deserializeResponse(buff, magic, true);
                         } catch (Exception e2) {
                             if (BuildVars.DEBUG_PRIVATE_VERSION) {
                                 throw e2;
@@ -447,10 +455,10 @@ public class ConnectionsManager extends BaseController {
                         error.code = errorCode;
                         error.text = errorText;
                         if (BuildVars.LOGS_ENABLED && error.code != -2000) {
-                            FileLog.e(object + " got error " + error.code + " " + error.text);
+                            FileLog.e(requestObject + " got error " + error.code + " " + error.text);
                         }
                         if (NaConfig.INSTANCE.getShowRPCError().Bool()) {
-                            ErrorDatabase.showErrorToast(object, errorText);
+                            ErrorDatabase.showErrorToast(requestObject, errorText);
                         }
                     }
                     if ((connectionType & ConnectionTypeDownload) != 0 && VideoPlayer.activePlayers.isEmpty()) {
@@ -464,7 +472,7 @@ public class ConnectionsManager extends BaseController {
                             FileLog.d("Cleanup keys for " + currentAccount + " because of CONNECTION_NOT_INITED");
                         }
                         cleanup(true);
-                        sendRequest(object, onComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate);
+                        sendRequest(requestObject, finalOnComplete, onCompleteTimestamp, onQuickAck, onWriteToSocket, flags, datacenterId, connectionType, immediate);
                         return;
                     }
                     if (resp != null) {
@@ -472,13 +480,13 @@ public class ConnectionsManager extends BaseController {
                     }
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d("java received " + resp + (error != null ? " error = " + error : "") + " messageId = 0x" + Long.toHexString(requestMsgId));
-                        FileLog.dumpResponseAndRequest(currentAccount, object, resp, error, requestMsgId, finalStartRequestTime, requestToken);
+                        FileLog.dumpResponseAndRequest(currentAccount, requestObject, resp, error, requestMsgId, finalStartRequestTime, requestToken);
                     }
                     final TLObject finalResponse = resp;
                     final TLRPC.TL_error finalError = error;
                     Utilities.stageQueue.postRunnable(() -> {
-                        if (onComplete != null) {
-                            onComplete.run(finalResponse, finalError);
+                        if (finalOnComplete != null) {
+                            finalOnComplete.run(finalResponse, finalError);
                         } else if (onCompleteTimestamp != null) {
                             onCompleteTimestamp.run(finalResponse, finalError, timestamp);
                         } else if (finalResponse instanceof TLRPC.Updates) {

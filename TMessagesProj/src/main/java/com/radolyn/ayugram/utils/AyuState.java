@@ -19,6 +19,7 @@ public class AyuState {
     private static final AyuStateVariable allowReadPacket = new AyuStateVariable();
     private static final AyuStateVariable hideSelection = new AyuStateVariable();
     private static final AyuStateVariable automaticallyScheduled = new AyuStateVariable();
+    private static final AyuStateVariable allowDeleteDialogs = new AyuStateVariable();
     private static final LongSparseArray<ArrayList<Integer>> deletePermitted = new LongSparseArray<>();
 
     public static void setAllowReadPacket(boolean val, int resetAfter) {
@@ -46,6 +47,19 @@ public class AyuState {
 
     public static boolean getAutomaticallyScheduled() {
         return automaticallyScheduled.process();
+    }
+
+    /**
+     * 标记接下来的会话删除是用户主动发起的，此时不保存会话快照、并清除已有快照记录。
+     * resetAfter 为剩余生效次数，deleteDialog 内部会递归调用，需要按调用层数放行。
+     */
+    public static void setAllowDeleteDialogs(boolean val, int resetAfter) {
+        allowDeleteDialogs.val = val;
+        allowDeleteDialogs.resetAfter = resetAfter;
+    }
+
+    public static boolean getAllowDeleteDialogs() {
+        return allowDeleteDialogs.process();
     }
 
     public static void permitDeleteMessage(long dialogId, int messageId) {

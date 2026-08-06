@@ -132,6 +132,7 @@ public final class SettingsBackupHelper {
         spToJSON("nekox_config", configJson, null, includeApiKeys);
         spToJSON("pillstackconfig", configJson, null, includeApiKeys);
         spToJSON("aichatconfig", configJson, includeApiKeys ? null : key -> !"services".equals(key), true);
+        spToJSON("ayughostexclusionsconfig", configJson, null, includeApiKeys);
 
         return configJson.toString(indentSpaces);
     }
@@ -196,6 +197,8 @@ public final class SettingsBackupHelper {
         String[] preservePrefixes = {
                 AyuGhostPreferences.ghostReadExclusionPrefix,
                 AyuGhostPreferences.ghostTypingExclusionPrefix,
+                AyuGhostPreferences.ghostReadExceptionPrefix,
+                AyuGhostPreferences.ghostTypingExceptionPrefix,
                 AyuSavePreferences.saveExclusionPrefix,
                 LocalNameHelper.chatNameOverridePrefix,
                 LocalNameHelper.userNameOverridePrefix,
