@@ -707,7 +707,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 } else if (item.object instanceof String) {
                     cell.setTextAndSticker(item.text, (String) item.object, divider);
                 } else if (TextUtils.isEmpty(item.textValue)) {
-                    if (item.object instanceof Drawable) {
+                    if (item.drawable != null) {
+                        cell.setTextAndIcon(item.text, item.drawable, divider);
+                    } else if (item.object instanceof Drawable) {
                         cell.setTextAndIcon(item.text, (Drawable) item.object, divider);
                     } else if (item.iconResId == 0) {
                         cell.setText(item.text, divider);
@@ -715,7 +717,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                         cell.setTextAndIcon(item.text, item.iconResId, divider);
                     }
                 } else {
-                    if (item.object instanceof Drawable) {
+                    if (item.drawable != null) {
+                        cell.setTextAndValueAndIcon(item.text, item.textValue, item.drawable, divider);
+                    } else if (item.object instanceof Drawable) {
                         cell.setTextAndValueAndIcon(item.text, item.textValue, (Drawable) item.object, divider);
                     } else if (item.iconResId == 0) {
                         cell.setTextAndValue(item.text, item.textValue, divider);
@@ -731,6 +735,9 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                 }
                 cell.setEnabled(item.enabled, true);
+                final boolean hasSubtitle = !TextUtils.isEmpty(item.subtext);
+                cell.setSubtitle(item.subtext);
+                cell.getImageView().setTranslationY(hasSubtitle ? AndroidUtilities.dp(2) : 0);
                 break;
             case VIEW_TYPE_CHECK:
             case VIEW_TYPE_CHECKRIPPLE:
@@ -739,8 +746,19 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                     checkCell.setChecked(item.checked);
                 }
                 checkCell.setEnabled(item.enabled, null);
-                checkCell.setTextAndCheck(item.text, item.checked, divider);
+                if (TextUtils.isEmpty(item.textValue)) {
+                    checkCell.setTextAndCheck(item.text, item.checked, divider);
+                } else {
+                    final String checkText = item.text == null ? "" : item.text.toString();
+                    final String checkSubtext = item.textValue.toString();
+                    checkCell.setTextAndValueAndCheck(checkText, checkSubtext, item.checked, checkSubtext.contains("\n"), divider);
+                }
                 checkCell.itemId = item.id;
+                if (item.iconResId != 0) {
+                    checkCell.setIcon(item.iconResId);
+                } else {
+                    checkCell.removeIcon();
+                }
                 if (viewType == VIEW_TYPE_CHECKRIPPLE) {
                     holder.itemView.setBackgroundColor(Theme.getColor(item.checked ? Theme.key_windowBackgroundChecked : Theme.key_windowBackgroundUnchecked));
                 }
@@ -770,11 +788,34 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
             case VIEW_TYPE_TEXT_CHECK:
                 NotificationsCheckCell checkCell1 = (NotificationsCheckCell) holder.itemView;
                 final boolean multiline = item.subtext != null && item.subtext.toString().contains("\n");
-                checkCell1.setTextAndValueAndCheck(item.text, item.subtext, item.checked, 0, multiline, divider);
+                CharSequence checkValue = item.subtext;
+                if (multiline && checkValue != null) {
+                    String normalized = checkValue.toString();
+                    while (normalized.endsWith("\n")) {
+                        normalized = normalized.substring(0, normalized.length() - 1);
+                    }
+                    checkValue = normalized;
+                }
+                AndroidUtilities.setEnabled(checkCell1, item.enabled);
+                checkCell1.setTextAndValueAndCheck(item.text, checkValue, item.checked, 0, multiline, divider);
                 break;
             case VIEW_TYPE_ICON_TEXT_CHECK:
-                // TODO: image
-                ((NotificationsCheckCell) holder.itemView).setTextAndValueAndCheck(item.text, item.subtext, item.checked, divider);
+                NotificationsCheckCell iconCheckCell = (NotificationsCheckCell) holder.itemView;
+                AndroidUtilities.setEnabled(iconCheckCell, item.enabled);
+                final boolean iconMultiline = item.subtext != null && item.subtext.toString().contains("\n");
+                CharSequence iconCheckValue = item.subtext;
+                if (iconMultiline && iconCheckValue != null) {
+                    String normalized = iconCheckValue.toString();
+                    while (normalized.endsWith("\n")) {
+                        normalized = normalized.substring(0, normalized.length() - 1);
+                    }
+                    iconCheckValue = normalized;
+                }
+                if (item.drawable != null) {
+                    iconCheckCell.setTextAndValueAndDrawableAndCheck(item.text, iconCheckValue, item.drawable, item.checked, 0, iconMultiline, divider);
+                } else {
+                    iconCheckCell.setTextAndValueAndIconAndCheck(item.text, iconCheckValue, item.iconResId, item.checked, 0, iconMultiline, divider);
+                }
                 break;
             case VIEW_TYPE_SHADOW_COLLAPSE_BUTTON:
             case VIEW_TYPE_SHADOW:
@@ -1121,7 +1162,12 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
     private void updateColors(RecyclerView.ViewHolder holder) {
         if (holder.itemView instanceof Theme.Colorable) {
             ((Theme.Colorable) holder.itemView).updateColors();
-            if (shouldApplyBackground(holder.getItemViewType())) {
+        }
+        if (shouldApplyBackground(holder.getItemViewType())) {
+            final UItem item = getItem(holder.getAdapterPosition());
+            if (item != null && item.transparent) {
+                holder.itemView.setBackground(null);
+            } else {
                 final int key_background = dialog ? Theme.key_dialogBackground : Theme.key_windowBackgroundWhite;
                 holder.itemView.setBackgroundColor(getThemedColor(key_background));
             }

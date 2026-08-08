@@ -5,18 +5,28 @@ set(CMAKE_C_FLAGS "-w -std=c11 -DANDROID -D_LARGEFILE_SOURCE=1 -g -Wno-error=imp
 set(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -flto=full")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden -flto=full")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -flto=full -Wl,--gc-sections -Wl,--icf=safe -Wl,-Bsymbolic -Wl,--exclude-libs,libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libflac.a,librlottie.a,libsqlite.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswscale.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavformat.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavutil.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswresample.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a,
-${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libdav1d.a,
-${CMAKE_HOME_DIRECTORY}/boringssl/lib/${ANDROID_ABI}/libssl.a,
-${CMAKE_HOME_DIRECTORY}/boringssl/lib/${ANDROID_ABI}/libcrypto.a,
-${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtde2e.a,
-${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtdutils.a")
+#These link flags apply to the main ${NATIVE_LIB} only (see target_link_options below);
+#keeping them out of global CMAKE_SHARED_LINKER_FLAGS lets other shared targets
+#(e.g. aliuhook) link without requiring the tmessages static archives.
+set(TMESSAGES_EXCLUDE_LIBS "libtgvoip.a,libtgcalls.a,libtgcalls_tp.a,libtgnet.a,libflac.a,librlottie.a,libsqlite.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswscale.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavformat.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavcodec.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libavutil.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libswresample.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libvpx.a,"
+        "${CMAKE_HOME_DIRECTORY}/ffmpeg/${ANDROID_ABI}/libdav1d.a,"
+        "${CMAKE_HOME_DIRECTORY}/boringssl/lib/${ANDROID_ABI}/libssl.a,"
+        "${CMAKE_HOME_DIRECTORY}/boringssl/lib/${ANDROID_ABI}/libcrypto.a,"
+        "${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtde2e.a,"
+        "${CMAKE_HOME_DIRECTORY}/tde2e/${ANDROID_ABI}/libtdutils.a")
+string(CONCAT TMESSAGES_EXCLUDE_LIBS ${TMESSAGES_EXCLUDE_LIBS})
+set(TMESSAGES_LINKER_FLAGS
+        -flto=full
+        -Wl,--gc-sections
+        -Wl,--icf=safe
+        -Wl,-Bsymbolic
+        "-Wl,--exclude-libs,${TMESSAGES_EXCLUDE_LIBS}")
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
     enable_language(ASM)
@@ -632,6 +642,7 @@ target_include_directories(${NATIVE_LIB} PUBLIC
 
 target_link_options(${NATIVE_LIB} PRIVATE "-Wl,-z,max-page-size=16384")
 target_link_options(${NATIVE_LIB} PRIVATE "-Wl,-z,common-page-size=16384")
+target_link_options(${NATIVE_LIB} PRIVATE ${TMESSAGES_LINKER_FLAGS})
 target_link_libraries(${NATIVE_LIB}
         -Wl,--whole-archive rnnoise openh264 voipandroid -Wl,--no-whole-archive
         tgvoip
@@ -661,6 +672,58 @@ target_link_libraries(${NATIVE_LIB}
         android
         OpenSLES
         breakpad)
+
+#aliuhook: ART hook runtime for the plugin subsystem (LSPlant + shadowhook).
+#shadowhook supports arm/arm64 only, so x86/x86_64 builds simply skip this
+#target and Java falls back to "native runtime unavailable".
+if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    set(LSPLANT_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
+    set(DEX_BUILDER_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
+    add_subdirectory(third_party/lsplant/lsplant/src/main/jni)
+
+    if (${ANDROID_ABI} STREQUAL "arm64-v8a")
+        set(SHADOWHOOK_ARCH arm64)
+    else ()
+        set(SHADOWHOOK_ARCH arm)
+    endif ()
+
+    set(SHADOWHOOK_DIR ${CMAKE_HOME_DIRECTORY}/third_party/shadowhook/shadowhook/src/main/cpp)
+    file(GLOB SHADOWHOOK_SOURCES
+            ${SHADOWHOOK_DIR}/*.c
+            ${SHADOWHOOK_DIR}/arch/${SHADOWHOOK_ARCH}/*.c
+            ${SHADOWHOOK_DIR}/arch/${SHADOWHOOK_ARCH}/*.S
+            ${SHADOWHOOK_DIR}/common/*.c
+            ${SHADOWHOOK_DIR}/third_party/xdl/*.c)
+    #sh_jni.c carries shadowhook's own JNI_OnLoad/Java bindings - we have our own.
+    list(FILTER SHADOWHOOK_SOURCES EXCLUDE REGEX "sh_jni\\.c$")
+
+    add_library(shadowhook STATIC ${SHADOWHOOK_SOURCES})
+    target_include_directories(shadowhook PRIVATE
+            ${SHADOWHOOK_DIR}
+            ${SHADOWHOOK_DIR}/include
+            ${SHADOWHOOK_DIR}/arch/${SHADOWHOOK_ARCH}
+            ${SHADOWHOOK_DIR}/common
+            ${SHADOWHOOK_DIR}/third_party/xdl
+            ${SHADOWHOOK_DIR}/third_party/bsd
+            ${SHADOWHOOK_DIR}/third_party/lss)
+
+    add_library(aliuhook SHARED
+            aliuhook/aliuhook.cpp)
+    set_target_properties(aliuhook PROPERTIES CXX_STANDARD 20 CXX_STANDARD_REQUIRED ON)
+    target_include_directories(aliuhook PRIVATE
+            ${CMAKE_HOME_DIRECTORY}/third_party/lsplant/lsplant/src/main/jni/include
+            ${SHADOWHOOK_DIR}/include)
+    target_compile_options(aliuhook PRIVATE -fvisibility=hidden)
+    target_link_options(aliuhook PRIVATE "-Wl,-z,max-page-size=16384")
+    #sources are compiled with the global -flto=full, so the link needs it too
+    target_link_options(aliuhook PRIVATE -flto=full -Wl,--gc-sections -Wl,--icf=safe)
+    target_link_libraries(aliuhook
+            lsplant_static
+            shadowhook
+            log
+            z
+            dl)
+endif ()
 
 #if (${ANDROID_ABI} STREQUAL "x86" OR ${ANDROID_ABI} STREQUAL "x86_64")
 #    target_link_libraries(${NATIVE_LIB}

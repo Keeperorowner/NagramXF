@@ -43,6 +43,7 @@ public class Utilities {
     public static volatile DispatchQueue searchQueue = new DispatchQueue("searchQueue");
     public static volatile DispatchQueue phoneBookQueue = new DispatchQueue("phoneBookQueue");
     public static volatile DispatchQueue themeQueue = new DispatchQueue("themeQueue");
+    public static volatile DispatchQueue pluginsQueue = new DispatchQueue("pluginsQueue");
     public static volatile DispatchQueue externalNetworkQueue = new DispatchQueue("externalNetworkQueue");
     public static volatile DispatchQueue videoPlayerQueue;
 

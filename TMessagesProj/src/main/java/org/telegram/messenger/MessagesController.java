@@ -52,6 +52,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.Consumer;
 
+import com.exteragram.messenger.plugins.PluginsController;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.SQLite.SQLiteDatabase;
 import org.telegram.SQLite.SQLiteException;
@@ -18162,7 +18164,14 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     // must be run from Utilities.stageQueue
-    public void processUpdates(final TLRPC.Updates updates, boolean fromQueue) {
+    public void processUpdates(TLRPC.Updates updates, boolean fromQueue) {
+        if (updates == null) {
+            return;
+        }
+        updates = PluginsController.getInstance().executeUpdatesHook(updates.getClass().getSimpleName(), currentAccount, updates);
+        if (updates == null) {
+            return;
+        }
         ArrayList<Long> needGetChannelsDiff = null;
         boolean needGetDiff = false;
         boolean needReceivedQueue = false;
@@ -18334,6 +18343,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         });
                     } else {
                         boolean printUpdate = updatePrintingUsersWithNewMessages(-updates.chat_id, objArr);
+                        final long chatIdForUiUpdate = -updates.chat_id;
                         if (printUpdate) {
                             updatePrintingStrings();
                         }
@@ -18342,7 +18352,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_USER_PRINT);
                             }
 
-                            updateInterfaceWithMessages(-updates.chat_id, objArr, 0);
+                            updateInterfaceWithMessages(chatIdForUiUpdate, objArr, 0);
                             getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
                         });
                     }
@@ -18702,6 +18712,19 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public boolean processUpdateArray(ArrayList<TLRPC.Update> updates, ArrayList<TLRPC.User> usersArr, ArrayList<TLRPC.Chat> chatsArr, boolean fromGetDifference, int date) {
+        if (updates != null && !updates.isEmpty()) {
+            ArrayList<TLRPC.Update> hookedUpdates = new ArrayList<>(updates.size());
+            for (TLRPC.Update update : updates) {
+                if (update == null) {
+                    continue;
+                }
+                TLRPC.Update hookedUpdate = PluginsController.getInstance().executeUpdateHook(update.getClass().getSimpleName(), currentAccount, update);
+                if (hookedUpdate != null) {
+                    hookedUpdates.add(hookedUpdate);
+                }
+            }
+            updates = hookedUpdates;
+        }
         if (updates.isEmpty()) {
             if (usersArr != null || chatsArr != null) {
                 AndroidUtilities.runOnUIThread(() -> {

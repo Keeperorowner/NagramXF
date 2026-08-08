@@ -299,6 +299,22 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return i;
     }
 
+    public static UItem asCheck(int id, CharSequence text, CharSequence value) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECK, false);
+        i.id = id;
+        i.text = text;
+        i.textValue = value;
+        return i;
+    }
+
+    public static UItem asCheck(int id, CharSequence text, int iconResId) {
+        UItem i = new UItem(UniversalAdapter.VIEW_TYPE_CHECK, false);
+        i.id = id;
+        i.text = text;
+        i.iconResId = iconResId;
+        return i;
+    }
+
     public static UItem asRadio(int id, CharSequence text) {
         UItem i = new UItem(UniversalAdapter.VIEW_TYPE_RADIO, false);
         i.id = id;
@@ -674,6 +690,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
         return this;
     }
 
+    public UItem setTransparent(boolean transparent) {
+        this.transparent = transparent;
+        return this;
+    }
+
     public UItem setLocked(boolean locked) {
         this.locked = locked;
         return this;
@@ -686,6 +707,11 @@ public class UItem extends AdapterWithDiffUtils.Item {
 
     public UItem red() {
         this.red = true;
+        return this;
+    }
+
+    public UItem setIcon(int iconResId) {
+        this.iconResId = iconResId;
         return this;
     }
 

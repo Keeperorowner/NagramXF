@@ -31,6 +31,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.ui.PluginsActivity;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
@@ -82,6 +85,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     private int ayuMomentsRow;
     private int translatorRow;
     private int chatRow;
+    private int pluginsRow;
     private int passcodeRow;
     private int experimentRow;
     private int categoriesEndRow;
@@ -99,6 +103,11 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         ayuMomentsRow = addRow();
         translatorRow = addRow();
         chatRow = addRow();
+        if (PluginsController.isPluginEngineSupported()) {
+            pluginsRow = addRow();
+        } else {
+            pluginsRow = -1;
+        }
         if (!PasscodeHelper.isSettingsHidden()) {
             passcodeRow = addRow();
         } else {
@@ -250,7 +259,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             searchListView.setOverScrollMode(OVER_SCROLL_NEVER);
             searchListView.setLayoutManager(new LinearLayoutManager(parent, LinearLayoutManager.VERTICAL, false));
 
-            var adapter = new RecyclerListView.SelectionAdapter() {
+            RecyclerListView.SelectionAdapter adapter = new RecyclerListView.SelectionAdapter() {
                 @Override
                 public boolean isEnabled(RecyclerView.ViewHolder holder) {
                     return true;
@@ -392,6 +401,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new NekoAppearanceSettingsActivity());
         } else if (position == ayuMomentsRow) {
             presentFragment(new NekoAyuMomentsSettingsActivity());
+        } else if (position == pluginsRow) {
+            presentFragment(new PluginsActivity());
         } else if (position == passcodeRow) {
             presentFragment(new NekoPasscodeSettingsActivity());
         } else if (position == experimentRow) {
@@ -436,6 +447,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
                         textCell.setTextAndIcon(getString(R.string.AyuMoments), R.drawable.msg2_reactions2, true);
                     } else if (position == translatorRow) {
                         textCell.setTextAndIcon(getString(R.string.TranslatorSettings), R.drawable.ic_translate, true);
+                    } else if (position == pluginsRow) {
+                        textCell.setTextAndIcon(getString(R.string.Plugins), R.drawable.msg_plugins, true);
                     } else if (position == passcodeRow) {
                         textCell.setTextAndIcon(getString(R.string.PasscodeNeko), R.drawable.msg_permissions, true);
                     } else if (position == experimentRow) {
@@ -455,8 +468,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == categoriesEndRow || position == cloudSyncEndRow) {
                 return TYPE_SHADOW;
-            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == passcodeRow || position == experimentRow || position == cloudSyncRow || position == translatorRow ||
-                    position == aboutRow) {
+            } else if (position == chatRow || position == generalRow || position == appearanceRow || position == ayuMomentsRow || position == pluginsRow || position == passcodeRow || position == experimentRow || position == cloudSyncRow || position == translatorRow || position == aboutRow) {
                 return TYPE_TEXT;
             }
             return TYPE_SHADOW;

@@ -8,6 +8,8 @@ import android.net.Uri;
 import android.text.TextUtils;
 
 import com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity;
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.ui.PluginsActivity;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -113,6 +115,15 @@ public class SettingsHelper {
                 case "regex":
                     fragment = nekox_fragment = new RegexFiltersSettingActivity();
                     break;
+                case "plugins":
+                case "plugin":
+                case "p":
+                    if (!PluginsController.isPluginEngineSupported()) {
+                        unknown.run();
+                        return;
+                    }
+                    fragment = new PluginsActivity();
+                    break;
                 case "send_logs":
                     sendLogs(activity, false);
                     return;
@@ -174,6 +185,16 @@ public class SettingsHelper {
         fragments.add(new NekoTranslatorSettingsActivity());
 
         String n_title = getString(R.string.NekoSettings);
+        if (PluginsController.isPluginEngineSupported()) {
+            items.add(new SettingsSearchResult(
+                    900000,
+                    getString(R.string.Plugins),
+                    n_title,
+                    null,
+                    R.drawable.msg_plugins,
+                    () -> callback.presentFragment(new PluginsActivity())
+            ));
+        }
         for (BaseNekoXSettingsActivity fragment: fragments) {
             int uid = fragment.getBaseGuid();
             int drawable = fragment.getDrawable();

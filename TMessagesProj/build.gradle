@@ -40,6 +40,48 @@ alias = alias ?: System.getenv('ALIAS_NAME')
 pwd = pwd ?: System.getenv('ALIAS_PASS')
 
 def nativeTarget = System.getenv('NATIVE_TARGET') ?: ''
+// Java runtime classes come from src/plugin/java/com/chaquo (see README there).
+def chaquopyPythonVersion = '3.11'
+def chaquopyTargetVersion = '3.11.10-1'
+// The Python runtime ships only for the ABIs that have a java/chaquopy.so bridge in
+// src/main/prebuilt/chaquopy-java-bridge (ARM only, matching assets/plugins_pysdk). Building the
+// runtime for an ABI without that bridge makes Python fail to start on that device.
+def chaquopyAbis = ['armeabi-v7a', 'arm64-v8a'].findAll { nativeTarget.isBlank() || it == nativeTarget }
+def abiToNdkTriple = [
+    'armeabi-v7a': 'arm-linux-androideabi',
+    'arm64-v8a'  : 'aarch64-linux-android',
+    'x86_64'     : 'x86_64-linux-android',
+]
+
+def ndkHostTag = {
+    if (OperatingSystem.current().windows) {
+        return 'windows-x86_64'
+    }
+    if (OperatingSystem.current().linux) {
+        return 'linux-x86_64'
+    }
+    if (OperatingSystem.current().macOsX) {
+        return System.getProperty('os.arch') == 'aarch64' ? 'darwin-arm64' : 'darwin-x86_64'
+    }
+    throw new GradleException("Unsupported host OS for NDK: ${OperatingSystem.current()}")
+}
+
+def resolveNdkDir = {
+    def ndkDirPath = properties?.getProperty('ndk.dir') ?: System.getenv('ANDROID_NDK_ROOT') ?: System.getenv('ANDROID_NDK_HOME')
+    if (ndkDirPath != null && !ndkDirPath.isBlank()) {
+        return file(ndkDirPath)
+    }
+    def sdkDirPath = properties?.getProperty('sdk.dir') ?: System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
+    if (sdkDirPath != null && !sdkDirPath.isBlank()) {
+        def candidate = file("${sdkDirPath}/ndk/27.2.12479018")
+        if (candidate.exists()) {
+            return candidate
+        }
+    }
+    return null
+}
+
+def resolvedNdkDir = resolveNdkDir()
 
 if (nativeTarget == 'SKIP') {
     tasks.configureEach { task ->
@@ -172,9 +214,98 @@ android {
         }
     }
 
-    sourceSets.main.jniLibs.srcDirs = ['./jni/']
+    sourceSets.main.jniLibs.srcDirs = ['./jni/', "$buildDir/generated/chaquopyJniLibs"]
+    sourceSets.main.assets.srcDirs += ["$buildDir/generated/chaquopyBootstrapNative"]
 
     namespace = 'org.telegram.messenger'
+}
+
+configurations {
+    chaquopyTargetJni
+}
+
+def chaquopyTargetJniConfig = configurations.getByName("chaquopyTargetJni")
+def chaquopyBridgeDir = file("src/main/prebuilt/chaquopy-java-bridge")
+
+tasks.register("prepareChaquopyJniLibs", Sync) {
+    def outputDir = file("$buildDir/generated/chaquopyJniLibs")
+    inputs.files(chaquopyTargetJniConfig)
+    inputs.dir(chaquopyBridgeDir)
+    outputs.dir(outputDir)
+    into(outputDir)
+    from(chaquopyTargetJniConfig.collect { zipTree(it) }) {
+        include('jniLibs/**')
+        eachFile {
+            relativePath = new RelativePath(!file.isDirectory(), *relativePath.segments[1..-1])
+        }
+        includeEmptyDirs = false
+    }
+    // Vendored JNI bridge (lib/<abi>/libchaquopy_java.so); must match the assets-side build.
+    chaquopyAbis.each { abi ->
+        def bridge = new File(chaquopyBridgeDir, "${abi}/libchaquopy_java.so")
+        doFirst {
+            if (!bridge.exists()) {
+                throw new GradleException("Missing Chaquopy JNI bridge for ${abi}: ${bridge}")
+            }
+        }
+        from(bridge) {
+            into abi
+        }
+    }
+    doFirst {
+        if (resolvedNdkDir == null || !resolvedNdkDir.exists()) {
+            throw new GradleException("Android NDK directory is unavailable, cannot package libc++_shared.so for plugin runtime.")
+        }
+    }
+    chaquopyAbis.each { abi ->
+        def triple = abiToNdkTriple[abi]
+        if (triple == null) {
+            throw new GradleException("Unsupported ABI for plugin runtime packaging: ${abi}")
+        }
+        def stlFile = new File(resolvedNdkDir, "toolchains/llvm/prebuilt/${ndkHostTag()}/sysroot/usr/lib/${triple}/libc++_shared.so")
+        from(stlFile) {
+            into abi
+        }
+    }
+}
+
+tasks.named("preBuild").configure {
+    dependsOn("prepareChaquopyJniLibs")
+    dependsOn("prepareChaquopyBootstrapNative")
+}
+
+// bootstrap-native/<abi>/ = CPython extension modules from the target zip's lib-dynload/ plus
+// the vendored java/chaquopy.so Cython module (not available from Maven).
+tasks.register("prepareChaquopyBootstrapNative", Sync) {
+    def outputDir = file("$buildDir/generated/chaquopyBootstrapNative")
+    def bridgeDir = file("src/main/prebuilt/chaquopy-java-bridge")
+    inputs.files(chaquopyTargetJniConfig)
+    inputs.dir(bridgeDir)
+    outputs.dir(outputDir)
+    into(outputDir)
+    from(chaquopyTargetJniConfig.collect { zipTree(it) }) {
+        include('lib-dynload/**')
+        eachFile { fcd ->
+            def segs = fcd.relativePath.segments
+            if (segs.length >= 2 && segs[0] == 'lib-dynload') {
+                fcd.relativePath = new RelativePath(true, 'chaquopy', 'bootstrap-native', *segs[1..-1])
+            } else {
+                fcd.exclude()
+            }
+        }
+        includeEmptyDirs = false
+    }
+    chaquopyAbis.each { abi ->
+        def bridge = new File(bridgeDir, "${abi}/chaquopy.so")
+        doFirst {
+            if (!bridge.exists()) {
+                throw new GradleException("Missing Chaquopy Java bridge for ${abi}: ${bridge}")
+            }
+        }
+        from(bridge) {
+            into "chaquopy/bootstrap-native/${abi}/java"
+        }
+    }
 }
 
 androidComponents {
@@ -196,6 +327,7 @@ configurations.configureEach {
     exclude group: 'androidx.recyclerview', module: 'recyclerview'
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+    exclude group: 'org.jetbrains', module: 'annotations-java5'
 }
 
 dependencies {
@@ -246,7 +378,7 @@ dependencies {
     // kotlin
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     // utilities
-    implementation 'org.maplibre.gl:android-sdk:13.1.0'
+    implementation 'org.maplibre.gl:android-sdk-opengl:13.1.0'
     // network
     implementation 'com.squareup.okhttp3:okhttp:5.3.2'
     implementation 'dnsjava:dnsjava:3.6.4'
@@ -271,6 +403,12 @@ dependencies {
 
     // wear auth
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'
+
+    chaquopyAbis.each { abi ->
+        chaquopyTargetJni "com.chaquo.python:target:${chaquopyTargetVersion}:${abi}@zip"
+    }
+    implementation 'com.linkedin.dexmaker:dexmaker:2.28.3'
+    implementation 'org.mvel:mvel2:2.5.2.Final'
 
     compileOnly fileTree('libs')
 }

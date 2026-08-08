@@ -60,6 +60,10 @@ import android.text.style.ClickableSpan;
 import android.util.Base64;
 import android.util.SparseIntArray;
 import android.view.ActionMode;
+
+import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.plugins.IntentsController;
+import com.exteragram.messenger.plugins.PluginsController;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
@@ -470,6 +474,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         instance = this;
         ApplicationLoader.postInitApplication();
+        ExteraConfig.init();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
         registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
@@ -668,7 +673,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             .add(NotificationCenter.requestPermissions)
             .add(NotificationCenter.billingConfirmPurchaseError)
             .add(NotificationCenter.tlSchemeParseException)
-            .add(NotificationCenter.memoryLeakFoundException);
+            .add(NotificationCenter.memoryLeakFoundException)
+            .add(NotificationCenter.pluginMenuItemsUpdated);
 
         LiteMode.addOnPowerSaverAppliedListener(onPowerSaverCallback = this::onPowerSaver);
         if (actionBarLayout.getFragmentStack().isEmpty() && (layersActionBarLayout == null || layersActionBarLayout.getFragmentStack().isEmpty())) {
@@ -1333,6 +1339,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             drawerLayoutContainer.closeDrawer(false);
         }
 
+        PluginsController.getInstance().loadPluginSettings();
         switchingAccount = false;
     }
 
@@ -2216,6 +2223,19 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @SuppressLint("Range")
     private boolean handleIntent(Intent intent, boolean isNew, boolean restore, boolean fromPassword, Browser.Progress progress, boolean rebuildFragments, boolean openedTelegram) {
+        boolean stopped = IntentsController.dispatchBeforeIntent(intent);
+        try {
+            if (stopped) {
+                return true;
+            }
+            return handleIntentInternal(intent, isNew, restore, fromPassword, progress, rebuildFragments, openedTelegram);
+        } finally {
+            IntentsController.dispatchAfterIntent(intent);
+        }
+    }
+
+    @SuppressLint("Range")
+    private boolean handleIntentInternal(Intent intent, boolean isNew, boolean restore, boolean fromPassword, Browser.Progress progress, boolean rebuildFragments, boolean openedTelegram) {
         if (GiftInfoBottomSheet.handleIntent(intent, progress)) {
             return true;
         }
@@ -7983,6 +8003,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         } else if (id == NotificationCenter.mainUserInfoChanged) {
             refreshDrawer(true);
         } else if (id == NotificationCenter.attachMenuBotsDidLoad) {
+            refreshDrawer(true);
+        } else if (id == NotificationCenter.pluginMenuItemsUpdated) {
             refreshDrawer(true);
         } else if (id == NotificationCenter.needShowAlert) {
             final Integer reason = (Integer) args[0];

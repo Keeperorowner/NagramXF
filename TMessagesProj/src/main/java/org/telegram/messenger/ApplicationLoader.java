@@ -62,6 +62,10 @@ import tw.nekomimi.nekogram.NekoConfig;
 import org.maplibre.android.MapLibre;
 import xyz.nextalone.nagram.NaConfig;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
+import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.plugins.PluginsConstants;
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.utils.NativeCrashHandler;
 
 import static android.os.Build.VERSION.SDK_INT;
 
@@ -79,9 +83,15 @@ public class ApplicationLoader extends Application {
 
     private static ConnectivityManager connectivityManager;
     private static volatile boolean applicationInited = false;
+    private static volatile boolean pluginLifecycleCallbacksRegistered = false;
     private static volatile  ConnectivityManager.NetworkCallback networkCallback;
     private static long lastNetworkCheckTypeTime;
     private static int lastKnownNetworkType = -1;
+    private static int pluginStartedActivities;
+    private static int pluginResumedActivities;
+    private static final long PLUGIN_LIFECYCLE_DISPATCH_DELAY_MS = 200L;
+    private static final Runnable pluginPauseEventRunnable = () -> PluginsController.getInstance().executeOnAppEvent(PluginsConstants.APP_PAUSE);
+    private static final Runnable pluginStopEventRunnable = () -> PluginsController.getInstance().executeOnAppEvent(PluginsConstants.APP_STOP);
 
     public static long startTime;
 
@@ -223,6 +233,11 @@ public class ApplicationLoader extends Application {
         }
         applicationInited = true;
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
+        try {
+            NativeCrashHandler.init(NativeCrashHandler.getCrashFlagPath());
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
 
         try {
             LocaleController.getInstance(); //TODO improve
@@ -277,6 +292,9 @@ public class ApplicationLoader extends Application {
         NekoConfig.init();
         NaConfig.init();
         LastSeenHelper.preload();
+        ExteraConfig.init();
+        installPluginCrashHandler();
+        registerPluginLifecycleCallbacks();
         SharedPrefsHelper.init(applicationContext);
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(!NaConfig.INSTANCE.getDisableCrashlyticsCollection().Bool());
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
@@ -382,6 +400,110 @@ public class ApplicationLoader extends Application {
         LauncherIconController.tryFixLauncherIconIfNeeded();
         ProxyRotationController.init();
         ProxyPingController.init();
+    }
+
+    private static void installPluginCrashHandler() {
+        if (!ExteraConfig.pluginsEngine) {
+            return;
+        }
+        final Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
+            try {
+                String stackTrace = Log.getStackTraceString(error);
+                String crashedPluginId = null;
+                for (String pluginId : PluginsController.getInstance().plugins.keySet()) {
+                    if (stackTrace.contains(pluginId)) {
+                        crashedPluginId = pluginId;
+                    }
+                }
+                if (crashedPluginId != null) {
+                    PluginsController.markPendingSafeModeCrash(
+                            PluginsController.SafeModeReason.PLUGIN_CRASH, crashedPluginId);
+                }
+            } catch (Throwable ignore) {
+            }
+            if (previous != null) {
+                previous.uncaughtException(thread, error);
+            }
+        });
+    }
+
+    private static void registerPluginLifecycleCallbacks() {
+        if (pluginLifecycleCallbacksRegistered || applicationLoaderInstance == null) {
+            return;
+        }
+        pluginLifecycleCallbacksRegistered = true;
+        applicationLoaderInstance.registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+            @Override
+            public void onActivityCreated(@NonNull Activity activity, @Nullable android.os.Bundle savedInstanceState) {
+            }
+
+            @Override
+            public void onActivityStarted(@NonNull Activity activity) {
+                cancelPluginStopEvent();
+                pluginStartedActivities++;
+            }
+
+            @Override
+            public void onActivityResumed(@NonNull Activity activity) {
+                cancelPluginPauseEvent();
+                if (++pluginResumedActivities == 1) {
+                    PluginsController.getInstance().executeOnAppEvent(PluginsConstants.APP_RESUME);
+                }
+            }
+
+            @Override
+            public void onActivityPaused(@NonNull Activity activity) {
+                if (pluginResumedActivities > 0 && --pluginResumedActivities == 0) {
+                    schedulePluginPauseEvent();
+                }
+            }
+
+            @Override
+            public void onActivityStopped(@NonNull Activity activity) {
+                if (pluginStartedActivities > 0 && --pluginStartedActivities == 0) {
+                    schedulePluginStopEvent();
+                }
+            }
+
+            @Override
+            public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull android.os.Bundle outState) {
+            }
+
+            @Override
+            public void onActivityDestroyed(@NonNull Activity activity) {
+            }
+        });
+    }
+
+    private static void cancelPluginPauseEvent() {
+        if (applicationHandler != null) {
+            applicationHandler.removeCallbacks(pluginPauseEventRunnable);
+        }
+    }
+
+    private static void cancelPluginStopEvent() {
+        if (applicationHandler != null) {
+            applicationHandler.removeCallbacks(pluginStopEventRunnable);
+        }
+    }
+
+    private static void schedulePluginPauseEvent() {
+        if (applicationHandler != null) {
+            applicationHandler.removeCallbacks(pluginPauseEventRunnable);
+            applicationHandler.postDelayed(pluginPauseEventRunnable, PLUGIN_LIFECYCLE_DISPATCH_DELAY_MS);
+        } else {
+            pluginPauseEventRunnable.run();
+        }
+    }
+
+    private static void schedulePluginStopEvent() {
+        if (applicationHandler != null) {
+            applicationHandler.removeCallbacks(pluginStopEventRunnable);
+            applicationHandler.postDelayed(pluginStopEventRunnable, PLUGIN_LIFECYCLE_DISPATCH_DELAY_MS);
+        } else {
+            pluginStopEventRunnable.run();
+        }
     }
 
     // Local Push Service, TFoss implementation

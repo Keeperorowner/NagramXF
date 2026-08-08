@@ -3305,6 +3305,9 @@ public class Theme {
     public static Drawable chat_composeShadowRoundDrawable;
     public static Drawable chat_roundVideoShadow;
     public static Drawable chat_livePhoto;
+    public static Drawable chat_pluginIcon;
+    public static Drawable chat_settingsIcon;
+    public static Drawable chat_stickersIcon;
     public static MessageDrawable chat_msgInDrawable;
     public static MessageDrawable chat_msgInSelectedDrawable;
     public static MessageDrawable chat_msgOutDrawable;
@@ -8873,6 +8876,9 @@ public class Theme {
 
             chat_msgNoSoundDrawable = resources.getDrawable(R.drawable.video_muted);
             chat_livePhoto = resources.getDrawable(R.drawable.media_live_on).mutate();
+            chat_pluginIcon = resources.getDrawable(R.drawable.plugins_filled).mutate();
+            chat_settingsIcon = resources.getDrawable(R.drawable.filled_profile_settings).mutate();
+            chat_stickersIcon = resources.getDrawable(R.drawable.deproko_baseline_stickers_filled_24).mutate();
 
             chat_msgInDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, false);
             chat_msgInSelectedDrawable = new MessageDrawable(MessageDrawable.TYPE_TEXT, false, true);

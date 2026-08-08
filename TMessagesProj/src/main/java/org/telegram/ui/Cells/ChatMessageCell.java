@@ -272,6 +272,8 @@ import tw.nekomimi.nekogram.utils.AndroidUtil;
 import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.helper.BookmarksHelper;
 
+import com.exteragram.messenger.plugins.PluginsController;
+
 import static tw.nekomimi.nekogram.helpers.MessageHelper.showForwardDate;
 
 public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate, ImageReceiver.ImageReceiverDelegate,
@@ -17351,6 +17353,31 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
     }
 
+    private int getFileIcon() {
+        if (currentMessageObject == null || currentMessageObject.getDocument() == null) {
+            return MediaActionDrawable.ICON_FILE;
+        }
+        String documentName = currentMessageObject.getDocumentName();
+        if (TextUtils.isEmpty(documentName)) {
+            return MediaActionDrawable.ICON_FILE;
+        }
+        String lowerCase = documentName.toLowerCase(Locale.ROOT);
+        if (lowerCase.endsWith(".extera")) {
+            return MediaActionDrawable.ICON_SETTINGS;
+        }
+        if (lowerCase.endsWith(".icons")) {
+            return MediaActionDrawable.ICON_STICKERS;
+        }
+        if (lowerCase.endsWith(".plugin")) {
+            return MediaActionDrawable.ICON_PLUGIN;
+        }
+        int fileIconId = PluginsController.getFileIconId(documentName);
+        if (fileIconId != -1) {
+            return fileIconId;
+        }
+        return MediaActionDrawable.ICON_FILE;
+    }
+
     private int getIconForCurrentState() {
         if (currentMessageObject == null || currentMessageObject.hasExtendedMedia()) {
             return MediaActionDrawable.ICON_NONE;
@@ -17386,7 +17413,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     radialProgress.setColorKeys(Theme.key_chat_inLoader, Theme.key_chat_inLoaderSelected, Theme.key_chat_inMediaIcon, Theme.key_chat_inMediaIconSelected);
                 }
                 if (buttonState == -1) {
-                    return MediaActionDrawable.ICON_FILE;
+                    return getFileIcon();
                 } else if (buttonState == 0) {
                     return MediaActionDrawable.ICON_DOWNLOAD;
                 } else if (buttonState == 1) {
@@ -17407,7 +17434,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 } else if (buttonState == -1) {
                     if (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT) {
-                        return (drawPhotoImage && (currentPhotoObject != null || currentPhotoObjectThumb != null) && (photoImage.hasBitmapImage() || currentMessageObject.mediaExists() || currentMessageObject.attachPathExists)) ? MediaActionDrawable.ICON_NONE : MediaActionDrawable.ICON_FILE;
+                        return (drawPhotoImage && (currentPhotoObject != null || currentPhotoObjectThumb != null) && (photoImage.hasBitmapImage() || currentMessageObject.mediaExists() || currentMessageObject.attachPathExists)) ? MediaActionDrawable.ICON_NONE : getFileIcon();
                     } else if (currentMessageObject.needDrawBluredPreview()) {
                         return MediaActionDrawable.ICON_FIRE;
                     } else if (hasEmbed) {

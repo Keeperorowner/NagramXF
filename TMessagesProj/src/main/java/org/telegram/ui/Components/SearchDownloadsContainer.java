@@ -163,7 +163,7 @@ public class SearchDownloadsContainer extends FrameLayout implements Notificatio
                         PhotoViewer.getInstance().openPhoto(documents, 0, 0, 0, 0, new PhotoViewer.EmptyPhotoViewerProvider());
                         return;
                     }
-                    AndroidUtilities.openDocument(message, parentActivity, parentFragment);
+                    AndroidUtilities.openDocument(message, parentActivity, parentFragment, com.exteragram.messenger.plugins.IntentsController.PLACE_SEARCH_DOWNLOADS_CONTAINER);
                 } else if (!cell.isLoading()) {
                     messageObject.putInDownloadsStore = true;
                     AccountInstance.getInstance(UserConfig.selectedAccount).getFileLoader().loadFile(document, messageObject, FileLoader.PRIORITY_LOW, 0);

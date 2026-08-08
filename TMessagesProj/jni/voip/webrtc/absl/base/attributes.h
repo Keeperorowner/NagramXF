@@ -885,15 +885,9 @@ struct AbslInternal_YouForgotToExplicitlyInitializeAField {
 // See also the upstream documentation:
 // https://clang.llvm.org/docs/AttributeReference.html#lifetimebound
 // https://learn.microsoft.com/en-us/cpp/code-quality/c26816?view=msvc-170
-#if ABSL_HAVE_CPP_ATTRIBUTE(clang::lifetimebound)
-#define ABSL_ATTRIBUTE_LIFETIME_BOUND [[clang::lifetimebound]]
-#elif ABSL_HAVE_CPP_ATTRIBUTE(msvc::lifetimebound)
-#define ABSL_ATTRIBUTE_LIFETIME_BOUND [[msvc::lifetimebound]]
-#elif ABSL_HAVE_ATTRIBUTE(lifetimebound)
-#define ABSL_ATTRIBUTE_LIFETIME_BOUND __attribute__((lifetimebound))
-#else
+// clang 20+ rejects [[clang::lifetimebound]] on void-returning functions and
+// on members; this vendored absl/webrtc uses it broadly, so disable it.
 #define ABSL_ATTRIBUTE_LIFETIME_BOUND
-#endif
 
 // Internal attribute; name and documentation TBD.
 //

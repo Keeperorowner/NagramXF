@@ -1161,7 +1161,7 @@ public class FilteredSearchView extends FrameLayout implements NotificationCente
                         }
                         return;
                     }
-                    AndroidUtilities.openDocument(message, parentActivity, parentFragment);
+                    AndroidUtilities.openDocument(message, parentActivity, parentFragment, com.exteragram.messenger.plugins.IntentsController.PLACE_FILTERED_SEARCH_VIEW);
                 } else if (!cell.isLoading()) {
                     MessageObject messageObject = cell.getMessage();
                     messageObject.putInDownloadsStore = true;

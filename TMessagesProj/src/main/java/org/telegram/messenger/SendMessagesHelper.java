@@ -51,6 +51,7 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.core.view.inputmethod.InputContentInfoCompat;
 
+import com.exteragram.messenger.plugins.PluginsController;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
 import com.radolyn.ayugram.utils.AyuState;
 
@@ -4315,6 +4316,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public void sendMessage(SendMessageParams sendMessageParams) {
+        sendMessageParams = PluginsController.getInstance().executeSendMessageHook(currentAccount, sendMessageParams);
+        if (sendMessageParams == null) {
+            return;
+        }
         String message = sendMessageParams.message;
         String caption = sendMessageParams.caption;
         TLRPC.MessageMedia location = sendMessageParams.location;
@@ -4376,7 +4381,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             _payStars = DialogObject.getMessagesStarsPrice(getMessagesController().isUserContactBlocked(peer));
         }
         final boolean isGroup = params != null && params.containsKey("groupId") && !"0".equalsIgnoreCase(params.get("groupId"));
-        final long ephemeralReceiverBotId = isGroup ? 0 : replyToMsg != null && replyToMsg.isEphemeral() ?
+final long ephemeralReceiverBotId = isGroup ? 0 : replyToMsg != null && replyToMsg.isEphemeral() ?
             DialogObject.getPeerDialogId(replyToMsg.getFromPeer()) :
             (sendMessageParams.ephemeralReceiverBotId != 0 ?
                     sendMessageParams.ephemeralReceiverBotId :
@@ -4386,9 +4391,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
         final long payStars = ephemeralReceiverBotId != 0 ? 0 : _payStars;
         if (payStars != sendMessageParams.payStars && !isGroup && ephemeralReceiverBotId == 0) {
+            final SendMessageParams sendMessageParamsFinal = sendMessageParams;
             AlertsCreator.ensurePaidMessageConfirmation(currentAccount, peer, 1, newPayStars -> {
-                sendMessageParams.payStars = newPayStars;
-                sendMessage(sendMessageParams);
+                sendMessageParamsFinal.payStars = newPayStars;
+                sendMessage(sendMessageParamsFinal);
             });
             return;
         }

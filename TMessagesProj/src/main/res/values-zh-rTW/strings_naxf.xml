@@ -84,7 +84,6 @@
     <string name="AppWillRestartInSeconds">應用程式將在 %1$d 秒後重新啟動。</string>
     <string name="MessagePreviewDialogMessage">我能吞下玻璃而不傷身體。</string>
     <string name="RemoveMessageTail">移除訊息氣泡尾巴</string>
-    <string name="BlurOptions">模糊選項</string>
     <string name="AyuSpySettings">間諜設定</string>
     <string name="AyuStatsHeader">統計</string>
     <string name="AyuStatsDeletedMessages">已刪訊息</string>
@@ -93,8 +92,6 @@
     <string name="AyuStatsLastSeen">上線記錄</string>
     <string name="AyuMomentsCustomHeader">自訂</string>
     <string name="AyuMomentsPreviewMessage">盡人事，聽天命</string>
-    <string name="SingleCornerRadius">統一圓角半徑</string>
-    <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
     <string name="PeekOnlineMenuText">線上預覽</string>
     <string name="PeekOnlineSuccess">線上狀態已更新</string>
     <string name="PeekOnlineUnavailable">無法取得精確在線狀態。</string>
