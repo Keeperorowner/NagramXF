@@ -14,6 +14,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -146,6 +147,10 @@ public class NotificationsCheckCell extends FrameLayout {
         setTextAndValueAndIconAndCheck(text, value, 0, checked, iconType, multiline, divider);
     }
 
+    public void setTextAndValueAndDrawableAndCheck(CharSequence text, CharSequence value, Drawable drawable, boolean checked, int iconType, boolean multiline, boolean divider) {
+        setTextAndValueAndDrawableAndCheck(text, value, drawable, checked, iconType, multiline, divider, false);
+    }
+
     public void setTextAndValueAndIconAndCheck(CharSequence text, CharSequence value, int iconResId, boolean checked, int iconType, boolean multiline, boolean divider) {
         setTextAndValueAndIconAndCheck(text, value, iconResId, checked, iconType, multiline, divider, false);
     }
@@ -166,6 +171,44 @@ public class NotificationsCheckCell extends FrameLayout {
         (isMultiline ? multilineValueTextView : valueTextView).setVisibility(VISIBLE);
         checkBox.setContentDescription(text);
         needDivider = divider;
+    }
+
+    public void setTextAndValueAndDrawableAndCheck(CharSequence text, CharSequence value, Drawable drawable, boolean checked, int iconType, boolean multiline, boolean divider, boolean animated) {
+        textView.setText(text);
+        if (imageView != null) {
+            if (drawable != null) {
+                imageView.setImageDrawable(drawable.mutate());
+                imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_dialogIcon), PorterDuff.Mode.MULTIPLY));
+            } else {
+                imageView.setImageDrawable(null);
+                imageView.clearColorFilter();
+            }
+        }
+        checkBox.setChecked(checked, iconType, animationsEnabled);
+        boolean hasValue = !TextUtils.isEmpty(value);
+        setMultiline(multiline && hasValue);
+        if (isMultiline) {
+            multilineValueTextView.setText(value);
+        } else {
+            valueTextView.setText(hasValue ? value : null, animated);
+        }
+        updateValueVisibility(hasValue);
+        checkBox.setContentDescription(text);
+        needDivider = divider;
+    }
+
+    private void updateValueVisibility(boolean hasValue) {
+        if (isMultiline) {
+            multilineValueTextView.setVisibility(hasValue ? View.VISIBLE : View.GONE);
+            valueTextView.setVisibility(View.GONE);
+        } else {
+            multilineValueTextView.setVisibility(View.GONE);
+            valueTextView.setVisibility(hasValue ? View.VISIBLE : View.GONE);
+        }
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) textView.getLayoutParams();
+        int baseTopMargin = 13 + (currentHeight - 70) / 2;
+        params.topMargin = hasValue ? baseTopMargin : baseTopMargin + AndroidUtilities.dp(8);
+        textView.setLayoutParams(params);
     }
 
     public void setMultiline(boolean multiline) {
@@ -203,6 +246,20 @@ public class NotificationsCheckCell extends FrameLayout {
 
     public boolean isChecked() {
         return checkBox.isChecked();
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        float alpha = enabled ? 1.0f : 0.5f;
+        textView.setAlpha(alpha);
+        valueTextView.setAlpha(alpha);
+        multilineValueTextView.setAlpha(alpha);
+        if (imageView != null) {
+            imageView.setAlpha(alpha);
+        }
+        checkBox.setAlpha(alpha);
+        checkBox.setEnabled(enabled);
     }
 
     @Override

@@ -136,6 +136,11 @@ import androidx.viewpager.widget.ViewPager;
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.zxing.common.detector.MathUtils;
 
+import com.exteragram.messenger.plugins.PluginsConstants;
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.hooks.MenuItemRecord;
+import com.exteragram.messenger.plugins.ui.components.PluginsMenuWrapper;
+import com.exteragram.messenger.plugins.utils.MenuContextBuilder;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.messages.AyuMessagesController;
@@ -439,6 +444,12 @@ public class ChatActivity extends BaseFragment implements
 {
 
     private MessageMenuStatus lastMessageMenuStatus = new MessageMenuStatus(false, false, false, false, false, false, false, false, false);
+    private static final int PLUGIN_MESSAGE_MENU_OPTION_BASE = 0x70000000;
+    private static final int PLUGIN_CHAT_ACTION_MENU_OPTION_BASE = 0x71000000;
+    private static final int PLUGIN_CHAT_ACTION_MENU_GAP_ID = 0x71fffffe;
+    private final SparseArray<MenuItemRecord> pluginMessageMenuItemsByOption = new SparseArray<>();
+    private final SparseArray<MenuItemRecord> pluginChatActionMenuItemsByOption = new SparseArray<>();
+    private int nextPluginChatActionMenuOptionId = PLUGIN_CHAT_ACTION_MENU_OPTION_BASE;
     private final static boolean PULL_DOWN_BACK_FRAGMENT = false;
     private final static boolean DISABLE_PROGRESS_VIEW = true;
     private final static int SKELETON_DISAPPEAR_MS = 200;
@@ -552,8 +563,11 @@ public class ChatActivity extends BaseFragment implements
     private ActionBarMenuItem.Item timeItem2;
     private ComposeDrawable otherIcon;
     private ActionBarMenu.LazyItem attachItem;
+    private ActionBarMenuItem.Item pluginChatActionMenuGapItem;
+    private ActionBarMenuItem.Item pluginChatActionMenuItem;
     private ActionBarMenuItem.Item savedChatsItem, savedChatsGap;
     private ActionBarMenuItem headerItem;
+    private PluginsMenuWrapper pluginChatActionMenuWrapper;
     private ActionBarMenu.LazyItem editTextItem;
     protected ActionBarMenuItem searchItem;
     protected ActionBarMenuItem topicCreateItem;
@@ -3181,6 +3195,7 @@ public class ChatActivity extends BaseFragment implements
                 observersGroup.add(NotificationCenter.didVerifyMessagesStickers);
             }
         }
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginMenuItemsUpdated);
         if (chatMode != MODE_PINNED) {
             observersGroup.add(NotificationCenter.didReceiveNewMessages);
         }
@@ -3687,6 +3702,7 @@ public class ChatActivity extends BaseFragment implements
         }
 
         getNotificationCenter().removeObserver(this, NotificationCenter.closeChats);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginMenuItemsUpdated);
 
         if (chatMode == 0 && AndroidUtilities.isTablet()) {
             getNotificationCenter().postNotificationName(NotificationCenter.openedChatChanged, dialog_id, getTopicId(), true);
@@ -4068,6 +4084,8 @@ public class ChatActivity extends BaseFragment implements
                             finishFragment();
                         }
                     }
+                } else if (handlePluginChatActionMenuOption(id)) {
+                    return;
                 } else if (id == view_as_topics) {
                     if (getUserConfig().getClientUserId() == dialog_id) {
                         getMessagesController().setSavedViewAs(true);
@@ -4684,7 +4702,9 @@ public class ChatActivity extends BaseFragment implements
             checkUi_avatarContainerVisibility();
         });
 
+        detachPluginChatActionMenuWrapper();
         ActionBarMenu menu = actionBar.createMenu();
+        pluginChatActionMenuItemsByOption.clear();
         menu.setCenteredTitle(isTitleCentered());
 
         if (isThreadChat() && threadMessageId != 0 && !isTopic) {
@@ -5021,6 +5041,7 @@ public class ChatActivity extends BaseFragment implements
             closeTopicItem = headerItem.lazilyAddSubItem(topic_close, R.drawable.msg_topic_close, LocaleController.getString(R.string.CloseTopic));
             closeTopicItem.setVisibility(currentChat != null && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic) && forumTopic != null && !forumTopic.closed ? View.VISIBLE : View.GONE);
         }
+        appendPluginChatActionMenuItems();
         menu.setVisibility(inMenuMode ? View.GONE : View.VISIBLE);
 
         updateTitle(false);
@@ -21920,7 +21941,9 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
-        if (id == NotificationCenter.messagesDidLoad) {
+        if (id == NotificationCenter.pluginMenuItemsUpdated) {
+            refreshPluginChatActionMenuItems();
+        } else if (id == NotificationCenter.messagesDidLoad) {
             didReceivedNotification_messagesDidLoad(id, account, args);
         } else {
             didReceivedNotification2(id, account, args);
@@ -36394,14 +36417,134 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             default: {
+                if (handlePluginMessageMenuOption(option)) {
+                    break;
+                }
                 nkbtn_onclick(option);
                 break;
             }
         }
+        pluginMessageMenuItemsByOption.clear();
         selectedObject = null;
         selectedObjectGroup = null;
         selectedObjectToEditCaption = null;
         closeMenu(!preserveDim);
+    }
+
+    private boolean handlePluginMessageMenuOption(int option) {
+        MenuItemRecord pluginItem = pluginMessageMenuItemsByOption.get(option);
+        if (pluginItem == null) {
+            return false;
+        }
+        try {
+            pluginItem.executeClick(buildMessageMenuPluginContext(selectedObject, selectedObjectGroup));
+        } catch (Throwable t) {
+            FileLog.e("Failed to execute plugin menu item " + pluginItem.itemId + " from plugin " + pluginItem.pluginId, t);
+        }
+        return true;
+    }
+
+    private boolean handlePluginChatActionMenuOption(int option) {
+        MenuItemRecord pluginItem = pluginChatActionMenuItemsByOption.get(option);
+        if (pluginItem == null) {
+            return false;
+        }
+        try {
+            pluginItem.executeClick(buildChatActionMenuPluginContext());
+        } catch (Throwable t) {
+            FileLog.e("Failed to execute chat action plugin menu item " + pluginItem.itemId + " from plugin " + pluginItem.pluginId, t);
+        }
+        return true;
+    }
+
+    private void appendPluginChatActionMenuItems() {
+        if (headerItem == null) {
+            return;
+        }
+        pluginChatActionMenuItemsByOption.clear();
+        Map<String, Object> contextData = buildChatActionMenuPluginContext();
+        List<MenuItemRecord> pluginMenuItems = PluginsController.getInstance().getMenuItemsForLocation(
+                PluginsConstants.MenuItemTypes.CHAT_ACTION_MENU,
+                contextData);
+
+        pluginChatActionMenuWrapper = new PluginsMenuWrapper(this, headerItem.getPopupLayout().getSwipeBack(), pluginMenuItems, PluginsConstants.MenuItemTypes.CHAT_ACTION_MENU, contextData, getResourceProvider()) {
+            @Override
+            protected void closeMenu() {
+                if (headerItem != null && headerItem.isSubMenuShowing()) {
+                    headerItem.toggleSubMenu();
+                }
+            }
+        };
+        pluginChatActionMenuGapItem = headerItem.lazilyAddColoredGap();
+        pluginChatActionMenuItem = headerItem.lazilyAddSwipeBackItem(R.drawable.msg_plugins, null, LocaleController.getString(R.string.Plugins), pluginChatActionMenuWrapper.getSwipeBackView());
+
+        boolean visible = !pluginMenuItems.isEmpty();
+        pluginChatActionMenuGapItem.setVisibility(visible);
+        pluginChatActionMenuItem.setVisibility(visible);
+    }
+
+    private void refreshPluginChatActionMenuItems() {
+        if (headerItem == null) {
+            return;
+        }
+        if (headerItem.isSubMenuShowing()) {
+            headerItem.closeSubMenu();
+        }
+        pluginChatActionMenuItemsByOption.clear();
+        Map<String, Object> contextData = buildChatActionMenuPluginContext();
+        List<MenuItemRecord> pluginMenuItems = PluginsController.getInstance().getMenuItemsForLocation(
+                PluginsConstants.MenuItemTypes.CHAT_ACTION_MENU,
+                contextData);
+        if (pluginChatActionMenuWrapper == null || pluginChatActionMenuItem == null || pluginChatActionMenuGapItem == null) {
+            appendPluginChatActionMenuItems();
+        } else {
+            pluginChatActionMenuWrapper.setContextData(contextData);
+            pluginChatActionMenuWrapper.rebuildMenu(pluginMenuItems);
+
+            boolean visible = !pluginMenuItems.isEmpty();
+            pluginChatActionMenuGapItem.setVisibility(visible);
+            pluginChatActionMenuItem.setVisibility(visible);
+        }
+        headerItem.checkHideMenuItem();
+    }
+
+    private void detachPluginChatActionMenuWrapper() {
+        if (pluginChatActionMenuWrapper != null) {
+            View swipeBackView = pluginChatActionMenuWrapper.getSwipeBackView();
+            if (swipeBackView.getParent() instanceof ViewGroup) {
+                ((ViewGroup) swipeBackView.getParent()).removeView(swipeBackView);
+            }
+        }
+        pluginChatActionMenuGapItem = null;
+        pluginChatActionMenuItem = null;
+        pluginChatActionMenuWrapper = null;
+    }
+
+    private Map<String, Object> buildChatActionMenuPluginContext() {
+        return MenuContextBuilder.from(this)
+                .withDialogId(dialog_id)
+                .withChat(currentChat)
+                .withChatFull(chatInfo)
+                .withUser(currentUser)
+                .withUserFull(userInfo)
+                .withEncryptedChat(currentEncryptedChat)
+                .withCustom("chatMode", chatMode)
+                .withCustom("threadMessageId", threadMessageId)
+                .withCustom("topicId", getTopicId())
+                .withCustom("isTopic", isTopic)
+                .withCustom("threadMessageObject", threadMessageObject)
+                .build();
+    }
+
+    private Map<String, Object> buildMessageMenuPluginContext(MessageObject message, MessageObject.GroupedMessages groupedMessages) {
+        return MenuContextBuilder.from(this)
+                .withDialogId(dialog_id)
+                .withMessage(message)
+                .withGroupedMessage(groupedMessages)
+                .withChat(currentChat)
+                .withUser(currentUser)
+                .withEncryptedChat(currentEncryptedChat)
+                .build();
     }
 
     public void showSuggestionOfferForEditMessage(MessageSuggestionParams oldParams) {
@@ -43795,6 +43938,10 @@ public class ChatActivity extends BaseFragment implements
                     AlertUtil.showToast("FILE_NOT_FOUND");
                     return;
                 }
+                if (PluginsController.isPlugin(message)) {
+                    PluginsController.getInstance().showInstallDialog(ChatActivity.this, message);
+                    return;
+                }
                 if (message.getDocumentName().toLowerCase().endsWith("attheme")) {
                     Theme.ThemeInfo themeInfo = Theme.applyThemeFile(locFile, message.getDocumentName(), null, true);
                     if (themeInfo != null) {
@@ -49760,6 +49907,18 @@ public class ChatActivity extends BaseFragment implements
             items.add(LocaleController.getString(R.string.MessageDetails));
             options.add(nkbtn_detail);
             icons.add(R.drawable.msg_info);
+        }
+        pluginMessageMenuItemsByOption.clear();
+        List<MenuItemRecord> pluginMenuItems = PluginsController.getInstance().getMenuItemsForLocation(
+                PluginsConstants.MenuItemTypes.MESSAGE_CONTEXT_MENU,
+                buildMessageMenuPluginContext(message, groupedMessages));
+        for (int i = 0; i < pluginMenuItems.size(); i++) {
+            MenuItemRecord pluginItem = pluginMenuItems.get(i);
+            int optionId = PLUGIN_MESSAGE_MENU_OPTION_BASE + i;
+            pluginMessageMenuItemsByOption.put(optionId, pluginItem);
+            items.add(pluginItem.text);
+            options.add(optionId);
+            icons.add(pluginItem.iconResId != 0 ? pluginItem.iconResId : R.drawable.msg_plugins);
         }
         this.lastMessageMenuStatus = new MessageMenuStatus(allowCopy, allowCopyPhoto, allowCopyLink, allowCopyLinkPm, allowDelete, allowEdit, allowReply, allowReplyPm, allowForward);
     }

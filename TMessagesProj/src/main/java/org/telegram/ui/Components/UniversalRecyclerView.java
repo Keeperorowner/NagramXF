@@ -440,6 +440,10 @@ public class UniversalRecyclerView extends RecyclerListView {
             view -> {
                 if (view.getParent() != this) return false;
                 final ViewHolder viewHolder = getChildViewHolder(view);
+                if (viewHolder != null) {
+                    final UItem item = adapter == null ? null : adapter.getItem(viewHolder.getAdapterPosition());
+                    if (item != null && item.transparent) return false;
+                }
                 final int viewType = viewHolder.getItemViewType();
                 if (NaConfig.INSTANCE.getSectionsSeparatedHeaders().Bool() && UniversalAdapter.isHeader(viewType)) return false;
                 return !UniversalAdapter.isShadow(viewType);

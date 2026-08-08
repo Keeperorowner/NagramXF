@@ -127,6 +127,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
+import com.exteragram.messenger.plugins.PluginsConstants;
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.hooks.MenuItemRecord;
+import com.exteragram.messenger.plugins.utils.MenuContextBuilder;
+
 import org.telegram.PhoneFormat.PhoneFormat;
 import com.radolyn.ayugram.utils.PeekOnlineHelper;
 import org.telegram.messenger.AccountInstance;
@@ -207,6 +212,7 @@ import org.telegram.ui.Cells.SettingsSearchCell;
 import org.telegram.ui.Cells.SettingsSuggestionCell;
 import org.telegram.ui.Cells.ShadowSectionCell;
 import org.telegram.ui.Cells.TextCell;
+import com.exteragram.messenger.plugins.ui.components.PluginsMenuWrapper;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -342,6 +348,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -490,7 +497,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private boolean videoCallItemVisible;
     private boolean editItemVisible;
     private boolean eventLogItemVisible;
+    private static final int PLUGIN_PROFILE_ACTION_MENU_OPTION_BASE = 0x72000000;
     private ImageView callToActionItem;
+    private final SparseArray<MenuItemRecord> pluginProfileMenuItemsByOption = new SparseArray<>();
 
     private ActionBarMenuItem animatingItem;
     private ActionBarMenuItem callItem;
@@ -499,9 +508,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private ActionBarMenuItem eventLogItem;
     private ActionBarMenuItem otherItem;
     private ActionBarMenuItem searchItem;
+    private ActionBarMenuItem.Item pluginProfileMenuGapItem;
+    private ActionBarMenuItem.Item pluginProfileMenuItem;
     private ActionBarMenuSubItem editColorItem;
     private ActionBarMenuSubItem linkItem;
     private ActionBarMenuSubItem setUsernameItem;
+    private PluginsMenuWrapper pluginProfileMenuWrapper;
     private ImageView ttlIconView;
     private ActionBarMenuSubItem autoDeleteItem;
     AutoDeletePopupWrapper autoDeletePopupWrapper;
@@ -2331,6 +2343,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().addObserver(this, NotificationCenter.profileMusicUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.updatedChatRanks);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginMenuItemsUpdated);
         updateRowsIds();
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
@@ -2480,6 +2493,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         getNotificationCenter().removeObserver(this, NotificationCenter.profileMusicUpdated);
         getNotificationCenter().removeObserver(this, NotificationCenter.updatedChatRanks);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginMenuItemsUpdated);
         if (avatarsViewPager != null) {
             avatarsViewPager.onDestroy();
         }
@@ -2647,6 +2661,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         return;
                     }
                     finishFragment();
+                } else if (handlePluginProfileMenuOption(id)) {
+                    return;
                 } else if (id == block_contact) {
                     onBlockContactClicked(false);
                 } else if (id == block_channel) {
@@ -9291,7 +9307,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     @SuppressWarnings("unchecked")
     @Override
     public void didReceivedNotification(int id, int account, final Object... args) {
-        if (id == NotificationCenter.uploadStoryEnd || id == NotificationCenter.chatWasBoostedByUser) {
+        if (id == NotificationCenter.pluginMenuItemsUpdated) {
+            refreshPluginProfileActionMenuItems();
+        } else if (id == NotificationCenter.uploadStoryEnd || id == NotificationCenter.chatWasBoostedByUser) {
             checkCanSendStoryForPosting();
         } else if (id == NotificationCenter.updateInterfaces) {
             int mask = (Integer) args[0];
@@ -12619,7 +12637,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         Context context = actionBar.getContext();
+        detachPluginProfileMenuWrapper();
         otherItem.removeAllSubItems();
+        pluginProfileMenuItemsByOption.clear();
         animatingItem = null;
 
         eventLogItemVisible = false;
@@ -12919,6 +12939,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         }
+        appendPluginProfileActionMenuItems();
         if (!isPulledDown) {
             otherItem.hideSubItem(gallery_menu_save);
             otherItem.hideSubItem(set_as_main);
@@ -13041,6 +13062,99 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             sharedMediaLayout.getSearchItem().requestLayout();
         }
         updateStoriesViewBounds(false);
+    }
+
+    private boolean handlePluginProfileMenuOption(int option) {
+        MenuItemRecord pluginItem = pluginProfileMenuItemsByOption.get(option);
+        if (pluginItem == null) {
+            return false;
+        }
+        try {
+            pluginItem.onClickCallback.call(buildProfileActionMenuPluginContext());
+        } catch (Throwable t) {
+            FileLog.e("Failed to execute profile action plugin menu item " + pluginItem.itemId + " from plugin " + pluginItem.pluginId, t);
+        }
+        return true;
+    }
+
+    private void appendPluginProfileActionMenuItems() {
+        if (otherItem == null) {
+            return;
+        }
+        Map<String, Object> contextData = buildProfileActionMenuPluginContext();
+        List<MenuItemRecord> pluginMenuItems = PluginsController.getInstance().getMenuItemsForLocation(
+                PluginsConstants.MenuItemTypes.PROFILE_ACTION_MENU,
+                contextData);
+
+        pluginProfileMenuWrapper = new PluginsMenuWrapper(this, otherItem.getPopupLayout().getSwipeBack(), pluginMenuItems, PluginsConstants.MenuItemTypes.PROFILE_ACTION_MENU, contextData, getResourceProvider()) {
+            @Override
+            protected void closeMenu() {
+                if (otherItem != null && otherItem.isSubMenuShowing()) {
+                    otherItem.toggleSubMenu();
+                }
+            }
+        };
+        pluginProfileMenuGapItem = otherItem.lazilyAddColoredGap();
+        pluginProfileMenuItem = otherItem.lazilyAddSwipeBackItem(R.drawable.msg_plugins, null, LocaleController.getString(R.string.Plugins), pluginProfileMenuWrapper.getSwipeBackView());
+
+        boolean visible = !pluginMenuItems.isEmpty();
+        pluginProfileMenuGapItem.setVisibility(visible);
+        pluginProfileMenuItem.setVisibility(visible);
+    }
+
+    private void refreshPluginProfileActionMenuItems() {
+        if (otherItem == null) {
+            return;
+        }
+        if (otherItem.isSubMenuShowing()) {
+            otherItem.closeSubMenu();
+        }
+
+        Map<String, Object> contextData = buildProfileActionMenuPluginContext();
+        List<MenuItemRecord> pluginMenuItems = PluginsController.getInstance().getMenuItemsForLocation(
+                PluginsConstants.MenuItemTypes.PROFILE_ACTION_MENU,
+                contextData);
+
+        if (pluginProfileMenuWrapper == null || pluginProfileMenuItem == null || pluginProfileMenuGapItem == null) {
+            appendPluginProfileActionMenuItems();
+            return;
+        }
+
+        pluginProfileMenuWrapper.setContextData(contextData);
+        pluginProfileMenuWrapper.rebuildMenu(pluginMenuItems);
+
+        boolean visible = !pluginMenuItems.isEmpty();
+        pluginProfileMenuGapItem.setVisibility(visible);
+        pluginProfileMenuItem.setVisibility(visible);
+    }
+
+    private void detachPluginProfileMenuWrapper() {
+        if (pluginProfileMenuWrapper != null) {
+            View swipeBackView = pluginProfileMenuWrapper.getSwipeBackView();
+            if (swipeBackView.getParent() instanceof ViewGroup) {
+                ((ViewGroup) swipeBackView.getParent()).removeView(swipeBackView);
+            }
+        }
+        pluginProfileMenuGapItem = null;
+        pluginProfileMenuItem = null;
+        pluginProfileMenuWrapper = null;
+    }
+
+    private Map<String, Object> buildProfileActionMenuPluginContext() {
+        return MenuContextBuilder.from(this)
+                .withDialogId(getDialogId())
+                .withChat(currentChat)
+                .withChatFull(chatInfo)
+                .withUser(userId != 0 ? getMessagesController().getUser(userId) : null)
+                .withUserFull(userInfo)
+                .withBotInfo(botInfo)
+                .withEncryptedChat(currentEncryptedChat)
+                .withCustom("chatId", chatId)
+                .withCustom("userId", userId)
+                .withCustom("topicId", topicId)
+                .withCustom("isTopic", isTopic)
+                .withCustom("myProfile", myProfile)
+                .build();
     }
 
     private void createAutoDeleteItem(Context context) {

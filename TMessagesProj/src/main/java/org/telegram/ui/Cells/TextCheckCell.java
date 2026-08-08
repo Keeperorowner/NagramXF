@@ -321,11 +321,17 @@ public class TextCheckCell extends FrameLayout {
             if (valueTextView.getVisibility() == VISIBLE) {
                 animators.add(ObjectAnimator.ofFloat(valueTextView, View.ALPHA, value ? 1.0f : 0.5f));
             }
+            if (imageView != null && imageView.getVisibility() == VISIBLE) {
+                animators.add(ObjectAnimator.ofFloat(imageView, View.ALPHA, value ? 1.0f : 0.5f));
+            }
         } else {
             textView.setAlpha(value ? 1.0f : 0.5f);
             (checkBox != null ? checkBox : checkBoxSquare).setAlpha(value ? 1.0f : 0.5f);
             if (valueTextView.getVisibility() == VISIBLE) {
                 valueTextView.setAlpha(value ? 1.0f : 0.5f);
+            }
+            if (imageView != null && imageView.getVisibility() == VISIBLE) {
+                imageView.setAlpha(value ? 1.0f : 0.5f);
             }
         }
     }
@@ -490,5 +496,56 @@ public class TextCheckCell extends FrameLayout {
         imageView.setImageResource(resId);
         imageView.setColorFilter(new PorterDuffColorFilter(Color.WHITE, PorterDuff.Mode.SRC_IN));
         imageView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), color));
+    }
+
+    public void setIcon(int resId) {
+        if (imageView == null) {
+            imageView = new RLottieImageView(getContext());
+            imageView.setScaleType(ImageView.ScaleType.CENTER);
+            addView(imageView, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+        } else {
+            LayoutParams layoutParams = (LayoutParams) imageView.getLayoutParams();
+            layoutParams.width = AndroidUtilities.dp(24);
+            layoutParams.height = AndroidUtilities.dp(24);
+            layoutParams.gravity = (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL;
+            layoutParams.leftMargin = AndroidUtilities.dp(21);
+            layoutParams.rightMargin = AndroidUtilities.dp(21);
+            layoutParams.topMargin = 0;
+            layoutParams.bottomMargin = 0;
+            imageView.setLayoutParams(layoutParams);
+        }
+        padding = AndroidUtilities.dp(71);
+        MarginLayoutParams textParams = (MarginLayoutParams) textView.getLayoutParams();
+        textParams.leftMargin = LocaleController.isRTL ? textParams.leftMargin : padding;
+        textParams.rightMargin = LocaleController.isRTL ? padding : textParams.rightMargin;
+        MarginLayoutParams valueParams = (MarginLayoutParams) valueTextView.getLayoutParams();
+        valueParams.leftMargin = LocaleController.isRTL ? valueParams.leftMargin : padding;
+        valueParams.rightMargin = LocaleController.isRTL ? padding : valueParams.rightMargin;
+        imageView.setVisibility(VISIBLE);
+        imageView.setPadding(0, 0, 0, 0);
+        imageView.setBackground(null);
+        imageView.setImageResource(resId);
+        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        imageView.setAlpha(isEnabled() ? 1.0f : 0.5f);
+    }
+
+    public void removeIcon() {
+        if (imageView != null) {
+            imageView.setVisibility(GONE);
+        }
+        padding = 21;
+        int paddingPx = AndroidUtilities.dp(padding);
+        MarginLayoutParams textParams = (MarginLayoutParams) textView.getLayoutParams();
+        if (LocaleController.isRTL) {
+            textParams.rightMargin = paddingPx;
+        } else {
+            textParams.leftMargin = paddingPx;
+        }
+        MarginLayoutParams valueParams = (MarginLayoutParams) valueTextView.getLayoutParams();
+        if (LocaleController.isRTL) {
+            valueParams.rightMargin = paddingPx;
+        } else {
+            valueParams.leftMargin = paddingPx;
+        }
     }
 }

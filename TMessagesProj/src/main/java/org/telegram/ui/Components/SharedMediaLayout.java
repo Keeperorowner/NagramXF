@@ -75,6 +75,8 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.exteragram.messenger.plugins.PluginsController;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
@@ -7875,6 +7877,10 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     SharedDocumentCell cell = (SharedDocumentCell) view;
                     TLRPC.Document document = message.getDocument();
                     if (cell.isLoaded()) {
+                        if (PluginsController.isPlugin(message)) {
+                            PluginsController.getInstance().showInstallDialog(profileActivity, message);
+                            return;
+                        }
                         if (message.canPreviewDocument()) {
                             PhotoViewer.getInstance().setParentActivity(profileActivity);
                             index = sharedMediaData[selectedMode].messages.indexOf(message);
@@ -7887,7 +7893,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                             }
                             return;
                         }
-                        AndroidUtilities.openDocument(message, profileActivity.getParentActivity(), profileActivity);
+                        AndroidUtilities.openDocument(message, profileActivity.getParentActivity(), profileActivity, com.exteragram.messenger.plugins.IntentsController.PLACE_SHARED_MEDIA_LAYOUT);
                     } else if (!cell.isLoading()) {
                         MessageObject messageObject = cell.getMessage();
                         messageObject.putInDownloadsStore = true;

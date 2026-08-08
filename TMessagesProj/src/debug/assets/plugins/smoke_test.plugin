@@ -1,0 +1,206 @@
+__id__ = "smoke_test"
+__name__ = "Smoke Test"
+__description__ = "Developer helper plugin which records app events, request/update hooks, send-message hooks, and plugin menu callbacks."
+__author__ = "Nagram XF"
+__version__ = "1.0.0"
+
+from base_plugin import AppEvent, BasePlugin, MenuItemData, MenuItemType
+from android_utils import copy_to_clipboard
+from client_utils import get_last_fragment
+from ui.alert import AlertDialogBuilder
+from ui.bulletin import BulletinHelper
+
+
+class PluginSmokeTest(BasePlugin):
+    MESSAGE_MENU_ID = "smoke_test_message_menu"
+    CHAT_MENU_ID = "smoke_test_chat_menu"
+    PROFILE_MENU_ID = "smoke_test_profile_menu"
+
+    def __init__(self):
+        super().__init__()
+        self._reset_state()
+
+    def _reset_state(self):
+        self.event_counts = {
+            AppEvent.START: 0,
+            AppEvent.RESUME: 0,
+            AppEvent.PAUSE: 0,
+            AppEvent.STOP: 0,
+        }
+        self.pre_request_count = 0
+        self.post_request_count = 0
+        self.update_count = 0
+        self.updates_count = 0
+        self.send_message_count = 0
+        self.last_request_name = None
+        self.last_update_name = None
+        self.last_updates_name = None
+        self.last_menu_source = None
+        self.last_dialog_id = None
+        self.last_message_id = None
+        self.last_account = None
+
+    def on_plugin_load(self):
+        self._reset_state()
+        self.add_hook("TL_", True, 0)
+        self.add_on_send_message_hook()
+        self.add_menu_item(
+            MenuItemData(
+                MenuItemType.MESSAGE_CONTEXT_MENU,
+                "Smoke test report",
+                self._on_message_menu_click,
+                item_id=self.MESSAGE_MENU_ID,
+                priority=100,
+            )
+        )
+        self.add_menu_item(
+            MenuItemData(
+                MenuItemType.CHAT_ACTION_MENU,
+                "Smoke test report",
+                self._on_chat_menu_click,
+                item_id=self.CHAT_MENU_ID,
+                priority=100,
+            )
+        )
+        self.add_menu_item(
+            MenuItemData(
+                MenuItemType.PROFILE_ACTION_MENU,
+                "Smoke test report",
+                self._on_profile_menu_click,
+                item_id=self.PROFILE_MENU_ID,
+                priority=100,
+            )
+        )
+        self.log("Smoke test plugin loaded.")
+
+    def on_plugin_unload(self):
+        self.log("Smoke test plugin unloaded.")
+
+    def on_app_event(self, event_type):
+        self.event_counts[event_type] = self.event_counts.get(event_type, 0) + 1
+        if event_type == AppEvent.START:
+            self.log("APP_START received.")
+
+    def pre_request_hook(self, request_name, account, request):
+        self.pre_request_count += 1
+        self.last_request_name = request_name
+        self.last_account = account
+
+    def post_request_hook(self, request_name, account, response, error):
+        self.post_request_count += 1
+        self.last_request_name = request_name
+        self.last_account = account
+
+    def on_update_hook(self, update_name, account, update):
+        self.update_count += 1
+        self.last_update_name = update_name
+        self.last_account = account
+
+    def on_updates_hook(self, container_name, account, updates):
+        self.updates_count += 1
+        self.last_updates_name = container_name
+        self.last_account = account
+
+    def on_send_message_hook(self, account, params):
+        self.send_message_count += 1
+        self.last_account = account
+
+    def _on_message_menu_click(self, context):
+        self._record_menu_context("message_context_menu", context)
+        self._show_report(context)
+
+    def _on_chat_menu_click(self, context):
+        self._record_menu_context("chat_action_menu", context)
+        self._show_report(context)
+
+    def _on_profile_menu_click(self, context):
+        self._record_menu_context("profile_action_menu", context)
+        self._show_report(context)
+
+    def _record_menu_context(self, source, context):
+        self.last_menu_source = source
+        self.last_dialog_id = self._context_get(context, "dialog_id")
+        account = self._context_get(context, "account")
+        if account is not None:
+            self.last_account = account
+        message = self._context_get(context, "message")
+        self.last_message_id = self._get_message_id(message)
+
+    def _show_report(self, context):
+        fragment = self._context_get(context, "fragment")
+        if fragment is None:
+            fragment = get_last_fragment()
+        report = self._build_report_text()
+        if fragment is None or fragment.getParentActivity() is None:
+            copy_to_clipboard(report)
+            return
+        builder = AlertDialogBuilder(fragment.getParentActivity())
+        builder.set_title("Plugin smoke test")
+        builder.set_message(report)
+        builder.set_positive_button("Copy report", lambda *_: self._copy_report(report, fragment))
+        builder.set_negative_button("Reset counters", lambda *_: self._reset_from_dialog(fragment))
+        builder.show()
+
+    def _copy_report(self, report, fragment):
+        copy_to_clipboard(report)
+        BulletinHelper.show_copied_to_clipboard("Smoke test report copied.", fragment)
+
+    def _reset_from_dialog(self, fragment):
+        self._reset_state()
+        BulletinHelper.show_success("Smoke test counters reset.", fragment)
+
+    def _build_report_text(self):
+        return (
+            "App events\n"
+            f"- start={self.event_counts.get(AppEvent.START, 0)}\n"
+            f"- resume={self.event_counts.get(AppEvent.RESUME, 0)}\n"
+            f"- pause={self.event_counts.get(AppEvent.PAUSE, 0)}\n"
+            f"- stop={self.event_counts.get(AppEvent.STOP, 0)}\n\n"
+            "Hooks\n"
+            f"- pre_request={self.pre_request_count}\n"
+            f"- post_request={self.post_request_count}\n"
+            f"- update={self.update_count}\n"
+            f"- updates={self.updates_count}\n"
+            f"- send_message={self.send_message_count}\n\n"
+            "Last seen\n"
+            f"- request={self._or_dash(self.last_request_name)}\n"
+            f"- update={self._or_dash(self.last_update_name)}\n"
+            f"- updates={self._or_dash(self.last_updates_name)}\n"
+            f"- menu={self._or_dash(self.last_menu_source)}\n"
+            f"- dialog_id={self._or_dash(self.last_dialog_id)}\n"
+            f"- message_id={self._or_dash(self.last_message_id)}\n"
+            f"- account={self._or_dash(self.last_account)}\n\n"
+            "Expected flow\n"
+            "1. Enable the plugin.\n"
+            "2. Reopen the app and confirm APP_START / APP_RESUME counters.\n"
+            "3. Open a chat and use this menu item.\n"
+            "4. Send a message to confirm send_message.\n"
+            "5. Wait for updates or requests and re-open the report."
+        )
+
+    @staticmethod
+    def _get_message_id(message):
+        if message is None:
+            return None
+        try:
+            return message.getId()
+        except Exception:
+            return None
+
+    @staticmethod
+    def _context_get(context, key, default=None):
+        if context is None:
+            return default
+        try:
+            value = context.get(key)
+            return default if value is None else value
+        except Exception:
+            try:
+                value = context[key]
+                return default if value is None else value
+            except Exception:
+                return default
+
+    @staticmethod
+    def _or_dash(value):
+        return value if value not in (None, "") else "-"

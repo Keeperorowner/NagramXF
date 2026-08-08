@@ -3,6 +3,7 @@ package org.telegram.ui.Adapters;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -26,8 +27,15 @@ import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SideMenultItemAnimator;
 
+import com.exteragram.messenger.plugins.PluginsConstants;
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.hooks.MenuItemRecord;
+import com.exteragram.messenger.plugins.utils.MenuContextBuilder;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
@@ -52,6 +60,7 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
     public static int nkbtnRecentChats = 1009;
     public static int nkbtnSessions = 1010;
     public static int nkbtnMainTabsCustomize = 1011;
+    public static final int PLUGIN_ITEM_ID_BASE = 20000;
     public DrawerLayoutAdapter(Context context, SideMenultItemAnimator animator, DrawerLayoutContainer drawerLayoutContainer) {
         mContext = context;
         itemAnimator = animator;
@@ -257,6 +266,37 @@ public class DrawerLayoutAdapter extends RecyclerListView.SelectionAdapter imple
         // Strip any dangling divider left at the end of the configurable section.
         while (!items.isEmpty() && items.get(items.size() - 1) == null) {
             items.remove(items.size() - 1);
+        }
+
+        // Plugin-provided drawer items (MAIN_MENU / DRAWER_MENU), appended as a section.
+        if (PluginsController.isPluginEngineAvailable()) {
+            int account = UserConfig.selectedAccount;
+            TLRPC.User currentUser = UserConfig.getInstance(account).getCurrentUser();
+            MenuContextBuilder builder = MenuContextBuilder.create().withAccount(account);
+            if (currentUser != null) {
+                builder.withUser(currentUser);
+            }
+            Map<String, Object> pluginContext = builder.build();
+            List<MenuItemRecord> pluginMenuItems = PluginsController.getInstance().getMenuItemsForLocation(
+                    PluginsConstants.MenuItemTypes.MAIN_MENU, pluginContext);
+            boolean addedPluginDivider = false;
+            for (MenuItemRecord record : pluginMenuItems) {
+                if (record == null || TextUtils.isEmpty(record.text)) {
+                    continue;
+                }
+                if (!addedPluginDivider) {
+                    items.add(null);
+                    addedPluginDivider = true;
+                }
+                int iconRes = record.iconResId != 0 ? record.iconResId : R.drawable.msg_plugins;
+                items.add(new Item(PLUGIN_ITEM_ID_BASE + items.size(), record.text, iconRes).onClick(v -> {
+                    try {
+                        record.executeClick(pluginContext);
+                    } catch (Throwable t) {
+                        org.telegram.messenger.FileLog.e("Failed to execute plugin drawer item " + record.itemId, t);
+                    }
+                }));
+            }
         }
 
         // Attach-menu bots are server-driven (not user-configurable): appended after the configurable rows.

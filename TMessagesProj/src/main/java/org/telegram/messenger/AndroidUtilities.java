@@ -4195,6 +4195,10 @@ public class AndroidUtilities {
     }
 
     public static void openDocument(MessageObject message, Activity activity, BaseFragment parentFragment) {
+        openDocument(message, activity, parentFragment, com.exteragram.messenger.plugins.IntentsController.resolvePlace(parentFragment));
+    }
+
+    public static void openDocument(MessageObject message, Activity activity, BaseFragment parentFragment, int place) {
         if (message == null) {
             return;
         }
@@ -4211,6 +4215,11 @@ public class AndroidUtilities {
             f = FileLoader.getInstance(UserConfig.selectedAccount).getPathToMessage(message.messageOwner);
         }
         if (f != null && f.exists()) {
+            if (com.exteragram.messenger.plugins.IntentsController.dispatchFileOpen(
+                    place,
+                    f, fileName, message, activity, parentFragment)) {
+                return;
+            }
             if (parentFragment != null && f.getName().toLowerCase().endsWith("attheme")) {
                 Theme.ThemeInfo themeInfo = Theme.applyThemeFile(f, message.getDocumentName(), null, true);
                 if (themeInfo != null) {

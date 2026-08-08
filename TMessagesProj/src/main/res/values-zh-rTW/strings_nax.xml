@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="XChannel">Nagram X 頻道</string>
     <string name="EnableSaveDeletedMessages">儲存已刪除訊息</string>
@@ -337,5 +337,89 @@
     <string name="PasscodeShowMessagePreviewWhenLocked">顯示訊息預覽</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">在密碼鎖定狀態下仍顯示通知內容。</string>
     <string name="DeepLTranslateKey">DeepL API 金鑰</string>
-    <string name="DeepLTranslateKeyNotice">設定 DeepL API 金鑰，留空則使用內建金鑰。</string>
-</resources>
+    <string name="DeepLTranslateKeyNotice">設定 DeepL API 金鑰，留空則使用內建金鑰。</string>    <string name="BlurOptions">模糊選項</string>
+    <string name="SingleCornerRadius">統一圓角半徑</string>
+    <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
+    <string name="AyuMoments">AyuMoments</string>
+
+    <string name="PluginNoDescription">無描述</string>
+    <string name="PluginNoAuthor">未知作者</string>
+    <string name="PluginEngineNotEnabled">外掛引擎已關閉。要開啟 %1$s 的外掛設定嗎？</string>
+    <string name="PluginNotFound">找不到外掛 %1$s。</string>
+    <string name="PluginHasNoSettings">%1$s 沒有可用設定。</string>
+    <string name="PluginInstallError">安裝外掛 %1$s 失敗。</string>
+    <string name="PluginNotEnabled">外掛支援已關閉。要前往設定啟用 %1$s 嗎？</string>
+    <string name="PluginOpenExternalError">無法在外部應用中開啟 %1$s。</string>
+    <string name="PluginSettingNotFound">找不到目標外掛設定。</string>
+    <string name="Plugins">外掛</string>
+    <string name="PluginsEngine">外掛引擎</string>
+    <string name="EnablePluginsEngine">啟用外掛引擎</string>
+    <string name="PluginsInfo">可在此安裝與管理 .plugin 檔案。</string>
+    <string name="PluginsNotFound">找不到外掛</string>
+    <string name="PluginDelete">刪除外掛？</string>
+    <string name="PluginDeleteInfo">要刪除外掛 &lt;b&gt;%1$s&lt;/b&gt; 嗎？此操作無法復原。</string>
+    <string name="PluginEnableError">啟用 %1$s 失敗。</string>
+    <string name="PluginDisableError">停用 %1$s 失敗。</string>
+    <string name="PluginVersion">版本</string>
+    <string name="PluginSourceTrusted">可信來源</string>
+    <string name="PluginSourceUnknown">未知來源</string>
+    <string name="PluginSourceTrustedInfo">此外掛來自可信來源。</string>
+    <string name="PluginSourceUnknownInfo">此外掛來自未知來源，安裝前請仔細檢查。</string>
+    <string name="InstallPlugin">安裝外掛</string>
+    <string name="UpdatePlugin">更新外掛</string>
+    <string name="EnableAfterInstallation">安裝後啟用</string>
+    <string name="PluginInstalled">已安裝 %1$s</string>
+    <string name="PluginUpdated">已更新 %1$s</string>
+    <string name="PluginInstalledButFailedToEnable">%1$s 已安裝，但啟用失敗。</string>
+    <string name="PluginDependencyPreparing">正在準備外掛相依套件…</string>
+    <string name="PluginDependencyResolving">正在解析 %1$s…</string>
+    <string name="PluginDependencyDownloadingProgress">正在下載 %1$s（%2$d%%）…</string>
+    <string name="PluginDependencyInstalling">正在安裝 %1$s %2$s…</string>
+    <string name="PluginDependencyNoCompatibleWheel">找不到適用於 %1$s 的純 Python wheel。</string>
+    <string name="PluginDependencyNativeUnsupported">依賴 %1$s 在目前版本範圍內僅提供原生 wheel。此客戶端目前僅支援純 Python wheel。</string>
+    <string name="PluginDependencySourceUnsupported">依賴 %1$s 在目前版本範圍內僅提供原始碼分發包。此客戶端目前僅支援純 Python wheel。</string>
+    <string name="PluginsSafeMode">外掛安全模式</string>
+    <string name="PluginsSafeModeInfo">外掛在崩潰後已被停用。你可以離開安全模式並重新啟動外掛引擎。</string>
+    <string name="PluginsSafeModeInfoManual">外掛安全模式已手動開啟。關閉安全模式後才能再次載入外掛。</string>
+    <string name="PluginsSafeModeInfoNativeCrash">外掛在一次原生崩潰後已被停用。請先檢查已安裝的外掛，再離開安全模式。</string>
+    <string name="PluginsSafeModeInfoCrashGeneric">外掛在崩潰後已被停用。請檢查你的外掛配置，準備好後再離開安全模式。</string>
+    <string name="PluginsSafeModeInfoPluginCrash">外掛 %1$s 在崩潰後已被停用。準備好後可離開安全模式以恢復其餘外掛。</string>
+    <string name="PluginsSafeModeInfo2">安全模式會保持所有外掛停用，直到你手動關閉它。</string>
+    <string name="PluginsNativeRuntimeUnavailable">外掛原生 Hook 執行階段不可用。在所有原生函式庫正確載入並重新啟動應用前，基於方法 Hook 的外掛可能無法運作。</string>
+    <string name="PluginsPythonRuntimeUnavailable">外掛 Python 執行階段初始化失敗。請重新啟動應用，並確認內建外掛依賴已正確打包。</string>
+    <string name="ResetPluginSettings">已重設 %1$s 的設定</string>
+    <string name="ResetPluginSettingsInfo">要重設 &lt;b&gt;%1$s&lt;/b&gt; 的全部已儲存設定嗎？</string>
+    <string name="PluginsDevMode">開發者模式</string>
+    <string name="PluginsCompactView">緊湊檢視</string>
+    <string name="PluginsDevTools">開發者工具</string>
+    <string name="PluginsInstallSmokeTest">安裝冒煙測試外掛</string>
+    <string name="PluginsInstallSmokeTestInfo">僅供開發者使用的輔助外掛，用於驗證應用事件、請求/更新 Hook、傳送訊息 Hook 以及外掛選單回呼是否正常。</string>
+    <string name="PluginsInstallSmokeTestPrepareError">準備內建冒煙測試外掛失敗。</string>
+    <string name="PluginsDocumentation">文件</string>
+    <string name="PluginsTrusted">受信任外掛</string>
+    <string name="PluginsPoweredBy">由 &lt;a href="https://chaquo.com/chaquopy/"&gt;Chaquopy&lt;/a&gt; 與 &lt;a href="https://github.com/Aliucord/hook"&gt;AliuHook&lt;/a&gt; 驅動。</string>
+    <string name="PluginsDevServerLaunched">外掛開發伺服器已啟動</string>
+    <string name="PluginsDevServerStopped">外掛開發伺服器已停止</string>
+    <string name="EnterValue">輸入值</string>
+    <string name="Links">連結</string>
+    <string name="NoSuchSetting">找不到該設定</string>
+    <string name="PluginIsNotResponding">外掛沒有回應。</string>
+    <string name="PluginIsNotRespondingAlert">%1$s 沒有回應</string>
+    <string name="PluginsPySdkAutoUpdate">自動更新</string>
+    <string name="PluginsPySdkCheckUpdates">檢查更新</string>
+    <string name="PluginsPySdkEnableBetaVersion">安裝 Beta 版本</string>
+    <string name="PluginsDisableArt">相容模式</string>
+    <string name="PluginsDisableArtInfo">透過停用 ART Profile Saver 避免外掛 Hook 失效。</string>
+    <string name="PluginsSafeModeShortcut">以安全模式啟動</string>
+    <string name="RestartPluginSystemToApplyUpdate">更新已載入，重啟外掛引擎後生效</string>
+    <string name="RestoreSdkFromApk">從 APK 還原 SDK</string>
+    <string name="PluginsPySdkCheckingForUpdates">正在檢查更新…</string>
+    <string name="PluginsPySdkLoadingUpdate">正在下載更新…</string>
+    <string name="PluginsPySdkLatestVersionInstalled">目前已是最新 SDK 版本</string>
+    <string name="PluginsPySdkUpdateFailed">SDK 更新失敗</string>
+    <string name="CheckingForUpdates">正在檢查更新…</string>
+    <string name="EnableAutoUpdate">自動更新</string>
+    <string name="LatestVersionInstalled">已安裝最新版本</string>
+    <string name="LoadingUpdate">正在下載更新…</string>
+    <string name="UpdateAvailable">發現新版本</string>
+    <string name="PluginsRestartEngine">重新啟動外掛引擎</string></resources>
