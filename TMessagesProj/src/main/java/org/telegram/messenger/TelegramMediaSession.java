@@ -402,7 +402,7 @@ public class TelegramMediaSession {
         ArrayList<MessageObject> arrayList = musicObjects.get(did);
         ArrayList<MediaSessionCompat.QueueItem> queueList = musicQueues.get(did);
         if (arrayList == null || arrayList.isEmpty() || queueList == null) return;
-        session.setQueue(queueList);
+        session.setQueue(new ArrayList<>(queueList));
         if (DialogObject.isUserDialog(did)) {
             TLRPC.User user = users.get(did);
             session.setQueueTitle(user != null
@@ -436,7 +436,9 @@ public class TelegramMediaSession {
     }
 
     public void publishPlaybackState(PlaybackStateCompat state) {
-        session.setPlaybackState(state);
+        session.setPlaybackState(new PlaybackStateCompat.Builder(state)
+                .setActions(state.getActions() | getAvailableActions())
+                .build());
     }
 
     public long getAvailableActions() {
@@ -618,12 +620,12 @@ public class TelegramMediaSession {
                 int id = Integer.parseInt(args[1]);
                 ArrayList<MessageObject> arrayList = musicObjects.get(did);
                 ArrayList<MediaSessionCompat.QueueItem> queueList = musicQueues.get(did);
-                if (arrayList == null || id < 0 || id >= arrayList.size()) return;
+                if (arrayList == null || queueList == null || id < 0 || id >= arrayList.size()) return;
                 lastSelectedDialog = did;
                 MessagesController.getNotificationsSettings(currentAccount).edit()
                         .putLong("auto_lastSelectedDialog", did).apply();
                 MediaController.getInstance().setPlaylist(arrayList, arrayList.get(id), 0, false, null);
-                session.setQueue(queueList);
+                session.setQueue(new ArrayList<>(queueList));
                 if (DialogObject.isUserDialog(did)) {
                     TLRPC.User user = users.get(did);
                     session.setQueueTitle(user != null
