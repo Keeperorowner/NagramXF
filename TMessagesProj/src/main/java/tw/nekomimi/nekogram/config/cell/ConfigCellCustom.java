@@ -20,6 +20,7 @@ public class ConfigCellCustom extends AbstractConfigCell implements WithKey {
     public static final int CUSTOM_ITEM_FilterTabsPreview = 984;
     public static final int CUSTOM_ITEM_MessagePreview = 983;
     public static final int CUSTOM_ITEM_AiChatTemperature = 982;
+    public static final int CUSTOM_ITEM_StickerShapePreview = 981;
 
     public final int type;
     public boolean enabled;
