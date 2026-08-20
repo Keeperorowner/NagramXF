@@ -270,4 +270,8 @@
     <string name="MainMenuAddDivider">Add divider</string>
     <string name="MainMenuDivider">Divider</string>
     <string name="MainMenuItemsInfo">Long-press and drag to reorder. Tap an item to hide it, or tap a hidden item to bring it back. Tap a divider to remove it.</string>
+    <!-- Sticker shape -->
+    <string name="StickerShape">Sticker Shape</string>
+    <string name="StickerShapeRounded">Rounded</string>
+    <string name="StickerShapeRoundedMsg">Message</string>
 </resources>

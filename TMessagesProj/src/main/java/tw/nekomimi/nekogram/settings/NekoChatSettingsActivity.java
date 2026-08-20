@@ -80,6 +80,7 @@ import tw.nekomimi.nekogram.ui.PopupBuilder;
 import tw.nekomimi.nekogram.ui.cells.DoubleTapPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.EmojiSetCell;
 import tw.nekomimi.nekogram.ui.cells.MessageSettingsPreviewCell;
+import tw.nekomimi.nekogram.ui.cells.StickerShapePreviewCell;
 import tw.nekomimi.nekogram.ui.cells.StickerSizePreviewMessagesCell;
 import org.telegram.ui.Stories.recorder.DualCameraView;
 import xyz.nextalone.nagram.NaConfig;
@@ -117,6 +118,8 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell dontSendGreetingStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.dontSendGreetingSticker));
     private final AbstractConfigCell hideGroupStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideGroupSticker));
     private final AbstractConfigCell maxRecentStickerCountRow = cellGroup.appendCell(new ConfigCellCustom("maxRecentStickerCount", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell headerStickerShape = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.StickerShape)));
+    private final AbstractConfigCell stickerShapeRow = cellGroup.appendCell(new ConfigCellCustom("StickerShape", ConfigCellCustom.CUSTOM_ITEM_StickerShapePreview, false));
     private final AbstractConfigCell dividerSticker = cellGroup.appendCell(new ConfigCellDivider());
 
     private final AbstractConfigCell aiChatRow = cellGroup.appendCell(new ConfigCellTextDetailIcon("AIChat", getString(R.string.AIChat), getString(R.string.AIChatInfo), R.drawable.ai_chat, true, () ->
@@ -521,6 +524,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private ListAdapter listAdapter;
     private ActionBarMenuItem menuItem;
     private StickerSizeCell stickerSizeCell;
+    private StickerShapePreviewCell stickerShapePreviewCell;
     private MessageSettingsPreviewCell messageSettingsPreviewCell;
 
     public NekoChatSettingsActivity() {
@@ -797,6 +801,15 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             NekoConfig.stickerSize.setConfigFloat(14.0f);
             menuItem.setVisibility(View.GONE);
             stickerSizeCell.invalidate();
+        }
+    }
+
+    private void onStickerShapeChanged() {
+        if (stickerSizeCell != null) {
+            stickerSizeCell.invalidate();
+        }
+        if (stickerShapePreviewCell != null) {
+            stickerShapePreviewCell.invalidate();
         }
     }
 
@@ -1147,6 +1160,9 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             switch (viewType) {
                 case ConfigCellCustom.CUSTOM_ITEM_StickerSize:
                     view = stickerSizeCell = new StickerSizeCell(mContext);
+                    break;
+                case ConfigCellCustom.CUSTOM_ITEM_StickerShapePreview:
+                    view = stickerShapePreviewCell = new StickerShapePreviewCell(mContext, NekoChatSettingsActivity.this::onStickerShapeChanged);
                     break;
                 case ConfigCellCustom.CUSTOM_ITEM_MessagePreview:
                     view = messageSettingsPreviewCell = new MessageSettingsPreviewCell(mContext, getParentLayout());

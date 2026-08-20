@@ -39,6 +39,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
+import org.telegram.messenger.StickerShapeHelper;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLRPC;
@@ -464,6 +465,7 @@ public class StickerEmojiCell extends FrameLayout implements NotificationCenter.
         int cX = getMeasuredWidth() >> 1;
         int cY = getMeasuredHeight() >> 1;
         imageView.setImageCoords(cX - size / 2f, cY - size / 2f, size, size);
+        imageView.setRoundRadius(StickerShapeHelper.getPickerRoundRadius());
         imageView.setAlpha(alpha * premiumAlpha);
 
         if (scale != 1f) {

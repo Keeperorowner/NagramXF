@@ -309,6 +309,17 @@ object NaConfig {
             ConfigItem.configTypeInt,
             0
         )
+
+    /**
+     * 聊天里贴纸的形状：0 方形、1 圆角、2 跟随气泡圆角。
+     * 取值见 [org.telegram.messenger.StickerShapeHelper]。
+     */
+    val stickerShape =
+        addConfig(
+            "StickerShape",
+            ConfigItem.configTypeInt,
+            1
+        )
     val forceSnowfall =
         addConfig(
             "ForceSnowfall",

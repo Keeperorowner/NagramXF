@@ -133,6 +133,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.RichMessageLayout;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.StickerShapeHelper;
 import org.telegram.messenger.SvgHelper;
 import org.telegram.messenger.TranslateController;
 import org.telegram.messenger.UserConfig;
@@ -9845,8 +9846,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     availableTimeWidth = photoWidth - dp(14);
                     backgroundWidth = photoWidth + dp(12);
 
-                    photoImage.setRoundRadius(0);
-                    canChangeRadius = false;
+                    if (StickerShapeHelper.getStickerShape() == StickerShapeHelper.SHAPE_ROUNDED) {
+                        photoImage.setRoundRadius(dp(StickerShapeHelper.ROUNDED_RADIUS_DP));
+                        canChangeRadius = false;
+                    } else if (StickerShapeHelper.getStickerShape() != StickerShapeHelper.SHAPE_ROUNDED_AS_MESSAGE) {
+                        photoImage.setRoundRadius(0);
+                        canChangeRadius = false;
+                    }
                     if (!messageObject.isOutOwner() && MessageObject.isPremiumSticker(messageObject.getDocument())) {
                         flipImage = true;
                     }
@@ -24225,10 +24231,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             paint.setAlpha((int) (oldAlpha * timeAlpha * alpha * .6f));
 
             int r;
-            if (documentAttachType != DOCUMENT_ATTACH_TYPE_ROUND && documentAttachType != DOCUMENT_ATTACH_TYPE_STICKER && currentMessageObject.type != MessageObject.TYPE_EMOJIS) {
+            final boolean stickerRoundedAsMessage = documentAttachType == DOCUMENT_ATTACH_TYPE_STICKER && StickerShapeHelper.isRoundedAsMessage();
+            if (stickerRoundedAsMessage || (documentAttachType != DOCUMENT_ATTACH_TYPE_ROUND && documentAttachType != DOCUMENT_ATTACH_TYPE_STICKER && currentMessageObject.type != MessageObject.TYPE_EMOJIS)) {
                 int[] rad = photoImage.getRoundRadius();
                 r = Math.min(dp(8), Math.max(rad[2], rad[3]));
-                bigRadius = SharedConfig.bubbleRadius >= 10;
+                bigRadius = !stickerRoundedAsMessage && SharedConfig.bubbleRadius >= 10;
             } else {
                 r = dp(4) + (currentMessageObject != null && currentMessageObject.isAnyKindOfSticker() ? dp(8) : 0);
             }
@@ -24986,6 +24993,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             timeY = getPhotoBottom() + additionalTimeOffsetY;
         }
         timeY -= dp(8.5f);
+
+        if (bigRadius && currentMessageObject != null && currentMessageObject.shouldDrawWithoutBackground() && StickerShapeHelper.isRoundedAsMessage()) {
+            bigRadius = false;
+        }
 
         float offsetX = currentMessageObject != null && currentMessageObject.isAnyKindOfSticker() ? dp(-STICKER_STATUS_OFFSET) : 0;
         if (drawClock) {
