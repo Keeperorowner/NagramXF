@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Loads the aliuhook native runtime before Application.onCreate so LSPlant +
+             shadowhook are ready the first time a plugin registers a hook. Declared only in
+             the plugin flavor: the normal package ships no libaliuhook.so. -->
+        <provider
+            android:name="com.exteragram.messenger.AliuHookInitProvider"
+            android:authorities="${applicationId}.aliuhook_init"
+            android:exported="false"
+            android:initOrder="9999"/>
+    </application>
+
+</manifest>
