@@ -673,10 +673,11 @@ target_link_libraries(${NATIVE_LIB}
         OpenSLES
         breakpad)
 
-#aliuhook: ART hook runtime for the plugin subsystem (LSPlant + shadowhook).
-#shadowhook supports arm/arm64 only, so x86/x86_64 builds simply skip this
-#target and Java falls back to "native runtime unavailable".
-if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "armeabi-v7a")
+#aliuhook: ART hook runtime for plugins (LSPlant + shadowhook), arm/arm64 only.
+if (NOT DEFINED ENABLE_PLUGINS)
+    set(ENABLE_PLUGINS ON)
+endif ()
+if (ENABLE_PLUGINS AND (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "armeabi-v7a"))
     set(LSPLANT_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
     set(DEX_BUILDER_BUILD_SHARED OFF CACHE INTERNAL "" FORCE)
     add_subdirectory(third_party/lsplant/lsplant/src/main/jni)

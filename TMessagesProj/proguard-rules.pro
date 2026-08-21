@@ -3,17 +3,10 @@
 -keepclassmembernames class * {
     @com.google.android.gms.common.annotation.KeepName *;
 }
--keep class com.chaquo.python.** { *; }
--keep class * implements com.chaquo.python.StaticProxy { *; }
--keep class android_utils.** { *; }
--keep class client_utils.** { *; }
 -keep class com.exteragram.messenger.ExteraConfig { *; }
--keep class com.exteragram.messenger.plugins.** { *; }
 -keep class com.exteragram.messenger.utils.** { *; }
--keep class de.robv.android.xposed.** { *; }
 -keep class org.telegram.tgnet.** { *; }
 -keep class org.telegram.ui.** { *; }
--dontwarn com.chaquo.python.**
 -keep class org.webrtc.* { *; }
 -keep class org.webrtc.audio.* { *; }
 -keep class org.webrtc.voiceengine.* { *; }

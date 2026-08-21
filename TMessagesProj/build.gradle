@@ -40,13 +40,14 @@ alias = alias ?: System.getenv('ALIAS_NAME')
 pwd = pwd ?: System.getenv('ALIAS_PASS')
 
 def nativeTarget = System.getenv('NATIVE_TARGET') ?: ''
+// Plugin package is arm-only: shadowhook doesn't support x86, and the Python runtime's
+// java/chaquopy.so bridge is vendored for ARM only.
+def pluginAbis = ['armeabi-v7a', 'arm64-v8a']
+def normalAbis = ['armeabi-v7a', 'arm64-v8a', 'x86_64']
 // Java runtime classes come from src/plugin/java/com/chaquo (see README there).
-def chaquopyPythonVersion = '3.11'
 def chaquopyTargetVersion = '3.11.10-1'
-// The Python runtime ships only for the ABIs that have a java/chaquopy.so bridge in
-// src/main/prebuilt/chaquopy-java-bridge (ARM only, matching assets/plugins_pysdk). Building the
-// runtime for an ABI without that bridge makes Python fail to start on that device.
-def chaquopyAbis = ['armeabi-v7a', 'arm64-v8a'].findAll { nativeTarget.isBlank() || it == nativeTarget }
+def chaquopyAbis = pluginAbis.findAll { nativeTarget.isBlank() || it == nativeTarget }
+
 def abiToNdkTriple = [
     'armeabi-v7a': 'arm-linux-androideabi',
     'arm64-v8a'  : 'aarch64-linux-android',
@@ -104,16 +105,29 @@ android {
         }
     }
 
+    // splits.abi is not flavor-aware; the plugin flavor prunes x86_64 and universal below.
     splits {
         abi {
             enable = true
             reset()
+            include(*(nativeTarget.isBlank() ? normalAbis : [nativeTarget]))
             universalApk = nativeTarget.isBlank()
-            if (!nativeTarget.isBlank()) {
-                include nativeTarget
-            } else {
-                include 'armeabi-v7a', 'arm64-v8a', 'x86_64'
-            }
+        }
+    }
+
+    flavorDimensions 'runtime'
+
+    productFlavors {
+        normal {
+            dimension 'runtime'
+            ndk.abiFilters.addAll(normalAbis)
+            externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=OFF'
+        }
+        plugin {
+            dimension 'runtime'
+            ndk.abiFilters.addAll(pluginAbis)
+            externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=ON'
+            proguardFiles 'proguard-plugin-rules.pro'
         }
     }
 
@@ -214,8 +228,9 @@ android {
         }
     }
 
-    sourceSets.main.jniLibs.srcDirs = ['./jni/', "$buildDir/generated/chaquopyJniLibs"]
-    sourceSets.main.assets.srcDirs += ["$buildDir/generated/chaquopyBootstrapNative"]
+    sourceSets.main.jniLibs.srcDirs = ['./jni/']
+    sourceSets.plugin.jniLibs.srcDirs += "$buildDir/generated/chaquopyJniLibs"
+    sourceSets.plugin.assets.srcDirs += "$buildDir/generated/chaquopyBootstrapNative"
 
     namespace = 'org.telegram.messenger'
 }
@@ -269,11 +284,6 @@ tasks.register("prepareChaquopyJniLibs", Sync) {
     }
 }
 
-tasks.named("preBuild").configure {
-    dependsOn("prepareChaquopyJniLibs")
-    dependsOn("prepareChaquopyBootstrapNative")
-}
-
 // bootstrap-native/<abi>/ = CPython extension modules from the target zip's lib-dynload/ plus
 // the vendored java/chaquopy.so Cython module (not available from Maven).
 tasks.register("prepareChaquopyBootstrapNative", Sync) {
@@ -310,7 +320,12 @@ tasks.register("prepareChaquopyBootstrapNative", Sync) {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
+        boolean isPluginFlavor = variant.name.startsWith('plugin')
         variant.outputs.forEach { output ->
+            if (isPluginFlavor) {
+                def abi = output.filters.find { it.filterType.name() == 'ABI' }?.identifier
+                output.enabled.set(pluginAbis.contains(abi))
+            }
             String gramName = 'NagramXF'
             String first = String.format('%s-v%s(%s)', gramName, verName, verCode)
             output.outputFileName.set(
@@ -319,6 +334,15 @@ androidComponents {
                     .replace('-release', '')
                     .replace('-staging', '')
             )
+        }
+        if (isPluginFlavor) {
+            // AGP 9 has no per-variant preBuild tasks; wire to the merge tasks instead.
+            tasks.matching {
+                it.name.startsWith("merge${variant.name.capitalize()}") &&
+                        (it.name.endsWith('JniLibFolders') || it.name.endsWith('Assets'))
+            }.configureEach {
+                dependsOn('prepareChaquopyJniLibs', 'prepareChaquopyBootstrapNative')
+            }
         }
     }
 }
@@ -337,8 +361,9 @@ dependencies {
     implementation 'androidx.exifinterface:exifinterface:1.4.2' // 1.3.6
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     implementation 'androidx.mediarouter:mediarouter:1.8.0'
-    implementation 'androidx.car.app:app:1.4.0'
-    implementation 'androidx.car.app:app-projected:1.4.0'
+    implementation "androidx.media:media:1.7.0"
+    implementation "androidx.lifecycle:lifecycle-runtime:2.7.0"
+    implementation 'androidx.car.app:app:1.7.0'
     implementation 'androidx.sharetarget:sharetarget:1.2.0'
     implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.biometric:biometric:1.1.0'
@@ -404,11 +429,11 @@ dependencies {
     // wear auth
     implementation 'com.google.android.gms:play-services-wearable:18.0.0'
 
+    // Plugin runtime only. Chaquopy Java classes are built from src/plugin/java/com/chaquo
+    // (the upstream artifact lacks fork members such as Reflector.dirAll()).
+    pluginImplementation 'com.linkedin.dexmaker:dexmaker:2.28.3'
+    pluginImplementation 'org.mvel:mvel2:2.5.2.Final'
     chaquopyAbis.each { abi ->
         chaquopyTargetJni "com.chaquo.python:target:${chaquopyTargetVersion}:${abi}@zip"
     }
-    implementation 'com.linkedin.dexmaker:dexmaker:2.28.3'
-    implementation 'org.mvel:mvel2:2.5.2.Final'
-
-    compileOnly fileTree('libs')
 }
