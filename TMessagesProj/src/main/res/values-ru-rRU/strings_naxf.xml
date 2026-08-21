@@ -334,4 +334,16 @@
     <string name="AyuStatsReadMarks">Отметки о прочтении</string>
     <string name="AyuStatsLastSeen">Записи о последнем посещении</string>
     <string name="AyuMomentsCustomHeader">Своё</string>
+
+
+    <string name="ImportMergeResult">Объединено сообщений: %1$d.</string>
+    <string name="ImportMessageDatabaseForeign">Эта резервная копия из другого клиента, поэтому она не может заменить локальную базу. Сохранённые сообщения из неё можно объединить с текущими данными.</string>
+    <string name="ImportModeMerge">Объединить</string>
+    <string name="ImportModeReplace">Заменить</string><string name="LastSeenPillAutoRefresh">Автообновление</string>
+    <string name="NavigationDrawerProxyPingShort">Пинг %1$d мс</string>
+    <string name="StickerShape">Форма стикеров</string>
+    <string name="StickerShapeRounded">Скруглённые</string>
+    <string name="StickerShapeRoundedMsg">Сообщение</string>
+    <string name="WeatherPickLocationHint">Нажмите, чтобы выбрать место на карте</string>
+
 </resources>

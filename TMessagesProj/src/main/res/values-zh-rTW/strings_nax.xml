@@ -422,4 +422,25 @@
     <string name="LatestVersionInstalled">已安裝最新版本</string>
     <string name="LoadingUpdate">正在下載更新…</string>
     <string name="UpdateAvailable">發現新版本</string>
-    <string name="PluginsRestartEngine">重新啟動外掛引擎</string></resources>
+    <string name="PluginsRestartEngine">重新啟動外掛引擎</string>
+
+    <string name="CenterActionBarTitleOff">關閉</string>
+    <string name="CenterActionBarTitleOn">開啟</string>
+    <string name="HideBottomNavigationBar">隱藏底部導覽列</string>
+    <string name="HideDialogsSearchField">隱藏搜尋框</string>
+    <string name="JoinOfficialChannelMessage">歡迎使用 Nagram X！要加入官方頻道 @NagramXF 以取得最新更新與消息嗎？</string>
+    <string name="JoinOfficialChannelTitle">加入官方頻道</string>
+    <string name="StrokeOnViews">光澤效果</string>
+    <string name="TabletModeOff">關閉</string>
+    <string name="TabletModeOn">開啟</string>
+
+    <string name="ForceForwardMediaDidNotStart">媒體下載未開始。</string>
+    <string name="ForceForwardMediaTimedOut">媒體下載逾時。</string>
+    <string name="ForceForwardStatusDocumentGroupFallback">正在以檔案群組後備傳送</string>
+    <string name="ForceForwardStatusMediaFallback">正在以媒體後備傳送</string>
+    <string name="ForceForwardStatusMediaGroupFallback">正在以媒體群組後備傳送</string>
+    <string name="ForceForwardStatusMediaReady">媒體已就緒</string>
+    <string name="ForceForwardStatusStopping">正在停止轉傳</string>
+    <string name="ForceForwardStatusStoppingCurrentBatch">正在停止目前批次</string>
+
+</resources>
