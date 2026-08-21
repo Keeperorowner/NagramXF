@@ -335,4 +335,14 @@
     <string name="MainMenuAddDivider">新增分隔線</string>
     <string name="MainMenuDivider">分隔線</string>
     <string name="MainMenuItemsInfo">長按拖曳可排序，點按項目可將其隱藏，點按已隱藏項目可將其復原，點按分隔線可將其移除。</string>
+
+
+    <string name="ImportMergeResult">已合併 %1$d 則訊息。</string>
+    <string name="ImportMessageDatabaseForeign">此備份來自其他用戶端，無法取代本機資料庫，但可將其中已儲存的訊息合併至目前資料。</string>
+    <string name="ImportModeMerge">合併</string>
+    <string name="ImportModeReplace">取代</string><string name="LastSeenPillAutoRefresh">自動重新整理</string><string name="StickerShape">貼圖形狀</string>
+    <string name="StickerShapeRounded">圓角</string>
+    <string name="StickerShapeRoundedMsg">訊息</string>
+    <string name="WeatherPickLocationHint">輕觸以在地圖上選擇位置</string>
+
 </resources>

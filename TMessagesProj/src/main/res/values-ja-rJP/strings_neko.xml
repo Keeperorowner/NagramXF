@@ -272,5 +272,4 @@
     <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">このクライアントが気に入りましたか？**開発をサポート**</string>
     <string name="iOSMessageInputField">iOS スタイルのメッセージ入力欄</string>
-    <string name="iOSMessageInputFieldNotice">添付アイコンを左側に移動し、ボタンを個別のバブルに分割します。有効な間、添付メニューモードは上書きされます</string>
-</resources>
+    <string name="iOSMessageInputFieldNotice">添付アイコンを左側に移動し、ボタンを個別のバブルに分割します。有効な間、添付メニューモードは上書きされます</string></resources>

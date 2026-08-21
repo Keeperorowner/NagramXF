@@ -335,5 +335,14 @@
     <string name="SaveReadDate">既読レシートを保存</string>
     <string name="SaveReadDateAbout">送信したメッセージが既読になった日時を記録します。既読時刻はメッセージ情報に表示されます。</string>
     <string name="AyuReadDate">既読</string>
-    <string name="AyuReadDateUnknown">不明</string>
+    <string name="AyuReadDateUnknown">不明</string><string name="LastSeenPillAutoRefresh">自動更新</string><string name="StickerShape">ステッカーの形状</string>
+    <string name="StickerShapeRounded">角丸</string>
+    <string name="StickerShapeRoundedMsg">メッセージ</string>
+    <string name="WeatherPickLocationHint">タップして地図上で場所を選択</string>
+
+    <string name="ImportMergeResult">%1$d 件のメッセージを統合しました。</string>
+    <string name="ImportMessageDatabaseForeign">このバックアップは別のクライアントのもののため、ローカルデータベースを置き換えることはできません。保存されたメッセージは現在のデータに統合できます。</string>
+    <string name="ImportModeMerge">統合</string>
+    <string name="ImportModeReplace">置き換え</string>
+
 </resources>
