@@ -5,6 +5,20 @@ plugins {
     id 'com.android.application'
     id 'com.google.gms.google-services'
     id 'com.google.firebase.crashlytics'
+    id 'org.telegram.lottie-meta'
+    id 'idea'
+}
+
+idea {
+    module {
+        excludeDirs += [
+            file('jni/third_party'),
+            file('jni/ffmpeg'),
+            file('jni/tlottie'),
+            file('jni/boringssl'),
+            file('jni/sqlite')
+        ]
+    }
 }
 
 def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: '0'
@@ -374,6 +388,8 @@ dependencies {
     implementation 'androidx.sharetarget:sharetarget:1.2.0'
     implementation 'androidx.interpolator:interpolator:1.0.0'
     implementation 'androidx.biometric:biometric:1.1.0'
+    // vendored zxing sources were removed upstream; QR now goes through the maven artifact
+    implementation 'com.google.zxing:core:3.5.4'
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'

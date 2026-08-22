@@ -369,10 +369,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
         };
         if (baseFragment instanceof ChatActivity || baseFragment instanceof TopicsFragment) {
-            if (parentFragment == null || (parentFragment.getChatMode() != ChatActivity.MODE_QUICK_REPLIES && parentFragment.getChatMode() != ChatActivity.MODE_EDIT_BUSINESS_LINK) && parentFragment.getChatMode() != ChatActivity.MODE_SUGGESTIONS && !parentFragment.isInBotForumMode()) {
+            if (parentFragment == null || (parentFragment.getChatMode() != ChatActivity.MODE_QUICK_REPLIES && parentFragment.getChatMode() != ChatActivity.MODE_WELCOME_MESSAGES && parentFragment.getChatMode() != ChatActivity.MODE_EDIT_BUSINESS_LINK) && parentFragment.getChatMode() != ChatActivity.MODE_SUGGESTIONS && !parentFragment.isInBotForumMode()) {
                 sharedMediaPreloader = new SharedMediaLayout.SharedMediaPreloader(baseFragment);
             }
-            avatarImageIsHidden = parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == ChatActivity.MODE_PINNED || parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES || parentFragment.getChatMode() == ChatActivity.MODE_EDIT_BUSINESS_LINK);
+            avatarImageIsHidden = parentFragment != null && (parentFragment.isThreadChat() || parentFragment.getChatMode() == ChatActivity.MODE_PINNED || parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES || parentFragment.getChatMode() == ChatActivity.MODE_WELCOME_MESSAGES || parentFragment.getChatMode() == ChatActivity.MODE_EDIT_BUSINESS_LINK);
             if (avatarImageIsHidden) {
                 avatarImageView.setVisibility(GONE);
             }
@@ -1078,6 +1078,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
             titleTextView.setRightDrawable2(mutedIcon);
         }
+        checkActionBar(true);
     }
 
     public AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable getBotVerificationDrawable(long icon, boolean animated) {
@@ -1155,6 +1156,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             titleTextView.setRightDrawable(null);
             rightDrawableContentDescription = null;
         }
+        checkActionBar(animated);
     }
 
     private Drawable emojiStatusDefaultDrawable;
@@ -1172,6 +1174,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         } else {
             lastSubtitle = value;
         }
+        checkActionBar(true);
     }
 
     public ImageView getTimeItem() {
@@ -1469,6 +1472,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         } else {
             lastSubtitle = newSubtitle;
         }
+        checkActionBar(animated);
     }
 
     public static CharSequence getChatSubtitle(TLRPC.Chat chat, TLRPC.ChatFull info, int onlineCount) {
@@ -1801,6 +1805,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 }
             }
         }
+        checkActionBar(true);
     }
 
     @Override
@@ -1860,5 +1865,17 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             verifiedCheck.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_profile_verifiedCheck), PorterDuff.Mode.MULTIPLY));
         }
         invalidate();
+    }
+
+    private ActionBar actionBar;
+
+    public void setActionBar(ActionBar actionBar) {
+        this.actionBar = actionBar;
+    }
+
+    private void checkActionBar(boolean animated) {
+        if (actionBar != null) {
+            actionBar.checkAvatarContainerWidth(animated);
+        }
     }
 }

@@ -80,9 +80,9 @@ public class ChatObject {
 
     public static final int ACTION_MANAGE_DIRECT = 24;
     public static final int ACTION_MANAGE_TAGS = 25;
-
     public static final int ACTION_SEND_REACTIONS = 26;
     public static final int ACTION_MANAGE_LINKED_CHATS = 27;
+    public static final int ACTION_MANAGE_WELCOME = 28;
 
     public final static int VIDEO_FRAME_NO_FRAME = 0;
     public final static int VIDEO_FRAME_REQUESTING = 1;
@@ -1826,6 +1826,9 @@ public class ChatObject {
         if (chat.admin_rights != null) {
             boolean value;
             switch (action) {
+                case ACTION_MANAGE_WELCOME:
+                    value = chat.admin_rights.manage_welcome_messages;
+                    break;
                 case ACTION_MANAGE_DIRECT:
                     value = chat.admin_rights.manage_direct_messages;
                     break;

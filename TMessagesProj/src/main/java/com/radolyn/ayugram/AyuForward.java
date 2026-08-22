@@ -10,6 +10,7 @@ import com.radolyn.ayugram.utils.seq.AyuSequentialUtils;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.SendMessageChatArguments;
 import org.telegram.messenger.DispatchQueue;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -650,6 +651,8 @@ public class AyuForward {
             return false;
         }
         MessageObject replyToMessage = replyToTopMessage;
+        SendMessageChatArguments.Builder stickerChatArguments = new SendMessageChatArguments.Builder();
+        stickerChatArguments.setQuickReplyShortcut(quickReplyShortcut, quickReplyShortcutId);
         return AyuSequentialUtils.dispatchSendSync(currentAccount, targetDialogId, null, true, false, () ->
                 SendMessagesHelper.getInstance(currentAccount).sendSticker(
                         messageObject.getDocument(),
@@ -665,8 +668,7 @@ public class AyuForward {
                         0,
                         false,
                         null,
-                        quickReplyShortcut,
-                        quickReplyShortcutId,
+                        stickerChatArguments.build(),
                         payStars,
                         monoForumPeerId,
                         suggestionParams
@@ -966,6 +968,9 @@ public class AyuForward {
         if (params.replyToTopMsg == null) {
             params.replyToTopMsg = replyToTopMessage;
         }
+        SendMessageChatArguments.Builder builder = new SendMessageChatArguments.Builder();
+        builder.setQuickReplyShortcut(quickReplyShortcut, quickReplyShortcutId);
+        params.sendMessageChatArguments = builder.build();
         params.quick_reply_shortcut = quickReplyShortcut;
         params.quick_reply_shortcut_id = quickReplyShortcutId;
         params.payStars = payStars;

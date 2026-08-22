@@ -29,6 +29,7 @@ import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.browser.Browser;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.Cells.ChatMessageCell;
 import org.telegram.ui.Components.URLSpanMono;
 
@@ -120,12 +121,12 @@ public class NekoMessageCell extends ChatMessageCell {
             }
 
             @Override
-            public void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
+            public void didPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
                 Optional.ofNullable(ayuDelegate).ifPresent(d -> d.didPressBotButton(cell, button));
             }
 
             @Override
-            public boolean didLongPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button) {
+            public boolean didLongPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button) {
                 if (ayuDelegate != null) {
                     return ayuDelegate.didLongPressBotButton(cell, button);
                 }
@@ -356,9 +357,9 @@ public class NekoMessageCell extends ChatMessageCell {
 
         void didPressInstantButton(ChatMessageCell cell, int type);
 
-        void didPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button);
+        void didPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button);
 
-        boolean didLongPressBotButton(ChatMessageCell cell, TLRPC.KeyboardButton button);
+        boolean didLongPressBotButton(ChatMessageCell cell, TL_keyboard.KeyboardButtonProto button);
 
         boolean needPlayMessage(ChatMessageCell cell, MessageObject messageObject, boolean muted);
     }
