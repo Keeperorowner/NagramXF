@@ -15,6 +15,8 @@ import com.exteragram.messenger.pillstack.ui.PillStackPreferencesActivity;
 import com.exteragram.messenger.pillstack.ui.pills.BasePill;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuWorker;
+import com.radolyn.ayugram.controllers.AyuGhostController;
+import com.radolyn.ayugram.utils.AyuGhostUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
@@ -209,6 +211,7 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
         String label = user != null ? formatStatus(user) : getCachedStatusText(getAccount());
         if (user != null && label != null) {
             cacheStatusText(getAccount(), label);
+            correctResidualOnline(getAccount(), user);
         }
         if (TextUtils.isEmpty(label)) {
             return;
@@ -216,6 +219,18 @@ public class LastSeenPill extends BasePill implements NotificationCenter.Notific
         showStatusText(label, keepVisible, true);
         if (keepVisible) {
             markDataUpdated();
+        }
+    }
+
+    // 服务器仍把本账号标为在线时立即补发 offline 包，避免 ghost 模式残留在线状态
+    private void correctResidualOnline(int account, TLRPC.User user) {
+        int currentTime = ConnectionsManager.getInstance(account).getCurrentTime();
+        if (!(user.status instanceof TLRPC.TL_userStatusOnline) || user.status.expires <= currentTime) {
+            return;
+        }
+        AyuGhostController ghost = AyuGhostController.getInstance(account);
+        if (ghost.isGhostModeActive() || !ghost.isSendOnlinePackets() || ghost.isSendOfflinePacketAfterOnline()) {
+            AyuGhostUtils.performStatusRequest(account, true);
         }
     }
 

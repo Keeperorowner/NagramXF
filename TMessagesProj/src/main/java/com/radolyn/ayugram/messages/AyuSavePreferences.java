@@ -78,6 +78,15 @@ public class AyuSavePreferences {
      */
     private static long resolveTopicId(int accountId, TLRPC.Message msg) {
         long dialogId = msg.dialog_id != 0 ? msg.dialog_id : MessageObject.getDialogId(msg);
+        return resolveTopicId(accountId, msg, dialogId);
+    }
+
+    /**
+     * 所有删除保存路径统一从这里解析话题 id。
+     * 不要用 {@link MessageObject#getTopicId(int, TLRPC.Message, boolean)}：它不感知
+     * monoForum，会把频道私信消息解析成 topicId=0，与读取侧查询不一致。
+     */
+    public static long resolveTopicId(int accountId, TLRPC.Message msg, long dialogId) {
         MessagesController messagesController = MessagesController.getInstance(accountId);
         int forumFlags = 0;
         try {

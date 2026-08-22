@@ -30,11 +30,11 @@ public interface EditedMessageDao {
     @Query("SELECT EXISTS(SELECT * FROM editedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId = :messageId)")
     boolean hasAnyRevisions(long userId, long dialogId, long messageId);
 
-    @Query("DELETE FROM editedmessage WHERE dialogId = :dialogId")
-    void delete(long dialogId);
+    @Query("DELETE FROM editedmessage WHERE userId = :userId AND dialogId = :dialogId")
+    void delete(long userId, long dialogId);
 
-    @Query("DELETE FROM editedmessage WHERE dialogId = :dialogId AND messageId IN (:messageIds)")
-    void deleteByDialogIdAndMessageIds(long dialogId, List<Integer> messageIds);
+    @Query("DELETE FROM editedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId IN (:messageIds)")
+    void deleteByDialogIdAndMessageIds(long userId, long dialogId, List<Integer> messageIds);
 
     @Query("DELETE FROM editedmessage WHERE fakeId = :fakeId")
     int deleteByFakeId(long fakeId);

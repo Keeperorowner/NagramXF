@@ -9575,11 +9575,21 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
             if (!toSaveIds.isEmpty()) {
+                // dialogMessagesByIds 跨会话共享且仅按 messageId 索引，须校验消息归属当前会话
+                LongSparseArray<TLRPC.Message> resolvedMessages = new LongSparseArray<>();
+                for (var msgId : toSaveIds) {
+                    MessageObject obj = dialogMessagesByIds.get(msgId);
+                    if (obj != null && obj.messageOwner != null && obj.getDialogId() == dialogIdFinal) {
+                        resolvedMessages.put(msgId, obj.messageOwner);
+                    }
+                }
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
                     ArrayList<Integer> savedIds = new ArrayList<>();
                     for (var msgId : toSaveIds) {
-                        MessageObject obj = dialogMessagesByIds.get(msgId);
-                        TLRPC.Message msg = obj != null ? obj.messageOwner : MessageHelper.getInstance(currentAccount).getMessage(dialogIdFinal, msgId);
+                        TLRPC.Message msg = resolvedMessages.get(msgId);
+                        if (msg == null) {
+                            msg = MessageHelper.getInstance(currentAccount).getMessage(dialogIdFinal, msgId);
+                        }
                         if (msg != null) {
                             var prefs = new AyuSavePreferences(msg, currentAccount);
                             prefs.setDialogId(dialogIdFinal);
@@ -17892,9 +17902,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 var messagesToSave = MessageHelper.getInstance(currentAccount).getMessagesStorageMessages(ayuDialogId, ids);
                 if (messagesToSave != null && !messagesToSave.isEmpty()) {
                     int catchTime = (int) (System.currentTimeMillis() / 1000);
-                    boolean forum = isForum(ayuDialogId);
                     for (var msg : messagesToSave) {
-                        long topicId = MessageObject.getTopicId(currentAccount, msg, forum);
+                        long topicId = AyuSavePreferences.resolveTopicId(currentAccount, msg, ayuDialogId);
                         var prefs = new AyuSavePreferences(msg, currentAccount, ayuDialogId, topicId, msg.id, catchTime);
                         ayuMessagesController.onMessageDeleted(prefs);
                         savedIds.add(msg.id);
@@ -20102,7 +20111,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         var messagesToSave = MessageHelper.getInstance(currentAccount).getMessagesStorageMessages(dialogId, messageIds);
                         if (messagesToSave != null && !messagesToSave.isEmpty()) {
                             for (var msg : messagesToSave) {
-                                var topicId = MessageObject.getTopicId(currentAccount, msg, isForum(dialogId));
+                                var topicId = AyuSavePreferences.resolveTopicId(currentAccount, msg, dialogId);
                                 var prefs = new AyuSavePreferences(msg, currentAccount, dialogId, topicId, msg.id, (int)(currentTime / 1000));
                                 ayuMessagesController.onMessageDeleted(prefs);
                             }
@@ -23494,10 +23503,9 @@ public class MessagesController extends BaseController implements NotificationCe
                                 var ayuMessagesController = AyuMessagesController.getInstance();
                                 ArrayList<Integer> savedIds = new ArrayList<>();
                                 int catchTime = (int) (System.currentTimeMillis() / 1000);
-                                boolean forum = isForum(dialogId);
                                 for (int i = 0, N = messagesToSave.size(); i < N; i++) {
                                     TLRPC.Message msg = messagesToSave.get(i);
-                                    long topicId = MessageObject.getTopicId(currentAccount, msg, forum);
+                                    long topicId = AyuSavePreferences.resolveTopicId(currentAccount, msg, dialogId);
                                     var prefs = new AyuSavePreferences(msg, currentAccount, dialogId, topicId, msg.id, catchTime);
                                     ayuMessagesController.onMessageDeleted(prefs);
                                     savedIds.add(msg.id);

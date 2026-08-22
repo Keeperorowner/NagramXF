@@ -39,7 +39,7 @@ import com.radolyn.ayugram.database.entities.SpyMessageRead;
         RegexFilterGlobalExclusion.class
 }, version = AyuDatabase.VERSION)
 public abstract class AyuDatabase extends RoomDatabase {
-    public static final int VERSION = 34;
+    public static final int VERSION = 35;
 
     public abstract EditedMessageDao editedMessageDao();
 
