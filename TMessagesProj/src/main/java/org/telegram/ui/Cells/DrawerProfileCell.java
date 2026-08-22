@@ -25,6 +25,7 @@ import android.widget.TextView;
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -99,7 +100,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         addView(shadowView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 70, Gravity.LEFT | Gravity.BOTTOM));
 
         avatarImageView = new BackupImageView(context);
-        avatarImageView.setRoundRadius(AndroidUtilities.dp(32));
+        avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(64.0f));
         addView(avatarImageView, LayoutHelper.createFrame(64, 64, Gravity.LEFT | Gravity.BOTTOM, 16, 0, 0, 67));
 
         nameTextView = new SimpleTextView(context) {
@@ -613,6 +614,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
             syncThemeToggle(Theme.isCurrentThemeDark(), false);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         }
@@ -623,6 +625,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         super.onDetachedFromWindow();
         status.detach();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {
             NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.currentUserPremiumStatusChanged);
         }
@@ -643,6 +646,9 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.emojiLoaded) {
             nameTextView.invalidate();
+        } else if (id == NotificationCenter.reloadInterface) {
+            avatarImageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(64.0f));
+            avatarImageView.invalidate();
         } else if (id == NotificationCenter.userEmojiStatusUpdated) {
             setUser((TLRPC.User) args[0], accountsShown);
         } else if (id == NotificationCenter.currentUserPremiumStatusChanged) {

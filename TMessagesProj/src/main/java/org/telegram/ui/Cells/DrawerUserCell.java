@@ -12,6 +12,7 @@ import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.FrameLayout;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.Emoji;
@@ -54,7 +55,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
         avatarDrawable.setTextSize(dp(20));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(18));
+        imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(36.0f));
         addView(imageView, LayoutHelper.createFrame(36, 36, Gravity.LEFT | Gravity.TOP, 14, 6, 0, 0));
 
         textView = new SimpleTextView(context);
@@ -97,6 +98,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
             NotificationCenter.getInstance(i).addObserver(this, NotificationCenter.updateInterfaces);
         }
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.reloadInterface);
     }
 
     @Override
@@ -109,6 +111,7 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
             NotificationCenter.getInstance(i).removeObserver(this, NotificationCenter.updateInterfaces);
         }
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.reloadInterface);
 
         if (textView.getRightDrawable() instanceof AnimatedEmojiDrawable.WrapSizeDrawable) {
             Drawable drawable = ((AnimatedEmojiDrawable.WrapSizeDrawable) textView.getRightDrawable()).getDrawable();
@@ -126,6 +129,9 @@ public class DrawerUserCell extends FrameLayout implements NotificationCenter.No
             }
         } else if (id == NotificationCenter.emojiLoaded) {
             textView.invalidate();
+        } else if (id == NotificationCenter.reloadInterface) {
+            imageView.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(36.0f));
+            imageView.invalidate();
         } else if (id == NotificationCenter.updateInterfaces) {
             if (((int) args[0] & MessagesController.UPDATE_MASK_EMOJI_STATUS) > 0) {
                 setAccount(accountNumber);
