@@ -18444,7 +18444,6 @@ public class MessagesStorage extends BaseController {
             var ayuMessagesController = AyuMessagesController.getInstance();
             ArrayList<Integer> savedIds = new ArrayList<>();
             int catchTime = (int) (System.currentTimeMillis() / 1000);
-            boolean forum = getMessagesController().isForum(dialogId);
             while (cursor.next()) {
                 int mid = cursor.intValue(0);
                 if (keepMid1 != 0 && mid == keepMid1) {
@@ -18465,7 +18464,7 @@ public class MessagesStorage extends BaseController {
                     if (message != null) {
                         message.readAttachPath(data, getUserConfig().clientUserId);
                         message.dialog_id = dialogId;
-                        long topicId = MessageObject.getTopicId(currentAccount, message, forum);
+                        long topicId = AyuSavePreferences.resolveTopicId(currentAccount, message, dialogId);
                         var prefs = new AyuSavePreferences(message, currentAccount, dialogId, topicId, message.id, catchTime);
                         ayuMessagesController.onMessageDeleted(prefs, false);
                         savedIds.add(message.id);

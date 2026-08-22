@@ -489,22 +489,38 @@ public class AyuMessagesController {
     }
 
     public void onMessageDeleted(AyuSavePreferences prefs, boolean useQueue) {
-        if (prefs.getMessage() == null) {
+        if (prefs == null || prefs.getMessage() == null) {
             return;
         }
+        Runnable task = () -> {
+            try {
+                onMessageDeletedInner(prefs);
+            } catch (Throwable e) {
+                FileLog.e("onMessageDeleted", e);
+            }
+        };
         try {
             if (useQueue) {
-                Utilities.globalQueue.postRunnable(() -> onMessageDeletedInner(prefs));
+                Utilities.globalQueue.postRunnable(task);
             } else {
-                onMessageDeletedInner(prefs);
+                task.run();
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             FileLog.e("onMessageDeleted", e);
         }
     }
 
     private void onMessageDeletedInner(AyuSavePreferences prefs) {
         if (!AyuSavePreferences.saveDeletedMessageFor(prefs.getAccountId(), prefs.getDialogId(), prefs.getFromUserId())) {
+            return;
+        }
+
+        var msg = prefs.getMessage();
+
+        // 发送中的本地消息、服务消息、空消息不入库
+        if ((msg.send_state == 1 && msg.id < 0)
+                || msg instanceof TLRPC.TL_messageService
+                || msg instanceof TLRPC.TL_messageEmpty) {
             return;
         }
 
@@ -522,8 +538,6 @@ public class AyuMessagesController {
         deletedMessage.dialogId = prefs.getDialogId();
         deletedMessage.messageId = prefs.getMessageId();
         deletedMessage.entityCreateDate = prefs.getRequestCatchTime();
-
-        var msg = prefs.getMessage();
 
         FileLog.d("saving message " + prefs.getMessageId() + " for " + prefs.getDialogId() + " with topic " + prefs.getTopicId());
 
@@ -695,7 +709,7 @@ public class AyuMessagesController {
         }
 
         deletedMessageDao().deleteMessages(userId, dialogId, messageIds);
-        editedMessageDao().deleteByDialogIdAndMessageIds(dialogId, messageIds);
+        editedMessageDao().deleteByDialogIdAndMessageIds(userId, dialogId, messageIds);
 
         for (String mediaPath : mediaPaths) {
             var p = new File(mediaPath);
@@ -728,26 +742,26 @@ public class AyuMessagesController {
     }
 
     public void deleteCurrent(long dialogId, long mergeDialogId, Runnable callback) {
-        List<DeletedMessageFull> messages = deletedMessageDao().getMessagesByDialog(dialogId);
+        long currentUserId = UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
+        List<DeletedMessageFull> messages = deletedMessageDao().getMessagesByDialog(currentUserId, dialogId);
 
         if (mergeDialogId != 0) {
-            List<DeletedMessageFull> mergeMessages = deletedMessageDao().getMessagesByDialog(mergeDialogId);
+            List<DeletedMessageFull> mergeMessages = deletedMessageDao().getMessagesByDialog(currentUserId, mergeDialogId);
             messages.addAll(mergeMessages);
         }
 
         // Delete messages and their edit history from database
-        deletedMessageDao().delete(dialogId);
-        editedMessageDao().delete(dialogId);
+        deletedMessageDao().delete(currentUserId, dialogId);
+        editedMessageDao().delete(currentUserId, dialogId);
 
         if (mergeDialogId != 0) {
-            deletedMessageDao().delete(mergeDialogId);
-            editedMessageDao().delete(mergeDialogId);
+            deletedMessageDao().delete(currentUserId, mergeDialogId);
+            editedMessageDao().delete(currentUserId, mergeDialogId);
         }
 
-        long userId = UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
-        deleteDialogRecord(userId, dialogId);
+        deleteDialogRecord(currentUserId, dialogId);
         if (mergeDialogId != 0) {
-            deleteDialogRecord(userId, mergeDialogId);
+            deleteDialogRecord(currentUserId, mergeDialogId);
         }
 
         // Clean up media files

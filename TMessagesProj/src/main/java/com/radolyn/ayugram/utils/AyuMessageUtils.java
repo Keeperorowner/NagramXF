@@ -27,6 +27,7 @@ import org.telegram.messenger.secretmedia.EncryptedFileInputStream;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.ui.ChatActivity;
 
 import java.io.File;
@@ -573,6 +574,22 @@ public abstract class AyuMessageUtils {
                 }
             }
         }
+        // deserialize rich_message (Instant View layout)
+        if (source.richMessageSerialized != null && source.richMessageSerialized.length > 0) {
+            NativeByteBuffer data = null;
+            try {
+                data = new NativeByteBuffer(source.richMessageSerialized.length);
+                data.put(ByteBuffer.wrap(source.richMessageSerialized));
+                data.rewind();
+                target.rich_message = TL_iv.RichMessage.TLdeserialize(data, data.readInt32(false), false);
+            } catch (Exception e) {
+                FileLog.e("Failed to deserialize rich_message", e);
+            } finally {
+                if (data != null) {
+                    data.reuse();
+                }
+            }
+        }
     }
 
     public static void map(AyuSavePreferences prefs, AyuMessageBase out) {
@@ -668,6 +685,27 @@ public abstract class AyuMessageUtils {
                 }
             } catch (Exception e) {
                 FileLog.e("Failed to serialize reply_markup", e);
+            } finally {
+                if (data != null) {
+                    data.reuse();
+                }
+            }
+        }
+        // serialize rich_message (Instant View layout)
+        if (message.rich_message != null) {
+            NativeByteBuffer data = null;
+            try {
+                int size = message.rich_message.getObjectSize();
+                if (size > 0) {
+                    data = new NativeByteBuffer(size);
+                    message.rich_message.serializeToStream(data);
+                    data.rewind();
+                    byte[] serialized = new byte[data.buffer.remaining()];
+                    data.buffer.get(serialized);
+                    out.richMessageSerialized = serialized;
+                }
+            } catch (Exception e) {
+                FileLog.e("Failed to serialize rich_message", e);
             } finally {
                 if (data != null) {
                     data.reuse();

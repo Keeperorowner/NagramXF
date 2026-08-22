@@ -55,4 +55,5 @@ public abstract class AyuMessageBase {
     public byte[] documentAttributesSerialized; // for video/voice/etc.; TL serialized
     public String mimeType;
     public byte[] replyMarkupSerialized; // TL serialized TLRPC.ReplyMarkup for inline keyboards
+    public byte[] richMessageSerialized; // TL serialized TL_iv.RichMessage（Instant View 排版）
 }

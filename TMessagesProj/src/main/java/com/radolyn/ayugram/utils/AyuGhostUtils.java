@@ -18,6 +18,8 @@ import org.telegram.tgnet.RequestDelegate;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
+import org.telegram.tgnet.tl.TL_forum;
+import org.telegram.tgnet.tl.TL_phone;
 import org.telegram.tgnet.tl.TL_stories;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.Stories.StoriesController;
@@ -259,7 +261,7 @@ public class AyuGhostUtils {
     }
 
     private static boolean shouldHandleOfflineAfterSend(TLObject object, int account) {
-        if (!AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline() || !isMessageSendRequest(object)) {
+        if (!AyuGhostController.getInstance(account).isSendOfflinePacketAfterOnline() || !isOnlineActivityRequest(object, account)) {
             return false;
         }
         TLRPC.InputPeer peer = extractPeerFromSendObject(object);
@@ -268,6 +270,35 @@ public class AyuGhostUtils {
         }
         FileLog.d("GhostMode: Wrapping callback for offline-after-send via AyuWorker.");
         return true;
+    }
+
+    /**
+     * 判定请求是否会在服务端留下活动痕迹（可能把账号标为在线）。
+     * 命中的请求完成后由 AyuWorker 在数秒内补发 offline 包，避免 ghost 模式下残留在线状态。
+     */
+    private static boolean isOnlineActivityRequest(TLObject object, int account) {
+        if (isMessageSendRequest(object) || isReadMessageRequest(object)) {
+            return true;
+        }
+        if (AyuGhostController.getInstance(account).isMarkReadAfterSend()
+                && (object instanceof TLRPC.TL_messages_sendReaction
+                || object instanceof TLRPC.TL_messages_sendPaidReaction
+                || object instanceof TLRPC.TL_messages_sendVote)) {
+            return true;
+        }
+        return object instanceof TLRPC.TL_messages_createChat
+                || object instanceof TLRPC.TL_channels_createChannel
+                || object instanceof TL_forum.TL_messages_createForumTopic
+                || object instanceof TL_forum.TL_messages_deleteTopicHistory
+                || object instanceof TL_forum.TL_messages_editForumTopic
+                || object instanceof TLRPC.TL_channels_leaveChannel
+                || object instanceof TLRPC.TL_messages_updatePinnedMessage
+                || object instanceof TL_phone.requestCall
+                || object instanceof TL_phone.acceptCall
+                || object instanceof TL_phone.confirmCall
+                || object instanceof TL_stories.TL_stories_sendStory
+                || object instanceof TL_stories.TL_stories_sendReaction
+                || object instanceof TL_stories.TL_stories_readStories;
     }
 
     private static boolean isAfterActionRequest(TLObject object) {
@@ -381,10 +412,13 @@ public class AyuGhostUtils {
         return object instanceof TLRPC.TL_messages_sendMessage ||
                 object instanceof TLRPC.TL_messages_sendMedia ||
                 object instanceof TLRPC.TL_messages_sendMultiMedia ||
+                object instanceof TLRPC.TL_messages_forwardMessage ||
                 object instanceof TLRPC.TL_messages_forwardMessages ||
                 object instanceof TLRPC.TL_messages_sendInlineBotResult ||
-                object instanceof TLRPC.TL_messages_sendReaction ||
-                object instanceof TLRPC.TL_messages_sendVote ||
+                object instanceof TLRPC.TL_messages_sendEncrypted ||
+                object instanceof TLRPC.TL_messages_sendEncryptedFile ||
+                object instanceof TLRPC.TL_messages_sendEncryptedMultiMedia ||
+                object instanceof TLRPC.TL_messages_sendEncryptedService ||
                 object instanceof TLRPC.TL_messages_editMessage;
     }
 
