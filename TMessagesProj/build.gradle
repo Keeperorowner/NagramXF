@@ -67,16 +67,23 @@ def ndkHostTag = {
     throw new GradleException("Unsupported host OS for NDK: ${OperatingSystem.current()}")
 }
 
+def ndkHasStl = { ndkDir ->
+    ndkDir?.isDirectory() && chaquopyAbis.every {
+        new File(ndkDir, "toolchains/llvm/prebuilt/${ndkHostTag()}/sysroot/usr/lib/${abiToNdkTriple[it]}/libc++_shared.so").exists()
+    }
+}
+
 def resolveNdkDir = {
     def ndkDirPath = properties?.getProperty('ndk.dir') ?: System.getenv('ANDROID_NDK_ROOT') ?: System.getenv('ANDROID_NDK_HOME')
-    if (ndkDirPath != null && !ndkDirPath.isBlank()) {
+    if (ndkDirPath != null && !ndkDirPath.isBlank() && ndkHasStl(file(ndkDirPath))) {
         return file(ndkDirPath)
     }
     def sdkDirPath = properties?.getProperty('sdk.dir') ?: System.getenv('ANDROID_HOME') ?: System.getenv('ANDROID_SDK_ROOT')
     if (sdkDirPath != null && !sdkDirPath.isBlank()) {
-        def candidate = file("${sdkDirPath}/ndk/27.2.12479018")
-        if (candidate.exists()) {
-            return candidate
+        def ndkRoot = file("${sdkDirPath}/ndk")
+        if (ndkRoot.isDirectory()) {
+            return ndkRoot.listFiles({ f -> f.isDirectory() } as FileFilter)
+                    ?.sort { it.name }?.reverse()?.find { ndkHasStl(it) }
         }
     }
     return null
