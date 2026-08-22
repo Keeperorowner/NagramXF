@@ -55,6 +55,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.NativeByteBuffer;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -789,26 +790,50 @@ public class MessageHelper extends BaseController {
                 text.append("\n");
             }
 
-            TLRPC.ReplyMarkup replyMarkup = messageObject.messageOwner.reply_markup;
-            if (replyMarkup != null && replyMarkup.rows != null && !replyMarkup.rows.isEmpty()) {
-                text.append("\n");
-                for (TLRPC.TL_keyboardButtonRow row : replyMarkup.rows) {
-                    if (row == null || row.buttons == null) {
-                        continue;
-                    }
-                    for (TLRPC.KeyboardButton button : row.buttons) {
-                        if (button == null) {
+            if (messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyKeyboardMarkup keyboardMarkup) {
+                if (!keyboardMarkup.rows.isEmpty()) {
+                    text.append("\n");
+                    for (TL_keyboard.KeyboardButtonRow row : keyboardMarkup.rows) {
+                        if (row == null || row.buttons == null) {
                             continue;
                         }
-                        text.append("<button>");
-                        if (!TextUtils.isEmpty(button.text)) {
-                            text.append(button.text);
+                        for (TL_keyboard.KeyboardButton button : row.buttons) {
+                            if (button == null) {
+                                continue;
+                            }
+                            text.append("<button>");
+                            if (!TextUtils.isEmpty(button.getText())) {
+                                text.append(button.getText());
+                            }
+                            if (!TextUtils.isEmpty(button.getUrl())) {
+                                text.append(" ");
+                                text.append(button.getUrl());
+                            }
+                            text.append("</button>\n");
                         }
-                        if (!TextUtils.isEmpty(button.url)) {
-                            text.append(" ");
-                            text.append(button.url);
+                    }
+                }
+            } else if (messageObject.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup inlineMarkup) {
+                if (!inlineMarkup.rows.isEmpty()) {
+                    text.append("\n");
+                    for (TL_keyboard.KeyboardInlineButtonRow row : inlineMarkup.rows) {
+                        if (row == null || row.buttons == null) {
+                            continue;
                         }
-                        text.append("</button>\n");
+                        for (TL_keyboard.KeyboardInlineButton button : row.buttons) {
+                            if (button == null) {
+                                continue;
+                            }
+                            text.append("<button>");
+                            if (!TextUtils.isEmpty(button.getText())) {
+                                text.append(button.getText());
+                            }
+                            if (!TextUtils.isEmpty(button.getUrl())) {
+                                text.append(" ");
+                                text.append(button.getUrl());
+                            }
+                            text.append("</button>\n");
+                        }
                     }
                 }
             }

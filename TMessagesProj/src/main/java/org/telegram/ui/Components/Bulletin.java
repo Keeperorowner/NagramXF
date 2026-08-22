@@ -1507,7 +1507,7 @@ public class Bulletin {
         public void setAnimation(int resId, int w, int h, String... layers) {
             imageView.setAnimation(resId, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 
@@ -1515,7 +1515,7 @@ public class Bulletin {
             imageView.setAutoRepeat(true);
             imageView.setAnimation(document, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 
@@ -1658,7 +1658,7 @@ public class Bulletin {
         public void setAnimation(int resId, int w, int h, String... layers) {
             imageView.setAnimation(resId, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 
@@ -1666,7 +1666,7 @@ public class Bulletin {
             imageView.setAutoRepeat(true);
             imageView.setAnimation(document, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 
@@ -1739,7 +1739,7 @@ public class Bulletin {
         public void setAnimation(int resId, int w, int h, String... layers) {
             imageView.setAnimation(resId, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 
@@ -2051,7 +2051,7 @@ public class Bulletin {
         public void setAnimation(int resId, int w, int h, String... layers) {
             imageView.setAnimation(resId, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 
@@ -2059,7 +2059,7 @@ public class Bulletin {
             imageView.setAutoRepeat(true);
             imageView.setAnimation(document, w, h);
             for (String layer : layers) {
-                imageView.setLayerColor(layer + ".**", textColor);
+                imageView.setLayerColor(layer, textColor);
             }
         }
 

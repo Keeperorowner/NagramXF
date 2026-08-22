@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.MessageDrawable;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.Easings;
 import org.telegram.ui.Components.LayoutHelper;
@@ -36,9 +37,9 @@ public class DoubleTapPreviewCell extends LinearLayout {
     private final ValueAnimator[] circleSizeAnimator = new ValueAnimator[2];
     private final float[] circleSizeProgress = new float[4];
     private final float[] iconChangingProgress = new float[2];
-    private final Theme.MessageDrawable[] messages = new Theme.MessageDrawable[]{
-            new Theme.MessageDrawable(0, false, false),
-            new Theme.MessageDrawable(0, true, false)
+    private final MessageDrawable[] messages = new MessageDrawable[]{
+            new MessageDrawable(0, false, false),
+            new MessageDrawable(0, true, false)
     };
     private final Paint outlinePaint;
     private final FrameLayout preview;

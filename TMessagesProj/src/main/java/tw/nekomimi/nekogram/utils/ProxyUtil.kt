@@ -23,7 +23,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.core.graphics.createBitmap
 import androidx.core.view.setPadding
-import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
 import com.google.zxing.EncodeHintType
@@ -32,7 +31,6 @@ import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.WriterException
 import com.google.zxing.common.GlobalHistogramBinarizer
 import com.google.zxing.qrcode.QRCodeReader
-import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ApplicationLoader
@@ -41,6 +39,7 @@ import org.telegram.messenger.LocaleController.getString
 import org.telegram.messenger.NotificationCenter
 import org.telegram.messenger.R
 import org.telegram.messenger.SharedConfig
+import org.telegram.messenger.TelegramQRCodeWriter
 import org.telegram.messenger.browser.Browser
 import tw.nekomimi.nekogram.ui.BottomBuilder
 import tw.nekomimi.nekogram.utils.AlertUtil.showToast
@@ -214,7 +213,17 @@ object ProxyUtil {
         return try {
             val hints = HashMap<EncodeHintType, Any>()
             hints[EncodeHintType.ERROR_CORRECTION] = ErrorCorrectionLevel.M
-            QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size, hints, null, null, icon)
+            val writer = TelegramQRCodeWriter()
+            val qrBitmap = writer.encode(text, size, size, hints, null)
+            if (icon != null) {
+                val iconBitmap = icon(writer.imageSize)
+                val canvas = Canvas(qrBitmap)
+                canvas.drawBitmap(iconBitmap, (qrBitmap.width - iconBitmap.width) / 2f, (qrBitmap.height - iconBitmap.height) / 2f, null)
+                if (iconBitmap != qrBitmap) {
+                    iconBitmap.recycle()
+                }
+            }
+            qrBitmap
         } catch (e: WriterException) {
             FileLog.e(e)
             createBitmap(size, size)

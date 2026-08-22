@@ -22,7 +22,7 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
         return NekoConfig.iOSMessageInputField.Bool();
     }
 
-    private Map<TransitState, RLottieDrawable> stateMap = new HashMap<TransitState, RLottieDrawable>() {
+    private final Map<TransitState, RLottieDrawable> stateMap = new HashMap<TransitState, RLottieDrawable>() {
         @Nullable
         @Override
         public RLottieDrawable get(@Nullable Object key) {
@@ -37,7 +37,9 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
                         res = R.raw.voice_and_video_cg_2;
                     }
                 }
-                return new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
+                RLottieDrawable rLottieDrawable = new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
+                put(state, rLottieDrawable);
+                return rLottieDrawable;
             }
             return obj;
         }
