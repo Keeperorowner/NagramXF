@@ -1526,7 +1526,7 @@ public class ChatActivity extends BaseFragment implements
         if (show) {
             if (chatActivityEnterView.hasText() && TextUtils.isEmpty(chatActivityEnterView.getSlowModeTimer())) {
                 if (attachItem != null) {
-                    attachItem.setVisibility(View.VISIBLE);
+                    attachItem.setVisibility(isTitleCentered() ? View.GONE : View.VISIBLE);
                 }
                 if (headerItem != null) {
                     headerItem.setVisibility(View.GONE);
@@ -2446,7 +2446,7 @@ public class ChatActivity extends BaseFragment implements
                                     headerItem.setVisibility(View.GONE);
                                 }
                                 if (attachItem != null) {
-                                    attachItem.setVisibility(View.VISIBLE);
+                                    attachItem.setVisibility(isTitleCentered() ? View.GONE : View.VISIBLE);
                                 }
                                 if (otherIcon != null) {
                                     otherIcon.setIconVisible(!isTitleCentered());
@@ -2555,7 +2555,7 @@ public class ChatActivity extends BaseFragment implements
                     headerItem.setVisibility(View.GONE);
                 }
                 if (attachItem != null) {
-                    attachItem.setVisibility(View.VISIBLE);
+                    attachItem.setVisibility(isTitleCentered() ? View.GONE : View.VISIBLE);
                 }
                 if (otherIcon != null) {
                     otherIcon.setIconVisible(!isTitleCentered());
@@ -9075,8 +9075,12 @@ public class ChatActivity extends BaseFragment implements
         bottomOverlayStartButton.setOnClickListener(v -> bottomOverlayChatText.callOnClick());
         bottomOverlayStartButton.setPadding(dp(31), 0, dp(31), 0);
         ScaleStateListAnimator.apply(bottomOverlayStartButton, 0.02f, 1.2f);
-        bottomChannelButtonsLayout.getContainer().addView(bottomOverlayStartButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 38, Gravity.CENTER, 3, 3, 3, 3));
-        bottomChannelButtonsLayout.makeViewWrapContent(bottomOverlayStartButton);
+        if (chatActivityEnterView != null && chatActivityEnterView.isIOSInputStyle()) {
+            bottomChannelButtonsLayout.getContainer().addView(bottomOverlayStartButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38, Gravity.CENTER, 3, 3, 3, 3));
+        } else {
+            bottomChannelButtonsLayout.getContainer().addView(bottomOverlayStartButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 38, Gravity.CENTER, 3, 3, 3, 3));
+            bottomChannelButtonsLayout.makeViewWrapContent(bottomOverlayStartButton);
+        }
 
         if (currentUser != null && currentUser.bot && currentUser.id != UserObject.VERIFY && !UserObject.isDeleted(currentUser) && !UserObject.isReplyUser(currentUser) && !isInScheduleMode() && chatMode != MODE_PINNED && chatMode != MODE_SAVED && !isReport()) {
             bottomOverlayStartButton.setVisibility(View.VISIBLE);
@@ -40933,7 +40937,7 @@ public class ChatActivity extends BaseFragment implements
                     editTextItem.setVisibility(View.GONE);
                 }
                 if (attachItem != null) {
-                    attachItem.setVisibility(View.VISIBLE);
+                    attachItem.setVisibility(isTitleCentered() ? View.GONE : View.VISIBLE);
                 }
                 if (otherIcon != null) {
                     otherIcon.setIconVisible(!isTitleCentered());
