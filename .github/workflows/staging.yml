@@ -54,7 +54,14 @@ jobs:
       - name: Set up Android SDK Tools
         uses: android-actions/setup-android@v3
         with:
-          packages: "build-tools;36.0.0 ndk;27.2.12479018 platforms;android-36"
+          # ndk must match ndkVersion in the root build.gradle
+          packages: "build-tools;36.0.0 ndk;29.0.14206865 platforms;android-36"
+      - name: Set up Python (Chaquopy bridge source build)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Cython (Chaquopy bridge source build)
+        run: pip install Cython==3.0.11
       - name: Configure Android SDK Path
         run: |
           echo "sdk.dir=${ANDROID_HOME}" >> local.properties
