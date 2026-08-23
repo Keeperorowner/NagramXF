@@ -1,5 +1,8 @@
 import java.nio.file.Paths
 import org.gradle.internal.os.OperatingSystem
+import org.telegram.chaquopy.ChaquopyBuildJson
+import org.telegram.chaquopy.ChaquopyClangLink
+import org.telegram.chaquopy.ChaquopyCythonize
 
 plugins {
     id 'com.android.application'
@@ -124,15 +127,21 @@ android {
 
     flavorDimensions 'runtime'
 
+    // AGP forbids ndk.abiFilters whenever splits.abi is narrowed without a universal APK, so
+    // NATIVE_TARGET builds must rely on the splits alone and leave abiFilters unset.
     productFlavors {
         normal {
             dimension 'runtime'
-            ndk.abiFilters.addAll(normalAbis)
+            if (nativeTarget.isBlank()) {
+                ndk.abiFilters.addAll(normalAbis)
+            }
             externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=OFF'
         }
         plugin {
             dimension 'runtime'
-            ndk.abiFilters.addAll(pluginAbis)
+            if (nativeTarget.isBlank()) {
+                ndk.abiFilters.addAll(pluginAbis)
+            }
             externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=ON'
             proguardFiles 'proguard-plugin-rules.pro'
         }
@@ -238,6 +247,7 @@ android {
     sourceSets.main.jniLibs.srcDirs = ['./jni/']
     sourceSets.plugin.jniLibs.srcDirs += "$buildDir/generated/chaquopyJniLibs"
     sourceSets.plugin.assets.srcDirs += "$buildDir/generated/chaquopyBootstrapNative"
+    sourceSets.plugin.assets.srcDirs += "$buildDir/generated/chaquopyBuildJson"
 
     namespace = 'org.telegram.messenger'
 }
@@ -247,12 +257,70 @@ configurations {
 }
 
 def chaquopyTargetJniConfig = configurations.getByName("chaquopyTargetJni")
-def chaquopyBridgeDir = file("src/main/prebuilt/chaquopy-java-bridge")
+
+// The Chaquopy Java bridge is compiled from source (sdk_chaqsrc/ in the repo root); no
+// prebuilt .so is shipped. Recipe mirrors upstream Chaquopy 16.1.0 product/runtime:
+// Cython 3.0.11 -> NDK clang at the app's minSdk level. Artifacts per ABI:
+//   chaquopy.so         - Cython bootstrap module (asset chaquopy/bootstrap-native/<abi>/java/)
+//   libchaquopy_java.so - JNI bridge for com.chaquo.python.* (lib/<abi>/)
+def chaqSrcDir = rootProject.file('sdk_chaqsrc')
+def chaqGenDir = layout.buildDirectory.dir('chaquopy')
+
+def chaqClangTargets = ['armeabi-v7a': 'armv7a-linux-androideabi27', 'arm64-v8a': 'aarch64-linux-android27']
+
+def cythonizeChaquopy = tasks.register("cythonizeChaquopy", ChaquopyCythonize) {
+    def inDir = new File(chaqSrcDir, 'java')
+    pyxFile.fileValue(new File(inDir, 'chaquopy.pyx'))
+    includes.from(fileTree(inDir) { include('*.pxi', '*.pxd') })
+    outCFile.set(chaqGenDir.map { it.file('cython/chaquopy.c') })
+}
+
+def cythonizeChaquopyJava = tasks.register("cythonizeChaquopyJava", ChaquopyCythonize) {
+    pyxFile.fileValue(new File(chaqSrcDir, 'chaquopy_java.pyx'))
+    includes.from(fileTree(chaqSrcDir) { include('java/*.pxd') })
+    outCFile.set(chaqGenDir.map { it.file('cython/chaquopy_java.c') })
+}
+
+// CPython headers (include/python3.11) and the linkable runtime (jniLibs/<abi>/libpython3.11.so)
+// come from the Chaquopy target artifacts, keeping the bridge ABI-paired with the bundled CPython.
+// include/ is ABI-dependent (pyconfig.h), so each ABI gets its own extraction.
+chaquopyAbis.each { abi ->
+    def extractTarget = tasks.register("extractChaquopyTarget_${abi}", Sync) {
+        def outputDir = file("$buildDir/chaquopy/target/${abi}")
+        inputs.files(chaquopyTargetJniConfig)
+        outputs.dir(outputDir)
+        into(outputDir)
+        from({ chaquopyTargetJniConfig.filter { it.name.endsWith("-${abi}.zip") }.files.collect { zipTree(it) } }) {
+            include('include/**', 'jniLibs/**')
+            includeEmptyDirs = false
+        }
+    }
+
+    def compileBridge = { String taskName, cythonTask, List<String> extraSources, List<String> libs, String soName ->
+        tasks.register(taskName, ChaquopyClangLink) {
+            dependsOn(cythonTask, extractTarget)
+            sources.from(cythonTask.flatMap { it.outCFile })
+            sources.from(extraSources)
+            includeDirs.from(new File(chaqSrcDir, 'c'))
+            includeDirs.from(extractTarget.map { new File(it.destinationDir, 'include/python3.11') })
+            linkDir.fileValue(file("$buildDir/chaquopy/target/${abi}/jniLibs/${abi}"))
+            linkLibs.set(libs)
+            targetTriple.set(chaqClangTargets[abi])
+            if (resolvedNdkDir != null) {
+                ndkDirPath.set(resolvedNdkDir.absolutePath)
+            }
+            outFile.set(chaqGenDir.map { it.file("lib/${abi}/${soName}") })
+        }
+    }
+
+    compileBridge("compileChaquopy_${abi}", cythonizeChaquopy, [], ['python3.11', 'dl', 'android'], 'chaquopy.so')
+    compileBridge("compileChaquopyJava_${abi}", cythonizeChaquopyJava,
+            [new File(chaqSrcDir, 'c/android_platform.c')], ['python3.11', 'log'], 'libchaquopy_java.so')
+}
 
 tasks.register("prepareChaquopyJniLibs", Sync) {
     def outputDir = file("$buildDir/generated/chaquopyJniLibs")
     inputs.files(chaquopyTargetJniConfig)
-    inputs.dir(chaquopyBridgeDir)
     outputs.dir(outputDir)
     into(outputDir)
     from(chaquopyTargetJniConfig.collect { zipTree(it) }) {
@@ -262,23 +330,13 @@ tasks.register("prepareChaquopyJniLibs", Sync) {
         }
         includeEmptyDirs = false
     }
-    // Vendored JNI bridge (lib/<abi>/libchaquopy_java.so); must match the assets-side build.
+    // JNI bridge built from source above.
     chaquopyAbis.each { abi ->
-        def bridge = new File(chaquopyBridgeDir, "${abi}/libchaquopy_java.so")
-        doFirst {
-            if (!bridge.exists()) {
-                throw new GradleException("Missing Chaquopy JNI bridge for ${abi}: ${bridge}")
-            }
-        }
-        from(bridge) {
+        from(file("$buildDir/chaquopy/lib/${abi}/libchaquopy_java.so")) {
             into abi
         }
     }
-    doFirst {
-        if (resolvedNdkDir == null || !resolvedNdkDir.exists()) {
-            throw new GradleException("Android NDK directory is unavailable, cannot package libc++_shared.so for plugin runtime.")
-        }
-    }
+    dependsOn(chaquopyAbis.collect { "compileChaquopyJava_${it}" })
     chaquopyAbis.each { abi ->
         def triple = abiToNdkTriple[abi]
         if (triple == null) {
@@ -292,12 +350,10 @@ tasks.register("prepareChaquopyJniLibs", Sync) {
 }
 
 // bootstrap-native/<abi>/ = CPython extension modules from the target zip's lib-dynload/ plus
-// the vendored java/chaquopy.so Cython module (not available from Maven).
+// the java/chaquopy.so Cython module built from source above.
 tasks.register("prepareChaquopyBootstrapNative", Sync) {
     def outputDir = file("$buildDir/generated/chaquopyBootstrapNative")
-    def bridgeDir = file("src/main/prebuilt/chaquopy-java-bridge")
     inputs.files(chaquopyTargetJniConfig)
-    inputs.dir(bridgeDir)
     outputs.dir(outputDir)
     into(outputDir)
     from(chaquopyTargetJniConfig.collect { zipTree(it) }) {
@@ -313,16 +369,20 @@ tasks.register("prepareChaquopyBootstrapNative", Sync) {
         includeEmptyDirs = false
     }
     chaquopyAbis.each { abi ->
-        def bridge = new File(bridgeDir, "${abi}/chaquopy.so")
-        doFirst {
-            if (!bridge.exists()) {
-                throw new GradleException("Missing Chaquopy Java bridge for ${abi}: ${bridge}")
-            }
-        }
-        from(bridge) {
+        from(file("$buildDir/chaquopy/lib/${abi}/chaquopy.so")) {
             into "chaquopy/bootstrap-native/${abi}/java"
         }
     }
+    dependsOn(chaquopyAbis.collect { "compileChaquopy_${it}" })
+}
+
+// build.json is generated (not committed): its hashes gate asset re-extraction on app update,
+// so they must always match the assets packaged in this build.
+tasks.register("generateChaquopyBuildJson", ChaquopyBuildJson) {
+    dependsOn('prepareChaquopyBootstrapNative')
+    staticAssets.fileValue(file("src/plugin/assets/chaquopy"))
+    stagedAssets.fileValue(file("$buildDir/generated/chaquopyBootstrapNative/chaquopy"))
+    outFile.set(layout.buildDirectory.file('generated/chaquopyBuildJson/chaquopy/build.json'))
 }
 
 androidComponents {
@@ -348,7 +408,7 @@ androidComponents {
                 it.name.startsWith("merge${variant.name.capitalize()}") &&
                         (it.name.endsWith('JniLibFolders') || it.name.endsWith('Assets'))
             }.configureEach {
-                dependsOn('prepareChaquopyJniLibs', 'prepareChaquopyBootstrapNative')
+                dependsOn('prepareChaquopyJniLibs', 'prepareChaquopyBootstrapNative', 'generateChaquopyBuildJson')
             }
         }
     }
