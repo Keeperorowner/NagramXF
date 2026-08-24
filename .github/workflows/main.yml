@@ -35,7 +35,7 @@ jobs:
       - name: Inject Ukrainian strings
         run: |
           python3 - << 'EOF'
-          import os, glob, re
+          import os, re
 
           target_file = 'workdir/decompiled/res/values-uk/strings.xml'
           os.makedirs(os.path.dirname(target_file), exist_ok=True)
@@ -46,7 +46,8 @@ jobs:
           else:
               target_content = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>'
 
-          # Знаходимо всі xml-файли перекладу у репозиторії
+          # Шукаємо всі xml файли перекладу у ваших чотирьох модулях репозиторію
+          import glob
           source_files = [f for f in glob.glob('**/values-uk/*.xml', recursive=True) if 'workdir' not in f]
           
           new_tags = []
@@ -61,7 +62,6 @@ jobs:
                       else:
                           new_tags.append(full_tag)
 
-          # Додаємо всі унікальні рядки перед закриваючим тегом </resources>
           if new_tags:
               insert_text = '\n    ' + '\n    '.join(new_tags) + '\n</resources>'
               target_content = re.sub(r'</resources>', insert_text, target_content)
@@ -69,7 +69,7 @@ jobs:
           with open(target_file, 'w', encoding='utf-8') as f:
               f.write(target_content)
 
-          print(f"Знайдено та оброблено файлів: {len(source_files)}. Додано нових модульних рядків: {len(new_tags)}.")
+          print(f"Оброблено файлів: {len(source_files)}. Впроваджено рядків: {len(new_tags)}.")
           EOF
 
       - name: Rebuild and Sign APK
