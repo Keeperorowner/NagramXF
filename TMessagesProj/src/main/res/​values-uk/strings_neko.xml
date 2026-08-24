@@ -242,6 +242,5 @@
     <string name="ResetSettings">Скинути налаштування</string>
     <string name="ResetSettingsAlert">Ви дійсно бажаєте повернути всі N-налаштування до типових?</string>
     <string name="nekoXPaymentRemovedToast">Функції оплати було видалено.</string>
-    <string name="SensitiveDisableFiltering">Вимкнути фільтрацію</string>
     <string name="Nya">Няв!</string>
 </resources>
