@@ -223,7 +223,7 @@
     <string name="TranslateFailed">Помилка сервера перекладу</string>
     <string name="TranslateApiUnsupported">Обраний сервіс не підтримує цю мову.</string>
     <string name="UndoTranslate">Приховати переклад</string>
-    <string name="TranslatorMode">Відображення перекладу</string>
+    <string name="TranslatorMode">З оригінальним текстом</string>
     <string name="TranslatorModeAppend">Додавати до тексту</string>
     <string name="TranslatorModeInline">Замінювати</string>
     <string name="TranslatorModePopup">Спливаюче вікно</string>
