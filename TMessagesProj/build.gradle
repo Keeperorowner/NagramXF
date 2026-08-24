@@ -124,6 +124,11 @@ android {
 
     flavorDimensions 'runtime'
 
+    // Precompute as plain strings: nested GString interpolation inside the flavor's
+    // cmake.arguments list silently produced empty values on the plugin variant.
+    def chaquopyGenDirArg = "-DCHAQUOPY_GEN_DIR=" + file("$buildDir/generated/chaquopy-cython").absolutePath.replace('\\', '/')
+    def chaquopyTargetRootArg = "-DCHAQUOPY_TARGET_ROOT=" + file("$buildDir/chaquopy-target").absolutePath.replace('\\', '/')
+
     productFlavors {
         normal {
             dimension 'runtime'
@@ -133,9 +138,7 @@ android {
         plugin {
             dimension 'runtime'
             ndk.abiFilters.addAll(pluginAbis)
-            externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=ON',
-                    "-DCHAQUOPY_GEN_DIR=${file("$buildDir/generated/chaquopy-cython").absolutePath.replace('\\', '/')}",
-                    "-DCHAQUOPY_TARGET_ROOT=${file("$buildDir/chaquopy-target").absolutePath.replace('\\', '/')}"
+            externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=ON', chaquopyGenDirArg, chaquopyTargetRootArg
             proguardFiles 'proguard-plugin-rules.pro'
         }
     }
@@ -321,20 +324,10 @@ tasks.register("cythonizeChaquopy", CythonizeChaquopyTask) {
     chaquopyJavaC.set(layout.buildDirectory.file("generated/chaquopy-cython/chaquopy_java.c"))
 }
 
-// Locate the CMake-built bridge .so for an ABI. AGP emits into a per-config hash dir under
-// intermediates/cxx/<buildType>/<hash>/obj/<abi>; resolve it dynamically (the hash varies).
+// Directory where CMake emits the built chaquopy.so for an ABI (fixed via LIBRARY_OUTPUT_DIRECTORY,
+// so packaging does not depend on AGP's per-config hash directory).
 def chaquopyCMakeLibDir
-chaquopyCMakeLibDir = { abi ->
-    def root = file("$buildDir/intermediates/cxx/RelWithDebInfo")
-    def hit = null
-    if (root.isDirectory()) {
-        root.eachDir { cfg ->
-            def f = new File(cfg, "obj/${abi}/chaquopy.so")
-            if (hit == null && f.exists()) { hit = f.parentFile }
-        }
-    }
-    return hit ?: file("$buildDir/intermediates/cxx/RelWithDebInfo/__pending__/obj/${abi}")
-}
+chaquopyCMakeLibDir = { abi -> file("$buildDir/chaquopy/lib/${abi}") }
 
 // Unpack the CPython target zips' headers + libpython3.11.so so CMake can compile/link the
 // Chaquopy bridge. Each ABI's target zip ships its OWN include/python3.11/pyconfig.h with the
@@ -398,6 +391,8 @@ tasks.register("prepareChaquopyBootstrapNative", Sync) {
     def outputDir = file("$buildDir/generated/chaquopyBootstrapNative")
     inputs.files(chaquopyTargetJniConfig)
     outputs.dir(outputDir)
+    // chaquopy.so is linked by AGP's CMake build; make sure that finishes before we copy it.
+    dependsOn('buildCMakeRelWithDebInfo')
     into(outputDir)
     from(chaquopyTargetJniConfig.collect { zipTree(it) }) {
         include('lib-dynload/**')
@@ -428,11 +423,14 @@ tasks.register("prepareChaquopyBootstrapNative", Sync) {
     // refresh the chaquopy.so hashes so the freshly built module passes validation. Only the
     // two hash values are rewritten in place (build.json is itself a tracked asset; keep its
     // formatting stable so the rest of the manifest is untouched).
+    def buildJsonFile = file("src/plugin/assets/chaquopy/build.json")
+    def builtLibs = chaquopyAbis.collectEntries { abi ->
+        [(abi): new File(chaquopyCMakeLibDir(abi), "chaquopy.so")]
+    }
     doLast {
-        def buildJsonFile = file("src/plugin/assets/chaquopy/build.json")
         def lines = new ArrayList(buildJsonFile.readLines())
         chaquopyAbis.each { abi ->
-            def built = new File(chaquopyCMakeLibDir(abi), "chaquopy.so")
+            def built = builtLibs[abi]
             if (built.exists()) {
                 def sha1 = java.security.MessageDigest.getInstance("SHA-1")
                         .digest(built.bytes).collect { String.format('%02x', it) }.join()
