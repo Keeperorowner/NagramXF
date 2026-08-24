@@ -7188,6 +7188,9 @@ public class MediaDataController extends BaseController {
 
     public static ArrayList<TextStyleSpan.TextStyleRun> getTextStyleRuns(ArrayList<TLRPC.MessageEntity> entities, CharSequence text, int allowedFlags) {
         ArrayList<TextStyleSpan.TextStyleRun> runs = new ArrayList<>();
+        if (entities == null || entities.isEmpty()) {
+            return runs;
+        }
         ArrayList<TLRPC.MessageEntity> entitiesCopy = new ArrayList<>(entities);
 
         Collections.sort(entitiesCopy, (o1, o2) -> {
