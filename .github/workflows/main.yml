@@ -1,0 +1,55 @@
+name: Patch and Build APK
+
+on:
+  push:
+    branches: [ master, main, dev ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Download tools and base APK
+        run: |
+          mkdir -p workdir
+          cd workdir
+          # Завантаження останньої стабільної версії apktool
+          wget -q -O apktool.jar https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar
+          # Завантаження uber-apk-signer для цифрового підпису
+          wget -q -O signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+          # Завантаження останнього офіційного релізу NagramXF з GitHub
+          curl -s https://api.github.com/repos/insabon/NagramX/releases/latest | grep "browser_download_url.*apk" | cut -d : -f 2,3 | tr -d \" | head -n 1 | xargs wget -q -O base.apk
+          
+          # Декомпіляція APK
+          java -jar apktool.jar d base.apk -o decompiled -f
+
+      - name: Inject Ukrainian strings
+        run: |
+          # Створення директорії та копіювання файлу перекладу
+          mkdir -p workdir/decompiled/res/values-uk
+          # Знаходимо створений strings.xml у репозиторії та копіюємо
+          find . -name "strings.xml" -path "*/values-uk/*" -exec cp {} workdir/decompiled/res/values-uk/strings.xml \;
+
+      - name: Rebuild and Sign APK
+        run: |
+          cd workdir
+          # Збірка зміненого APK
+          java -jar apktool.jar b decompiled -o patched_unsigned.apk
+          # Підписання тестовим ключем
+          java -jar signer.jar --apks patched_unsigned.apk --allowResign -o output
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NagramX-Ukrainian-APK
+          path: workdir/output/*.apk
