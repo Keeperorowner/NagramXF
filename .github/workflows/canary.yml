@@ -61,7 +61,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install Cython (Chaquopy bridge source build)
-        run: pip install Cython==3.0.11
+        run: pip install Cython==0.29.37
       - name: Configure Android SDK Path
         run: |
           echo "sdk.dir=${ANDROID_HOME}" >> local.properties
