@@ -34,29 +34,42 @@ jobs:
 
       - name: Inject Ukrainian strings
         run: |
-          mkdir -p workdir/decompiled/res/values-uk
           python3 - << 'EOF'
           import os, glob, re
 
-          # Знаходимо всі xml файли перекладу у репозиторії
-          xml_files = [f for f in glob.glob('**/values-uk/*.xml', recursive=True) if 'workdir' not in f]
+          target_file = 'workdir/decompiled/res/values-uk/strings.xml'
+          os.makedirs(os.path.dirname(target_file), exist_ok=True)
           
-          all_strings = {}
-          for file in xml_files:
-              with open(file, 'r', encoding='utf-8') as f:
-                  content = f.read()
-                  matches = re.findall(r'(<string\s+name="([^"]+)">.*?</string>)', content, re.DOTALL)
-                  for full_tag, name in matches:
-                      all_strings[name] = full_tag
+          if os.path.exists(target_file):
+              with open(target_file, 'r', encoding='utf-8') as f:
+                  target_content = f.read()
+          else:
+              target_content = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>'
 
-          # Записуємо об'єднаний strings.xml для Apktool
-          output_path = 'workdir/decompiled/res/values-uk/strings.xml'
-          with open(output_path, 'w', encoding='utf-8') as f:
-              f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n')
-              for tag in all_strings.values():
-                  f.write(f'    {tag}\n')
-              f.write('</resources>\n')
-          print(f"Знайдено файлів: {len(xml_files)}. Успішно впроваджено {len(all_strings)} рядків перекладу.")
+          # Знаходимо всі xml-файли перекладу у репозиторії
+          source_files = [f for f in glob.glob('**/values-uk/*.xml', recursive=True) if 'workdir' not in f]
+          
+          new_tags = []
+          for src in source_files:
+              with open(src, 'r', encoding='utf-8') as f:
+                  content = f.read()
+                  tags = re.findall(r'(<(?:string|plurals|string-array)\s+[^>]*name="([^"]+)"[\s\S]*?</(?:string|plurals|string-array)>)', content)
+                  for full_tag, name in tags:
+                      pattern = rf'<(?:string|plurals|string-array)\s+[^>]*name="{re.escape(name)}"[\s\S]*?</(?:string|plurals|string-array)>'
+                      if re.search(pattern, target_content):
+                          target_content = re.sub(pattern, full_tag, target_content)
+                      else:
+                          new_tags.append(full_tag)
+
+          # Додаємо всі унікальні рядки перед закриваючим тегом </resources>
+          if new_tags:
+              insert_text = '\n    ' + '\n    '.join(new_tags) + '\n</resources>'
+              target_content = re.sub(r'</resources>', insert_text, target_content)
+
+          with open(target_file, 'w', encoding='utf-8') as f:
+              f.write(target_content)
+
+          print(f"Знайдено та оброблено файлів: {len(source_files)}. Додано нових модульних рядків: {len(new_tags)}.")
           EOF
 
       - name: Rebuild and Sign APK
