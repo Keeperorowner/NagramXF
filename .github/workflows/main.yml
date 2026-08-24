@@ -37,39 +37,57 @@ jobs:
           python3 - << 'EOF'
           import os, re
 
-          target_file = 'workdir/decompiled/res/values-uk/strings.xml'
-          os.makedirs(os.path.dirname(target_file), exist_ok=True)
-          
-          if os.path.exists(target_file):
-              with open(target_file, 'r', encoding='utf-8') as f:
-                  target_content = f.read()
-          else:
-              target_content = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>'
+          strings_to_add = {}
 
-          # Шукаємо всі xml файли перекладу у ваших чотирьох модулях репозиторію
-          import glob
-          source_files = [f for f in glob.glob('**/values-uk/*.xml', recursive=True) if 'workdir' not in f]
-          
-          new_tags = []
-          for src in source_files:
-              with open(src, 'r', encoding='utf-8') as f:
-                  content = f.read()
-                  tags = re.findall(r'(<(?:string|plurals|string-array)\s+[^>]*name="([^"]+)"[\s\S]*?</(?:string|plurals|string-array)>)', content)
-                  for full_tag, name in tags:
-                      pattern = rf'<(?:string|plurals|string-array)\s+[^>]*name="{re.escape(name)}"[\s\S]*?</(?:string|plurals|string-array)>'
-                      if re.search(pattern, target_content):
-                          target_content = re.sub(pattern, full_tag, target_content)
-                      else:
-                          new_tags.append(full_tag)
+          # 1. Повний рекурсивний пошук усіх файлів перекладу у репозиторії
+          for root, dirs, files in os.walk('.'):
+              if 'workdir' in root or '.git' in root:
+                  continue
+              for file in files:
+                  if file.endswith('.xml') and ('values-uk' in root or file.startswith('strings_')):
+                      file_path = os.path.join(root, file)
+                      try:
+                          with open(file_path, 'r', encoding='utf-8') as f:
+                              content = f.read()
+                          tags = re.findall(r'(<(?:string|plurals|string-array)\s+[^>]*name="([^"]+)"[\s\S]*?</(?:string|plurals|string-array)>)', content)
+                          for full_tag, name in tags:
+                              strings_to_add[name] = full_tag
+                          print(f"Знайдено {len(tags)} рядків у: {file_path}")
+                      except Exception as e:
+                          print(f"Помилка читання {file_path}: {e}")
 
-          if new_tags:
-              insert_text = '\n    ' + '\n    '.join(new_tags) + '\n</resources>'
-              target_content = re.sub(r'</resources>', insert_text, target_content)
+          print(f"Усього зібрано унікальних рядків: {len(strings_to_add)}")
 
-          with open(target_file, 'w', encoding='utf-8') as f:
-              f.write(target_content)
+          # 2. Оновлення strings.xml у values-uk та values-uk-rUA
+          target_dirs = [
+              'workdir/decompiled/res/values-uk',
+              'workdir/decompiled/res/values-uk-rUA'
+          ]
 
-          print(f"Оброблено файлів: {len(source_files)}. Впроваджено рядків: {len(new_tags)}.")
+          for t_dir in target_dirs:
+              os.makedirs(t_dir, exist_ok=True)
+              t_file = os.path.join(t_dir, 'strings.xml')
+              
+              if os.path.exists(t_file):
+                  with open(t_file, 'r', encoding='utf-8') as f:
+                      content = f.read()
+              else:
+                  content = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>'
+
+              content = content.replace('</resources>', '').strip()
+
+              for name, tag in strings_to_add.items():
+                  pattern = rf'<(?:string|plurals|string-array)\s+[^>]*name="{re.escape(name)}"[\s\S]*?</(?:string|plurals|string-array)>'
+                  if re.search(pattern, content):
+                      content = re.sub(pattern, tag, content)
+                  else:
+                      content += f'\n    {tag}'
+
+              content += '\n</resources>\n'
+
+              with open(t_file, 'w', encoding='utf-8') as f:
+                  f.write(content)
+              print(f"Оновлено: {t_file}")
           EOF
 
       - name: Rebuild and Sign APK
