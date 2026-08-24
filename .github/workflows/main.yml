@@ -20,23 +20,19 @@ jobs:
           java-version: '17'
 
       - name: Download tools and base APK
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p workdir
           cd workdir
           
-          # Завантаження інструментів
+          # Встановлення утиліти для завантаження з Google Диска
+          pip install --no-cache-dir gdown
+          
+          # Завантаження APK за вашим ID
+          gdown --fuzzy "1D4pwwNPJ8coKIUMh8kR_NO0E1pBwR2vV" -O base.apk
+          
+          # Завантаження Apktool та Uber-APK-Signer
           wget -q -O apktool.jar https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar
           wget -q -O signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
-          
-          # Авторизоване завантаження релізу через вбудовану утиліту GitHub CLI
-          gh release download --repo insabon/NagramXF --pattern "*.apk" || \
-          gh release download --repo insabon/NagramX --pattern "*.apk"
-          
-          # Вибір завантаженого файлу
-          TARGET_APK=$(ls *.apk | head -n 1)
-          mv "$TARGET_APK" base.apk
           
           # Декомпіляція
           java -jar apktool.jar d base.apk -o decompiled -f
