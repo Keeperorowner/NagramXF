@@ -101,7 +101,7 @@ public class EphemeralMessagesHelper extends BaseController {
             if (ephemeralMessage.reply_to.reply_to_ephemeral) {
                 if (message.reply_to.reply_to_msg_id != 0) {
                     message.reply_to.reply_to_msg_id = MessageObject.ephemeralMessageIdPack(message.reply_to.reply_to_msg_id);
-                    message.reply_to.reply_to_msg_id |= TLObject.FLAG_4;
+                    message.reply_to.flags |= TLObject.FLAG_4;
                 }
             }
             if (message.reply_to.reply_to_top_id == 0 && ephemeralMessage.top_msg_id != 0) {
@@ -159,6 +159,7 @@ public class EphemeralMessagesHelper extends BaseController {
                 newRequest.reply_to = applyReplyTo(request.reply_to);
                 newRequest.rich_message = request.rich_message;
                 newRequest.invert_media = request.invert_media;
+                newRequest.noforwards = request.noforwards;
 
                 send.run(newRequest);
                 return false;
@@ -199,6 +200,7 @@ public class EphemeralMessagesHelper extends BaseController {
                 newRequest.random_id = request.random_id;
                 newRequest.reply_to = applyReplyTo(request.reply_to);
                 newRequest.invert_media = request.invert_media;
+                newRequest.noforwards = request.noforwards;
 
                 send.run(newRequest);
                 return false;

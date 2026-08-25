@@ -9806,14 +9806,39 @@ public class MessagesController extends BaseController implements NotificationCe
 
         getMessagesStorage().deleteEphemeralMessages(ephemeralMessage.getDialogId(), ephemeralMessage.getEphemeralId());
 
-        final TL_ephemeral.TL_deleteMessage req = new TL_ephemeral.TL_deleteMessage();
-        req.peer = getInputPeer(ephemeralMessage.getDialogId());
-        req.receiver_id = getInputUser(ephemeralMessage.getEphemeralReceiverBotId());
-        req.id = ephemeralMessage.getEphemeralId();
-        getConnectionsManager().sendRequestTyped(req, (res, err) -> {});
+        if (ephemeralMessage.isWelcomeMessage() && !ephemeralMessage.isWelcomeAnchored()) {
+            final TL_ephemeral.TL_deleteWelcomeMessage req = new TL_ephemeral.TL_deleteWelcomeMessage();
+            req.peer = getInputPeer(ephemeralMessage.getDialogId());
+            req.id = ephemeralMessage.getEphemeralId();
+            getConnectionsManager().sendRequestTyped(req, (res, err) -> {});
+        } else {
+            final TL_ephemeral.TL_deleteMessage req = new TL_ephemeral.TL_deleteMessage();
+            req.peer = getInputPeer(ephemeralMessage.getDialogId());
+            req.receiver_id = getInputUser(ephemeralMessage.getEphemeralReceiverBotId());
+            req.id = ephemeralMessage.getEphemeralId();
+            getConnectionsManager().sendRequestTyped(req, (res, err) -> {});
+        }
     }
 
     public void deleteEphemeralMessage(long dialogId, int topicId, MessageObject ephemeralMessage) {
+        if (ephemeralMessage.isWelcomeAnchored()) {
+            // anchored 欢迎消息仅是真实消息上的覆盖层：只清 ephemeral 记录与锚点绑定，
+            // 严禁以 anchorMsgId 触发 messages_v2/dialog 删除或 messagesDeleted 通知
+            final ArrayList<Integer> overlayIds = new ArrayList<>();
+            overlayIds.add(ephemeralMessage.getEphemeralId());
+            final LongSparseArray<ArrayList<Integer>> byDialog = new LongSparseArray<>();
+            byDialog.put(dialogId, overlayIds);
+            getMessagesStorage().deleteEphemeralMessages(byDialog, true);
+
+            final TL_ephemeral.TL_deleteMessage req = new TL_ephemeral.TL_deleteMessage();
+            req.peer = getInputPeer(dialogId);
+            final long receiverBotId = ephemeralMessage.getEphemeralReceiverBotId();
+            req.receiver_id = receiverBotId == -1 ? new TLRPC.TL_inputUserEmpty() : getInputUser(receiverBotId);
+            req.id = ephemeralMessage.getEphemeralId();
+            getConnectionsManager().sendRequestTyped(req, (res, err) -> {});
+            return;
+        }
+
         final ArrayList<Integer> messages = new ArrayList<>();
         messages.add(ephemeralMessage.getId());
 
@@ -20266,7 +20291,20 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         if (ephemeralMessagesDeletedArr != null) {
-            getMessagesStorage().deleteEphemeralMessages(ephemeralMessagesDeletedArr, true);
+            // Welcome templates use packed IDs and are stored in a separate table.
+            final LongSparseArray<ArrayList<Integer>> packedWelcomeIds = new LongSparseArray<>();
+            for (int i = 0, N = ephemeralMessagesDeletedArr.size(); i < N; i++) {
+                final ArrayList<Integer> src = ephemeralMessagesDeletedArr.valueAt(i);
+                if (src == null || src.isEmpty()) {
+                    continue;
+                }
+                final ArrayList<Integer> packed = new ArrayList<>(src.size());
+                for (int id : src) {
+                    packed.add(MessageObject.ephemeralMessageIdPack(id));
+                }
+                packedWelcomeIds.put(ephemeralMessagesDeletedArr.keyAt(i), packed);
+            }
+            getMessagesStorage().deleteEphemeralMessages(ephemeralMessagesDeletedArr, packedWelcomeIds, true);
         }
 
 
