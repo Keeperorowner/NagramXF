@@ -12060,8 +12060,8 @@ public class MessagesStorage extends BaseController {
                     final int topicId = (int) MessageObject.getTopicId(currentAccount, message, getForumTypeFlags(message.dialog_id));
                     if (ephemeralMessages == null) {
                         ephemeralMessages = new ArrayList<>();
-                        ephemeralMessages.add(EphemeralMessagesHelper.convertFakeDefaultToEphemeral(message, topicId));
                     }
+                    ephemeralMessages.add(EphemeralMessagesHelper.convertFakeDefaultToEphemeral(message, topicId));
                 }
             }
             if (ephemeralMessages != null) {
@@ -13735,8 +13735,30 @@ public class MessagesStorage extends BaseController {
         = new EphemeralMessagesHelper.WelcomeAnchorsState();
 
     public void deleteEphemeralMessages(LongSparseArray<ArrayList<Integer>> messages, boolean withTransaction) {
+        deleteEphemeralMessages(messages, null, withTransaction);
+    }
+
+    public void deleteEphemeralMessages(LongSparseArray<ArrayList<Integer>> messages,
+                                        LongSparseArray<ArrayList<Integer>> packedWelcomeIdsByDialog,
+                                        boolean withTransaction) {
         executeInStorageQueue(() -> {
             LongSparseArray<ArrayList<TL_ephemeral.EphemeralMessage>> deletedMessages = deleteEphemeralMessagesInternal(messages, withTransaction);
+            if (packedWelcomeIdsByDialog != null) {
+                try {
+                    for (int i = 0; i < packedWelcomeIdsByDialog.size(); i++) {
+                        final long dialogId = packedWelcomeIdsByDialog.keyAt(i);
+                        final ArrayList<Integer> ids = packedWelcomeIdsByDialog.valueAt(i);
+                        if (ids == null || ids.isEmpty()) {
+                            continue;
+                        }
+                        database.executeFast(String.format(Locale.US,
+                            "DELETE FROM welcome_messages WHERE mid IN(%s) AND dialog_id = %d",
+                            TextUtils.join(",", ids), dialogId)).stepThis().dispose();
+                    }
+                } catch (Exception e) {
+                    checkSQLException(e);
+                }
+            }
             final LongSparseArray<ArrayList<MessageObject>> removedAnchorMessages = new LongSparseArray<>();
             for (int i = 0; i < deletedMessages.size(); i++) {
                 final long dialogId = deletedMessages.keyAt(i);

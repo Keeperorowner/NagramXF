@@ -11730,7 +11730,7 @@ public class MessageObject {
     }
 
     public boolean canForwardMessage() {
-        if (isQuickReply()) return false;
+        if (isQuickReply() || isEphemeralAndNotWelcome()) return false;
         if (type == TYPE_GIFT_STARS || type == TYPE_GIFT_THEME_UPDATE || type == TYPE_SUGGEST_BIRTHDAY || type == TYPE_GIFT_OFFER || type == TYPE_SHARING_OFFER || type == TYPE_COMMUNITY_CHANGED) return false;
         return !(messageOwner instanceof TLRPC.TL_message_secret) && !needDrawBluredPreview() && !isLiveLocation() && type != MessageObject.TYPE_PHONE_CALL && !isSponsored() && !messageOwner.noforwards && !isAyuDeleted();
     }

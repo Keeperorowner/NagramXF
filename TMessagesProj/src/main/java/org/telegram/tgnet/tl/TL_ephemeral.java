@@ -335,6 +335,7 @@ public class TL_ephemeral {
         public boolean invert_media;
         public boolean welcome;
         public boolean anchor;
+        public boolean noforwards;
         public TLRPC.InputPeer peer;
         public TLRPC.InputUser receiver_id;
         public long query_id;
@@ -361,6 +362,7 @@ public class TL_ephemeral {
             flags = setFlag(flags, FLAG_7, welcome);
             flags = setFlag(flags, FLAG_8, peer != null);
             flags = setFlag(flags, FLAG_9, anchor);
+            flags = setFlag(flags, FLAG_10, noforwards);
             stream.writeInt32(flags);
             if (hasFlag(flags, FLAG_8)) {
                 peer.serializeToStream(stream);
