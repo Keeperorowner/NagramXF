@@ -62,7 +62,9 @@ public abstract class AyuMessageUtils {
         if (message.documentSerialized != null && message.documentSerialized.length > 0) {
             return true;
         }
-        // "/" 是历史遗留的空路径占位值
+        if (message.richMessageSerialized != null && message.richMessageSerialized.length > 0) {
+            return true;
+        }
         if (TextUtils.isEmpty(message.mediaPath) || "/".equals(message.mediaPath)) {
             return false;
         }
