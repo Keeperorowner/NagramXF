@@ -1578,7 +1578,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsBarContainer.setTranslationX(0f);
 
         searchTabButtonBackground.setAlpha(show && !searchButtonInBar ? 255 : 0);
-        tabsBarBackground.setAlpha(show && searchButtonInBar ? 255 : 0);
+        tabsBarBackground.setAlpha(!isBottomBarHidden() && searchButtonInBar ? 255 : 0);
         tabsViewBackground.setAlpha(searchButtonInBar ? 0 : 255);
         searchTabButtonDivider.setVisibility(show && searchButtonInBar ? View.VISIBLE : View.GONE);
         searchLp.setMarginStart(searchButtonInBar ? 0 : -dp(10));
