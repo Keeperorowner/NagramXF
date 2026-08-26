@@ -59,6 +59,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell previewInfoRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsCustomizeDesc", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell otherSettingsHeaderRow = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.OtherSettings)));
     private final AbstractConfigCell showTabTitlesRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsShowTitles", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
+    private final AbstractConfigCell searchButtonInBarRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsSearchButtonInBar", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell bottomBarDisplayModeRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsDisplayMode", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell forceOpenChatsDividerRow = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell forceOpenChatsRow = cellGroup.appendCell(new ConfigCellCustom("MainTabsForceOpenChats", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
@@ -110,6 +111,15 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
         AbstractConfigCell row = cellGroup.rows.get(position);
         if (row == showTabTitlesRow) {
             boolean checked = !NaConfig.INSTANCE.getMainTabsHideTitles().toggleConfigBool();
+            if (view instanceof TextCheckCell textCheckCell) {
+                textCheckCell.setChecked(checked);
+            }
+            if (previewCell != null) {
+                previewCell.refreshTabs(getContext());
+            }
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainTabsLayoutChanged);
+        } else if (row == searchButtonInBarRow) {
+            boolean checked = NaConfig.INSTANCE.getMainTabsSearchButtonInBar().toggleConfigBool();
             if (view instanceof TextCheckCell textCheckCell) {
                 textCheckCell.setChecked(checked);
             }
@@ -238,6 +248,9 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             } else if (row == showTabTitlesRow) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
                 cell.setTextAndCheck(getString(R.string.MainTabsShowTitles), !NaConfig.INSTANCE.getMainTabsHideTitles().Bool(), true);
+            } else if (row == searchButtonInBarRow) {
+                TextCheckCell cell = (TextCheckCell) holder.itemView;
+                cell.setTextAndCheck(getString(R.string.MainTabsSearchButtonInBar), NaConfig.INSTANCE.getMainTabsSearchButtonInBar().Bool(), true);
             } else if (row == forceOpenChatsRow) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
                 cell.setTextAndCheck(getString(R.string.MainTabsForceOpenChats), NaConfig.INSTANCE.getMainTabsForceOpenChats().Bool(), true);
@@ -333,6 +346,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
         private Theme.ResourcesProvider resourceProvider;
         private int currentAccount;
         private View draggingView;
+        private View searchTabView;
         private OnTabsChangedListener onTabsChangedListener;
 
         public interface OnTabsChangedListener {
@@ -407,6 +421,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
             }
 
             GlassTabView searchTab = GlassTabView.createMainTab(context, resourceProvider, GlassTabView.TabAnimation.CONTACTS, R.string.Search);
+            searchTabView = searchTab;
             addTabToIgnoreClick(searchTab);
             searchTab.setIcon(R.drawable.outline_header_search);
             searchTab.setTitleVisible(!NaConfig.INSTANCE.getMainTabsHideTitles().Bool());
@@ -458,7 +473,7 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
                 enabledAlpha = (Boolean) tag ? 1f : 0.4f;
             }
             view.setTranslationX(view.getTranslationX() + getCenteredOffset());
-            view.setTranslationY(getVerticalOffset());
+            view.setTranslationY(view == searchTabView && !NaConfig.INSTANCE.getMainTabsSearchButtonInBar().Bool() ? dp(8) : getVerticalOffset());
             view.setAlpha(factor * enabledAlpha);
             view.setScaleX(scale);
             view.setScaleY(scale);
