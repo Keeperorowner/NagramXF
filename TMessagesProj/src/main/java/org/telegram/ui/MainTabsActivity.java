@@ -1357,6 +1357,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (searchTabButtonBackground != null) {
             searchTabButtonBackground.updateColors();
         }
+        if (searchTabButtonDivider != null) {
+            searchTabButtonDivider.setBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_switchTrack, resourceProvider), 63 / 255f));
+        }
         blur3_invalidateBlur();
         if (fadeView != null) {
             fadeView.invalidate();
