@@ -510,7 +510,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         this.canDrawInParent = canDrawInParent;
         this.themeDelegate = resourcesProvider;
         imageReceiver = new ImageReceiver(this);
-        imageReceiver.setRoundRadius(AndroidUtilities.roundMessageSize / 2);
+        imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.roundMessageSize));
         avatarDrawable = new AvatarDrawable();
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
 
@@ -998,7 +998,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
         } else if (messageObject.type == MessageObject.TYPE_ACTION_PHOTO) {
             imageReceiver.setAllowStartLottieAnimation(true);
             imageReceiver.setDelegate(null);
-            imageReceiver.setRoundRadius(AndroidUtilities.roundMessageSize / 2);
+            imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.roundMessageSize));
             imageReceiver.setAutoRepeatCount(1);
             long id = messageObject.getDialogId();
             avatarDrawable.setInfo(id, null, null);
@@ -1828,7 +1828,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
             }
             if (messageObject.type == MessageObject.TYPE_COMMUNITY_CHANGED) {
                 stickerSize = dp(52);
-                imageReceiver.setRoundRadius(dp(14));
+                imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(52.0f, false, false, true));
             } else if (isNewStyleButtonLayout()) {
                 imageReceiver.setRoundRadius(stickerSize / 2);
             } else {

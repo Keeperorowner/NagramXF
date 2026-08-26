@@ -514,7 +514,7 @@ public class MemberRequestsDelegate implements MemberRequestCell.OnClickListener
                     onImportersChanged(query, false, true);
                     if (isApproved) {
                         Bulletin.MultiLineLayout layout = new Bulletin.MultiLineLayout(fragment.getParentActivity(), fragment.getResourceProvider());
-                        layout.imageView.setRoundRadius(AndroidUtilities.dp(15));
+                        layout.imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(32.0f));
                         layout.imageView.setForUserOrChat(user, new AvatarDrawable(user));
                         String userName = UserObject.getFirstName(user);
                         String message = isChannel

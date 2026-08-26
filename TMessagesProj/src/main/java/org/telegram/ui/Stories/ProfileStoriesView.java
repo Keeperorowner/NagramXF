@@ -904,8 +904,8 @@ public class ProfileStoriesView extends View implements NotificationCenter.Notif
 
     private void drawArc(Canvas canvas, RectF oval, float startAngle, float sweepAngle, boolean useCenter, Paint paint) {
         boolean isForum = ChatObject.isForum(UserConfig.selectedAccount, dialogId);
-        if (isForum) {
-            float r = oval.height() * 0.32f;
+        if (isForum || (xyz.nextalone.nagram.NaConfig.INSTANCE.getAvatarCorners().Float() != 28.0f && expandProgress < 0.2f)) {
+            float r = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(oval.height() + dp(4), isForum);
             if (Math.abs(sweepAngle) == 360) {
                 canvas.drawRoundRect(oval, r, r, paint);
                 return;

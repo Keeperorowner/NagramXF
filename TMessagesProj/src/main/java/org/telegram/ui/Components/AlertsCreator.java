@@ -2087,7 +2087,7 @@ public class AlertsCreator {
         avatarDrawable.setTextSize(dp(12));
 
         BackupImageView imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 22, 5, 22, 0));
 
         TextView textView = new TextView(context);
@@ -2173,7 +2173,7 @@ public class AlertsCreator {
         avatarDrawable.setTextSize(dp(18));
 
         BackupImageView imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 22, 5, 22, 0));
 
         SimpleTextView textView = new SimpleTextView(context);
@@ -2294,7 +2294,7 @@ public class AlertsCreator {
         avatarDrawable.setTextSize(dp(18));
 
         BackupImageView imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 22, 5, 22, 0));
 
         SimpleTextView titleView = new SimpleTextView(context);
@@ -3024,7 +3024,7 @@ public class AlertsCreator {
         final BackupImageView fromImageView = new BackupImageView(context);
         final AvatarDrawable fromAvatarDrawable = new AvatarDrawable();
         fromAvatarDrawable.setInfo(self);
-        fromImageView.setRoundRadius(dp(30));
+        fromImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(60.0f));
         fromImageView.setForUserOrChat(self, fromAvatarDrawable);
         topView.addView(fromImageView, LayoutHelper.createFrame(60, 60, Gravity.CENTER, -48, 15, 0, 12));
 
@@ -3047,7 +3047,7 @@ public class AlertsCreator {
         };
         final AvatarDrawable toAvatarDrawable = new AvatarDrawable();
         toAvatarDrawable.setInfo(futureCreator);
-        toImageView.setRoundRadius(dp(30));
+        toImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(60.0f));
         toImageView.setForUserOrChat(futureCreator, toAvatarDrawable);
         topView.addView(toImageView, LayoutHelper.createFrame(60, 60, Gravity.CENTER, 48, 15, 0, 12));
 
@@ -3308,7 +3308,7 @@ public class AlertsCreator {
         avatarDrawable.setInfo(fragment.getCurrentAccount(), user);
 
         BackupImageView imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(20));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
         imageView.setForUserOrChat(user, avatarDrawable);
         frameLayout.addView(imageView, LayoutHelper.createFrame(40, 40, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 22, 5, 22, 0));
 
@@ -7328,7 +7328,7 @@ public class AlertsCreator {
         frameLayout.addView(pin, LayoutHelper.createFrame(60, 82, Gravity.CENTER, 0, 0, 0, 0));
 
         BackupImageView imageView = new BackupImageView(activity);
-        imageView.setRoundRadius(dp(26));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(52.0f));
         imageView.setForUserOrChat(selfUser, new AvatarDrawable(selfUser));
         frameLayout.addView(imageView, LayoutHelper.createFrame(52, 52, Gravity.CENTER, 0, 0, 0, 11));
 

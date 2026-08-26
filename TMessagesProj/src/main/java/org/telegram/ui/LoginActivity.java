@@ -7938,7 +7938,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     super.invalidate(l, t, r, b);
                 }
             };
-            avatarImage.setRoundRadius(AndroidUtilities.dp(64));
+            avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(78.0f));
             avatarDrawable.setAvatarType(AvatarDrawable.AVATAR_TYPE_REGISTER);
             avatarDrawable.setInfo(5, null, null);
             avatarImage.setImageDrawable(avatarDrawable);

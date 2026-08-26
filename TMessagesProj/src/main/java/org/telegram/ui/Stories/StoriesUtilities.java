@@ -674,10 +674,11 @@ public class StoriesUtilities {
     private static final RectF forumRect = new RectF();
 
     private static void drawCircleInternal(Canvas canvas, View view, AvatarStoryParams params, Paint paint, boolean isForum) {
-        if (isForum) {
+        if (isForum || NaConfig.INSTANCE.getAvatarCorners().Float() != 28.0f) {
             forumRect.set(rectTmp);
             forumRect.inset(dp(0.5f), dp(0.5f));
-            canvas.drawRoundRect(forumRect, dp(18), dp(18), paint);
+            float corners = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(forumRect.width(), isForum);
+            canvas.drawRoundRect(forumRect, corners, corners, paint);
             return;
         }
         if (params.progressToArc == 0) {
@@ -693,8 +694,8 @@ public class StoriesUtilities {
     private static final Path forumSegmentPath = new Path();
 
     private static void drawSegment(Canvas canvas, RectF rectTmp, Paint paint, float startAngle, float endAngle, AvatarStoryParams params, boolean isForum) {
-        if (isForum) {
-            float r = rectTmp.height() * 0.32f;
+        if (isForum || NaConfig.INSTANCE.getAvatarCorners().Float() != 28.0f) {
+            float r = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(rectTmp.height(), isForum);
             float rotateAngle = (((int)(startAngle)) / 90) * 90 + 90;
             float pathAngleStart = -199 + rotateAngle;
             float percentFrom = (startAngle - pathAngleStart) / 360;

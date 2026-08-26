@@ -401,7 +401,7 @@ public class ContactAddActivity extends BaseFragment implements NotificationCent
                 protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                     oldAvatarView.measure(MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(AndroidUtilities.dp(30), MeasureSpec.EXACTLY));
-                    oldAvatarView.setRoundRadius(AndroidUtilities.dp(30));
+                    oldAvatarView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(30.0f));
                 }
 
                 @Override

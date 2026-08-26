@@ -761,8 +761,10 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             avatarImageView.setImageDrawable(avatarDrawable);
         }
 
-        avatarImageView.setRoundRadius(isCommunity ? dp(46 * 20 / 72f) :
-                (currentChat != null && currentChat.forum ? dp(14) : dp(24)));
+        boolean hasStories = MessagesController.getInstance(currentAccount).getStoriesController().hasStories(dialogId);
+        avatarImageView.setRoundRadius(isCommunity
+                ? org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(46.0f, false, hasStories, true)
+                : org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(46.0f, currentChat != null && currentChat.forum, hasStories));
 
         nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         if (mutualView != null) {

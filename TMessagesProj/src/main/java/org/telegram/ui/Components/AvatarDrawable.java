@@ -615,7 +615,10 @@ public class AvatarDrawable extends Drawable {
         if (avatarType == AVATAR_TYPE_ARCHIVED) {
             if (archivedAvatarProgress != 0) {
                 backgroundPaint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_avatar_backgroundArchived), alpha));
-                canvas.drawCircle(size / 2.0f, size / 2.0f, size / 2.0f * archivedAvatarProgress, backgroundPaint);
+                float progressSize = size * archivedAvatarProgress;
+                float progressRadius = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(size) * archivedAvatarProgress;
+                AndroidUtilities.rectTmp.set(0, 0, progressSize, progressSize);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, progressRadius, progressRadius, backgroundPaint);
                 if (Theme.dialogs_archiveAvatarDrawableRecolored) {
                     Theme.dialogs_archiveAvatarDrawable.beginApplyLayerColors();
                     Theme.dialogs_archiveAvatarDrawable.setLayerColor("Arrow1", Theme.getNonAnimatedColor(Theme.key_avatar_backgroundArchived));

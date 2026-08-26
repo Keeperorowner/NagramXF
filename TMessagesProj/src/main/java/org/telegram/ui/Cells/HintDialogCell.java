@@ -80,7 +80,7 @@ public class HintDialogCell extends FrameLayout {
         this.drawCheckbox = drawCheckbox;
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(54.0f));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(54.0f, false, drawCheckbox));
         addView(imageView, LayoutHelper.createFrame(54, 54, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 7, 0, 0));
 
         nameTextView = new TextView(context) {
@@ -301,7 +301,8 @@ public class HintDialogCell extends FrameLayout {
             int cy = imageView.getTop() + imageView.getMeasuredHeight() / 2;
             Theme.checkboxSquare_checkPaint.setColor(Theme.getColor(Theme.key_dialogRoundCheckBox));
             Theme.checkboxSquare_checkPaint.setAlpha((int) (checkBox.getProgress() * 255));
-            canvas.drawCircle(cx, cy, AndroidUtilities.dp(28), Theme.checkboxSquare_checkPaint);
+            AndroidUtilities.rectTmp.set(cx - AndroidUtilities.dp(28), cy - AndroidUtilities.dp(28), cx + AndroidUtilities.dp(28), cy + AndroidUtilities.dp(28));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f), org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f), Theme.checkboxSquare_checkPaint);
         }
     }
 
