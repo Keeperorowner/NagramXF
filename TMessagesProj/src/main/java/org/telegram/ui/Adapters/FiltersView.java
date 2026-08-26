@@ -759,7 +759,9 @@ public class FiltersView extends RecyclerListView {
                     }
                 } else if (data.chat instanceof TLRPC.Chat) {
                     TLRPC.Chat chat = (TLRPC.Chat) data.chat;
-                    avatarImageView.getImageReceiver().setRoundRadius(AndroidUtilities.dp(ChatObject.isCommunity(chat) ? 10 : 16));
+                    avatarImageView.getImageReceiver().setRoundRadius(ChatObject.isCommunity(chat)
+                            ? org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(32.0f, false, false, true)
+                            : org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(32.0f));
                     avatarImageView.getImageReceiver().setForUserOrChat(chat, thumbDrawable);
                 }
             } else {

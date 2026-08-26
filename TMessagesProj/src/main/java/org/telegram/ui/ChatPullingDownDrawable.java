@@ -286,7 +286,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             float cx = lastWidth / 2f;
             float cy = AndroidUtilities.dp(12) + circleRadius;
             imageReceiver.setImageCoords(cx - AndroidUtilities.dp(40) / 2f, cy - AndroidUtilities.dp(40) / 2f, AndroidUtilities.dp(40), AndroidUtilities.dp(40));
-            imageReceiver.setRoundRadius((int) (AndroidUtilities.dp(40) / 2f));
+            imageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(40.0f));
 
             counterDrawable.setSize(AndroidUtilities.dp(28), AndroidUtilities.dp(100));
             if (isTopic) {
@@ -398,9 +398,9 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
             float y = AndroidUtilities.dp(20) * (1f - swipeToReleaseProgress) - AndroidUtilities.dp(36) * swipeToReleaseProgress + bounceOffset;
             AndroidUtilities.rectTmp.set((lastWidth - chatNameWidth) / 2f, y, lastWidth - (lastWidth - chatNameWidth) / 2f, y + chatNameLayout.getHeight());
             AndroidUtilities.rectTmp.inset(-AndroidUtilities.dp(8), -AndroidUtilities.dp(4));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(15), AndroidUtilities.dp(15), getThemedPaint(Theme.key_paint_chatActionBackground));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), getThemedPaint(Theme.key_paint_chatActionBackground));
             if (hasGradientService()) {
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, AndroidUtilities.dp(15), AndroidUtilities.dp(15), Theme.chat_actionBackgroundGradientDarkenPaint);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), Theme.chat_actionBackgroundGradientDarkenPaint);
             }
 
             canvas.save();
@@ -418,7 +418,7 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
                 finalImageReceiver = imageReceiver;
             }
             finalImageReceiver.setAlpha(alpha);
-            finalImageReceiver.setRoundRadius((int) (size / 2f));
+            finalImageReceiver.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(size));
             finalImageReceiver.setImageCoords(cx - size / 2f, top, size, size);
             if (isTopic && finalImageReceiver.getDrawable() != null && finalImageReceiver.getDrawable() instanceof CombinedDrawable && ((CombinedDrawable) finalImageReceiver.getDrawable()).getIcon() instanceof LetterDrawable) {
                 ((LetterDrawable) ((CombinedDrawable) finalImageReceiver.getDrawable()).getIcon()).scale = progress;
@@ -509,12 +509,12 @@ public class ChatPullingDownDrawable implements NotificationCenter.NotificationC
         } else {
             int oldAlpha1 = getThemedPaint(Theme.key_paint_chatActionBackground).getAlpha();
             getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha((int) (oldAlpha1 * alpha));
-            canvas.drawRoundRect(AndroidUtilities.rectTmp, circleRadius, circleRadius, getThemedPaint(Theme.key_paint_chatActionBackground));
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), getThemedPaint(Theme.key_paint_chatActionBackground));
             getThemedPaint(Theme.key_paint_chatActionBackground).setAlpha(oldAlpha1);
             if (hasGradientService()) {
                 int oldAlpha2 = Theme.chat_actionBackgroundGradientDarkenPaint.getAlpha();
                 Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha((int) (oldAlpha2 * alpha));
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, circleRadius, circleRadius, Theme.chat_actionBackgroundGradientDarkenPaint);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(AndroidUtilities.rectTmp.width()), Theme.chat_actionBackgroundGradientDarkenPaint);
                 Theme.chat_actionBackgroundGradientDarkenPaint.setAlpha(oldAlpha2);
             }
         }

@@ -75,7 +75,7 @@ public class JoinCallByUrlAlert extends BottomSheet {
         setCustomView(linearLayout);
 
         BackupImageView avatarImageView = new BackupImageView(context);
-        avatarImageView.setRoundRadius(AndroidUtilities.dp(45));
+        avatarImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(90.0f));
         linearLayout.addView(avatarImageView, LayoutHelper.createLinear(90, 90, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 29, 0, 0));
 
         AvatarDrawable avatarDrawable = new AvatarDrawable(chat);

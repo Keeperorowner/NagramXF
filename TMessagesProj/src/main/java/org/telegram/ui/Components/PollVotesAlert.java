@@ -312,7 +312,7 @@ public class PollVotesAlert extends BottomSheet {
             avatarDrawable = new AvatarDrawable();
 
             avatarImageView = new BackupImageView(context);
-            avatarImageView.setRoundRadius(dp(18));
+            avatarImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(34.0f));
             addView(avatarImageView, LayoutHelper.createLinear(34, 34, Gravity.CENTER_VERTICAL, 0, 0, 11, 0));
 
             nameTextView = new SimpleTextView(context);

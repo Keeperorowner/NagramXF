@@ -1792,7 +1792,7 @@ public class PrivacyControlActivity extends BaseFragment implements Notification
                         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                             oldAvatarView.measure(MeasureSpec.makeMeasureSpec(dp(30), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(30), MeasureSpec.EXACTLY));
-                            oldAvatarView.setRoundRadius(dp(30));
+                            oldAvatarView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(30.0f));
                         }
 
                         @Override

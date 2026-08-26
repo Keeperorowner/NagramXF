@@ -708,7 +708,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         Theme.createDialogsResources(context);
         drawMonoforumAvatar = false;
         drawCommunityAvatar = false;
-        avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f));
+        avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(52.0f));
         for (int i = 0; i < thumbImage.length; ++i) {
             thumbImage[i] = new ImageReceiver(this);
             thumbImage[i].ignoreNotifications = true;
@@ -3267,7 +3267,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
             drawMonoforumAvatar = false;
             drawCommunityAvatar = false;
-            avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(56.0f));
+            avatarImage.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(52.0f));
             drawUnmute = false;
         } else {
             int oldUnreadCount = unreadCount;
@@ -3734,11 +3734,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (drawMonoforumAvatar) {
                 avatarRadius = 1;
             } else if (drawCommunityAvatar) {
-                avatarRadius = dp(12);
+                avatarRadius = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(48.0f, false, false, true);
             } else {
                 avatarRadius = org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(
                         56.0f,
-                        chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats
+                        chat != null && chat.forum && currentDialogFolderId == 0 && !useFromUserAsAvatar || !isSavedDialog && user != null && user.self && MessagesController.getInstance(currentAccount).savedViewAsChats,
+                        MessagesController.getInstance(currentAccount).getStoriesController().hasStories(getDialogId()) && getDialogId() != UserConfig.getInstance(currentAccount).clientUserId || currentDialogFolderId != 0 && MessagesController.getInstance(currentAccount).getStoriesController().hasHiddenStories()
                 );
             }
 
@@ -5241,18 +5242,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     }
                 }
                 if (isOnline || onlineProgress != 0) {
-                    int top = (int) (storyParams.originalAvatarRect.bottom - dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 6 : 8));
-                    int left;
+                    float onlineDotOuterRadius = org.telegram.messenger.AvatarCornerHelper.getOnlineDotOuterRadius();
+                    float onlineDotInnerRadius = org.telegram.messenger.AvatarCornerHelper.getOnlineDotInnerRadius();
+                    float onlineDotOffsetX = org.telegram.messenger.AvatarCornerHelper.getOnlineDotOffset(dp(6), onlineDotOuterRadius);
+                    float onlineDotOffsetY = org.telegram.messenger.AvatarCornerHelper.getOnlineDotOffset(dp(8), onlineDotOuterRadius);
+                    float top = storyParams.originalAvatarRect.bottom - onlineDotOffsetY;
+                    float left;
                     if (LocaleController.isRTL) {
-                        left = (int) (storyParams.originalAvatarRect.left + dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 6));
+                        left = storyParams.originalAvatarRect.left + onlineDotOffsetX;
                     } else {
-                        left = (int) (storyParams.originalAvatarRect.right - dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 6));
+                        left = storyParams.originalAvatarRect.right - onlineDotOffsetX;
                     }
 
                     Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-                    canvas.drawCircle(left, top, dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
+                    canvas.drawCircle(left, top, onlineDotOuterRadius * onlineProgress, Theme.dialogs_onlineCirclePaint);
                     Theme.dialogs_onlineCirclePaint.setColor(onlineColor);
-                    canvas.drawCircle(left, top, dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
+                    canvas.drawCircle(left, top, onlineDotInnerRadius * onlineProgress, Theme.dialogs_onlineCirclePaint);
                     if (isOnline) {
                         if (onlineProgress < 1.0f) {
                             onlineProgress += 16f / 150.0f;

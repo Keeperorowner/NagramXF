@@ -344,7 +344,7 @@ public class GroupCreateSpan extends View {
         canvas.save();
         rect.set(0, 0, getMeasuredWidth(), dp(small ? 28 : 32));
         backPaint.setColor(Color.argb(colors[6] + (int) ((colors[7] - colors[6]) * progress), colors[0] + (int) ((colors[1] - colors[0]) * progress), colors[2] + (int) ((colors[3] - colors[2]) * progress), colors[4] + (int) ((colors[5] - colors[4]) * progress)));
-        canvas.drawRoundRect(rect, dp(small ? 14 : 16), dp(small ? 14 : 16), backPaint);
+        canvas.drawRoundRect(rect, org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(small ? 28 : 32), org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(small ? 28 : 32), backPaint);
         if (progress != 1f) {
             imageReceiver.draw(canvas);
         }

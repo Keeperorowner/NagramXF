@@ -456,7 +456,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
         BackupImageView backupImageView = new BackupImageView(context);
         backupImageView.setForUserOrChat(user, avatarDrawable);
-        backupImageView.setRoundRadius(dp(11));
+        backupImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(22.0f));
         tab.backupImageView = backupImageView;
 
         tab.addView(backupImageView, LayoutHelper.createFrame(22, 22, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 5, 0, 0));
@@ -718,7 +718,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         avatarDrawable.setInfo(currentAccount, user);
         backupImageView.setForUserOrChat(user, avatarDrawable);
         backupImageView.setSize(-1, -1);
-        backupImageView.setRoundRadius(dp(11.33f));
+        backupImageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(22.0f));
         backupImageView.setLayoutParams(LayoutHelper.createFrame(22, 22, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 5, 0, 0));
         backupImageView.setColorFilter(null);
         needUpdateBackupViewColor = false;

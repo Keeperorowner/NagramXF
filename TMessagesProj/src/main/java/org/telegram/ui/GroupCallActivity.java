@@ -5169,7 +5169,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         scrimView.getAvatarImageView().getImageReceiver().setImageCoords(0, 0, getMeasuredWidth(), getMeasuredHeight());
                         scrimView.getAvatarImageView().setRoundRadius(topRad, topRad, bottomRad, bottomRad);
                         scrimView.getAvatarImageView().getImageReceiver().draw(canvas);
-                        scrimView.getAvatarImageView().setRoundRadius(scrimView.getAvatarImageView().getMeasuredHeight() / 2);
+                        scrimView.getAvatarImageView().setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(scrimView.getAvatarImageView().getMeasuredHeight()));
                         canvas.restore();
                     } else if (scrimFullscreenView != null && scrimRenderer == null && previewTextureTransitionEnabled) {
                         canvas.save();
@@ -5182,7 +5182,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                         scrimFullscreenView.getAvatarImageView().getImageReceiver().setImageCoords(0, 0, getMeasuredWidth(), getMeasuredHeight());
                         scrimFullscreenView.getAvatarImageView().setRoundRadius(topRad, topRad, bottomRad, bottomRad);
                         scrimFullscreenView.getAvatarImageView().getImageReceiver().draw(canvas);
-                        scrimFullscreenView.getAvatarImageView().setRoundRadius(scrimFullscreenView.getAvatarImageView().getMeasuredHeight() / 2);
+                        scrimFullscreenView.getAvatarImageView().setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadiusPx(scrimFullscreenView.getAvatarImageView().getMeasuredHeight()));
                         canvas.restore();
                     }
                 }

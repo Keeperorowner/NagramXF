@@ -1191,7 +1191,7 @@ public class TopicsTabsView extends FrameLayout implements NotificationCenter.No
         private void setLayout(boolean mono) {
             if (this.mono == mono) return;
             this.mono = mono;
-            imageView.setRoundRadius(dp(mono ? 36 : 3));
+            imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(28.0f));
             imageLayoutView.setPadding(0, dp(mono ? 7 : 4), 0, 0);
             imageViewParams.width = mono ? dp(28) : dp(30);
             imageViewParams.height = mono ? dp(28) : dp(30);

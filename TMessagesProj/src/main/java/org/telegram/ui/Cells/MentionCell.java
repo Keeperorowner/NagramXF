@@ -56,7 +56,7 @@ public class MentionCell extends LinearLayout {
         avatarDrawable.setTextSize(dp(18));
 
         imageView = new BackupImageView(context);
-        imageView.setRoundRadius(dp(14));
+        imageView.setRoundRadius(org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(28.0f));
         addView(imageView, LayoutHelper.createLinear(28, 28, 8, 4, 0, 0));
 
         nameTextView = new TextView(context) {

@@ -14,6 +14,8 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MessagesController;
 import org.telegram.tgnet.TLObject;
@@ -51,7 +53,7 @@ public class AvatarSpan extends ReplacementSpan {
     public boolean needDrawShadow = true;
 
     public void setSize(float sz) {
-        imageReceiver.setRoundRadius(dp(sz));
+        imageReceiver.setRoundRadius(AvatarCornerHelper.getAvatarRoundRadius(sz));
         this.sz = sz;
     }
 
@@ -142,7 +144,9 @@ public class AvatarSpan extends ReplacementSpan {
                 shadowPaint.setAlpha(shadowPaintAlpha = paint.getAlpha());
                 shadowPaint.setShadowLayer(dp(1), 0, dp(.66f), Theme.multAlpha(0x33000000, shadowPaintAlpha / 255f));
             }
-            canvas.drawCircle(translateX + x + dp(sz) / 2f, translateY + (top + bottom) / 2f, dp(sz) / 2f, shadowPaint);
+            float cornerRadius = AvatarCornerHelper.getAvatarRoundRadius(sz);
+            AndroidUtilities.rectTmp.set(translateX + x, translateY + (top + bottom) / 2f - dp(sz) / 2f, translateX + x + dp(sz), translateY + (top + bottom) / 2f + dp(sz) / 2f);
+            canvas.drawRoundRect(AndroidUtilities.rectTmp, cornerRadius, cornerRadius, shadowPaint);
         }
         imageReceiver.setImageCoords(translateX + x, translateY + (top + bottom) / 2f - dp(sz) / 2f, dp(sz), dp(sz));
         imageReceiver.setAlpha(usePaintAlpha ? paint.getAlpha() / 255f : 1.0f);
