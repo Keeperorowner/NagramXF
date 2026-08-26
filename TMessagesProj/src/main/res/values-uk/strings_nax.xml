@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NagramX" translatable="false">Nagram X</string>
     <string name="XChannel">Канал Nagram X</string>
     <string name="NagramXForkChannel">Канал Nagram XF</string>
-    <string name="JoinOfficialChannelTitle">Приєднатися до офіційного каналу</string>
-    <string name="JoinOfficialChannelMessage">Ласкаво просимо до Nagram X! Бажаєте приєднатися до офіційного каналу @NagramXF, щоб отримувати останні новини та оновлення?</string>
     <string name="EnableSaveDeletedMessages">Зберігати видалені повідомлення</string>
     <string name="DeletedMessage">видалено</string>
     <string name="EnableSaveEditsHistory">Зберігати історію змін</string>
-    <string name="EditsHistoryMenuText">Історія змін</string>
-    <string name="DeleteKeepLocally">Зберегти локально</string>
     <string name="ClearMessageDatabase">Очистити базу даних</string>
     <string name="ClearMessageDatabaseNotification">Базу повідомлень очищено</string>
     <string name="CustomDeletedMark">Підпис для видалених повідомлень</string>
@@ -17,36 +12,24 @@
     <string name="HideHelpSection">Приховати «Допомога» в налаштуваннях</string>
     <string name="ProviderLLMTranslator">ШІ-перекладач</string>
     <string name="LlmApiUrl">URL API</string>
-    <string name="LlmApiUrlHint" translatable="false">https://api.openai.com/v1</string>
     <string name="LlmApiKey">API-ключ</string>
     <string name="LlmModelName">Модель</string>
     <string name="LlmApiUrlNotice">Базова URL-адреса API. Якщо залишити поле порожнім, за замовчуванням використовується кінцева точка, сумісна з Gemini OpenAI.</string>
     <string name="LlmApiKeyNotice">Введіть один або кілька API-ключів через кому (наприклад: key1,key2). Декілька ключів використовуватимуться по черзі.</string>
-    <string name="LlmApiUrlDefault" translatable="false">https://generativelanguage.googleapis.com/v1beta/openai</string>
-    <string name="LlmModelNameDefault" translatable="false">gemini-flash-latest</string>
-    <string name="LlmProviderOpenAIModel" translatable="false">gpt-5.6-luna</string>
-    <string name="LlmProviderGeminiModel" translatable="false">gemini-flash-lite-latest</string>
-    <string name="LlmProviderGroqModel" translatable="false">openai/gpt-oss-120b</string>
-    <string name="LlmProviderDeepSeekModel" translatable="false">deepseek-v4-flash</string>
-    <string name="LlmProviderXAIModel" translatable="false"></string>
-    <string name="LlmProviderCerebrasModel" translatable="false">gemma-4-31b</string>
-    <string name="LlmProviderOllamaCloudModel" translatable="false">gemma4:31b</string>
-    <string name="LlmProviderOpenRouterModel" translatable="false">openrouter/free</string>
-    <string name="LlmProviderVercelAIGatewayModel" translatable="false">google/gemma-4-31b-it</string>
     <string name="LlmProviderPreset">Провайдер моделі</string>
     <string name="LlmProviderCustom">Власний</string>
     <string name="LlmProviderOpenAIKey">API-ключ OpenAI</string>
     <string name="LlmProviderGeminiKey">API-ключ Gemini</string>
     <string name="LlmSystemPrompt">Системний промпт</string>
     <string name="LlmSystemPromptHint">Ти професійний перекладач.</string>
-    <string name="LlmSystemPromptNotice">Визначте роль і поведінку ШІ.
-    
-Цей промпт задає тон, стиль і обмеження для моделі.</string>
+    <string name="LlmSystemPromptNotice">"Визначте роль і поведінку ШІ.
+
+Цей промпт задає тон, стиль і обмеження для моделі."</string>
     <string name="LlmUserPrompt">Користувацький промпт</string>
     <string name="LlmUserPromptHint">Перекласти @text на @toLang.</string>
-    <string name="LlmUserPromptNotice">Використовуйте @text як заповнювач для оригінального тексту та @toLang для мови перекладу (необов\'язково).
-    
-Якщо залишити це поле порожнім, використовуватиметься типовий шаблон.</string>
+    <string name="LlmUserPromptNotice">"Використовуйте @text як заповнювач для оригінального тексту та @toLang для мови перекладу (необов'язково).
+
+Якщо залишити це поле порожнім, використовуватиметься типовий шаблон."</string>
     <string name="LlmUseContext">Використовувати контекст</string>
     <string name="LlmUseContextNotice">Покращує якість перекладу шляхом передачі більшої кількості токенів.</string>
     <string name="LlmContextSize">Контекстні повідомлення</string>
@@ -62,8 +45,6 @@
     <string name="TranslucentDeletedMessages">Напівпрозорі видалені повідомлення</string>
     <string name="ArticleTranslationProvider">Сервіс перекладу статей</string>
     <string name="EnableSeparateArticleTranslator">Використовувати інший сервіс для статей</string>
-    <string name="DisableCrashlyticsCollection">Вимкнути Firebase Crashlytics</string>
-    <string name="ShowStickersRowToplevel">Показувати наліпки в головних налаштуваннях</string>
     <string name="HideShareButtonInChannel">Сховати бічну кнопку «Поділитися»</string>
     <string name="DeleteCloudBackup">Видалити дані з хмари</string>
     <string name="DeleteCloudBackupFailed">Не вдалося очистити дані з хмари</string>
@@ -92,9 +73,9 @@
     <string name="ShadowBanAdded">Додано до **фільтрів користувачів**.</string>
     <string name="ShadowBanRemoved">Видалено з **фільтрів користувачів**.</string>
     <string name="botCommandConfirmTitle">Надіслати команду</string>
-    <string name="botCommandConfirmText">Ви дійсно хочете надіслати цю команду? 
-    
-%s</string>
+    <string name="botCommandConfirmText">"Ви дійсно хочете надіслати цю команду? 
+
+%s"</string>
     <string name="MessageSavingSaveMediaInPrivateChats">… у приватних чатах</string>
     <string name="MessageSavingSaveMediaInPublicChannels">… у публічних каналах</string>
     <string name="MessageSavingSaveMediaInPrivateChannels">… у приватних каналах</string>
@@ -108,8 +89,6 @@
     <string name="Translated">перекладено</string>
     <string name="ProviderRealMicrosoftTranslator">Microsoft</string>
     <string name="TranslatorSettings">Перекладач</string>
-    <string name="SettingsOnly">Тільки в налаштуваннях</string>
-    <string name="ChatsOnly">Тільки в чатах</string>
     <string name="InstantViewTranslation">Швидкий перегляд</string>
     <string name="SaveDeletedMessageForBot">Зберігати в чатах бота</string>
     <string name="HideArchive">Приховати «Архів» зі списку чатів</string>
@@ -125,21 +104,17 @@
     <string name="SilentMessageByDefault">Тихі повідомлення за замовчуванням</string>
     <string name="FolderNameAsTitle">Використовувати назву папки як заголовок</string>
     <string name="SaveDeletedMessageForBotUser">Зберігати повідомлення бота</string>
-    <string name="TranslatorKeepMarkdown">Зберігати розмітку</string>
     <string name="TranslatorOptions">Параметри</string>
     <string name="GoogleTranslateExp">Використовувати новий Google Translate</string>
     <string name="SpringAnimation">Пружна анімація</string>
     <string name="SpringAnimationCrossfade">Плавне згасання панелі дій</string>
-    <string name="Other">Інше</string>
     <string name="RestartApp">Перезапустити додаток</string>
     <string name="ResetSettings">Скинути налаштування</string>
     <string name="ResetSettingsAlert">Ви дійсно бажаєте повернути всі N-налаштування до типових?</string>
     <string name="DontAutoPlayNextVoice">Не відтворювати наступне голосове повідомлення</string>
     <string name="SaveToChatSubfolder">Зберігати вкладення в папки за назвою чату</string>
     <string name="MessageColoredBackground">Кольорове тло повідомлень</string>
-    <string name="ChatMenu">Меню чату</string>
     <string name="MediaViewerMenu">Меню переглядача медіа</string>
-    <string name="MenuAndButtons">Меню та кнопки</string>
     <string name="SettingsNax">Налаштування</string>
     <string name="AccountSettingsNax">Налаштування акаунта</string>
     <string name="HideReactions">Приховати реакції</string>
@@ -172,12 +147,6 @@
     <string name="GhostReadMessage">Прочитати повідомлення</string>
     <string name="GhostModeExcludeRead">Виключити читання</string>
     <string name="GhostModeExcludeTyping">Виключити введення тексту</string>
-    <string name="GhostModeExceptionDefault">За замовчуванням</string>
-    <string name="GhostModeExceptionForceBlockRead">Примусово блокувати читання</string>
-    <string name="GhostModeExceptionForceAllowRead">Примусово дозволяти читання</string>
-    <string name="GhostModeExceptionForceBlockTyping">Примусово блокувати введення тексту</string>
-    <string name="GhostModeExceptionForceAllowTyping">Примусово дозволяти введення тексту</string>
-    <string name="SendWithSound">Надіслати зі звуком</string>
     <string name="PerformanceClass">Клас продуктивності пристрою</string>
     <string name="PerformanceClassHigh">Високий</string>
     <string name="PerformanceClassAverage">Середній</string>
@@ -191,53 +160,36 @@
     <string name="CloudflareCredentialsNotSet">Облікові дані Cloudflare не налаштовано.</string>
     <string name="CloudflareAccountID">ID акаунта</string>
     <string name="CloudflareAPIToken">Токен API</string>
-    <string name="CloudflareCredentialsDialog">Налаштуйте ID акаунта Cloudflare та токен API.
-**Як отримати?**</string>
+    <string name="CloudflareCredentialsDialog">"Налаштуйте ID акаунта Cloudflare та токен API.
+**Як отримати?**
+"</string>
     <string name="GeminiApiKeyNotSet">API-ключ Gemini не налаштовано.</string>
-    <string name="GeminiApiKeyDialog">Налаштуйте API-ключ Gemini. Залиште поле порожнім, щоб використовувати ключ із налаштувань перекладача.
-**Як отримати?**</string>
+    <string name="GeminiApiKeyDialog">"Налаштуйте API-ключ Gemini. Залиште поле порожнім, щоб використовувати ключ із налаштувань перекладача.
+**Як отримати?**
+"</string>
     <string name="GeminiNotSupport">Gemini не підтримується на цьому пристрої.</string>
-    <string name="ReplyInPrivate">Відповісти в приватному чаті</string>
     <string name="TranscribeProviderGeminiPrompt">Промпт (необов’язково)</string>
     <string name="uploadBoost">Прискорення вивантаження медіа</string>
     <string name="HideDividers">Приховати розділювачі</string>
     <string name="IconReplacements">Заміна іконок</string>
     <string name="IconReplacementSolar">Значки Solar від @Design480</string>
     <string name="IconReplacementRemix">Іконки Remix</string>
-    <string name="DebugMenuEnableInvoicePayment">Увімкнути оплату рахунків</string>
-    <string name="DebugMenuDisableInvoicePayment">Вимкнути оплату рахунків</string>
-    <string name="DebugMenuUseCamera2Api">Використовувати Camera 2 API</string>
-    <string name="DebugMenuUseOldCamera1Api">Використовувати старий Camera 1 API</string>
-    <string name="DebugMenuUseCpuBlur">Повернутися до CPU-розмиття</string>
-    <string name="DebugMenuUseNewGpuBlur">Використовувати нове GPU-розмиття</string>
-    <string name="DebugMenuEnableAdaptableColorInBrowser">Увімкнути адаптивні кольори в браузері</string>
-    <string name="DebugMenuDisableAdaptableColorInBrowser">Вимкнути адаптивні кольори в браузері</string>
-    <string name="DebugMenuEnableVideoQualitiesDebug">Увімкнути налагодження якості відео</string>
-    <string name="DebugMenuDisableVideoQualitiesDebug">Вимкнути налагодження якості відео</string>
-    <string name="DebugMenuReloadAppConfig">Перезавантажити конфігурацію додатка</string>
-    <string name="DebugMenuForceForumTabs">Примусові вкладки форумів</string>
-    <string name="DebugMenuDoNotForceForumTabs">Не примушувати вкладки форумів</string>
-    <string name="DebugMenuCleanAppUpdate">Чисте оновлення додатка</string>
-    <string name="DebugMenuMakeMemoryDump">Зробити дамп пам\'яті</string>
-    <string name="DebugMenuShowFrameMetrics">Показувати метрики кадрів</string>
-    <string name="DebugMenuHideFrameMetrics">Приховати метрики кадрів</string>
     <string name="TranslateMessageLLM">Перекласти за допомогою ШІ</string>
     <string name="EditLocalNameOverride">Редагування локального імені</string>
     <string name="ResetChatNameOverrides">Скинути власні назви чатів</string>
     <string name="ResetChatNameNotification">Змінені назви чатів скинуто.</string>
-    <string name="LeftBottomButtonAction">Дія лівої нижньої кнопки</string>
     <string name="MainTabsCustomize">Нижня панель</string>
     <string name="MainTabsCustomizeDesc">Натисніть на вкладку, щоб показати або приховати її. Перетягуйте, щоб змінити порядок.</string>
     <string name="MainTabsShowTitles">Показати назви вкладок</string>
     <string name="MainTabsForceOpenChats">Завжди шукати в чатах</string>
     <string name="MainTabsForceOpenChatsDesc">Якщо увімкнено, кнопка пошуку завжди відкриває пошук по чатах. Якщо вимкнено — контекстний пошук для поточного розділу.</string>
     <string name="TranscribeProviderOpenAI">OpenAI-сумісний API</string>
-    <string name="OpenAiApiCredentialsDialog">Налаштуйте OpenAI-сумісний API. Ви можете звернутися до офіційної **документації.**</string>
+    <string name="OpenAiApiCredentialsDialog">"Налаштуйте OpenAI-сумісний API. Ви можете звернутися до офіційної **документації.**
+"</string>
     <string name="OpenAiApiBaseUrlHint">URL API ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">Облікові дані API не налаштовано.</string>
     <string name="ApiNotSupportedOnAndroidVersion">Цей постачальник API не підтримується для вашої версії Android (потрібен Android 8.0+).</string>
     <string name="AppIconTelegramOriginal">Оригінал</string>
-    <string name="BurnTtlMessage">Спалити</string>
     <string name="StreamMkvNax">Потокове відтворення MKV</string>
     <string name="StreamAllVideoNax">Потокове відтворення для всіх відео</string>
     <string name="MonoCode">Код</string>
@@ -249,7 +201,6 @@
     <string name="SendHighQualityPhoto">Надсилати фото високої якості</string>
     <string name="GroupedMessageMenu">Згрупувати меню повідомлення</string>
     <string name="GroupedMessageMenuNotice">Групування переміщує основні дії в нижню частину меню повідомлення.</string>
-    <string name="CopySticker">Копіювати наліпку</string>
     <string name="NaxAboutInfo">Інформація</string>
     <string name="NaxLinks">Посилання</string>
     <string name="NaxAboutDesc">Форк Nagram X з додатковими можливостями. Включає більшість функцій з exteraGram та AyuGram.</string>
@@ -259,20 +210,9 @@
     <string name="AutoCheckUpdateRelease">Стабільна версія</string>
     <string name="AutoCheckUpdateBeta">Бета</string>
     <string name="YourVersionIsLatestNax">У вас встановлено найновішу версію.</string>
-    <string name="PremiumElements">Елементи Premium</string>
-    <string name="PremiumItemBoosts">Лічильник бустів</string>
-    <string name="PremiumItemStickerEffects">Ефекти наліпок</string>
-    <string name="PremiumItemEmojiStatus">Емодзі-статуси</string>
-    <string name="PremiumItemEmojiInReplies">Емодзі у відповідях</string>
-    <string name="PremiumItemCustomColorInReplies">Власні кольори</string>
-    <string name="PremiumItemStarInReactions">Зірка в реакціях</string>
-    <string name="PremiumItemVideoAvatar">Анімовані аватари</string>
-    <string name="PremiumItemCustomWallpaper">Власні шпалери</string>
-    <string name="TranslationTargetApp">Мова додатка</string>
     <string name="SwitchStyle">Стиль перемикача</string>
     <string name="SliderStyle">Стиль повзунка</string>
     <string name="StyleModern">Сучасний</string>
-    <string name="StyleMaterialDesign3" translatable="false">Material Design 3</string>
     <string name="SaveDeletedExclusionMenu">Збереження видаленого</string>
     <string name="SaveDeletedExcluded">Виключення</string>
     <string name="MarkdownParser">Парсер Markdown</string>
@@ -283,8 +223,6 @@
     <string name="DisplayPersianCalendarByLatin">Показувати перський календар латиницею</string>
     <string name="TestBackendOn">Цей акаунт буде підключений до тестового сервера.</string>
     <string name="TestBackendOff">Цей акаунт буде підключений до основного сервера.</string>
-    <string name="DidNotGetTheCodeBlameDurov">Якщо ви не отримали код на інший пристрій або ви не ввійшли в Telegram на іншому пристрої, будь ласка, використовуйте офіційний додаток Telegram для отримання коду.\n\nTelegram **вимкнув можливість входу через SMS** для сторонніх додатків. Користувачі, які входять у сторонні додатки, можуть отримувати коди входу лише через Telegram.\n\nМи не можемо вам із цим допомогти. Якщо у вас виникли проблеми з входом, зверніться до служби підтримки Telegram.</string>
-    <string name="QRLoginMessage">Відскануйте QR-код іншим пристроєм для входу.</string>
     <string name="DnsType">DNS-резолвер</string>
     <string name="DnsTypeSystem">Системний</string>
     <string name="CustomDoH">Власний DoH</string>
@@ -300,9 +238,7 @@
     <string name="DisableAvatarBlur">Вимкнути розмиття аватара</string>
     <string name="ExportSettingsIncludeApiKeys">Включити API-ключі</string>
     <string name="DisableInAppBrowserGestures">Вимкнути жести в браузері</string>
-    <string name="HowToObtain">Як отримати?</string>
     <string name="BlockChannel">Заблокувати канал</string>
-    <string name="UnblockChannel">Розблокувати канал</string>
     <string name="BlockedChannels">Заблоковані канали</string>
     <string name="BlockedChannelsCount_one">%1$d заблокований канал</string>
     <string name="BlockedChannelsCount_other">%1$d заблокованих каналів</string>
@@ -312,10 +248,9 @@
     <string name="BlockedChannelsEmpty">Поки що немає заблокованих каналів</string>
     <string name="UnblockAllChannelsWarn">Ви впевнені, що хочете розблокувати **всі канали**?</string>
     <string name="BlockChannelsUnavailable">Деякі канали тимчасово недоступні.</string>
-    <string name="FixLinkPreview">Виправити попередній перегляд посилань</string>
     <string name="NoQuoteForwardShort">Без автора</string>
     <string name="ViewDeleted">Переглянути видалені</string>
-    <string name="PasskeyLogin">Ключ доступу (Passkey)</string>
+    <string name="PasskeyLogin">Вхід за ключем доступу (Passkey)</string>
     <string name="PasskeyInfo2">Ця функція працює лише з менеджерами паролів, які підтримують системні сервіси ключів доступу (**Bitwarden**, **KeePassDX** тощо).</string>
     <string name="PasskeyUnsupportedTitle">Непідтримуваний менеджер паролів</string>
     <string name="PasskeyUnsupportedMessage">Скористайтеся іншим менеджером паролів, наприклад **Bitwarden** або **KeePassDX**.</string>
@@ -330,47 +265,29 @@
     <string name="NoBookmarks">Закладок немає</string>
     <string name="ClearAllBookmarks">Очистити всі закладки</string>
     <string name="ClearAllBookmarksNotification">Усі закладки очищено.</string>
-    <string name="SortByUnread">Сортувати за непрочитаними</string>
     <string name="MediaSettings">Медіа</string>
     <string name="CameraInVideoMessages">Камера у відеоповідомленнях</string>
     <string name="CameraInVideoMessagesFront">Фронтальна</string>
     <string name="CameraInVideoMessagesRear">Задня камера</string>
     <string name="CameraInVideoMessagesAsk">Запитувати</string>
     <string name="CameraSettings">Камера</string>
-    <string name="ContactNotes">Нотатки</string>
-    <string name="PhoneNotOnTelegramInvite">Цього номера телефону немає в Telegram. **Запросити >**</string>
-    <string name="PhoneAlreadyInContacts">Цей номер телефону вже є у ваших контактах. **Переглянути >**</string>
-    <string name="PhoneOnTelegram">Цей номер телефону є в Telegram.</string>
-    <string name="SIMCard">SIM-карта</string>
-    <string name="DeviceAccount">Пристрій</string>
     <string name="ApiKeyNotSet">API-ключ не налаштовано.</string>
     <string name="SaveLocalLastSeen">Зберігати локальний час останнього візиту</string>
-    <string name="CopyVideoFrame">Копіювати кадр</string>
     <string name="SetLocalName">Встановити локальне ім’я</string>
     <string name="DeleteChatForBothSides">Опція «Також видалити для...» за замовчуванням</string>
     <string name="BackAnimationStyle">Анімація навігації</string>
     <string name="BackAnimationClassic">Класична</string>
     <string name="BackAnimationSpring">Пружна</string>
     <string name="BackAnimationPredictive">Предиктивна</string>
-    <string name="AddToFilter">Додати до фільтра</string>
     <string name="UnifiedPushNeverReceivedNotifications">З моменту запуску Nagram X сповіщень через UnifiedPush не надходило.</string>
-    <string name="UnifiedPushLastReceivedNotification">Останнє сповіщення через UnifiedPush надійшло %1$d с тому.
-    
-Отримано сповіщень з моменту запуску: %2$d.</string>
+    <string name="UnifiedPushLastReceivedNotification">"Останнє сповіщення через UnifiedPush надійшло %1$d с тому.
+
+Отримано сповіщень з моменту запуску: %2$d."</string>
     <string name="UnifiedPushCurrentEndpoint">Поточна кінцева точка UnifiedPush: %1$s</string>
-    <string name="PlayOnce">Відтворити один раз</string>
-    <string name="SwitchAccountNax">Змінити акаунт</string>
     <string name="CurrentNax">Поточний</string>
-    <string name="PrivateChatMessage">Неможливо відкрити приватний чат: %1$s\n\nЦей чат є приватним, доступ до нього можливий лише з оригінального акаунта.</string>
-    <string name="DeleteChatTitle">Видалити чат</string>
     <string name="DeleteChatMessage">Ви впевнені, що хочете видалити %1$s із нещодавніх чатів?</string>
     <string name="ChatRemovedFromRecent">Чат видалено з нещодавніх</string>
     <string name="ChatHistory_ResultCount">%1$d результатів</string>
-    <string name="ChatCategoryAll">Усі</string>
-    <string name="ChatCategoryChannels">Канали</string>
-    <string name="ChatCategoryGroups">Групи</string>
-    <string name="ChatCategoryUsers">Користувачі</string>
-    <string name="ChatCategoryBots">Боти</string>
     <string name="ChatHistoryDeleteChats">Видалити чати</string>
     <string name="ChatHistoryDeleteConfirmation">Видалити</string>
     <string name="ChatHistorySelected">вибраних чатів</string>
@@ -385,29 +302,17 @@
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Показувати вміст сповіщень навіть тоді, коли додаток заблоковано.</string>
     <string name="StickerSavedHint">Наліпку збережено до галереї.</string>
     <string name="StickerCopied">Наліпку скопійовано до буфера обміну.</string>
-    <string name="StrokeOnViews">Ефекти відблиску</string>
-    <string name="HideBottomNavigationBar">Приховати нижню панель навігації</string>
     <string name="TranslatorWithOriginalTextOff">Вимкнено</string>
     <string name="TranslatorWithOriginalTextManualOnly">Лише вручну</string>
     <string name="TranslatorWithOriginalTextOn">Увімкнено</string>
-    <string name="CenterActionBarTitleOn">Увімкнено</string>
-    <string name="CenterActionBarTitleOff">Вимкнено</string>
-    <string name="TabletModeOn">Увімкнено</string>
-    <string name="TabletModeOff">Вимкнено</string>
-    <string name="HideDialogsSearchField">Приховати поле пошуку</string>
     <string name="DeepLTranslateKey">API-ключ DeepL</string>
-    <string name="DeepLTranslateKeyNotice">Налаштуйте ключ DeepL API або залиште поле порожнім, щоб використовувати вбудовані облікові дані.</string>    
+    <string name="DeepLTranslateKeyNotice">Налаштуйте ключ DeepL API або залиште поле порожнім, щоб використовувати вбудовані облікові дані.</string>
     <string name="DirectForwardNotAllowed">Пряме пересилання заборонено.</string>
     <string name="ForceForwardFailed">Не вдалося виконати примусове пересилання.</string>
-    <string name="ForceForwardMediaTimedOut">Час очікування завантаження медіа вичерпано.</string>
     <string name="ForceForwardMediaStalled">Завантаження медіа зупинилося.</string>
-    <string name="ForceForwardMediaDidNotStart">Завантаження медіа не почалося.</string>
     <string name="ForceForwardStatusPreparingMedia">Підготовка медіа</string>
     <string name="ForceForwardStatusWaitingDownloads">Очікування завантаження медіа</string>
-    <string name="ForceForwardStatusMediaReady">Медіа готове</string>
     <string name="ForceForwardStatusForwarding">Пересилання</string>
-    <string name="ForceForwardStatusStopping">Зупинка пересилання</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">Зупинка поточного пакета</string>
     <string name="ForceForwardStatusStarting">Запуск пересилання</string>
     <string name="ForceForwardStatusTextCopy">Копіювання тексту</string>
     <string name="ForceForwardStatusPhotoCopy">Копіювання фото</string>
@@ -416,18 +321,14 @@
     <string name="ForceForwardStatusDocumentFallback">Надсилання як документа</string>
     <string name="ForceForwardStatusStickerCopy">Копіювання наліпки</string>
     <string name="ForceForwardStatusTextFallback">Надсилання як тексту</string>
-    <string name="ForceForwardStatusMediaFallback">Пересилання медіа як альтернативи</string>
     <string name="ForceForwardStatusDocumentGroup">Пересилання групи документів</string>
     <string name="ForceForwardStatusMediaGroup">Пересилання групи медіа</string>
-    <string name="ForceForwardStatusDocumentGroupFallback">Пересилання групи документів як альтернативи</string>
-    <string name="ForceForwardStatusMediaGroupFallback">Пересилання групи медіа як альтернативи</string>
     <string name="AvatarCorners">Форма аватара</string>
     <string name="AvatarCornersLeft">Квадратний</string>
     <string name="AvatarCornersRight">Круглий</string>
     <string name="SingleCornerRadius">Єдиний радіус скруглення</string>
     <string name="SingleCornerRadiusInfo">Елементи тем використовуватимуть той самий радіус скруглення, що й бульбашки повідомлень.</string>
     <string name="BlurOptions">Параметри розмиття</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">Зберігати вкладення</string>
     <string name="SaveAttachmentsCardSubtitle">Налаштування чатів і лімітів</string>
     <string name="AttachmentFolder">Папка вкладень</string>
@@ -452,86 +353,4 @@
     <string name="AyuAttachments">Збережені вкладення</string>
     <string name="AyuDatabase">База даних</string>
     <string name="TelegramLocalDatabase">База даних Telegram</string>
-
-    <string name="PluginNoDescription">Немає опису</string>
-    <string name="PluginNoAuthor">Невідомий автор</string>
-    <string name="PluginEngineNotEnabled">Механізм плагінів вимкнено. Відкрити налаштування плагіна для %1$s?</string>
-    <string name="PluginNotFound">Плагін %1$s не знайдено.</string>
-    <string name="PluginHasNoSettings">У %1$s немає налаштувань.</string>
-    <string name="PluginInstallError">Не вдалося встановити плагін %1$s.</string>
-    <string name="PluginNotEnabled">Підтримку плагінів вимкнено. Відкрити налаштування, щоб увімкнути %1$s?</string>
-    <string name="PluginOpenExternalError">Не вдалося відкрити %1$s у зовнішньому додатку.</string>
-    <string name="PluginSettingNotFound">Цільове налаштування плагіна не знайдено.</string>
-    <string name="Plugins">Плагіни</string>
-    <string name="PluginsEngine">Механізм плагінів</string>
-    <string name="EnablePluginsEngine">Увімкнути механізм плагінів</string>
-    <string name="PluginsInfo">Тут можна встановлювати та керувати файлами .plugin.</string>
-    <string name="PluginsNotFound">Плагіни не знайдено</string>
-    <string name="PluginDelete">Видалити плагін?</string>
-    <string name="PluginDeleteInfo">Видалити плагін &lt;b&gt;%1$s&lt;/b&gt;? Цю дію неможливо скасувати.</string>
-    <string name="PluginEnableError">Не вдалося увімкнути %1$s.</string>
-    <string name="PluginDisableError">Не вдалося вимкнути %1$s.</string>
-    <string name="PluginVersion">Версія</string>
-    <string name="PluginSourceTrusted">Надійне джерело</string>
-    <string name="PluginSourceUnknown">Невідоме джерело</string>
-    <string name="PluginSourceTrustedInfo">Цей плагін походить із надійного джерела.</string>
-    <string name="PluginSourceUnknownInfo">Цей плагін походить з невідомого джерела. Ретельно перевірте його перед встановленням.</string>
-    <string name="InstallPlugin">Встановити плагін</string>
-    <string name="UpdatePlugin">Оновити плагін</string>
-    <string name="EnableAfterInstallation">Увімкнути після встановлення</string>
-    <string name="PluginInstalled">%1$s встановлено</string>
-    <string name="PluginUpdated">%1$s оновлено</string>
-    <string name="PluginInstalledButFailedToEnable">%1$s встановлено, але не вдалося увімкнути.</string>
-    <string name="PluginDependencyPreparing">Підготовка залежностей плагіна…</string>
-    <string name="PluginDependencyResolving">Обробка %1$s…</string>
-    <string name="PluginDependencyDownloadingProgress">Завантаження %1$s (%2$d%%)…</string>
-    <string name="PluginDependencyInstalling">Встановлення %1$s %2$s…</string>
-    <string name="PluginDependencyNoCompatibleWheel">Для %1$s не знайдено сумісного pure-Python wheel.</string>
-    <string name="PluginDependencyNativeUnsupported">Залежність %1$s надає лише нативні пакети (native wheels) у вибраному діапазоні версій. Цей клієнт наразі підтримує лише pure-Python wheels.</string>
-    <string name="PluginDependencySourceUnsupported">Залежність %1$s надає лише вихідні коди у вибраному діапазоні версій. Цей клієнт наразі підтримує лише pure-Python wheels.</string>
-    <string name="PluginsSafeMode">Безпечний режим плагінів</string>
-    <string name="PluginsSafeModeInfo">Плагіни були вимкнені після збою. Ви можете вийти з безпечного режиму та перезапустити механізм.</string>
-    <string name="PluginsSafeModeInfoManual">Безпечний режим плагінів увімкнено вручну. Вимкніть безпечний режим, щоб знову завантажити плагіни.</string>
-    <string name="PluginsSafeModeInfoNativeCrash">Плагіни були вимкнені після системного збою. Виходьте з безпечного режиму лише після перевірки встановлених плагінів.</string>
-    <string name="PluginsSafeModeInfoCrashGeneric">Плагіни були вимкнені після збою. Перевірте налаштування плагінів і вийдіть з безпечного режиму, коли будете готові.</string>
-    <string name="PluginsSafeModeInfoPluginCrash">Плагін %1$s був вимкнений після збою. Вийдіть із безпечного режиму, коли будете готові відновити решту плагінів.</string>
-    <string name="PluginsSafeModeInfo2">Безпечний режим тримає всі плагіни вимкненими, доки ви не вимкнете його вручну.</string>
-    <string name="PluginsNativeRuntimeUnavailable">Середовище native hook для плагінів недоступне. Плагіни на основі method-hook можуть не працювати, доки додаток не буде перезапущено з усіма завантаженими нативними бібліотеками.</string>
-    <string name="PluginsPythonRuntimeUnavailable">Не вдалося ініціалізувати середовище Python для плагінів. Перезапустіть додаток і переконайтеся, що необхідні залежності плагінів присутні.</string>
-    <string name="ResetPluginSettings">Налаштування %1$s скинуто</string>
-    <string name="ResetPluginSettingsInfo">Скинути всі збережені налаштування для &lt;b&gt;%1$s&lt;/b&gt;?</string>
-    <string name="PluginsDevMode">Режим розробника</string>
-    <string name="PluginsCompactView">Компактний вигляд</string>
-    <string name="PluginsDevTools">Інструменти розробника</string>
-    <string name="PluginsInstallSmokeTest">Встановити тестовий плагін</string>
-    <string name="PluginsInstallSmokeTestInfo">Допоміжний плагін (лише для розробників) для перевірки подій додатка, хуків запитів/оновлень, хуків надсилання повідомлень і колбеків меню плагіна.</string>
-    <string name="PluginsInstallSmokeTestPrepareError">Не вдалося підготувати вбудований тестовий плагін.</string>
-    <string name="PluginsDocumentation">Документація</string>
-    <string name="PluginsTrusted">Надійні плагіни</string>
-    <string name="PluginsPoweredBy">На базі &lt;a href="https://chaquo.com/chaquopy/"&gt;Chaquopy&lt;/a&gt; та &lt;a href="https://github.com/Aliucord/hook"&gt;AliuHook&lt;/a&gt;.</string>
-    <string name="PluginsDevServerLaunched">Dev-сервер плагінів запущено</string>
-    <string name="PluginsDevServerStopped">Dev-сервер плагінів зупинено</string>
-    <string name="EnterValue">Введіть значення</string>
-    <string name="Links">Посилання</string>
-    <string name="NoSuchSetting">Налаштування не знайдено</string>
-    <string name="PluginIsNotResponding">Плагін не відповідає.</string>
-    <string name="PluginIsNotRespondingAlert">%1$s не відповідає</string>
-    <string name="PluginsPySdkAutoUpdate">Оновлювати автоматично</string>
-    <string name="PluginsPySdkCheckUpdates">Перевірити оновлення</string>
-    <string name="PluginsPySdkEnableBetaVersion">Встановлювати бета-версії</string>
-    <string name="PluginsPySdkCheckingForUpdates">Перевірка оновлень…</string>
-    <string name="PluginsPySdkLoadingUpdate">Завантаження оновлення…</string>
-    <string name="PluginsPySdkLatestVersionInstalled">Встановлено останню версію SDK</string>
-    <string name="PluginsPySdkUpdateFailed">Не вдалося оновити SDK</string>
-    <string name="CheckingForUpdates">Перевірка оновлень…</string>
-    <string name="EnableAutoUpdate">Оновлювати автоматично</string>
-    <string name="LatestVersionInstalled">Встановлено останню версію</string>
-    <string name="LoadingUpdate">Завантаження оновлення…</string>
-    <string name="UpdateAvailable">Доступне оновлення</string>
-    <string name="PluginsDisableArt">Режим сумісності</string>
-    <string name="PluginsDisableArtInfo">Запобігає помилкам хуків плагіна, вимикаючи ART Profile Saver.</string>
-    <string name="PluginsSafeModeShortcut">Запустити в безпечному режимі</string>
-    <string name="RestartPluginSystemToApplyUpdate">Оновлення завантажено, перезапустіть механізм плагінів, щоб застосувати</string>
-    <string name="RestoreSdkFromApk">Відновити SDK з APK</string>
-    <string name="PluginsRestartEngine">Перезапустити механізм плагінів</string>
 </resources>
