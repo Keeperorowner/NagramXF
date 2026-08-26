@@ -135,9 +135,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private LinearLayout tabsBarContainer;
     private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
+    private BlurredBackgroundDrawable tabsBarBackground;
     private BlurredBackgroundDrawable searchTabButtonBackground;
     private View fadeView;
     private FrameLayout searchTabButton;
+    private View searchTabButtonDivider;
     private ArrayList<MainTabsConfigManager.TabState> configuredTabs = new ArrayList<>();
     private boolean lastBottomBarHidden = isBottomBarHidden();
 
@@ -358,6 +360,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsBarContainer.setPadding(dp(2), 0, dp(2), 0);
         tabsView.setTranslationX(0f);
         tabsBarContainer.addView(tabsView, LayoutHelper.createLinear(dp(MainTabsHelper.getTabsViewWidth()), DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
+        tabsBarBackground = iBlur3FactoryGlass.create(tabsBarContainer, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+        tabsBarBackground.setRadius(dp(MainTabsHelper.getMainTabsHeight() / 2f));
+        tabsBarBackground.setPadding(dp(mainTabsMargin - 0.334f));
+        tabsBarContainer.setBackground(tabsBarBackground);
 
         searchTabButton = new FrameLayout(context);
         searchTabButton.setClipChildren(false);
@@ -381,6 +387,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             onSearchTabButtonLongClicked();
             return true;
         });
+        searchTabButtonDivider = new View(context);
+        searchTabButtonDivider.setBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_switchTrack, resourceProvider), 63 / 255f));
+        tabsBarContainer.addView(searchTabButtonDivider, new LinearLayout.LayoutParams(dp(2), dp(44)));
         int searchBtnSize = dp(56);
         LinearLayout.LayoutParams searchBtnLp = new LinearLayout.LayoutParams(searchBtnSize, searchBtnSize);
         searchBtnLp.setMarginStart(-dp(10));
@@ -1342,6 +1351,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (tabsViewBackground != null) {
             tabsViewBackground.updateColors();
         }
+        if (tabsBarBackground != null) {
+            tabsBarBackground.updateColors();
+        }
         if (searchTabButtonBackground != null) {
             searchTabButtonBackground.updateColors();
         }
@@ -1563,6 +1575,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsBarContainer.setTranslationX(0f);
 
         searchTabButtonBackground.setAlpha(searchButtonInBar ? 0 : 255);
+        tabsBarBackground.setAlpha(searchButtonInBar ? 255 : 0);
+        tabsViewBackground.setAlpha(searchButtonInBar ? 0 : 255);
+        searchTabButtonDivider.setVisibility(searchButtonInBar ? View.VISIBLE : View.GONE);
         searchLp.setMarginStart(searchButtonInBar ? 0 : -dp(10));
         searchLp.setMarginEnd(searchButtonInBar ? 0 : dp(4));
         searchTabButton.setLayoutParams(searchLp);
@@ -1590,13 +1605,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         int gap = searchButtonInBar ? 0 : searchLp.getMarginStart();
         int endInset = searchLp.getMarginEnd();
+        int dividerWidth = searchButtonInBar ? searchTabButtonDivider.getMeasuredWidth() : 0;
         int wrapperWidth = tabsViewWrapper.getWidth();
         if (wrapperWidth <= 0) return;
 
         int containerPadding = tabsBarContainer.getPaddingLeft() + tabsBarContainer.getPaddingRight();
         int outerInset = dp(Math.min(DialogsActivity.MAIN_TABS_MARGIN, 6));
         int maxTabsWidth = searchButtonInBar
-            ? Math.max(0, wrapperWidth - containerPadding - searchBtnWidth - outerInset * 2)
+            ? Math.max(0, wrapperWidth - containerPadding - searchBtnWidth - dividerWidth - outerInset * 2)
             : Math.max(0, wrapperWidth - containerPadding - searchBtnWidth - gap - endInset - outerInset * 2);
         if (tabsLp.width != maxTabsWidth) {
             tabsLp.width = maxTabsWidth;
