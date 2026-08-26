@@ -278,11 +278,13 @@ public class EditEmojiTextCell extends FrameLayout {
         iconImageView = new ImageView(context);
         iconImageView.setFocusable(true);
         iconImageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_stickers_menuSelector)));
-        iconImageView.setScaleType(ImageView.ScaleType.CENTER);
+        // Folder icons use small intrinsic bounds; fit them into the padded 48dp button.
+        iconImageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        iconImageView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         iconImageView.setOnClickListener(onChangeIcon);
         iconImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon), PorterDuff.Mode.MULTIPLY));
         iconImageView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        addView(iconImageView, LayoutHelper.createFrame(48, 48, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 8, 2, 8, 0));
+        addView(iconImageView, LayoutHelper.createFrame(48, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 12, 0, 8, 0));
     }
 
     public void setIcon(int icon, String name) {

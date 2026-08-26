@@ -118,6 +118,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell dontSendGreetingStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.dontSendGreetingSticker));
     private final AbstractConfigCell hideGroupStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.hideGroupSticker));
     private final AbstractConfigCell maxRecentStickerCountRow = cellGroup.appendCell(new ConfigCellCustom("maxRecentStickerCount", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell dividerRecentStickers = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerStickerShape = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.StickerShape)));
     private final AbstractConfigCell stickerShapeRow = cellGroup.appendCell(new ConfigCellCustom("StickerShape", ConfigCellCustom.CUSTOM_ITEM_StickerShapePreview, false));
     private final AbstractConfigCell dividerSticker = cellGroup.appendCell(new ConfigCellDivider());
@@ -1127,7 +1128,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         protected void onBindCustomViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             if (holder.itemView instanceof TextSettingsCell textCell) {
                 if (position == cellGroup.rows.indexOf(maxRecentStickerCountRow)) {
-                    textCell.setTextAndValue(getString(R.string.maxRecentStickerCount), String.valueOf(NekoConfig.maxRecentStickerCount.Int()), true);
+                    textCell.setTextAndValue(getString(R.string.maxRecentStickerCount), String.valueOf(NekoConfig.maxRecentStickerCount.Int()), false, cellGroup.needSetDivider(maxRecentStickerCountRow));
                 } else if (position == cellGroup.rows.indexOf(cameraTypeRow)) {
                     textCell.setTextAndValue(
                             getString(R.string.CameraType),
