@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AppIconNagram">Nagram</string>
     <string name="PillStackPills">Панель віджетів-капсул</string>
     <string name="PillStackPillsInfo">Інтерактивні плашки в полі пошуку</string>
     <string name="PillStackActivePills">Активні віджети</string>
@@ -13,6 +15,7 @@
     <string name="WeatherLocationPermissionGrant">Надати дозвіл на доступ до геоданих</string>
     <string name="WeatherLocationPermissionNo">Дозвольте додатку доступ до локації для показу прогнозу погоди.</string>
     <string name="WeatherLocationServicesEnable">Увімкнути геолокацію</string>
+    <string name="WeatherPickLocationHint">Торкніться, щоб вибрати розташування на карті</string>
     <string name="CryptoPillTargetCurrency">Цільова валюта</string>
     <string name="CryptoCurrencyUsd">Долар США</string>
     <string name="CryptoCurrencyEur">Євро</string>
@@ -29,6 +32,10 @@
     <string name="CryptoCurrencyIls">Ізраїльський шекель</string>
     <string name="CryptoCurrencyCzk">Чеська крона</string>
     <string name="CryptoCurrencyInr">Індійська рупія</string>
+    <string name="CurrentLocation">Поточне розташування</string>
+    <string name="SelectLocation">Виберіть розташування</string>
+    <string name="NavigationDrawerProxyPingShort">Пінг %1$d мс</string>
+    <string name="LastSeenPillAutoRefresh">Автооновлення</string>
     <string name="SquareFloatingButton">Квадратна плаваюча кнопка</string>
     <string name="SeparateHeaders">Розділяти заголовки секцій</string>
     <string name="RegexFiltersMaskMessages">Маскувати відфільтровані повідомлення замість приховування</string>
@@ -52,6 +59,7 @@
     <string name="HideAiEditor">Приховати ШІ-редактор</string>
     <string name="HideAiSummary">Приховати ШІ-підсумок</string>
     <string name="AiHideHeader">Приховати функції ШІ</string>
+    <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">Мітка видаленого</string>
     <string name="DeletedMarkNothing">Нічого</string>
     <string name="DeletedMarkTrashBin">Кошик</string>
@@ -90,6 +98,7 @@
     <string name="MessageSavingSaveMediaHint">Натисніть, щоб налаштувати детальніше.</string>
     <string name="HideHomeSearchField">Приховати рядок пошуку</string>
     <string name="AppWillRestartInSeconds">Додаток перезапуститься через %1$d с.</string>
+    <string name="MessagePreviewDialogMessage">Я можу їсти скло, і воно мені не шкодить.</string>
     <string name="RemoveMessageTail">Прибрати хвостик бульбашки</string>
     <string name="UserAvatarsInMessagePreview">Аватари користувачів у прев’ю повідомлень</string>
     <string name="MainTabsCustomizeDrawerLocked">Якщо ввімкнено бічну панель на головному екрані, вкладка «Чати» закріплюється ліворуч.</string>
@@ -102,6 +111,11 @@
     <string name="FoldersAtBottom">Перемістити папки вниз</string>
     <string name="SendLockedCustomEmojiAsSticker">Надсилати Premium Emoji як наліпку</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">Підтримуються лише власні емодзі у форматах WebP/WebM. Формат TGS не підтримується.</string>
+    <string name="StyleOneUI" translatable="false">OneUI</string>
+    <string name="PeekOnlineMenuText">Перевірити онлайн</string>
+    <string name="PeekOnlineSuccess">Онлайн-статус оновлено</string>
+    <string name="PeekOnlineUnavailable">Не вдалося отримати точний статус.</string>
+    <string name="PeekOnlineRestoreFailed">Не вдалося відновити налаштування приватності «Останній візит».</string>
     <string name="AppNavigation">Навігація додатком</string>
     <string name="ShowRecentChatsSidebar">Бічна панель нещодавніх чатів</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
@@ -109,12 +123,22 @@
     <string name="ForceForwardSomeSkipped">Не вдалося переслати %1$d повідомлень.</string>
     <string name="AyuMomentsPreviewMessage">Роби що можеш, решта — доля</string>
     <string name="AyuSpySettings">Налаштування стеження</string>
+    <string name="AyuStatsHeader">Статистика</string>
+    <string name="AyuStatsDeletedMessages">Видалені повідомлення</string>
+    <string name="AyuStatsDeletedDialogs">Видалені діалоги</string>
+    <string name="AyuStatsReadMarks">Позначки прочитання</string>
+    <string name="AyuStatsLastSeen">Записи останнього візиту</string>
     <string name="AyuMomentsCustomHeader">Власне</string>
+    <string name="ImportModeReplace">Замінити</string>
+    <string name="ImportModeMerge">Об\'єднати</string>
+    <string name="ImportMergeResult">Об\'єднано %1$d повідомлень.</string>
+    <string name="ImportMessageDatabaseForeign">Ця резервна копія походить з іншого клієнта, тому не може замінити локальну базу даних. Збережені повідомлення все ще можна об’єднати з вашими поточними даними.</string>
     <string name="MaximumMediaSizeCellular">Ліміт розміру (моб. мережа)</string>
     <string name="MaximumMediaSizeWiFi">Ліміт розміру (Wi-Fi)</string>
     <string name="ShowFilteredMessagesMenuText">Показувати відфільтровані</string>
     <string name="HideFilteredMessagesMenuText">Приховувати відфільтровані</string>
     <string name="HideProxySponsorChannel">Приховати спонсорський проксі-канал</string>
+    <string name="hideSponsoredMessage">Приховати спонсорські повідомлення</string>
     <string name="DisableAds">Вимкнути рекламу</string>
     <string name="StickerSizeLeft">Менше</string>
     <string name="StickerSizeRight">Більше</string>
@@ -122,12 +146,17 @@
     <string name="UseScheduledMessagesDescription">Автоматично відкладає вихідні повідомлення на ~12 секунд. Завдяки цьому ви не виходите в онлайн при відповіді. Не рекомендується за нестабільної мережі.</string>
     <string name="GhostModeGlobalSettings">Глобальні налаштування</string>
     <string name="GhostModeGlobalSettingsDescription">Спільні для всіх акаунтів</string>
+    <string name="CreationDateChat">**%1$s** створено **%2$s**.</string>
+    <string name="JoinDateChat">Ви приєдналися до **%1$s** **%2$s**.</string>
+    <string name="CreationDateUserApproximately">Акаунт **%1$s** створено приблизно **%2$s**.</string>
+    <string name="CreationDateSelfApproximately">Ви створили свій акаунт приблизно **%1$s**.</string>
     <string name="ForceSnowfall">Примусовий снігопад</string>
     <string name="ForceSnowfallInfo">Завжди показувати ефект снігопаду в заголовку, бічному меню та на тлі чату незалежно від дати.</string>
     <string name="CameraType">Тип камери</string>
     <string name="AlwaysSendInHD">Завжди надсилати в HD</string>
     <string name="ExtendedSettings">Розширені налаштування</string>
     <string name="ExtendedFramesPerSecond">Розширений діапазон FPS</string>
+    <string name="SeamlessSwitching">Безшовне перемикання</string>
     <string name="CameraStabilization">Стабілізація</string>
     <string name="RememberLastUsedCamera">Запам’ятовувати останню камеру</string>
     <string name="RememberLastUsedCameraInfo">Під час запису відеоповідомлень автоматично вибиратиметься остання використана камера.</string>
@@ -230,5 +259,8 @@
     <string name="MainMenuAddDivider">Додати розділювач</string>
     <string name="MainMenuDivider">Розділювач</string>
     <string name="MainMenuItemsInfo">Перетягуйте для зміни порядку. Натисніть на пункт, щоб приховати або повернути його. Натисніть на розділювач, щоб видалити його.</string>
+    <string name="StickerShape">Форма наліпки</string>
+    <string name="StickerShapeRounded">Заокруглена</string>
+    <string name="StickerShapeRoundedMsg">Повідомлення</string>
     <string name="CancelForwarding">Скасувати пересилання</string>
 </resources>

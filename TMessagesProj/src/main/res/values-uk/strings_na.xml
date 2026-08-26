@@ -1,19 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="N_Config">Налаштування N</string>
+    <string name="CombineMessage">Об’єднати повідомлення</string>
     <string name="TextStyle">Стиль тексту</string>
     <string name="NoiseSuppressAndVoiceEnhance">Покращення голосу</string>
     <string name="RepeatAsCopy">Повторити як копію</string>
-    <string name="DoubleTapAction">Дія при подвійному дотику</string>
+    <string name="DoubleTapAction">Дії при подвійному дотику</string>
+    <string name="SendReactions">Надіслати реакції</string>
     <string name="ShowReactions">Показувати реакції</string>
     <string name="CustomTitle">Власний заголовок</string>
     <string name="CustomTitleHint">Залиште порожнім, щоб використовувати Nagram X</string>
     <string name="CreateMono">Створити моноширинний текст</string>
     <string name="CreateMonoLanguage">Мова коду</string>
+    <string name="CopyPhoto">Копіювати фото</string>
+    <string name="PhotoCopied">Фото скопійовано до буфера обміну</string>
     <string name="ToTheBeginning">На початок</string>
+    <string name="DateOfForwardedMsg">Показувати дату в пересланих повідомленнях</string>
     <string name="ShowMessageID">Показувати ID повідомлення</string>
     <string name="ShowRPCError">Показувати помилки RPC</string>
     <string name="ShowPremiumStickersAnimation">Показувати анімацію Premium-наліпок</string>
+    <string name="AppIconGoogle" translatable="false">Google</string>
     <string name="AppIconColorful">Барвистий</string>
     <string name="AppIconDarkGreen">Темно-зелений</string>
     <string name="AppIconNeon">Неон</string>
@@ -21,23 +27,35 @@
     <string name="AppIconBlue">Синій</string>
     <string name="AppIconDarkBlue">Темно-синій</string>
     <string name="AppIconBlurBlue">Розмитий синій</string>
+    <string name="InputMessageId">Введіть ID повідомлення</string>
     <string name="ToTheMessage">Перейти до повідомлення</string>
     <string name="ZalgoFilter">Фільтр тексту Zalgo</string>
     <string name="ZalgoFilterNotice">Усі спотворені символи Z̷͍͌ā̸̜l̸̞̂g̷̝͘o̶̩̓ в нікнеймах або повідомленнях фільтруватимуться автоматично.</string>
+    <string name="AlwaysShowDownloadIcon">Завжди показувати іконку завантаження</string>
     <string name="HideTitle">Сховати заголовок</string>
+    <string name="IgnoreUnreadCount">Приховати лічильник непрочитаних</string>
     <string name="SendWithoutMarkdown">Надіслати без форматування</string>
+    <string name="SendAsEmoji">Надіслати як емодзі</string>
     <string name="CustomEditedMessage">Підпис змінених повідомлень</string>
+    <string name="NotificationIcon">Іконка сповіщень</string>
     <string name="Official">Офіційний</string>
+    <string name="Nagram" translatable="false">Nagram</string>
     <string name="HalloWeen">Геловін</string>
     <string name="ShowOnlineStatus">Показувати онлайн-статус</string>
     <string name="ShowOnlineStatusNotice">Показує статус присутності в мережі поруч із фотографією профілю в групах.</string>
     <string name="DoActionsInCommonGroups">Застосувати у спільних групах</string>
+    <string name="ShowFullAbout">Завжди розгортати опис чату</string>
     <string name="TypeMessageHintUseGroupName">Назва групи як підказка у полі введення</string>
     <string name="HideBotButtonInInputField">Приховати кнопку бота в полі введення</string>
     <string name="ShowSendAsUnderMessageHint">Показувати меню «Надіслати як» у полі введення</string>
+    <string name="CheckAllForum">Додати форум</string>
+    <string name="DecorationNone">Немає</string>
+    <string name="ChatDecoration">Оформлення чату</string>
     <string name="NeedChangeNekoSettings">Потрібно змінити N-налаштування</string>
     <string name="DoNotUnarchiveBySwipe">Вимкнути розархівацію свайпом</string>
+    <string name="DefaultDeleteMenu">Типове меню видалення</string>
     <string name="DisableStories">Вимкнути історії</string>
+    <string name="CopyPhotoAsSticker">Копіювати як наліпку</string>
     <string name="ProviderTranSmartTranslate">TranSmart</string>
     <string name="DisableMarkdown">Вимкнути розмітку тексту</string>
     <string name="SendWithMarkdown">Надіслати з розміткою</string>
@@ -49,13 +67,20 @@
     <string name="ShowQuickReplyInBotCommands">Швидка відповідь у командах бота</string>
     <string name="PushServiceType">Служба Push-сповіщень</string>
     <string name="PushServiceTypeInApp">У додатку</string>
+    <string name="PushServiceTypeFCM" translatable="false">Google FCM</string>
+    <string name="PushServiceTypeUnified" translatable="false">UnifiedPush</string>
+    <string name="PushServiceTypeMicroG" translatable="false">microG</string>
     <string name="PushServiceTypeInAppDialog">Показувати постійне сповіщення</string>
     <string name="PushServiceTypeUnifiedGateway">Шлюз UnifiedPush</string>
+    <string name="SendMp4DocumentAsVideo">Надсилати документи MP4 як відео</string>
     <string name="StickersChooseShortNameForStickerPack">Виберіть коротку назву для свого набору.</string>
     <string name="StickersCopyStickerSet">Скопіювати посилання на набір</string>
     <string name="DisableChannelMuteButton">Приховати нижню панель у каналах</string>
     <string name="DisablePreviewVideoSoundShortcut">Вимкнути увімкнення звуку відео кнопками гучності</string>
     <string name="DisablePreviewVideoSoundShortcutNotice">Не вмикати звук у прев’ю відео кнопками регулювання гучності.</string>
+    <string name="PreviewSendPhoto">Надіслати фото</string>
+    <string name="PreviewSendVideo">Надіслати відео</string>
+    <string name="PreviewSendFile">Надіслати файл</string>
     <string name="UnblockDeleted">Розблокувати видалені акаунти</string>
     <string name="UnblockDeletedWarn">Ви впевнені, що хочете розблокувати **всі видалені акаунти**?</string>
     <string name="RegexFilters">Фільтри повідомлень</string>
@@ -68,9 +93,12 @@
     <string name="RegexFiltersCaseInsensitive">Нечутливий до регістру</string>
     <string name="RegexFiltersAdd">Додати фільтр</string>
     <string name="RegexFiltersEdit">Редагувати фільтр</string>
-    <string name="RegexFiltersAddDescription">Ви можете скористатися сайтом &lt;a href=https://regex101.com>regex101.com&lt;/a> для перевірки вашого регулярного виразу. Звичайний текст також підтримується, але не забувайте екранувати спецсимволи.</string>
+    <string name="RegexFiltersAddDescription">Ви можете скористатися сайтом &lt;a href="https://regex101.com"&gt;regex101.com&lt;/a&gt; для перевірки вашого регулярного виразу. Звичайний текст також підтримується, але не забувайте екранувати спецсимволи.</string>
     <string name="RegexFiltersAddError">Помилка синтаксису регулярного виразу</string>
     <string name="ShowTimeHint">Натисніть на час для детальної інформації</string>
+    <string name="SearchHashtagDefaultPageChannel">Типова сторінка пошуку хештегів у каналах</string>
+    <string name="SearchHashtagDefaultPageChat">Типова сторінка пошуку хештегів у чатах</string>
+    <string name="Pangu" translatable="false">Pangu</string>
     <string name="EnablePanguOnSending">Увімкнути Pangu під час надсилання</string>
     <string name="PanguInfo">Автоматичне форматування тексту пробілами для кращої читабельності між символами CJK, латиницею, цифрами та пунктуацією.</string>
     <string name="SendWithPangu">Надіслати через Pangu</string>
