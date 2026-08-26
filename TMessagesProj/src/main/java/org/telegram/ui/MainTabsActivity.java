@@ -1577,10 +1577,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         searchTabButton.setTranslationX(0f);
         tabsBarContainer.setTranslationX(0f);
 
-        searchTabButtonBackground.setAlpha(searchButtonInBar ? 0 : 255);
-        tabsBarBackground.setAlpha(searchButtonInBar ? 255 : 0);
+        searchTabButtonBackground.setAlpha(show && !searchButtonInBar ? 255 : 0);
+        tabsBarBackground.setAlpha(show && searchButtonInBar ? 255 : 0);
         tabsViewBackground.setAlpha(searchButtonInBar ? 0 : 255);
-        searchTabButtonDivider.setVisibility(searchButtonInBar ? View.VISIBLE : View.GONE);
+        searchTabButtonDivider.setVisibility(show && searchButtonInBar ? View.VISIBLE : View.GONE);
         searchLp.setMarginStart(searchButtonInBar ? 0 : -dp(10));
         searchLp.setMarginEnd(searchButtonInBar ? 0 : dp(4));
         searchTabButton.setLayoutParams(searchLp);
@@ -1608,7 +1608,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         int gap = searchButtonInBar ? 0 : searchLp.getMarginStart();
         int endInset = searchLp.getMarginEnd();
-        int dividerWidth = searchButtonInBar ? searchTabButtonDivider.getMeasuredWidth() : 0;
+        int dividerWidth = 0;
+        if (searchButtonInBar) {
+            dividerWidth = searchTabButtonDivider.getMeasuredWidth();
+            if (dividerWidth <= 0 && searchTabButtonDivider.getLayoutParams() != null) {
+                dividerWidth = searchTabButtonDivider.getLayoutParams().width;
+            }
+        }
         int wrapperWidth = tabsViewWrapper.getWidth();
         if (wrapperWidth <= 0) return;
 
