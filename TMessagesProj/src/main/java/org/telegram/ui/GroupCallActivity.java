@@ -1637,10 +1637,15 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         }
         int time = accountInstance.getConnectionsManager().getCurrentTime() - call.call.record_start_date;
         if (call.recording) {
-            recordItem.setSubtext(AndroidUtilities.formatDuration(time, false));
+            setCallMenuSubtext(recordItem, AndroidUtilities.formatDuration(time, false));
         } else {
-            recordItem.setSubtext(null);
+            setCallMenuSubtext(recordItem, null);
         }
+    }
+
+    private void setCallMenuSubtext(ActionBarMenuSubItem item, CharSequence text) {
+        item.setSubtext(text);
+        item.setSubtextColor(Theme.getColor(Theme.key_voipgroup_lastSeenText));
     }
 
     private void updateItems() {
@@ -1681,7 +1686,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
             noiseItem.setVisibility(View.VISIBLE);
         }
         noiseItem.setIcon(SharedConfig.noiseSupression ? R.drawable.msg_noise_on : R.drawable.msg_noise_off);
-        noiseItem.setSubtext(SharedConfig.noiseSupression ? getString(R.string.VoipNoiseCancellationEnabled) : getString(R.string.VoipNoiseCancellationDisabled));
+        setCallMenuSubtext(noiseItem, SharedConfig.noiseSupression ? getString(R.string.VoipNoiseCancellationEnabled) : getString(R.string.VoipNoiseCancellationDisabled));
 
         if (canManageCall()) {
             leaveItem.setVisibility(View.VISIBLE);
@@ -4712,18 +4717,18 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                 int rout = VoIPService.getSharedInstance().getCurrentAudioRoute();
                 if (rout == VoIPService.AUDIO_ROUTE_BLUETOOTH) {
                     soundItem.setIcon(R.drawable.msg_voice_bluetooth);
-                    soundItem.setSubtext(VoIPService.getSharedInstance().currentBluetoothDeviceName != null ? VoIPService.getSharedInstance().currentBluetoothDeviceName : getString(R.string.VoipAudioRoutingBluetooth));
+                    setCallMenuSubtext(soundItem, VoIPService.getSharedInstance().currentBluetoothDeviceName != null ? VoIPService.getSharedInstance().currentBluetoothDeviceName : getString(R.string.VoipAudioRoutingBluetooth));
                 } else if (rout == VoIPService.AUDIO_ROUTE_EARPIECE) {
                     soundItem.setIcon(VoIPService.getSharedInstance().isHeadsetPlugged() ? R.drawable.msg_voice_headphones : R.drawable.msg_voice_phone);
-                    soundItem.setSubtext(VoIPService.getSharedInstance().isHeadsetPlugged() ? getString(R.string.VoipAudioRoutingHeadset) : getString(R.string.VoipAudioRoutingPhone));
+                    setCallMenuSubtext(soundItem, VoIPService.getSharedInstance().isHeadsetPlugged() ? getString(R.string.VoipAudioRoutingHeadset) : getString(R.string.VoipAudioRoutingPhone));
                 } else if (rout == VoIPService.AUDIO_ROUTE_SPEAKER) {
                     VoipAudioManager vam = VoipAudioManager.get();
                     if (vam.isSpeakerphoneOn()) {
                         soundItem.setIcon(R.drawable.msg_voice_speaker);
-                        soundItem.setSubtext(getString(R.string.VoipAudioRoutingSpeaker));
+                        setCallMenuSubtext(soundItem, getString(R.string.VoipAudioRoutingSpeaker));
                     } else {
                         soundItem.setIcon(R.drawable.msg_voice_phone);
-                        soundItem.setSubtext(getString(R.string.VoipAudioRoutingPhone));
+                        setCallMenuSubtext(soundItem, getString(R.string.VoipAudioRoutingPhone));
                     }
                 }
             }
@@ -4903,6 +4908,7 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
         leaveItem = otherItem.addSubItem(leave_item, R.drawable.msg_cancel, isConference() ? getString(R.string.VoipGroupEndConference) : ChatObject.isChannelOrGiga(currentChat) ? getString(R.string.VoipChannelEndChat) : getString(R.string.VoipGroupEndChat));
         otherItem.setPopupItemsSelectorColor(Theme.getColor(Theme.key_voipgroup_listSelector));
         otherItem.getPopupLayout().setFitItems(true);
+        otherItem.getPopupLayout().setBackgroundColor(Theme.getColor(Theme.key_voipgroup_actionBar));
 
         enableComments.setColors(Theme.getColor(Theme.key_voipgroup_actionBarItems), Theme.getColor(Theme.key_voipgroup_actionBarItems));
         disableComments.setColors(Theme.getColor(Theme.key_voipgroup_actionBarItems), Theme.getColor(Theme.key_voipgroup_actionBarItems));

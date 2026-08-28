@@ -34212,10 +34212,12 @@ public class ChatActivity extends BaseFragment implements
                 if (GroupedIconsView.useGroupedIcons()) {
                     popupLayout.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                     float outerBubbleSpacing = -8f;
-                    Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert4).mutate();
-                    shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
                     FrameLayout bottomContainer = new FrameLayout(contentView.getContext());
-                    bottomContainer.setBackground(shadowDrawable2);
+                    bottomContainer.setBackground(scrimBlur3Factory.create(bottomContainer, true)
+                        .setColorProvider(BlurredBackgroundProviderImpl.messageMenuBackground(resourceProvider))
+                        .setRadius(dp(12))
+                        .setPadding(dp(8))
+                        .setHasPadding(true));
                     bottomContainer.setTag(R.id.fit_width_tag, 1);
                     GroupedIconsView groupedIconsView = new GroupedIconsView(getContext(), ChatActivity.this, themeDelegate, selectedObject, this.lastMessageMenuStatus.allowReply, this.lastMessageMenuStatus.allowReplyPm, this.lastMessageMenuStatus.allowEdit, this.lastMessageMenuStatus.allowDelete, this.lastMessageMenuStatus.allowForward, this.lastMessageMenuStatus.allowCopy, this.lastMessageMenuStatus.allowCopyPhoto, this.lastMessageMenuStatus.allowCopyLink, this.lastMessageMenuStatus.allowCopyLinkPm);
                     bottomContainer.addView(groupedIconsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 56, 0));
@@ -34229,11 +34231,12 @@ public class ChatActivity extends BaseFragment implements
                         tv.setText(LocaleController.getString(R.string.DirectForwardNotAllowed));
                         tv.setMaxWidth(Math.max(0, popupLayout.getMeasuredWidth() - AndroidUtilities.dp(38)));
 
-                        Drawable hintDrawable = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert4).mutate();
-                        hintDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-
                         FrameLayout hintContainer = new FrameLayout(contentView.getContext());
-                        hintContainer.setBackground(hintDrawable);
+                        hintContainer.setBackground(scrimBlur3Factory.create(hintContainer, true)
+                            .setColorProvider(BlurredBackgroundProviderImpl.messageMenuBackground(resourceProvider))
+                            .setRadius(dp(12))
+                            .setPadding(dp(8))
+                            .setHasPadding(true));
                         hintContainer.setTag(R.id.fit_width_tag, 1);
                         hintContainer.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
                         scrimPopupContainerLayout.addView(hintContainer, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
@@ -34248,11 +34251,12 @@ public class ChatActivity extends BaseFragment implements
                     tv.setText(LocaleController.getString(R.string.DirectForwardNotAllowed));
                     tv.setMaxWidth(Math.max(0, popupLayout.getMeasuredWidth() - AndroidUtilities.dp(38)));
 
-                    Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert4).mutate();
-                    shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-
                     FrameLayout fl = new FrameLayout(contentView.getContext());
-                    fl.setBackground(shadowDrawable2);
+                    fl.setBackground(scrimBlur3Factory.create(fl, true)
+                        .setColorProvider(BlurredBackgroundProviderImpl.messageMenuBackground(resourceProvider))
+                        .setRadius(dp(12))
+                        .setPadding(dp(8))
+                        .setHasPadding(true));
                     fl.setTag(R.id.fit_width_tag, 1);
                     fl.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
                     scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, outerBubbleSpacing, isReactionsAvailable ? 36 : 0, 0));
@@ -34272,11 +34276,12 @@ public class ChatActivity extends BaseFragment implements
                     tv.setText(text);
                     tv.setMaxWidth(popupLayout.getMeasuredWidth() - AndroidUtilities.dp(38));
 
-                    Drawable shadowDrawable2 = ContextCompat.getDrawable(contentView.getContext(), R.drawable.popup_fixed_alert4).mutate();
-                    shadowDrawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground), PorterDuff.Mode.MULTIPLY));
-
                     FrameLayout fl = new FrameLayout(contentView.getContext());
-                    fl.setBackground(shadowDrawable2);
+                    fl.setBackground(scrimBlur3Factory.create(fl, true)
+                        .setColorProvider(BlurredBackgroundProviderImpl.messageMenuBackground(resourceProvider))
+                        .setRadius(dp(12))
+                        .setPadding(dp(8))
+                        .setHasPadding(true));
                     fl.addView(tv, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 11, 11, 11, 11));
                     scrimPopupContainerLayout.addView(fl, LayoutHelper.createLinearRelatively(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, isReactionsAvailable ? 16 : 0, -8, isReactionsAvailable ? 36 : 0, 0));
                     scrimPopupContainerLayout.applyViewBottom(fl);

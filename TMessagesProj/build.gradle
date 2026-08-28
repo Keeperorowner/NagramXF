@@ -141,12 +141,16 @@ android {
     productFlavors {
         normal {
             dimension 'runtime'
-            ndk.abiFilters.addAll(normalAbis)
+            if (nativeTarget.isBlank()) {
+                ndk.abiFilters.addAll(normalAbis)
+            }
             externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=OFF'
         }
         plugin {
             dimension 'runtime'
-            ndk.abiFilters.addAll(pluginAbis)
+            if (nativeTarget.isBlank()) {
+                ndk.abiFilters.addAll(pluginAbis)
+            }
             externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=ON'
             proguardFiles 'proguard-plugin-rules.pro'
         }

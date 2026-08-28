@@ -9337,12 +9337,12 @@ public class AlertsCreator {
                     }
                     sheet.dismiss();
 
-                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(groupCall.invite_link, dialogId));
-
                     BaseFragment lastFragment = LaunchActivity.getSafeLastFragment();
                     if (lastFragment != null && !(lastFragment instanceof ChatActivity && ((ChatActivity) lastFragment).getDialogId() == dialogId && ((ChatActivity) lastFragment).getChatMode() == ChatActivity.MODE_DEFAULT)) {
                         lastFragment.presentFragment(ChatActivity.of(dialogId));
                     }
+
+                    SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(groupCall.invite_link, dialogId));
                 } else if (res instanceof TL_phone.groupCall) {
                     final TL_phone.groupCall r = (TL_phone.groupCall) res;
                     MessagesController.getInstance(currentAccount).putUsers(r.users, false);
