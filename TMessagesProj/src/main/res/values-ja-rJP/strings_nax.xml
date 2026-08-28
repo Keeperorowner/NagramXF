@@ -12,7 +12,6 @@
     <string name="HidePremiumSection">設定で Telegram Premium を非表示</string>
     <string name="HideHelpSection">設定でヘルプを非表示</string>
     <string name="ProviderLLMTranslator">AI 翻訳</string>
-    <string name="LlmApiUrl">API URL</string>
     <string name="LlmApiKey">API キー</string>
     <string name="LlmModelName">モデル</string>
     <string name="LlmApiUrlNotice">API ベース URL。空白のままにした場合、デフォルトで Gemini OpenAI 互換エンドポイントが使用されます。</string>
@@ -128,7 +127,6 @@
     <string name="doubleTapSeekDuration">ダブルタップのスキップ時間</string>
     <string name="TgBrowserOpenFail">内蔵ブラウザは利用できません</string>
     <string name="TgBrowserOpenFail_Desc">内蔵ブラウザが無効化されているため、選択した操作は利用できません。</string>
-    <string name="MapPreviewProviderYandexNax">Yandex</string>
     <string name="GhostMode">ゴーストモード</string>
     <string name="GhostEssentialsHeader">ゴースト設定</string>
     <string name="EnableGhostMode">ゴースト ON</string>
@@ -165,8 +163,6 @@
     <string name="PerformanceClassUnknown">不明</string>
     <string name="TranscribeProviderShort">プロバイダ</string>
     <string name="TranscribeProviderAuto">自動選択</string>
-    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
-    <string name="TranscribeProviderGemini">Gemini</string>
     <string name="CloudflareCredentials">Cloudflare の認証情報</string>
     <string name="CloudflareCredentialsNotSet">Cloudflare の認証情報が設定されていません。</string>
     <string name="CloudflareAccountID">アカウント ID</string>
@@ -181,7 +177,6 @@
     <string name="HideDividers">区切り線を非表示</string>
     <string name="IconReplacements">アイコンパック</string>
     <string name="IconReplacementSolar">Solar - @Design480</string>
-    <string name="IconReplacementRemix">Remix Icon</string>
     <string name="DebugMenuEnableInvoicePayment">請求書の支払いを有効化</string>
     <string name="DebugMenuDisableInvoicePayment">請求書の支払いを無効化</string>
     <string name="DebugMenuUseCamera2Api">Camera 2 API を使用</string>
@@ -204,9 +199,7 @@
     <string name="ResetChatNameOverrides">チャット名の上書きをリセット</string>
     <string name="ResetChatNameNotification">チャット名の上書きがクリアされました。</string>
     <string name="LeftBottomButtonAction">左ボタンの動作</string>
-    <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">OpenAI と互換性のある API を設定します。この**ドキュメント**を参照できます。\n</string>
-    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">API 認証情報が設定されていません。</string>
     <string name="ApiNotSupportedOnAndroidVersion">この API プロバイダは、お使いの Android バージョンではサポートされていません（Android 8.0以上が必要です）。</string>
     <string name="AppIconTelegramOriginal">クラシック</string>
@@ -322,7 +315,6 @@
     <string name="DeleteChatForBothSides">デフォルトで「相手側も削除」を使用</string>
     <string name="BackAnimationStyle">画面遷移アニメーション</string>
     <string name="BackAnimationClassic">クラシック</string>
-    <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">予測型</string>
     <string name="AddToFilter">フィルターに追加</string>
     <string name="UnifiedPushNeverReceivedNotifications">Nagram X の起動以降、UnifiedPush 経由で通知を受信したことはありません。</string>

@@ -77,7 +77,6 @@
     <string name="RegexFiltersImportFromClipboard">从剪贴板</string>
     <string name="RegexFiltersImportFromURL">从 URL</string>
     <string name="RegexFiltersImportUrlTitle">从 URL 导入</string>
-    <string name="RegexFiltersImportUrlHint">https://…</string>
     <string name="RegexFiltersImportUrlAction">下载</string>
     <string name="RegexFiltersImportUrlFetchFailed">无法从该 URL 下载过滤器。</string>
     <string name="RegexFiltersImportPreviewTitle">确认导入</string>

@@ -12,7 +12,6 @@
     <string name="HidePremiumSection">在設定中隱藏 Telegram Premium</string>
     <string name="HideHelpSection">在設定中隱藏幫助</string>
     <string name="ProviderLLMTranslator">AI 翻譯</string>
-    <string name="LlmApiUrl">API URL</string>
     <string name="LlmApiKey">API 金鑰</string>
     <string name="LlmModelName">模型</string>
     <string name="LlmApiUrlNotice">API 基礎 URL。若留空則預設使用 Gemini 的 OpenAI 相容端點。</string>
@@ -129,7 +128,6 @@
     <string name="doubleTapSeekDuration">雙擊快轉時長</string>
     <string name="TgBrowserOpenFail">應用內瀏覽器不可用</string>
     <string name="TgBrowserOpenFail_Desc">由於應用內瀏覽器已被停用，所選操作不可用。</string>
-    <string name="MapPreviewProviderYandexNax">Yandex</string>
     <string name="GhostMode">幽靈模式</string>
     <string name="GhostEssentialsHeader">幽靈選項</string>
     <string name="EnableGhostMode">啟用幽靈模式</string>
@@ -166,8 +164,6 @@
     <string name="PerformanceClassUnknown">未知</string>
     <string name="TranscribeProviderShort">提供者</string>
     <string name="TranscribeProviderAuto">自動選擇</string>
-    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
-    <string name="TranscribeProviderGemini">Gemini</string>
     <string name="CloudflareCredentials">Cloudflare 憑證</string>
     <string name="CloudflareCredentialsNotSet">尚未設定 Cloudflare 憑證。</string>
     <string name="CloudflareAccountID">帳戶 ID</string>
@@ -205,9 +201,7 @@
     <string name="ResetChatNameOverrides">重置聊天名稱覆蓋</string>
     <string name="ResetChatNameNotification">聊天名稱覆蓋已清除。</string>
     <string name="LeftBottomButtonAction">左側按鈕操作</string>
-    <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">設定 OpenAI 相容的 API。您可以參考此 **文件**。\n</string>
-    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">尚未設定 API 憑證。</string>
     <string name="ApiNotSupportedOnAndroidVersion">此 API 提供者不支援您的 Android 版本 (需要 Android 8.0+)。</string>
     <string name="AppIconTelegramOriginal">經典</string>
@@ -323,7 +317,6 @@
     <string name="DeleteChatForBothSides">預設使用“同時為對方刪除”</string>
     <string name="BackAnimationStyle">導航動畫</string>
     <string name="BackAnimationClassic">經典</string>
-    <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">預測</string>
     <string name="AddToFilter">新增過濾器</string>
     <string name="UnifiedPushNeverReceivedNotifications">自 Nagram X 啟動後，您從未收到 UnifiedPush 的通知。</string>
@@ -340,7 +333,6 @@
     <string name="DeepLTranslateKeyNotice">設定 DeepL API 金鑰，留空則使用內建金鑰。</string>    <string name="BlurOptions">模糊選項</string>
     <string name="SingleCornerRadius">統一圓角半徑</string>
     <string name="SingleCornerRadiusInfo">話題群組會採用與聊天訊息相同的頭像形狀。</string>
-    <string name="AyuMoments">AyuMoments</string>
 
     <string name="PluginNoDescription">無描述</string>
     <string name="PluginNoAuthor">未知作者</string>

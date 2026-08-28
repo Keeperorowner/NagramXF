@@ -12,7 +12,6 @@
     <string name="HidePremiumSection">Скрыть «Premium» в настройках</string>
     <string name="HideHelpSection">Скрыть «Помощь» в настройках</string>
     <string name="ProviderLLMTranslator">ИИ</string>
-    <string name="LlmApiUrl">API URL</string>
     <string name="LlmApiKey">Ключ API</string>
     <string name="LlmModelName">Модель</string>
     <string name="LlmApiUrlNotice">Базовый URL API. Если оставить поле пустым, по умолчанию будет использоваться конечная точка, совместимая с Gemini OpenAI.</string>
@@ -165,8 +164,6 @@
     <string name="PerformanceClassUnknown">Неизвестный</string>
     <string name="TranscribeProviderShort">Поставщик</string>
     <string name="TranscribeProviderAuto">Автовыбор</string>
-    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
-    <string name="TranscribeProviderGemini">Gemini</string>
     <string name="CloudflareCredentials">Учётные данные Cloudflare</string>
     <string name="CloudflareCredentialsNotSet">Учётные данные Cloudflare не настроены.</string>
     <string name="CloudflareAccountID">ID аккаунта</string>
@@ -181,7 +178,6 @@
     <string name="HideDividers">Скрыть разделители</string>
     <string name="IconReplacements">Замена значков</string>
     <string name="IconReplacementSolar">Solar от @Design480</string>
-    <string name="IconReplacementRemix">Remix Icon</string>
     <string name="DebugMenuEnableInvoicePayment">Включить оплату счетов</string>
     <string name="DebugMenuDisableInvoicePayment">Отключить оплату счетов</string>
     <string name="DebugMenuUseCamera2Api">Использовать API Camera 2</string>
@@ -206,7 +202,6 @@
     <string name="LeftBottomButtonAction">Действие левой кнопки</string>
     <string name="TranscribeProviderOpenAI">OpenAI-совместимый API</string>
     <string name="OpenAiApiCredentialsDialog">Настройте API, совместимый с OpenAI. Вы можете обратиться к этой **документации**.\n</string>
-    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">Учётные данные API не настроены.</string>
     <string name="ApiNotSupportedOnAndroidVersion">Этот поставщик API не поддерживается на вашей версии Android (требуется Android 8.0+).</string>
     <string name="AppIconTelegramOriginal">Классическая</string>
@@ -322,7 +317,6 @@
     <string name="DeleteChatForBothSides">Использовать «Также удалить для» по умолчанию</string>
     <string name="BackAnimationStyle">Анимация навигации</string>
     <string name="BackAnimationClassic">Классическая</string>
-    <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">Предиктивная</string>
     <string name="AddToFilter">Добавить в фильтр</string>
     <string name="UnifiedPushNeverReceivedNotifications">С момента запуска Nagram X вы не получали уведомлений с помощью UnifiedPush.</string>

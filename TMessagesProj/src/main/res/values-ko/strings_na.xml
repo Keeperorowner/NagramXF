@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="N_Config">N-Config</string>
     <string name="CombineMessage">메시지 합치기</string>
     <string name="TextStyle">텍스트 스타일</string>
     <string name="NoiseSuppressAndVoiceEnhance">음성 향상</string>
@@ -19,7 +18,6 @@
     <string name="ShowMessageID">메시지 ID 표시</string>
     <string name="ShowRPCError">RPC 오류 토스트 표시</string>
     <string name="ShowPremiumStickersAnimation">Premium 스티커 애니메이션 표시</string>
-    <string name="AppIconGoogle" translatable="false">Google</string>
     <string name="AppIconColorful">컬러풀</string>
     <string name="AppIconDarkGreen">다크 그린</string>
     <string name="AppIconNeon">네온</string>
@@ -39,7 +37,6 @@
     <string name="CustomEditedMessage">편집 표시 사용자 지정</string>
     <string name="NotificationIcon">알림 아이콘</string>
     <string name="Official">공식</string>
-    <string name="Nagram" translatable="false">Nagram</string>
     <string name="HalloWeen">할로윈</string>
     <string name="ShowOnlineStatus">온라인 상태 표시</string>
     <string name="ShowOnlineStatusNotice">그룹에서 다른 사람의 온라인 상태를 프로필 사진 옆에 표시합니다.</string>
@@ -67,9 +64,6 @@
     <string name="ShowQuickReplyInBotCommands">봇 명령에 빠른 답장 표시</string>
     <string name="PushServiceType">푸시 서비스 유형</string>
     <string name="PushServiceTypeInApp">앱 내</string>
-    <string name="PushServiceTypeFCM" translatable="false">Google FCM</string>
-    <string name="PushServiceTypeUnified" translatable="false">UnifiedPush</string>
-    <string name="PushServiceTypeMicroG" translatable="false">microG</string>
     <string name="PushServiceTypeInAppDialog">상주 알림 표시</string>
     <string name="PushServiceTypeUnifiedGateway">UnifiedPush 게이트웨이</string>
     <string name="SendMp4DocumentAsVideo">MP4 문서를 동영상으로 보내기</string>
@@ -98,7 +92,6 @@
     <string name="ShowTimeHint">자세히 보려면 시간을 탭하세요.</string>
     <string name="SearchHashtagDefaultPageChannel">채널의 기본 해시태그 검색 페이지</string>
     <string name="SearchHashtagDefaultPageChat">채팅의 기본 해시태그 검색 페이지</string>
-    <string name="Pangu" translatable="false">Pangu</string>
     <string name="EnablePanguOnSending">보낼 때 Pangu 활성화</string>
     <string name="PanguInfo">가독성을 높이기 위해 CJK(중국어, 일본어, 한국어), 반각 영문자, 숫자, 기호 사이에 공백을 자동으로 삽입합니다.</string>
     <string name="SendWithPangu">Pangu로 보내기</string>

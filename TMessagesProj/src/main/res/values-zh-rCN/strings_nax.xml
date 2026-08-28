@@ -13,7 +13,6 @@
     <string name="HidePremiumSection">在设置中隐藏 Telegram Premium</string>
     <string name="HideHelpSection">在设置中隐藏帮助</string>
     <string name="ProviderLLMTranslator">AI 翻译</string>
-    <string name="LlmApiUrl">API URL</string>
     <string name="LlmApiKey">API 密钥</string>
     <string name="LlmModelName">模型</string>
     <string name="LlmApiUrlNotice">API 基础 URL。若留空则默认使用 Gemini 的 OpenAI 兼容端点。</string>
@@ -130,7 +129,6 @@
     <string name="doubleTapSeekDuration">双击快进时长</string>
     <string name="TgBrowserOpenFail">应用内浏览器不可用</string>
     <string name="TgBrowserOpenFail_Desc">由于应用内浏览器已被禁用，所选操作不可用。</string>
-    <string name="MapPreviewProviderYandexNax">Yandex</string>
     <string name="GhostMode">幽灵模式</string>
     <string name="GhostEssentialsHeader">幽灵选项</string>
     <string name="EnableGhostMode">启用幽灵模式</string>
@@ -167,8 +165,6 @@
     <string name="PerformanceClassUnknown">未知</string>
     <string name="TranscribeProviderShort">提供者</string>
     <string name="TranscribeProviderAuto">自动选择</string>
-    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
-    <string name="TranscribeProviderGemini">Gemini</string>
     <string name="CloudflareCredentials">Cloudflare 凭据</string>
     <string name="CloudflareCredentialsNotSet">未配置 Cloudflare 凭据。</string>
     <string name="CloudflareAccountID">帐户 ID</string>
@@ -209,9 +205,7 @@
     <string name="MainTabsCustomize">自定义底边栏</string>
     <string name="MainTabsCustomizeDesc">点按标签可显示或隐藏。长按并拖动可调整顺序。</string>
     <string name="MainTabsShowTitles">显示标签名称</string>
-    <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">配置 OpenAI 兼容的 API。您可以参考此 **文档**。\n</string>
-    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">API 凭据未配置。</string>
     <string name="ApiNotSupportedOnAndroidVersion">此 API 提供商不支持您的 Android 版本 (需要 Android 8.0+)。</string>
     <string name="AppIconTelegramOriginal">经典</string>
@@ -327,7 +321,6 @@
     <string name="DeleteChatForBothSides">默认使用“同时为对方删除”</string>
     <string name="BackAnimationStyle">导航动画</string>
     <string name="BackAnimationClassic">经典</string>
-    <string name="BackAnimationSpring">Spring</string>
     <string name="BackAnimationPredictive">预测</string>
     <string name="AddToFilter">添加过滤器</string>
     <string name="UnifiedPushNeverReceivedNotifications">自 Nagram X 启动后，您从未收到 UnifiedPush 的通知。</string>
@@ -393,7 +386,6 @@
     <string name="SingleCornerRadius">统一圆角半径</string>
     <string name="SingleCornerRadiusInfo">话题群组会采用与聊天消息相同的头像形状。</string>
     <string name="BlurOptions">模糊选项</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">保存附件</string>
     <string name="SaveAttachmentsCardSubtitle">配置聊天和限制</string>
     <string name="AttachmentFolder">附件文件夹</string>

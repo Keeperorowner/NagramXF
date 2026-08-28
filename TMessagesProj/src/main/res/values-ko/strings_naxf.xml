@@ -1,7 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppIconTelegram">Telegram</string>
-    <string name="AppIconNagram">Nagram</string>
     <!-- Pillstack (ported from exteragram/ayuGram) -->
     <string name="PillStackPills">필 스택</string>
     <string name="PillStackPillsInfo">검색창에 대화형 필을 표시합니다.</string>
@@ -63,7 +61,6 @@
     <string name="HideAiEditor">AI 편집기 숨기기</string>
     <string name="HideAiSummary">AI 요약 숨기기</string>
     <string name="AiHideHeader">AI 기능 숨기기</string>
-    <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">삭제 표시</string>
     <string name="DeletedMarkNothing">표시 안 함</string>
     <string name="DeletedMarkTrashBin">휴지통</string>
@@ -85,7 +82,6 @@
     <string name="RegexFiltersImportFromClipboard">클립보드에서</string>
     <string name="RegexFiltersImportFromURL">URL에서</string>
     <string name="RegexFiltersImportUrlTitle">URL에서 가져오기</string>
-    <string name="RegexFiltersImportUrlHint">https://…</string>
     <string name="RegexFiltersImportUrlAction">다운로드</string>
     <string name="RegexFiltersImportUrlFetchFailed">이 URL에서 필터를 다운로드하지 못했습니다.</string>
     <string name="RegexFiltersImportPreviewTitle">가져올 내용 검토</string>
@@ -115,14 +111,12 @@
     <string name="FoldersAtBottom">폴더를 아래에 배치</string>
     <string name="SendLockedCustomEmojiAsSticker">프리미엄 이모지를 스티커로 보내기</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">WebP/WebM 형식의 커스텀 이모지만 지원합니다. TGS 전용 이모지는 제외됩니다.</string>
-    <string name="StyleOneUI" translatable="false">OneUI</string>
     <string name="PeekOnlineMenuText">온라인 상태 확인</string>
     <string name="PeekOnlineSuccess">온라인 상태를 새로고침했습니다.</string>
     <string name="PeekOnlineUnavailable">정확한 온라인 상태를 가져올 수 없습니다.</string>
     <string name="PeekOnlineRestoreFailed">마지막 접속 시간 공개 설정을 복원하지 못했습니다.</string>
     <string name="AppNavigation">앱 탐색</string>
     <string name="ShowRecentChatsSidebar">최근 채팅 사이드바 표시</string>
-    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="ForceForwardStatusChunkCount">묶음 %1$d/%2$d</string>
     <string name="ForceForwardSomeSkipped">메시지 %1$d개를 전달하지 못했습니다.</string>
     <string name="AyuMomentsPreviewMessage">최선을 다하고 결과는 운명에 맡기세요.</string>

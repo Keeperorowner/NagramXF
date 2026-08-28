@@ -67,7 +67,6 @@
     <!-- 有一些混用了筆和條，不過還好 -->
     <string name="RegexFiltersImportFromURL">從 URL</string>
     <string name="RegexFiltersImportUrlTitle">從 URL 匯入</string>
-    <string name="RegexFiltersImportUrlHint">https://…</string>
     <string name="RegexFiltersImportUrlAction">下載</string>
     <string name="RegexFiltersImportUrlFetchFailed">無法從此 URL 下載過濾器。</string>
     <string name="RegexFiltersImportPreviewTitle">確認匯入</string>

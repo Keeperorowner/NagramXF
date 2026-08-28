@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NekoSettings">N-Settings</string>
     <string name="IPv6">IPv6 우선 사용</string>
     <string name="MessageMenu">메시지 메뉴</string>
     <string name="HidePhone">전화번호 숨기기</string>
@@ -36,7 +35,6 @@
     <string name="StickerSizeDialogMessageBigOne">큰 크기</string>
     <string name="StickerSizeDialogMessageSmallOne">작은 크기</string>
     <string name="StickerSizeDialogMessageReplyTo">야옹</string>
-    <string name="StickerSizeDialogName">Duang</string>
     <string name="Experimental">실험실</string>
     <string name="UnlimitedFavoredStickers">즐겨찾는 스티커 무제한</string>
     <string name="UnlimitedFavoredStickersAbout">즐겨찾기에 스티커를 무제한으로 추가합니다. 스티커가 다른 기기에 동기화되지 않을 수 있습니다.</string>
@@ -45,9 +43,7 @@
     <string name="Translate">번역</string>
     <string name="TranslateFailed">번역 서버 오류</string>
     <string name="TranslationProvider">번역 제공자</string>
-    <string name="ProviderGoogleTranslate">Google Translate</string>
     <string name="TranslateApiUnsupported">선택한 번역 제공자가 사용자의 언어를 지원하지 않습니다.</string>
-    <string name="ProviderLingocloud">LingoCloud Translate</string>
     <string name="UndoTranslate">번역 숨기기</string>
     <string name="BotToken">토큰</string>
     <string name="UnlimitedPinnedDialogs">고정 채팅 무제한</string>
@@ -83,8 +79,6 @@
     <string name="AutoPauseVideoAbout">화면이 잠기거나 백그라운드로 전환될 때.</string>
     <string name="DisableProximityEvents">근접 센서 이벤트 끄기</string>
     <string name="SelectBetween">범위 선택</string>
-    <string name="ProviderDeepLTranslate">DeepL Translate</string>
-    <string name="ProviderMicrosoftTranslator">Bing Translator</string>
     <string name="DontSendGreetingSticker">인사 스티커 보내지 않기</string>
     <string name="TakeGIFasVideo">GIF를 동영상으로 처리</string>
     <string name="HideTimeForSticker">스티커 시간 숨기기</string>
@@ -148,7 +142,6 @@
     <string name="EmojiSetApplied">이모지 세트가 적용되었습니다.</string>
     <string name="EmojiSetAppliedInfo">%1$s이(가) 이제 내 이모지 세트입니다.</string>
     <string name="EmojiSetAlreadyApplied">이미 적용된 이모지 세트입니다.</string>
-    <string name="ProviderTelegramAPI">Telegram API</string>
     <string name="RecentChats">최근 채팅</string>
     <string name="ClearRecentChats">최근 채팅 지우기</string>
     <string name="ClearRecentChatAlert">최근 채팅을 지우시겠습니까?</string>
@@ -168,7 +161,6 @@
     <string name="CopyCallback">콜백 데이터 복사</string>
     <string name="CopyInlineQuery">인라인 쿼리 복사</string>
     <string name="CopyID">ID 복사</string>
-    <string name="NekoX" translatable="false">NekoX</string>
     <string name="Locked">잠김</string>
     <string name="AccDescrChatAttachEnterMenu">채팅 입력 메뉴</string>
     <string name="ChatAttachEnterMenuRecordVideo">동영상 녹화</string>
@@ -185,7 +177,6 @@
     <string name="LinkedGroupChat">연결된 그룹</string>
     <string name="LinkedChannelChat">연결된 채널</string>
     <string name="ChangeTranslateProvider">제공자 변경</string>
-    <string name="ProviderYandexTranslate">Yandex Translate</string>
     <string name="GoogleCloudTransKey">Google Cloud Translate 키</string>
     <string name="GoogleCloudTransKeyNotice">Google Cloud Translate 키를 설정하면 번역 시 웹 버전에 가짜 양식을 제출하는 대신 클라우드 번역 API를 호출합니다. 더 빠르고 안정적이며 트래픽을 절약합니다.</string>
     <string name="TransToLang">대상 언어</string>
@@ -273,7 +264,5 @@
     <string name="Appearance">디자인</string>
     <string name="Donate">후원</string>
     <string name="DonateDesc">Nagram XF가 마음에 드신다면 개발 후원을 고려해 주세요.</string>
-    <string name="DonateAfdian">Afdian</string>
-    <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">이 클라이언트가 마음에 드시나요? **개발 후원하기**</string>
 </resources>

@@ -69,7 +69,6 @@
     <string name="RegexFiltersImportFromClipboard">Из буфера обмена</string>
     <string name="RegexFiltersImportFromURL">По URL</string>
     <string name="RegexFiltersImportUrlTitle">Импорт по URL</string>
-    <string name="RegexFiltersImportUrlHint">https://…</string>
     <string name="RegexFiltersImportUrlAction">Загрузить</string>
     <string name="RegexFiltersImportUrlFetchFailed">Не удалось загрузить фильтры по этому URL.</string>
     <string name="RegexFiltersImportPreviewTitle">Проверьте импорт</string>
@@ -168,7 +167,6 @@
     <string name="ForceForwardFailed">Не удалось выполнить принудительную пересылку.</string>
     <string name="ForceForwardMediaStalled">Загрузка медиа остановилась.</string>
     <string name="ForceForwardStatusPreparingMedia">Подготовка медиа</string>
-    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="ForceForwardStatusChunkCount">фрагмент %1$d из %2$d</string>
     <string name="ForceForwardStatusWaitingDownloads">Ожидание загрузки медиа</string>
     <string name="ForceForwardStatusForwarding">Пересылка</string>
@@ -291,7 +289,6 @@
     <string name="AIError408Info">Время ожидания запроса истекло. Повторите позже.</string>
     <string name="AIError429">Превышен лимит</string>
     <string name="AIError429Info">Слишком много запросов. Подождите немного.</string>
-    <string name="AIError502">Bad Gateway</string>
     <string name="AIError502Info">Сервер временно недоступен.</string>
     <string name="AIError503">Сервис недоступен</string>
     <string name="AIError503Info">Сервис перегружен. Повторите позже.</string>

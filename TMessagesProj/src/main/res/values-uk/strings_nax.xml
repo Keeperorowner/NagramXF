@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NagramX" translatable="false">Nagram X</string>
     <string name="XChannel">Канал Nagram X</string>
     <string name="NagramXForkChannel">Канал Nagram XF</string>
     <string name="JoinOfficialChannelTitle">Приєднатися до офіційного каналу</string>
@@ -17,22 +16,10 @@
     <string name="HideHelpSection">Приховати «Допомога» в налаштуваннях</string>
     <string name="ProviderLLMTranslator">ШІ-перекладач</string>
     <string name="LlmApiUrl">URL API</string>
-    <string name="LlmApiUrlHint" translatable="false">https://api.openai.com/v1</string>
     <string name="LlmApiKey">API-ключ</string>
     <string name="LlmModelName">Модель</string>
     <string name="LlmApiUrlNotice">Базова URL-адреса API. Якщо залишити поле порожнім, за замовчуванням використовується кінцева точка, сумісна з Gemini OpenAI.</string>
     <string name="LlmApiKeyNotice">Введіть один або кілька API-ключів через кому (наприклад: key1,key2). Декілька ключів використовуватимуться по черзі.</string>
-    <string name="LlmApiUrlDefault" translatable="false">https://generativelanguage.googleapis.com/v1beta/openai</string>
-    <string name="LlmModelNameDefault" translatable="false">gemini-flash-latest</string>
-    <string name="LlmProviderOpenAIModel" translatable="false">gpt-5.6-luna</string>
-    <string name="LlmProviderGeminiModel" translatable="false">gemini-flash-lite-latest</string>
-    <string name="LlmProviderGroqModel" translatable="false">openai/gpt-oss-120b</string>
-    <string name="LlmProviderDeepSeekModel" translatable="false">deepseek-v4-flash</string>
-    <string name="LlmProviderXAIModel" translatable="false"></string>
-    <string name="LlmProviderCerebrasModel" translatable="false">gemma-4-31b</string>
-    <string name="LlmProviderOllamaCloudModel" translatable="false">gemma4:31b</string>
-    <string name="LlmProviderOpenRouterModel" translatable="false">openrouter/free</string>
-    <string name="LlmProviderVercelAIGatewayModel" translatable="false">google/gemma-4-31b-it</string>
     <string name="LlmProviderPreset">Провайдер моделі</string>
     <string name="LlmProviderCustom">Власний</string>
     <string name="LlmProviderOpenAIKey">API-ключ OpenAI</string>
@@ -142,7 +129,6 @@
     <string name="doubleTapSeekDuration">Час перемотування подвійним дотиком</string>
     <string name="TgBrowserOpenFail">Вбудований браузер недоступний</string>
     <string name="TgBrowserOpenFail_Desc">Неможливо виконати дію, оскільки вбудований браузер вимкнено в налаштуваннях.</string>
-    <string name="MapPreviewProviderYandexNax">Yandex</string>
     <string name="GhostMode">Режим привида</string>
     <string name="GhostEssentialsHeader">Налаштування привида</string>
     <string name="EnableGhostMode">Увімкнути режим привида</string>
@@ -179,8 +165,6 @@
     <string name="PerformanceClassUnknown">Невідомий</string>
     <string name="TranscribeProviderShort">Провайдер</string>
     <string name="TranscribeProviderAuto">Автовибір</string>
-    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
-    <string name="TranscribeProviderGemini">Gemini</string>
     <string name="CloudflareCredentials">Облікові дані Cloudflare</string>
     <string name="CloudflareCredentialsNotSet">Облікові дані Cloudflare не налаштовано.</string>
     <string name="CloudflareAccountID">ID акаунта</string>
@@ -264,7 +248,6 @@
     <string name="SwitchStyle">Стиль перемикача</string>
     <string name="SliderStyle">Стиль повзунка</string>
     <string name="StyleModern">Сучасний</string>
-    <string name="StyleMaterialDesign3" translatable="false">Material Design 3</string>
     <string name="SaveDeletedExclusionMenu">Збереження видаленого</string>
     <string name="SaveDeletedExcluded">Виключення</string>
     <string name="MarkdownParser">Парсер Markdown</string>
@@ -417,7 +400,6 @@
     <string name="SingleCornerRadius">Єдиний радіус скруглення</string>
     <string name="SingleCornerRadiusInfo">Елементи тем використовуватимуть той самий радіус скруглення, що й бульбашки повідомлень.</string>
     <string name="BlurOptions">Параметри розмиття</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">Зберігати вкладення</string>
     <string name="SaveAttachmentsCardSubtitle">Налаштування чатів і лімітів</string>
     <string name="AttachmentFolder">Папка вкладень</string>

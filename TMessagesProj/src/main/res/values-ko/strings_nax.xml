@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="NagramX" translatable="false">Nagram X</string>
     <string name="XChannel">Nagram X 채널</string>
     <string name="NagramXForkChannel">Nagram XF 채널</string>
     <string name="JoinOfficialChannelTitle">공식 채널 참여</string>
@@ -16,23 +15,10 @@
     <string name="HidePremiumSection">설정에서 Premium 숨기기</string>
     <string name="HideHelpSection">설정에서 도움말 숨기기</string>
     <string name="ProviderLLMTranslator">AI 번역기</string>
-    <string name="LlmApiUrl">API URL</string>
-    <string name="LlmApiUrlHint" translatable="false">https://api.openai.com/v1</string>
     <string name="LlmApiKey">API 키</string>
     <string name="LlmModelName">모델</string>
     <string name="LlmApiUrlNotice">API 기본 URL입니다. 비워 두면 Gemini OpenAI 호환 엔드포인트를 기본값으로 사용합니다.</string>
     <string name="LlmApiKeyNotice">하나 이상의 API 키를 쉼표로 구분해 입력하세요(예: key1,key2). 여러 키는 순환 사용됩니다.</string>
-    <string name="LlmApiUrlDefault" translatable="false">https://generativelanguage.googleapis.com/v1beta/openai</string>
-    <string name="LlmModelNameDefault" translatable="false">gemini-flash-latest</string>
-    <string name="LlmProviderOpenAIModel" translatable="false">gpt-5.6-luna</string>
-    <string name="LlmProviderGeminiModel" translatable="false">gemini-flash-lite-latest</string>
-    <string name="LlmProviderGroqModel" translatable="false">openai/gpt-oss-120b</string>
-    <string name="LlmProviderDeepSeekModel" translatable="false">deepseek-v4-flash</string>
-    <string name="LlmProviderXAIModel" translatable="false"></string>
-    <string name="LlmProviderCerebrasModel" translatable="false">gemma-4-31b</string>
-    <string name="LlmProviderOllamaCloudModel" translatable="false">gemma4:31b</string>
-    <string name="LlmProviderOpenRouterModel" translatable="false">openrouter/free</string>
-    <string name="LlmProviderVercelAIGatewayModel" translatable="false">google/gemma-4-31b-it</string>
     <string name="LlmProviderPreset">모델 제공자</string>
     <string name="LlmProviderCustom">사용자 지정</string>
     <string name="LlmProviderOpenAIKey">OpenAI API 키</string>
@@ -100,7 +86,6 @@
     <string name="TranslatorModeInline">대체</string>
     <string name="TranslatorModePopup">팝업</string>
     <string name="Translated">번역됨</string>
-    <string name="ProviderRealMicrosoftTranslator">Microsoft Translator</string>
     <string name="TranslatorSettings">번역기</string>
     <string name="SettingsOnly">설정에서만</string>
     <string name="ChatsOnly">채팅에서만</string>
@@ -142,7 +127,6 @@
     <string name="doubleTapSeekDuration">두 번 탭 시 건너뛸 시간</string>
     <string name="TgBrowserOpenFail">인앱 브라우저를 사용할 수 없습니다</string>
     <string name="TgBrowserOpenFail_Desc">인앱 브라우저가 비활성화되어 선택한 작업을 사용할 수 없습니다.</string>
-    <string name="MapPreviewProviderYandexNax">Yandex</string>
     <string name="GhostMode">고스트 모드</string>
     <string name="GhostEssentialsHeader">고스트 모드 기본 설정</string>
     <string name="EnableGhostMode">고스트 켜기</string>
@@ -179,8 +163,6 @@
     <string name="PerformanceClassUnknown">알 수 없음</string>
     <string name="TranscribeProviderShort">제공자</string>
     <string name="TranscribeProviderAuto">자동 선택</string>
-    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
-    <string name="TranscribeProviderGemini">Gemini</string>
     <string name="CloudflareCredentials">Cloudflare 자격 증명</string>
     <string name="CloudflareCredentialsNotSet">Cloudflare 자격 증명이 구성되지 않았습니다.</string>
     <string name="CloudflareAccountID">계정 ID</string>
@@ -225,7 +207,6 @@
     <string name="MainTabsForceOpenChatsDesc">사용하면 검색 버튼이 항상 채팅 검색을 엽니다. 사용하지 않으면 현재 화면에 맞는 검색(예: 설정 또는 연락처)을 엽니다.</string>
     <string name="TranscribeProviderOpenAI">OpenAI 호환 API</string>
     <string name="OpenAiApiCredentialsDialog">OpenAI 호환 API를 구성하세요. 이 **문서**를 참조할 수 있습니다.\n</string>
-    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
     <string name="OpenAiCredentialsNotSet">API 자격 증명이 구성되지 않았습니다.</string>
     <string name="ApiNotSupportedOnAndroidVersion">이 API 제공자는 현재 Android 버전에서 지원되지 않습니다(Android 8.0+ 필요).</string>
     <string name="AppIconTelegramOriginal">클래식</string>
@@ -264,7 +245,6 @@
     <string name="SwitchStyle">스위치 스타일</string>
     <string name="SliderStyle">슬라이더 스타일</string>
     <string name="StyleModern">모던</string>
-    <string name="StyleMaterialDesign3" translatable="false">Material Design 3</string>
     <string name="SaveDeletedExclusionMenu">삭제된 메시지 저장</string>
     <string name="SaveDeletedExcluded">제외</string>
     <string name="MarkdownParser">Markdown 파서</string>
@@ -416,7 +396,6 @@
     <string name="SingleCornerRadius">모서리 반경 통일</string>
     <string name="SingleCornerRadiusInfo">토픽 그룹에 채팅 메시지와 같은 프로필 사진 모양을 사용합니다.</string>
     <string name="BlurOptions">블러 옵션</string>
-    <string name="AyuMoments">AyuMoments</string>
     <string name="SaveAttachmentsCardTitle">첨부 파일 저장</string>
     <string name="SaveAttachmentsCardSubtitle">채팅 및 제한 설정</string>
     <string name="AttachmentFolder">첨부 파일 폴더</string>

@@ -268,8 +268,6 @@
     <string name="Appearance">外観</string>
     <string name="Donate">寄付</string>
     <string name="DonateDesc">Nagram XF が気に入ったら、開発のサポートをご検討ください。</string>
-    <string name="DonateAfdian">Afdian</string>
-    <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">このクライアントが気に入りましたか？**開発をサポート**</string>
     <string name="iOSMessageInputField">iOS スタイルのメッセージ入力欄</string>
     <string name="iOSMessageInputFieldNotice">添付アイコンを左側に移動し、ボタンを個別のバブルに分割します。有効な間、添付メニューモードは上書きされます</string></resources>

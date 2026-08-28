@@ -36,7 +36,6 @@
     <string name="StickerSizeDialogMessageBigOne">Великий</string>
     <string name="StickerSizeDialogMessageSmallOne">Маленький</string>
     <string name="StickerSizeDialogMessageReplyTo">Няв</string>
-    <string name="StickerSizeDialogName">Duang</string>
     <string name="Experimental">Експериментальні</string>
     <string name="UnlimitedFavoredStickers">Необмежені обрані наліпки</string>
     <string name="UnlimitedFavoredStickersAbout">Додавайте необмежену кількість наліпок до обраного (вони не будуть синхронізуватися з іншими клієнтами).</string>
@@ -148,7 +147,6 @@
     <string name="EmojiSetApplied">Набір емодзі застосовано.</string>
     <string name="EmojiSetAppliedInfo">%1$s тепер ваш набір емодзі.</string>
     <string name="EmojiSetAlreadyApplied">Набір емодзі вже застосовано.</string>
-    <string name="ProviderTelegramAPI">Telegram API</string>
     <string name="RecentChats">Нещодавні чати</string>
     <string name="ClearRecentChats">Очистити нещодавні чати</string>
     <string name="ClearRecentChatAlert">Ви дійсно хочете очистити останні чати?</string>
@@ -168,7 +166,6 @@
     <string name="CopyCallback">Копіювати Callback-дані</string>
     <string name="CopyInlineQuery">Копіювати Inline-запит</string>
     <string name="CopyID">Копіювати ID</string>
-    <string name="NekoX" translatable="false">NekoX</string>
     <string name="Locked">Заблоковано</string>
     <string name="AccDescrChatAttachEnterMenu">Меню надсилання</string>
     <string name="ChatAttachEnterMenuRecordVideo">Записати відео</string>
@@ -275,7 +272,5 @@
     <string name="Appearance">Зовнішній вигляд</string>
     <string name="Donate">Підтримати</string>
     <string name="DonateDesc">Якщо вам подобається Nagram XF, будь ласка, підтримайте розробку.</string>
-    <string name="DonateAfdian">Afdian</string>
-    <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">Подобається цей клієнт? **Підтримати розробку**</string>
 </resources>

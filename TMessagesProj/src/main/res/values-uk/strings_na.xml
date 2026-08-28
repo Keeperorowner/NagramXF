@@ -19,7 +19,6 @@
     <string name="ShowMessageID">Показувати ID повідомлення</string>
     <string name="ShowRPCError">Показувати помилки RPC</string>
     <string name="ShowPremiumStickersAnimation">Показувати анімацію Premium-наліпок</string>
-    <string name="AppIconGoogle" translatable="false">Google</string>
     <string name="AppIconColorful">Барвистий</string>
     <string name="AppIconDarkGreen">Темно-зелений</string>
     <string name="AppIconNeon">Неон</string>
@@ -39,7 +38,6 @@
     <string name="CustomEditedMessage">Підпис змінених повідомлень</string>
     <string name="NotificationIcon">Іконка сповіщень</string>
     <string name="Official">Офіційний</string>
-    <string name="Nagram" translatable="false">Nagram</string>
     <string name="HalloWeen">Геловін</string>
     <string name="ShowOnlineStatus">Показувати онлайн-статус</string>
     <string name="ShowOnlineStatusNotice">Показує статус присутності в мережі поруч із фотографією профілю в групах.</string>
@@ -67,9 +65,6 @@
     <string name="ShowQuickReplyInBotCommands">Швидка відповідь у командах бота</string>
     <string name="PushServiceType">Служба Push-сповіщень</string>
     <string name="PushServiceTypeInApp">У додатку</string>
-    <string name="PushServiceTypeFCM" translatable="false">Google FCM</string>
-    <string name="PushServiceTypeUnified" translatable="false">UnifiedPush</string>
-    <string name="PushServiceTypeMicroG" translatable="false">microG</string>
     <string name="PushServiceTypeInAppDialog">Показувати постійне сповіщення</string>
     <string name="PushServiceTypeUnifiedGateway">Шлюз UnifiedPush</string>
     <string name="SendMp4DocumentAsVideo">Надсилати документи MP4 як відео</string>
@@ -98,7 +93,6 @@
     <string name="ShowTimeHint">Натисніть на час для детальної інформації</string>
     <string name="SearchHashtagDefaultPageChannel">Типова сторінка пошуку хештегів у каналах</string>
     <string name="SearchHashtagDefaultPageChat">Типова сторінка пошуку хештегів у чатах</string>
-    <string name="Pangu" translatable="false">Pangu</string>
     <string name="EnablePanguOnSending">Увімкнути Pangu під час надсилання</string>
     <string name="PanguInfo">Автоматичне форматування тексту пробілами для кращої читабельності між символами CJK, латиницею, цифрами та пунктуацією.</string>
     <string name="SendWithPangu">Надіслати через Pangu</string>

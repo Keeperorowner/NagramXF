@@ -36,7 +36,6 @@
     <string name="StickerSizeDialogMessageBigOne">Большой</string>
     <string name="StickerSizeDialogMessageSmallOne">Маленький</string>
     <string name="StickerSizeDialogMessageReplyTo">Мяу</string>
-    <string name="StickerSizeDialogName">Duang</string>
     <string name="Experimental">Экспериментальные</string>
     <string name="UnlimitedFavoredStickers">Неограниченные избранные стикеры</string>
     <string name="UnlimitedFavoredStickersAbout">Их синхронизация будет отключена.</string>
@@ -269,8 +268,6 @@
     <string name="Appearance">Внешний вид</string>
     <string name="Donate">Поддержать</string>
     <string name="DonateDesc">Если вам нравится Nagram XF, пожалуйста, поддержите разработку.</string>
-    <string name="DonateAfdian">Afdian</string>
-    <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">Нравится этот клиент? **Поддержать разработку**</string>
     <string name="iOSMessageInputField">Поле ввода сообщений в стиле iOS</string>
     <string name="iOSMessageInputFieldNotice">Перемещает значок вложений влево и разделяет кнопки на отдельные пузыри. Пока включено, переопределяет режим меню вложений</string></resources>
