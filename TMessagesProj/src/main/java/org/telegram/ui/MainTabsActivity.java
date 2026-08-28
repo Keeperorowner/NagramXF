@@ -96,9 +96,16 @@ import java.util.List;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import tw.nekomimi.nekogram.folder.FolderIconHelper;
+import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
+import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
+import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
+import tw.nekomimi.nekogram.utils.BrowserUtils;
+import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.web.WebBrowserSettings;
 import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsActivity extends ViewPagerActivity implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target {
@@ -1413,6 +1420,85 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (tabType == MainTabsConfigManager.TabType.CALLS) {
             return openCallsSelector(button);
         }
+        if (tabType == MainTabsConfigManager.TabType.SETTINGS) {
+            final boolean drawerOn = NekoConfig.navigationDrawerEnabled.Bool();
+            final boolean showGhost = NekoConfig.showGhostInDrawer.Bool();
+            final boolean ghostInDrawer = drawerOn && showGhost;
+            final boolean nSettingsInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemNSettings().Bool();
+            final boolean browserInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemBrowser().Bool();
+            final boolean restartInDrawer = drawerOn && NaConfig.INSTANCE.getDrawerItemRestartApp().Bool();
+
+            ItemOptions o = ItemOptions.makeOptions(this, button);
+            boolean isDark = resourceProvider != null ? resourceProvider.isDark() : Theme.isCurrentThemeDark();
+            o.add(isDark ? R.drawable.menu_day_mode_24 : R.drawable.menu_night_mode_24, getString(isDark ? R.string.SwitchThemeToDay : R.string.SwitchThemeToNight), () -> {
+                if (DialogsActivity.switchingTheme) return;
+                DialogsActivity.switchingTheme = true;
+                android.content.SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("themeconfig", 0);
+                String dayTheme = prefs.getString("lastDayTheme", "Blue");
+                Theme.ThemeInfo dayInfo = Theme.getTheme(dayTheme);
+                if (dayInfo == null || dayInfo.isDark()) dayTheme = "Blue";
+                String darkTheme = prefs.getString("lastDarkTheme", "Dark Blue");
+                Theme.ThemeInfo darkInfo = Theme.getTheme(darkTheme);
+                if (darkInfo == null || !darkInfo.isDark()) darkTheme = "Dark Blue";
+                Theme.ThemeInfo active = Theme.getActiveTheme();
+                String targetKey;
+                if (dayTheme.equals(darkTheme)) {
+                    boolean isActiveDark = active.isDark();
+                    if (isActiveDark && dayTheme.equals("Dark Blue")) {
+                        targetKey = "Blue";
+                    } else if (!isActiveDark && dayTheme.equals("Blue")) {
+                        targetKey = "Dark Blue";
+                    } else {
+                        targetKey = isActiveDark ? dayTheme : darkTheme;
+                    }
+                } else {
+                    targetKey = active.getKey().equals(dayTheme) ? darkTheme : dayTheme;
+                }
+                Theme.ThemeInfo target = Theme.getTheme(targetKey);
+                switchTheme(button, target, active.getKey().equals(dayTheme));
+                BulletinFactory bulletinFactory = BulletinFactory.of(MainTabsActivity.this);
+                Theme.turnOffAutoNight(bulletinFactory, () -> presentFragment(new ThemeActivity(1)));
+            });
+            o.addGap();
+            boolean addedAny = false;
+            if (showGhost && !ghostInDrawer) {
+                final String msg = NekoConfig.isGhostModeActive() ? getString(R.string.DisableGhostMode) : getString(R.string.EnableGhostMode);
+                o.add(R.drawable.ayu_ghost, msg, () -> presentFragment(new GhostModeActivity()), () -> {
+                    final String toggleMsg = NekoConfig.isGhostModeActive() ? getString(R.string.GhostModeDisabled) : getString(R.string.GhostModeEnabled);
+                    NekoConfig.toggleGhostMode();
+                    BulletinFactory.of(contentView, resourceProvider).createSuccessBulletin(toggleMsg).show();
+                    NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.mainUserInfoChanged);
+                });
+                o.addGap();
+                addedAny = true;
+            }
+            if (!nSettingsInDrawer) {
+                o.add(R.drawable.msg_settings, getString(R.string.NekoSettings), () -> presentFragment(new NekoSettingsActivity()));
+                addedAny = true;
+            }
+            if (!browserInDrawer) {
+                o.add(R.drawable.web_browser, getString(R.string.InappBrowser), () -> presentFragment(new WebBrowserSettings(null)), () -> BrowserUtils.openBrowserHome(null, true));
+                addedAny = true;
+            }
+            if (!restartInDrawer) {
+                if (addedAny) {
+                    o.addGap();
+                }
+                o.add(R.drawable.msg_retry_solar, getString(R.string.RestartApp), () ->
+                    AppRestartHelper.triggerRebirth(
+                        ApplicationLoader.applicationContext,
+                        new Intent(ApplicationLoader.applicationContext, LaunchActivity.class)
+                    )
+                );
+                addedAny = true;
+            }
+            if (!addedAny) {
+                return false;
+            }
+            setupPopupMenuStyle(o);
+            o.show();
+            return true;
+        }
         if (tabType != MainTabsConfigManager.TabType.CHATS) {
             return false;
         }
@@ -1523,6 +1609,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         } else if (bottom > scrollY + height) {
             scrollView.smoothScrollTo(0, bottom - height);
         }
+    }
+
+    private void switchTheme(View view, Theme.ThemeInfo themeInfo, boolean z) {
+        if (view == null) return;
+        int[] loc = new int[2];
+        view.getLocationInWindow(loc);
+        loc[0] += view.getMeasuredWidth() / 2;
+        loc[1] += view.getMeasuredHeight() / 2;
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.needSetDayNightTheme, themeInfo, Boolean.FALSE, loc, -1, Boolean.valueOf(z), null, null, null, Boolean.TRUE);
     }
 
     private void setupPopupMenuStyle(ItemOptions options) {
