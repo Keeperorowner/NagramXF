@@ -491,4 +491,5 @@
     <string name="LatestVersionInstalled">已安装最新版本</string>
     <string name="LoadingUpdate">正在下载更新…</string>
     <string name="UpdateAvailable">发现新版本</string>
-    <string name="PluginsRestartEngine">重启插件引擎</string></resources>
+    <string name="PluginsRestartEngine">重启插件引擎</string>
+    <string name="ForceFontWeightFallback">强制字体粗细回退</string></resources>

@@ -431,4 +431,5 @@
     <string name="ForceForwardStatusMediaGroupFallback">Отправка резервной группой медиа</string>
     <string name="ForceForwardStatusMediaReady">Медиа готовы</string>
     <string name="ForceForwardStatusStopping">Остановка пересылки</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">Остановка текущей партии</string></resources>
+    <string name="ForceForwardStatusStoppingCurrentBatch">Остановка текущей партии</string>
+    <string name="ForceFontWeightFallback">Принудительный фолбэк насыщенности шрифта</string></resources>

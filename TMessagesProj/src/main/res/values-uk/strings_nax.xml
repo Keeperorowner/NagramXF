@@ -506,4 +506,5 @@
     <string name="RestartPluginSystemToApplyUpdate">Оновлення завантажено, перезапустіть механізм плагінів, щоб застосувати</string>
     <string name="RestoreSdkFromApk">Відновити SDK з APK</string>
     <string name="PluginsRestartEngine">Перезапустити механізм плагінів</string>
+    <string name="ForceFontWeightFallback">Примусовий фолбек насиченості шрифту</string>
 </resources>

@@ -87,6 +87,7 @@ public class NekoConfig {
     public static ConfigItem tabletMode = addConfig("TabletMode", configTypeInt, 0);
 
     public static ConfigItem typeface = addConfig("TypefaceUseDefault", configTypeBool, false);
+    public static ConfigItem forceFontWeightFallback = addConfig("forceFontWeightFallback", configTypeBool, false);
     public static ConfigItem nameOrder = addConfig("NameOrder", configTypeInt, 1);
     public static ConfigItem mapPreviewProvider = addConfig("MapPreviewProvider", configTypeInt, 0);
     public static ConfigItem hideProxySponsorChannel = addConfig("HideProxySponsorChannel", configTypeBool, false);

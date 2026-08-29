@@ -107,6 +107,7 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
     // N-Config
     private final AbstractConfigCell headerNConfig = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.N_Config)));
     private final AbstractConfigCell showRPCErrorRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowRPCError()));
+    private final ConfigCellTextCheck forceFontWeightFallbackRow = (ConfigCellTextCheck) cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.forceFontWeightFallback, null, getString(R.string.ForceFontWeightFallback)));
     private final AbstractConfigCell disableChoosingStickerRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableChoosingSticker));
     private final AbstractConfigCell disableFilteringRow = cellGroup.appendCell(new ConfigCellCustom("SensitiveDisableFiltering", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
     private final AbstractConfigCell devicePerformanceClassRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getPerformanceClass(), new String[]{
@@ -133,6 +134,7 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
             cellGroup.rows.remove(springAnimationCrossfadeRow);
         }
         checkStoriesRows();
+        updateForceFontWeightFallbackEnabled();
         addRowsToMap(cellGroup);
     }
 
@@ -174,6 +176,8 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getPlayerDecoder().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
+            } else if (key.equals(NekoConfig.forceFontWeightFallback.getKey())) {
+                tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getHideStoriesFromHeader().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             }
@@ -186,6 +190,11 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
     public void onResume() {
         super.onResume();
         checkSensitive();
+        updateForceFontWeightFallbackEnabled();
+    }
+
+    private void updateForceFontWeightFallbackEnabled() {
+        forceFontWeightFallbackRow.setEnabled(NekoConfig.typeface.Bool());
     }
 
     @Override

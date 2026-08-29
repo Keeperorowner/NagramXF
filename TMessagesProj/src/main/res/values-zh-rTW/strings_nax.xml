@@ -434,5 +434,6 @@
     <string name="ForceForwardStatusMediaReady">媒體已就緒</string>
     <string name="ForceForwardStatusStopping">正在停止轉傳</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">正在停止目前批次</string>
+    <string name="ForceFontWeightFallback">強制字體粗細回退</string>
 
 </resources>

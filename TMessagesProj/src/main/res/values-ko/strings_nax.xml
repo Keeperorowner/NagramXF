@@ -501,4 +501,5 @@
     <string name="PluginsSafeModeShortcut">안전 모드로 시작</string>
     <string name="RestartPluginSystemToApplyUpdate">업데이트를 불러왔습니다. 적용하려면 플러그인 엔진을 다시 시작하세요.</string>
     <string name="RestoreSdkFromApk">APK에서 SDK 복원</string>
-    <string name="PluginsRestartEngine">플러그인 엔진 다시 시작</string></resources>
+    <string name="PluginsRestartEngine">플러그인 엔진 다시 시작</string>
+    <string name="ForceFontWeightFallback">글꼴 두께 폴백 강제 적용</string></resources>

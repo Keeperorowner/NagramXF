@@ -522,4 +522,6 @@
     <string name="PluginsSafeModeShortcut">Start with safe mode</string>
     <string name="RestartPluginSystemToApplyUpdate">Update loaded, restart Plugin Engine to apply</string>
     <string name="RestoreSdkFromApk">Restore SDK from APK</string>
-    <string name="PluginsRestartEngine">Restart Plugin Engine</string></resources>
+    <string name="PluginsRestartEngine">Restart Plugin Engine</string>
+    <string name="ForceFontWeightFallback">Force Font Weight Fallback</string>
+</resources>

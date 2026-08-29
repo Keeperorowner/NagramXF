@@ -22,6 +22,7 @@ import org.telegram.ui.Components.TypefaceSpan;
 
 import java.util.List;
 
+import tw.nekomimi.nekogram.NekoConfig;
 import xyz.nextalone.nagram.NaConfig;
 
 public class TypefaceHelper {
@@ -59,10 +60,18 @@ public class TypefaceHelper {
 
     public static Typeface createTypeface(String assetPath) {
         return switch (assetPath) {
-            case AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM ->
-                    isMediumWeightSupported() ? Typeface.create("sans-serif-medium", Typeface.NORMAL) : Typeface.create("sans-serif", Typeface.BOLD);
-            case AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC ->
-                    isMediumWeightSupported() ? Typeface.create("sans-serif-medium", Typeface.ITALIC) : Typeface.create("sans-serif", Typeface.BOLD_ITALIC);
+            case AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM -> {
+                if (NekoConfig.forceFontWeightFallback.Bool()) {
+                    yield createTypeface(700, false);
+                }
+                yield isMediumWeightSupported() ? Typeface.create("sans-serif-medium", Typeface.NORMAL) : Typeface.create("sans-serif", Typeface.BOLD);
+            }
+            case AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM_ITALIC -> {
+                if (NekoConfig.forceFontWeightFallback.Bool()) {
+                    yield createTypeface(700, true);
+                }
+                yield isMediumWeightSupported() ? Typeface.create("sans-serif-medium", Typeface.ITALIC) : Typeface.create("sans-serif", Typeface.BOLD_ITALIC);
+            }
             case AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD ->
                     createTypeface(800, false);
             case AndroidUtilities.TYPEFACE_RCONDENSED_BOLD ->
@@ -127,6 +136,9 @@ public class TypefaceHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             return Typeface.create(null, weight, italic);
         }
+        if (weight == 700) {
+            return Typeface.create("sans-serif", italic ? Typeface.BOLD_ITALIC : Typeface.BOLD);
+        }
         var family = switch (weight) {
             case 800 -> "sans-serif-black";
             case 500 -> "sans-serif-medium";
@@ -145,7 +157,8 @@ public class TypefaceHelper {
         }
         var builder = new SpannableStringBuilder(title);
         builder.setSpan(new LeadingMarginSpan.Standard(dp(2), 0), 0, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        builder.setSpan(new TypefaceSpan(null, 0, Theme.key_telegram_color_dialogsLogo, null), 0, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        Typeface titleTypeface = NekoConfig.typeface.Bool() && NekoConfig.forceFontWeightFallback.Bool() ? createTypeface(700, false) : null;
+        builder.setSpan(new TypefaceSpan(titleTypeface, 0, Theme.key_telegram_color_dialogsLogo, null), 0, builder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return builder;
     }
 

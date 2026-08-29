@@ -428,4 +428,5 @@
     <string name="ForceForwardStatusMediaGroupFallback">メディアグループにフォールバックして転送中</string>
     <string name="ForceForwardStatusMediaReady">メディア準備完了</string>
     <string name="ForceForwardStatusStopping">転送を停止中</string>
-    <string name="ForceForwardStatusStoppingCurrentBatch">現在のバッチを停止中</string></resources>
+    <string name="ForceForwardStatusStoppingCurrentBatch">現在のバッチを停止中</string>
+    <string name="ForceFontWeightFallback">フォントウェイトのフォールバックを強制</string></resources>
