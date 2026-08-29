@@ -9574,7 +9574,7 @@ public class ChatActivity extends BaseFragment implements
             }
         }
 
-        if (getDialogId() == getUserConfig().getClientUserId()) {
+        if (getDialogId() == getUserConfig().getClientUserId() && !NaConfig.INSTANCE.getDisableFavoriteSearchEmojiTags().Bool()) {
             actionBarSearchTags = new SearchTagsList(context, ChatActivity.this, currentAccount, getSavedDialogId(), themeDelegate) {
                 @Override
                 protected boolean setFilter(ReactionsLayoutInBubble.VisibleReaction reaction) {
@@ -26583,6 +26583,9 @@ public class ChatActivity extends BaseFragment implements
         }
         sendAsPeersObj = getMessagesController().getSendAsPeers(dialog_id);
         if (sendAsPeersObj != null) {
+            if (NaConfig.INSTANCE.getDisableNonPremiumChannelChatShow().Bool()) {
+                sendAsPeersObj.peers.removeIf(peer -> peer.premium_required);
+            }
             chatActivityEnterView.updateSendAsButton(animatedUpdate);
         }
     }
@@ -31297,7 +31300,7 @@ public class ChatActivity extends BaseFragment implements
                 }
                 addToContactsButton.setTag(null);
                 addToContactsButton.setVisibility(View.VISIBLE);
-            } else if (showShare && !user.self) {
+            } else if (showShare && !user.self && !NaConfig.INSTANCE.getDisablePhoneSharePrompt().Bool()) {
                 createTopPanel();
                 if (topChatPanelView == null) {
                     return;
@@ -34157,7 +34160,7 @@ public class ChatActivity extends BaseFragment implements
                         sheet.show();
                     }));
                 }
-                if (isReactionsAvailable && (!tags || (!getMessagesController().premiumFeaturesBlocked() && (getUserConfig().isPremium())))) {
+                if (isReactionsAvailable && (!tags || (!getMessagesController().premiumFeaturesBlocked() && (getUserConfig().isPremium() && !NaConfig.INSTANCE.getDisablePremiumFavoriteEmojiTags().Bool())))) {
                     int pad = 22;
                     int sPad = 24;
                     reactionsLayout.setPadding(dp(4) + (LocaleController.isRTL ? 0 : sPad), dp(4), dp(4) + (LocaleController.isRTL ? sPad : 0), dp(pad));

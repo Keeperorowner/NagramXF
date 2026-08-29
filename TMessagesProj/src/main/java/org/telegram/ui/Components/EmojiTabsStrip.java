@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import xyz.nextalone.nagram.NaConfig;
 
 public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
 
@@ -532,7 +533,7 @@ public class EmojiTabsStrip extends ScrollableHorizontalScrollView {
                 break;
             }
         }
-        if (NekoConfig.disableTrending.Bool() && !isPremium && !hasInstalledUnlockedPacks) {
+        if (NaConfig.INSTANCE.getDisableFeatuerdEmojis().Bool() && !isPremium && !hasInstalledUnlockedPacks) {
             return;
         }
         int childCount = contentView.getChildCount() - packsIndexStart - (settingsTab != null ? 1 : 0);

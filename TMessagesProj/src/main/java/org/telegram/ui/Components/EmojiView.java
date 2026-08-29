@@ -5584,7 +5584,7 @@ public class EmojiView extends FrameLayout implements
         if (trendingAdapter != null) {
             trendingAdapter.notifyDataSetChanged();
         }
-        if (!NekoConfig.disableTrending.Bool() && !featured.isEmpty() && (!BuildVars.DEBUG_PRIVATE_VERSION || featuredStickerSets.isEmpty() || preferences.getLong("featured_hidden", 0) == featured.get(0).set.id)) {
+        if (!NaConfig.INSTANCE.getDisableFeaturedStickers().Bool() && !featured.isEmpty() && (!BuildVars.DEBUG_PRIVATE_VERSION || featuredStickerSets.isEmpty() || preferences.getLong("featured_hidden", 0) == featured.get(0).set.id)) {
             final int id = mediaDataController.getUnreadStickerSets().isEmpty() ? 2 : 3;
             final StickerTabView trendingStickersTabView = stickersTab.addStickerIconTab(id, stickerIcons[id]);
             trendingStickersTabView.textView.setText(getString(R.string.FeaturedStickersShort));
@@ -5768,7 +5768,7 @@ public class EmojiView extends FrameLayout implements
             gifTabs.addIconTab(0, gifIcons[0]).setContentDescription(getString(R.string.RecentStickers));
         }
 
-        if (!NekoConfig.disableTrending.Bool()) {
+        if (!NaConfig.INSTANCE.getDisableFeaturedGifs().Bool()) {
             gifTrendingTabNum = gifTabsCount++;
             gifTabs.addIconTab(1, gifIcons[1]).setContentDescription(getString(R.string.FeaturedGifs));
         }
@@ -8833,6 +8833,7 @@ public class EmojiView extends FrameLayout implements
         }
 
         public void loadTrendingGifs() {
+            if (NaConfig.INSTANCE.getDisableFeaturedGifs().Bool()) return;
             search("", "", true, true, true);
         }
 

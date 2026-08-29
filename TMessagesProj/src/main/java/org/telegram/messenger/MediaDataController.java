@@ -2325,7 +2325,7 @@ public class MediaDataController extends BaseController {
     }
 
     public void loadFeaturedStickers(boolean emoji, boolean cache) {
-        if (loadingFeaturedStickers[emoji ? 1 : 0] || NekoConfig.disableTrending.Bool()) {
+        if (loadingFeaturedStickers[emoji ? 1 : 0] || NaConfig.INSTANCE.getDisableFeaturedStickers().Bool()) {
             return;
         }
         loadingFeaturedStickers[emoji ? 1 : 0] = true;

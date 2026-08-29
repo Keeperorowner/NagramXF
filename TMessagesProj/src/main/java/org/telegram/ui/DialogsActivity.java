@@ -6306,7 +6306,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 MessagesController.getInstance(currentAccount).removeSuggestion(0, "SETUP_PASSKEY");
                 updateDialogsHint();
             });
-        } else if (BuildConfig.DEBUG && folderId == 0 && communityId == 0 && getMessagesController().pendingSuggestions.contains("PREMIUM_GRACE")) {
+        } else if (BuildConfig.DEBUG && folderId == 0 && communityId == 0 && getMessagesController().pendingSuggestions.contains("PREMIUM_GRACE") && !NaConfig.INSTANCE.getDisablePremiumExpiring().Bool()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setOnClickListener(v -> {
                 Browser.openUrl(getContext(), getMessagesController().premiumManageSubscriptionUrl);
@@ -6338,7 +6338,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 MessagesController.getInstance(currentAccount).removeSuggestion(0, suggestion.suggestion);
                 updateDialogsHint();
             });
-        } else if (BuildConfig.DEBUG && isStarsSubscriptionHintVisible()) {
+        } else if (BuildConfig.DEBUG && isStarsSubscriptionHintVisible() && !NaConfig.INSTANCE.getDisableStarsSubscription().Bool()) {
             StarsController c = StarsController.getInstance(currentAccount);
             dialogsHintCellVisible = true;
             StringBuilder s = new StringBuilder();
@@ -6376,7 +6376,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 MessagesController.getInstance(currentAccount).removeSuggestion(0, "STARS_SUBSCRIPTION_LOW_BALANCE");
                 updateDialogsHint();
             });
-        } else if (folderId == 0 && communityId == 0 && !getMessagesController().premiumPurchaseBlocked() && BirthdayController.getInstance(currentAccount).contains() && !getMessagesController().dismissedSuggestions.contains("BIRTHDAY_CONTACTS_TODAY")) {
+        } else if (folderId == 0 && communityId == 0 && !getMessagesController().premiumPurchaseBlocked() && BirthdayController.getInstance(currentAccount).contains() && !getMessagesController().dismissedSuggestions.contains("BIRTHDAY_CONTACTS_TODAY") && !NaConfig.INSTANCE.getDisableBirthdayContact().Bool()) {
             BirthdayController.BirthdayState state = BirthdayController.getInstance(currentAccount).getState();
             ArrayList<TLRPC.User> users = state.today;
             dialogsHintCellVisible = true;
@@ -6484,7 +6484,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     .setDuration(Bulletin.DURATION_PROLONG)
                     .show();
             });
-        } else if (isPremiumChristmasHintVisible()) {
+        } else if (isPremiumChristmasHintVisible() && !NaConfig.INSTANCE.getDisablePremiumChristmas().Bool()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setOnClickListener(v -> UserSelectorBottomSheet.open());
             dialogsHintCell.setText(Emoji.replaceEmoji(AndroidUtilities.replaceSingleTag(
@@ -6501,7 +6501,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         .setDuration(Bulletin.DURATION_PROLONG)
                         .show();
             });
-        } else if (isPremiumRestoreHintVisible()) {
+        } else if (isPremiumRestoreHintVisible() && !NaConfig.INSTANCE.getDisablePremiumRestore().Bool()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setOnClickListener(v -> {
                 presentFragment(new PremiumPreviewFragment("dialogs_hint").setSelectAnnualByDefault());
@@ -6519,7 +6519,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     ),
                     LocaleController.getString(R.string.RestorePremiumHintMessage)
             );
-        } else if (isPremiumHintVisible()) {
+        } else if (isPremiumHintVisible() && !NaConfig.INSTANCE.getDisablePremiumUpgrade().Bool()) {
             dialogsHintCellVisible = true;
             dialogsHintCell.setOnClickListener(v -> {
                 presentFragment(new PremiumPreviewFragment("dialogs_hint").setSelectAnnualByDefault());

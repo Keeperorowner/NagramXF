@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Pillstack -->
     <string name="PillStackPills">Панель капсул</string>
@@ -343,4 +343,14 @@
     <string name="StickerShapeRoundedMsg">Сообщение</string>
     <string name="WeatherPickLocationHint">Нажмите, чтобы выбрать место на карте</string>
 
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">Популярные стикеры</string>
+    <string name="DisableTrendingFeaturedGifs">Популярные GIF</string>
+    <string name="DisableTrendingFeaturedEmojis">Популярные Premium-эмодзи</string>
+    <string name="DisableTrendingPremiumHints">Реклама Premium</string>
+    <string name="DisableTrendingBirthday">Напоминание о днях рождения</string>
+    <string name="DisableTrendingEmojiTags">Предложения тегов эмодзи</string>
+    <string name="DisableTrendingChannelPremiumBanner">Баннер платной отправки в канале</string>
+    <string name="DisableTrendingPhoneShare">Предложение поделиться номером телефона</string>
+    <string name="DisableTrendingGiftsPremium">Подарки и платные элементы</string>
 </resources>

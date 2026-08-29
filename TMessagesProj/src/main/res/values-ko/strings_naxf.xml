@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Pillstack (ported from exteragram/ayuGram) -->
     <string name="PillStackPills">필 스택</string>
@@ -268,4 +268,14 @@
     <string name="StickerShape">스티커 모양</string>
     <string name="StickerShapeRounded">둥글게</string>
     <string name="StickerShapeRoundedMsg">메시지</string>
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">인기 스티커</string>
+    <string name="DisableTrendingFeaturedGifs">인기 GIF</string>
+    <string name="DisableTrendingFeaturedEmojis">인기 Premium 이모티콘</string>
+    <string name="DisableTrendingPremiumHints">Premium 업그레이드 알림</string>
+    <string name="DisableTrendingBirthday">연락처 생일 알림</string>
+    <string name="DisableTrendingEmojiTags">이모티콘 태그 제안</string>
+    <string name="DisableTrendingChannelPremiumBanner">채널 유료 게시 배너</string>
+    <string name="DisableTrendingPhoneShare">전화번호 공유 알림</string>
+    <string name="DisableTrendingGiftsPremium">선물 및 유료 요소</string>
 </resources>

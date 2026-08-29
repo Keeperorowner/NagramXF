@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Pillstack -->
     <string name="PillStackPills">カプセルスタック</string>
@@ -343,4 +343,14 @@
     <string name="ImportModeMerge">統合</string>
     <string name="ImportModeReplace">置き換え</string>
 
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">人気のステッカー</string>
+    <string name="DisableTrendingFeaturedGifs">人気のGIF</string>
+    <string name="DisableTrendingFeaturedEmojis">人気のPremium絵文字</string>
+    <string name="DisableTrendingPremiumHints">Premiumアップグレード案内</string>
+    <string name="DisableTrendingBirthday">連絡先の誕生日通知</string>
+    <string name="DisableTrendingEmojiTags">絵文字タグの提案</string>
+    <string name="DisableTrendingChannelPremiumBanner">チャンネルのプレミアム必須バナー</string>
+    <string name="DisableTrendingPhoneShare">電話番号共有の案内</string>
+    <string name="DisableTrendingGiftsPremium">ギフトと有料要素</string>
 </resources>

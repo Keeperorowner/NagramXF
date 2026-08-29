@@ -256,4 +256,14 @@
     <string name="StickerShapeRounded">Заокруглена</string>
     <string name="StickerShapeRoundedMsg">Повідомлення</string>
     <string name="CancelForwarding">Скасувати пересилання</string>
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">Популярні стікери</string>
+    <string name="DisableTrendingFeaturedGifs">Популярні GIF</string>
+    <string name="DisableTrendingFeaturedEmojis">Популярні Premium-емодзі</string>
+    <string name="DisableTrendingPremiumHints">Реклама Premium</string>
+    <string name="DisableTrendingBirthday">Нагадування про дні народження</string>
+    <string name="DisableTrendingEmojiTags">Пропозиції тегів емодзі</string>
+    <string name="DisableTrendingChannelPremiumBanner">Банер платної відправки в каналі</string>
+    <string name="DisableTrendingPhoneShare">Пропозиція поділитися номером телефону</string>
+    <string name="DisableTrendingGiftsPremium">Подарунки та платні елементи</string>
 </resources>

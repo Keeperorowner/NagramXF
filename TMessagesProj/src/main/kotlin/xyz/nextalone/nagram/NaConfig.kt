@@ -9,6 +9,7 @@ import org.telegram.messenger.BuildVars
 import tw.nekomimi.nekogram.NekoConfig
 import tw.nekomimi.nekogram.config.ConfigItem
 import tw.nekomimi.nekogram.config.ConfigItemKeyLinked
+import tw.nekomimi.nekogram.config.ConfigItemKeyLinkedGroup
 import tw.nekomimi.nekogram.llm.utils.LlmUrlNormalizer
 import java.io.ByteArrayInputStream
 import java.io.ObjectInputStream
@@ -371,6 +372,190 @@ object NaConfig {
             "DisableStories",
             ConfigItem.configTypeBool,
             false
+        )
+    private val disableTrendingFlags =
+        addConfig(
+            "DisableTrendingFlags",
+            ConfigItem.configTypeInt,
+            0x1C0
+        )
+    val disableStarsSubscription =
+        addConfig(
+            "DisableStarsSubscription",
+            disableTrendingFlags,
+            0,
+            false
+        )
+    val disablePremiumExpiring =
+        addConfig(
+            "DisablePremiumExpiring",
+            disableTrendingFlags,
+            1,
+            false
+        )
+    val disablePremiumUpgrade =
+        addConfig(
+            "DisablePremiumUpgrade",
+            disableTrendingFlags,
+            2,
+            false
+        )
+    val disablePremiumChristmas =
+        addConfig(
+            "DisablePremiumChristmas",
+            disableTrendingFlags,
+            3,
+            false
+        )
+    val disableBirthdayContact =
+        addConfig(
+            "DisableBirthdayContact",
+            disableTrendingFlags,
+            4,
+            false
+        )
+    val disablePremiumRestore =
+        addConfig(
+            "DisablePremiumRestore",
+            disableTrendingFlags,
+            5,
+            false
+        )
+    val disableFeatuerdEmojis =
+        addConfig(
+            "DisableFeatuerdEmojis",
+            disableTrendingFlags,
+            6,
+            false
+        )
+    val disableFeaturedStickers =
+        addConfig(
+            "DisableFeaturedStickers",
+            disableTrendingFlags,
+            7,
+            false
+        )
+    val disableFeaturedGifs =
+        addConfig(
+            "DisableFeaturedGifs",
+            disableTrendingFlags,
+            8,
+            false
+        )
+    val disablePremiumFavoriteEmojiTags =
+        addConfig(
+            "DisablePremiumFavoriteEmojiTags",
+            disableTrendingFlags,
+            9,
+            false
+        )
+    val disableFavoriteSearchEmojiTags =
+        addConfig(
+            "DisableFavoriteSearchEmojiTags",
+            disableTrendingFlags,
+            10,
+            false
+        )
+    val disableNonPremiumChannelChatShow =
+        addConfig(
+            "DisableNonPremiumChannelChatShow",
+            disableTrendingFlags,
+            11,
+            false
+        )
+    val disableShortcutTagActions =
+        addConfig(
+            "DisableShortcutTagActions",
+            disableTrendingFlags,
+            12,
+            false
+        )
+    val disablePhoneSharePrompt =
+        addConfig(
+            "DisablePhoneSharePrompt",
+            disableTrendingFlags,
+            13,
+            false
+        )
+    val disablePremiumSendTodo =
+        addConfig(
+            "DisablePremiumSendTodo",
+            disableTrendingFlags,
+            14,
+            false
+        )
+    val disableEmptyStarButton =
+        addConfig(
+            "DisableEmptyStarButton",
+            disableTrendingFlags,
+            15,
+            false
+        )
+    val disableGifts =
+        addConfig(
+            "DisableGifts",
+            disableTrendingFlags,
+            16,
+            false
+        )
+    val disableTrendingFeaturedStickersGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingFeaturedStickers",
+            listOf(disableFeaturedStickers)
+        )
+    val disableTrendingFeaturedGifsGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingFeaturedGifs",
+            listOf(disableFeaturedGifs)
+        )
+    val disableTrendingFeaturedEmojisGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingFeaturedEmojis",
+            listOf(disableFeatuerdEmojis)
+        )
+    val disableTrendingPremiumHintsGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingPremiumHints",
+            listOf(
+                disablePremiumUpgrade,
+                disablePremiumExpiring,
+                disablePremiumRestore,
+                disablePremiumChristmas,
+                disableStarsSubscription
+            )
+        )
+    val disableTrendingBirthdayGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingBirthday",
+            listOf(disableBirthdayContact)
+        )
+    val disableTrendingEmojiTagsGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingEmojiTags",
+            listOf(
+                disableFavoriteSearchEmojiTags,
+                disablePremiumFavoriteEmojiTags,
+                disableShortcutTagActions
+            )
+        )
+    val disableTrendingChannelPremiumBannerGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingChannelPremiumBanner",
+            listOf(disableNonPremiumChannelChatShow)
+        )
+    val disableTrendingPhoneShareGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingPhoneShare",
+            listOf(disablePhoneSharePrompt)
+        )
+    val disableTrendingGiftsPremiumGroup =
+        ConfigItemKeyLinkedGroup(
+            "DisableTrendingGiftsPremium",
+            listOf(
+                disableGifts,
+                disableEmptyStarButton,
+                disablePremiumSendTodo
+            )
         )
     val useLocalQuoteColorData =
         addConfig(
@@ -1761,6 +1946,12 @@ object NaConfig {
         if (ApplicationLoader.applicationContext == null) {
             return
         }
+        if (!getPreferences().contains(disableTrendingFlags.key) && getPreferences().contains("DisableTrending")) {
+            val legacy = getPreferences().getBoolean("DisableTrending", true)
+            val flags = if (legacy) 0x1C0 else 0
+            disableTrendingFlags.setConfigInt(flags)
+            getPreferences().edit { remove("DisableTrending") }
+        }
         if (!translatorModeWithOriginalMigrated.Bool()) {
             if (getPreferences().contains(translatorMode.key)) {
                 translatorMode.setConfigInt(
@@ -1853,7 +2044,7 @@ object NaConfig {
     @Suppress("SameParameterValue")
     private fun addConfig(
         k: String, t: ConfigItem, d: Int, e: Any?
-    ): ConfigItem {
+    ): ConfigItemKeyLinked {
         val a = ConfigItemKeyLinked(
             k,
             t,
@@ -1946,7 +2137,7 @@ object NaConfig {
                 }
                 if (o.type == ConfigItem.configTypeBoolLinkInt) {
                     o as ConfigItemKeyLinked
-                    o.changedFromKeyLinked(getPreferences().getInt(o.keyLinked.key, 0))
+                    o.changedFromKeyLinked(getPreferences().getInt(o.keyLinked.key, o.keyLinked.defaultValue as Int))
                 }
             }
             configLoaded = true

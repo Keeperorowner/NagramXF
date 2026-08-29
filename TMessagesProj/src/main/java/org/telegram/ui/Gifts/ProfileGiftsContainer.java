@@ -10,6 +10,8 @@ import static org.telegram.messenger.Utilities.clamp01;
 import static org.telegram.ui.Stars.StarGiftSheet.getGiftName;
 import static org.telegram.ui.Stars.StarGiftSheet.isMineWithActions;
 
+import xyz.nextalone.nagram.NaConfig;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -1690,6 +1692,9 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public int getGiftsCount() {
+        if (NaConfig.INSTANCE.getDisableGifts().Bool()) {
+            return 0;
+        }
         final Page page = getCurrentPage();
         if (page == null || page.list == list) {
             if (list != null && list.totalCount > 0) return list.totalCount;

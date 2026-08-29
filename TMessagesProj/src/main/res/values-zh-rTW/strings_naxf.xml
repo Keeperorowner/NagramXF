@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Pillstack -->
     <string name="PillStackPills">膠囊堆疊</string>
@@ -344,4 +344,14 @@
     <string name="StickerShapeRoundedMsg">訊息</string>
     <string name="WeatherPickLocationHint">輕觸以在地圖上選擇位置</string>
 
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">熱門貼紙</string>
+    <string name="DisableTrendingFeaturedGifs">熱門 GIF</string>
+    <string name="DisableTrendingFeaturedEmojis">熱門 Premium 表情</string>
+    <string name="DisableTrendingPremiumHints">Premium 推銷提示</string>
+    <string name="DisableTrendingBirthday">聯絡人生日提示</string>
+    <string name="DisableTrendingEmojiTags">Emoji 標籤推銷</string>
+    <string name="DisableTrendingChannelPremiumBanner">頻道付費發言橫幅</string>
+    <string name="DisableTrendingPhoneShare">分享手機號碼提示</string>
+    <string name="DisableTrendingGiftsPremium">禮物與付費元素</string>
 </resources>

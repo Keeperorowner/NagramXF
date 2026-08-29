@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Pillstack -->
     <string name="PillStackPills">胶囊栈</string>
@@ -258,4 +258,14 @@
     <string name="MainMenuAddDivider">添加分隔线</string>
     <string name="MainMenuDivider">分隔线</string>
     <string name="MainMenuItemsInfo">长按拖拽可排序，点按项目可将其隐藏，点按已隐藏项目可将其恢复，点按分隔线可将其移除。</string>
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">热门贴纸</string>
+    <string name="DisableTrendingFeaturedGifs">热门 GIF</string>
+    <string name="DisableTrendingFeaturedEmojis">热门 Premium 表情</string>
+    <string name="DisableTrendingPremiumHints">Premium 推销提示</string>
+    <string name="DisableTrendingBirthday">联系人生日提示</string>
+    <string name="DisableTrendingEmojiTags">Emoji 标签推销</string>
+    <string name="DisableTrendingChannelPremiumBanner">频道付费发言横幅</string>
+    <string name="DisableTrendingPhoneShare">分享手机号提示</string>
+    <string name="DisableTrendingGiftsPremium">礼物与付费元素</string>
 </resources>

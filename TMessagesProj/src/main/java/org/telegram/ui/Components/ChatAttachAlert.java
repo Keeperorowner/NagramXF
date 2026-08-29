@@ -6211,6 +6211,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 pollsEnabled = UserObject.isBot(user) || UserObject.isUserSelf(user);
                 todoEnabled = !(baseFragment instanceof ChatActivity) || ((ChatActivity) baseFragment).getCurrentEncryptedChat() == null;
             }
+            todoEnabled = todoEnabled && (!NaConfig.INSTANCE.getDisablePremiumSendTodo().Bool() || UserConfig.getInstance(currentAccount).isPremium());
         }
 
         if (restrictEphemeralMessageTypes) {

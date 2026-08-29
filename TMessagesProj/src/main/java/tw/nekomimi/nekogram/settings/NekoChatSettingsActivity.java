@@ -181,7 +181,17 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell deleteChatForBothSidesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDeleteChatForBothSides()));
     private final AbstractConfigCell showSeconds = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.showSeconds));
     private final AbstractConfigCell showFullAboutRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowFullAbout()));
-    private final AbstractConfigCell disableTrendingRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableTrending));
+    private final AbstractConfigCell disableTrendingRow = cellGroup.appendCell(new ConfigCellTextCheck2("DisableTrending", getString(R.string.DisableTrending), new ArrayList<>() {{
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingFeaturedStickersGroup(), null, getString(R.string.DisableTrendingFeaturedStickers), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingFeaturedGifsGroup(), null, getString(R.string.DisableTrendingFeaturedGifs), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingFeaturedEmojisGroup(), null, getString(R.string.DisableTrendingFeaturedEmojis), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingPremiumHintsGroup(), null, getString(R.string.DisableTrendingPremiumHints), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingBirthdayGroup(), null, getString(R.string.DisableTrendingBirthday), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingEmojiTagsGroup(), null, getString(R.string.DisableTrendingEmojiTags), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingChannelPremiumBannerGroup(), null, getString(R.string.DisableTrendingChannelPremiumBanner), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingPhoneShareGroup(), null, getString(R.string.DisableTrendingPhoneShare), 0, true));
+        add(new ConfigCellCheckBox(NaConfig.INSTANCE.getDisableTrendingGiftsPremiumGroup(), null, getString(R.string.DisableTrendingGiftsPremium), 0, true));
+    }}, null));
     private final AbstractConfigCell disableZalgoSymbolsRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getZalgoFilter(), getString(R.string.ZalgoFilterNotice)));
     private final AbstractConfigCell leftButtonActionRow = cellGroup.appendCell(new ConfigCellSelectBox(null, NaConfig.INSTANCE.getLeftBottomButton(), new String[]{
             getString(R.string.NoQuoteForward),
