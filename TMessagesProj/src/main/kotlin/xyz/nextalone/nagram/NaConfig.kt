@@ -6,6 +6,7 @@ import androidx.core.content.edit
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ApplicationLoader
 import org.telegram.messenger.BuildVars
+import org.telegram.messenger.SharedConfig
 import tw.nekomimi.nekogram.NekoConfig
 import tw.nekomimi.nekogram.config.ConfigItem
 import tw.nekomimi.nekogram.config.ConfigItemKeyLinked
@@ -2011,6 +2012,9 @@ object NaConfig {
                 remove("MainTabsHideBottomBar")
                 remove("MainTabsHideOnScroll")
             }
+        }
+        if (!getPreferences().contains(strokeOnViews.key)) {
+            strokeOnViews.changed(SharedConfig.getDevicePerformanceClass() != SharedConfig.PERFORMANCE_CLASS_LOW)
         }
 
         val currentLlmApiUrl = llmApiUrl.String()
