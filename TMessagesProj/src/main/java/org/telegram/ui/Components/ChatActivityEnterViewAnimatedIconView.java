@@ -111,6 +111,14 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
         return currentState;
     }
 
+    public void invalidateStateCache() {
+        stateMap.clear();
+        animatingState = null;
+        if (currentState != null) {
+            setState(currentState, false);
+        }
+    }
+
     private TransitState getAnyState(State from) {
         for (TransitState transitState : TransitState.values()) {
             if (transitState.firstState == from) {

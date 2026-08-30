@@ -142,6 +142,7 @@ public class RecordedAudioPlayerView extends View {
     private final RectF badgeRect = new RectF();
     private final RectF handleRect = new RectF();
     private final Path clipPath = new Path();
+    public boolean roundy;
 
     private final RectF badgeClickRect = new RectF();
     private final RectF leftHandleClickRect = new RectF();
@@ -235,7 +236,7 @@ public class RecordedAudioPlayerView extends View {
 
         canvas.save();
         clipPath.rewind();
-        clipPath.addRoundRect(rect, dp(8), dp(8), Path.Direction.CW);
+        clipPath.addRoundRect(rect, dp(roundy ? 24 : 8), dp(roundy ? 24 : 8), Path.Direction.CW);
         canvas.clipPath(clipPath);
 
         canvas.drawRect(rect.left, rect.top, left - dp(1.33f), rect.bottom, darkerBackgroundPaint);
