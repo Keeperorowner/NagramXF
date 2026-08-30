@@ -4613,13 +4613,6 @@ public class ChatActivity extends BaseFragment implements
         avatarContainer = new ChatAvatarContainer(context, this, currentEncryptedChat != null, themeDelegate) {
             @Override
             protected boolean onAvatarClick() {
-                if (currentUser != null && currentUser.linked_community_id != 0) {
-                    showDialog(new CommunitySheet(ChatActivity.this, currentUser.linked_community_id));
-                    return true;
-                } else if (currentChat != null && currentChat.linked_community_id != 0) {
-                    showDialog(new CommunitySheet(ChatActivity.this, currentChat.linked_community_id));
-                    return true;
-                }
                 if (isTitleCentered()) {
                     if (editTextItem != null && editTextItem.getTag() != null) {
                         checkEditTextItemMenu();
@@ -4634,6 +4627,12 @@ public class ChatActivity extends BaseFragment implements
                         headerItem.performClick();
                         return true;
                     }
+                } else if (currentUser != null && currentUser.linked_community_id != 0) {
+                    showDialog(new CommunitySheet(ChatActivity.this, currentUser.linked_community_id));
+                    return true;
+                } else if (currentChat != null && currentChat.linked_community_id != 0) {
+                    showDialog(new CommunitySheet(ChatActivity.this, currentChat.linked_community_id));
+                    return true;
                 }
                 return super.onAvatarClick();
             }

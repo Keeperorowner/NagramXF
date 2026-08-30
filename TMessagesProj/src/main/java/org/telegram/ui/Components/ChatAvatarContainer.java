@@ -930,10 +930,11 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
         }
         if (communityItem != null) {
+            final int communityItemLeft = isCentered() ? avatarLeft + dp(28f) : leftPadding + dp(29f);
             communityItem.layout(
-                leftPadding + dp(29f),
+                communityItemLeft,
                 viewTop + dp(27.33f),
-                leftPadding + dp(29f) + communityItem.getMeasuredWidth(),
+                communityItemLeft + communityItem.getMeasuredWidth(),
                 viewTop + dp(27.33f) + communityItem.getMeasuredHeight());
         }
         if (timeItem != null) {
@@ -945,11 +946,12 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                 viewTop - dp(8) + timeItem.getMeasuredHeight()
             );
         }
+        final int starItemLeft = isCentered() ? avatarLeft + dp(27f) : leftPadding + dp(28f);
         if (starBgItem != null) {
-            starBgItem.layout(leftPadding + dp(28), viewTop + dp(24), leftPadding + dp(28) + starBgItem.getMeasuredWidth(), viewTop + dp(24) + starBgItem.getMeasuredHeight());
+            starBgItem.layout(starItemLeft, viewTop + dp(24), starItemLeft + starBgItem.getMeasuredWidth(), viewTop + dp(24) + starBgItem.getMeasuredHeight());
         }
         if (starFgItem != null) {
-            starFgItem.layout(leftPadding + dp(28), viewTop + dp(24), leftPadding + dp(28) + starFgItem.getMeasuredWidth(), viewTop + dp(24) + starFgItem.getMeasuredHeight());
+            starFgItem.layout(starItemLeft, viewTop + dp(24), starItemLeft + starFgItem.getMeasuredWidth(), viewTop + dp(24) + starFgItem.getMeasuredHeight());
         }
         if (subtitleTextView != null) {
             subtitleTextView.layout(l, subtitleTop, l + subtitleTextView.getMeasuredWidth(), subtitleTop + subtitleTextView.getTextHeight());
@@ -996,7 +998,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
     public void setCommunityItemVisible(boolean visible) {
         if (communityItem != null) {
-            communityItem.setVisibility(visible && !avatarImageIsHidden ? VISIBLE : GONE);
+            communityItem.setVisibility(visible && !avatarImageIsHidden && !isCentered() ? VISIBLE : GONE);
         }
     }
 
