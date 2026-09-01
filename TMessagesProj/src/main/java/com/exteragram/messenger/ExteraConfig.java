@@ -29,6 +29,8 @@ public final class ExteraConfig {
     public static boolean pluginsPySdkBetaVersions;
     public static long sdkUpdateScheduleTimestamp;
     public static Set<String> pinnedPlugins = Collections.emptySet();
+    public static boolean showFeedTab;
+    public static boolean showFeedUnreadCounter = true;
 
     private ExteraConfig() {
     }
@@ -72,6 +74,8 @@ public final class ExteraConfig {
             pluginsPySdkBetaVersions = preferences.getBoolean("pluginsPySdkBetaVersions", false);
             sdkUpdateScheduleTimestamp = preferences.getLong("sdkUpdateScheduleTimestamp", 0L);
             pinnedPlugins = new HashSet<>(preferences.getStringSet("pinnedPlugins", Collections.emptySet()));
+            showFeedTab = preferences.getBoolean("showFeedTab", false);
+            showFeedUnreadCounter = preferences.getBoolean("showFeedUnreadCounter", true);
             configLoaded = true;
         }
     }
@@ -81,6 +85,28 @@ public final class ExteraConfig {
             configLoaded = false;
         }
         loadConfig();
+    }
+
+    public static boolean getShowFeedTab() {
+        loadConfig();
+        return showFeedTab;
+    }
+
+    public static void setShowFeedTab(boolean value) {
+        loadConfig();
+        showFeedTab = value;
+        editor.putBoolean("showFeedTab", value).apply();
+    }
+
+    public static boolean getShowFeedUnreadCounter() {
+        loadConfig();
+        return showFeedUnreadCounter;
+    }
+
+    public static void setShowFeedUnreadCounter(boolean value) {
+        loadConfig();
+        showFeedUnreadCounter = value;
+        editor.putBoolean("showFeedUnreadCounter", value).apply();
     }
 
     public static void init() {

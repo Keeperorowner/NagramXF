@@ -57,6 +57,7 @@ object DrawerMenuHelper {
         Entry(DrawerLayoutAdapter.nkbtnQrLogin, R.string.ImportLogin, R.drawable.msg_qrcode),
         Entry(DrawerLayoutAdapter.nkbtnSessions, R.string.Devices, R.drawable.msg2_devices),
         Entry(DrawerLayoutAdapter.nkbtnMainTabsCustomize, R.string.MainTabsCustomize, R.drawable.tabs_reorder),
+        Entry(DrawerLayoutAdapter.nkbtnFeed, R.string.Feed, R.drawable.ic_feed),
         Entry(DrawerLayoutAdapter.nkbtnRestartApp, R.string.RestartApp, R.drawable.msg_retry)
     )
 
@@ -80,7 +81,8 @@ object DrawerMenuHelper {
         DrawerLayoutAdapter.nkbtnArchivedChats, ID_NEW_CHANNEL,
         DrawerLayoutAdapter.nkbtnBookmarks, DrawerLayoutAdapter.nkbtnBrowser,
         DrawerLayoutAdapter.nkbtnQrLogin, DrawerLayoutAdapter.nkbtnSessions,
-        DrawerLayoutAdapter.nkbtnMainTabsCustomize, DrawerLayoutAdapter.nkbtnRestartApp
+        DrawerLayoutAdapter.nkbtnMainTabsCustomize, DrawerLayoutAdapter.nkbtnRestartApp,
+        DrawerLayoutAdapter.nkbtnFeed
     )
 
     // --- persistence -------------------------------------------------------

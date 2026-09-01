@@ -266,4 +266,24 @@
     <string name="DisableTrendingChannelPremiumBanner">Банер платної відправки в каналі</string>
     <string name="DisableTrendingPhoneShare">Пропозиція поділитися номером телефону</string>
     <string name="DisableTrendingGiftsPremium">Подарунки та платні елементи</string>
+
+    <!-- Feed -->
+    <string name="Feed">Стрічка</string>
+    <string name="FeedAllChannelsExcluded">Усі канали виключено зі стрічки.</string>
+    <string name="FeedBottomTab">Показувати на нижніх вкладках</string>
+    <string name="FeedBottomTabInfo">Відображати стрічку як вкладку нижньої навігації замість вкладки Контакти.</string>
+    <string name="FeedChannelHidden">**%1$s** приховано зі стрічки</string>
+    <string name="FeedChannelsInfo">Зніміть позначку з каналу, щоб приховати його повідомлення від стрічки. Нові канали відображаються автоматично.</string>
+    <string name="FeedHiddenChannels">Приховані</string>
+    <string name="FeedHideChannel">Приховати зі стрічки</string>
+    <string name="FeedIncludeArchived">Показати чати з архіву</string>
+    <string name="FeedIncludeArchivedInfo">Також показувати у стрічці канали з ваших архівованих чатів.</string>
+    <string name="FeedMarkAllRead">Позначити все як прочитане</string>
+    <string name="FeedMarkAllReadConfirm">Позначити всі повідомлення у ваших каналах як прочитані? Це також позначить їх як прочитані в оригінальних каналах.</string>
+    <string name="FeedMarkAllReadDone">Всі пости позначено як прочитані</string>
+    <string name="FeedNoPosts">Постів у каналі поки що немає.</string>
+    <string name="FeedSettings">Налаштування стрічки</string>
+    <string name="FeedShownChannels">Показуються у стрічці</string>
+    <string name="FeedUnreadCounter">Лічильник непрочитаних постів</string>
+    <string name="HideFeedTab">Приховати вкладку стрічка</string>
 </resources>

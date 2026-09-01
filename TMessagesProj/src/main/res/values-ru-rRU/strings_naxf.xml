@@ -353,4 +353,24 @@
     <string name="DisableTrendingChannelPremiumBanner">Баннер платной отправки в канале</string>
     <string name="DisableTrendingPhoneShare">Предложение поделиться номером телефона</string>
     <string name="DisableTrendingGiftsPremium">Подарки и платные элементы</string>
+
+    <!-- Feed -->
+    <string name="Feed">Лента</string>
+    <string name="FeedAllChannelsExcluded">Все каналы исключены из ленты.</string>
+    <string name="FeedBottomTab">Показывать в нижних вкладках</string>
+    <string name="FeedBottomTabInfo">Лента появится на нижней панели вместо вкладки «Контакты».</string>
+    <string name="FeedChannelHidden">**%1$s** скрыт из ленты</string>
+    <string name="FeedChannelsInfo">Снимите галочку, чтобы скрыть посты канала из ленты. Новые каналы показываются автоматически.</string>
+    <string name="FeedHiddenChannels">Скрытые</string>
+    <string name="FeedHideChannel">Скрыть из ленты</string>
+    <string name="FeedIncludeArchived">Показывать чаты из архива</string>
+    <string name="FeedIncludeArchivedInfo">Также добавлять в ленту каналы из архивированных чатов.</string>
+    <string name="FeedMarkAllRead">Отметить всё прочитанным</string>
+    <string name="FeedMarkAllReadConfirm">Отметить все посты в каналах ленты прочитанными? Они также будут отмечены прочитанными в исходных каналах.</string>
+    <string name="FeedMarkAllReadDone">Все посты отмечены прочитанными</string>
+    <string name="FeedNoPosts">В ленте пока нет постов.</string>
+    <string name="FeedSettings">Настройки ленты</string>
+    <string name="FeedShownChannels">Показаны в ленте</string>
+    <string name="FeedUnreadCounter">Счётчик непрочитанных постов</string>
+    <string name="HideFeedTab">Скрыть вкладку ленты</string>
 </resources>
