@@ -353,4 +353,24 @@
     <string name="DisableTrendingChannelPremiumBanner">チャンネルのプレミアム必須バナー</string>
     <string name="DisableTrendingPhoneShare">電話番号共有の案内</string>
     <string name="DisableTrendingGiftsPremium">ギフトと有料要素</string>
+
+    <!-- Feed -->
+    <string name="Feed">フィード</string>
+    <string name="FeedAllChannelsExcluded">フィード内のすべてのチャンネルが非表示になっています。</string>
+    <string name="FeedBottomTab">下部タブに表示</string>
+    <string name="FeedBottomTabInfo">連絡先タブの代わりに、下部のナビゲーションタブとしてフィードを表示します。</string>
+    <string name="FeedChannelHidden">**%1$s** をフィードから非表示にしました</string>
+    <string name="FeedChannelsInfo">チェックを外すと、そのチャンネルの投稿はフィードに表示されません。新しいチャンネルは自動的に表示されます。</string>
+    <string name="FeedHiddenChannels">非表示のチャンネル</string>
+    <string name="FeedHideChannel">フィードから非表示</string>
+    <string name="FeedIncludeArchived">アーカイブのチャンネルを表示</string>
+    <string name="FeedIncludeArchivedInfo">アーカイブされたチャットのチャンネルもフィードに含めます。</string>
+    <string name="FeedMarkAllRead">すべて既読にする</string>
+    <string name="FeedMarkAllReadConfirm">フィード内のすべての投稿を既読にしますか？元のチャンネルでも既読としてマークされます。</string>
+    <string name="FeedMarkAllReadDone">すべての投稿を既読にしました</string>
+    <string name="FeedNoPosts">チャンネルの投稿はまだありません。</string>
+    <string name="FeedSettings">フィード設定</string>
+    <string name="FeedShownChannels">フィードに表示中</string>
+    <string name="FeedUnreadCounter">未読投稿カウンター</string>
+    <string name="HideFeedTab">フィードタブを非表示</string>
 </resources>

@@ -268,4 +268,24 @@
     <string name="DisableTrendingChannelPremiumBanner">频道付费发言横幅</string>
     <string name="DisableTrendingPhoneShare">分享手机号提示</string>
     <string name="DisableTrendingGiftsPremium">礼物与付费元素</string>
+
+    <!-- Feed -->
+    <string name="Feed">信息流</string>
+    <string name="FeedAllChannelsExcluded">信息流中的所有频道均已隐藏。</string>
+    <string name="FeedBottomTab">显示在底部标签页</string>
+    <string name="FeedBottomTabInfo">在底部导航栏中显示信息流标签页，并替代联系人标签页。</string>
+    <string name="FeedChannelHidden">**%1$s** 已从信息流中隐藏</string>
+    <string name="FeedChannelsInfo">取消勾选频道即可在频道动态中隐藏其帖子。新频道会自动显示。</string>
+    <string name="FeedHiddenChannels">隐藏的频道</string>
+    <string name="FeedHideChannel">从信息流中隐藏</string>
+    <string name="FeedIncludeArchived">显示归档中的频道</string>
+    <string name="FeedIncludeArchivedInfo">信息流中也会显示已归档的频道。</string>
+    <string name="FeedMarkAllRead">全部标记为已读</string>
+    <string name="FeedMarkAllReadConfirm">确定将信息流中的所有帖子标记为已读吗？原频道中的对应帖子也会被标记为已读。</string>
+    <string name="FeedMarkAllReadDone">已将所有帖子标记为已读</string>
+    <string name="FeedNoPosts">暂无频道帖子。</string>
+    <string name="FeedSettings">信息流设置</string>
+    <string name="FeedShownChannels">显示的频道</string>
+    <string name="FeedUnreadCounter">未读帖子计数</string>
+    <string name="HideFeedTab">隐藏信息流标签页</string>
 </resources>

@@ -354,4 +354,24 @@
     <string name="DisableTrendingChannelPremiumBanner">頻道付費發言橫幅</string>
     <string name="DisableTrendingPhoneShare">分享手機號碼提示</string>
     <string name="DisableTrendingGiftsPremium">禮物與付費元素</string>
+
+    <!-- Feed -->
+    <string name="Feed">資訊流</string>
+    <string name="FeedAllChannelsExcluded">資訊流中的所有頻道均已隱藏。</string>
+    <string name="FeedBottomTab">顯示在底部標籤頁</string>
+    <string name="FeedBottomTabInfo">在底部導覽列中顯示資訊流標籤頁，並取代聯絡人標籤頁。</string>
+    <string name="FeedChannelHidden">**%1$s** 已從資訊流中隱藏</string>
+    <string name="FeedChannelsInfo">取消勾選頻道即可在頻道動態中隱藏其貼文。新頻道會自動顯示。</string>
+    <string name="FeedHiddenChannels">隱藏的頻道</string>
+    <string name="FeedHideChannel">從資訊流中隱藏</string>
+    <string name="FeedIncludeArchived">顯示封存中的頻道</string>
+    <string name="FeedIncludeArchivedInfo">資訊流中也會顯示已封存的頻道。</string>
+    <string name="FeedMarkAllRead">全部標記為已讀</string>
+    <string name="FeedMarkAllReadConfirm">確定將資訊流中的所有貼文標記為已讀嗎？原頻道中的對應貼文也會被標記為已讀。</string>
+    <string name="FeedMarkAllReadDone">已將所有貼文標記為已讀</string>
+    <string name="FeedNoPosts">暫無頻道貼文。</string>
+    <string name="FeedSettings">資訊流設定</string>
+    <string name="FeedShownChannels">顯示的頻道</string>
+    <string name="FeedUnreadCounter">未讀貼文計數</string>
+    <string name="HideFeedTab">隱藏資訊流標籤頁</string>
 </resources>

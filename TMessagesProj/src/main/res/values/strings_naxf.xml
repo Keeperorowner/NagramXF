@@ -284,4 +284,24 @@
     <string name="DisableTrendingChannelPremiumBanner">Channel premium posting banner</string>
     <string name="DisableTrendingPhoneShare">Phone number sharing prompt</string>
     <string name="DisableTrendingGiftsPremium">Gifts and paid elements</string>
+
+    <!-- Feed -->
+    <string name="Feed">Feed</string>
+    <string name="FeedAllChannelsExcluded">All channels are excluded from the feed.</string>
+    <string name="FeedBottomTab">Show in Bottom Tabs</string>
+    <string name="FeedBottomTabInfo">Show the feed as a bottom navigation tab in place of the Contacts tab.</string>
+    <string name="FeedChannelHidden">**%1$s** hidden from feed</string>
+    <string name="FeedChannelsInfo">Uncheck a channel to hide its posts from the feed. New channels are shown automatically.</string>
+    <string name="FeedHiddenChannels">Hidden</string>
+    <string name="FeedHideChannel">Hide from Feed</string>
+    <string name="FeedIncludeArchived">Show Chats From Archive</string>
+    <string name="FeedIncludeArchivedInfo">Also include channels from your archived chats in the feed.</string>
+    <string name="FeedMarkAllRead">Mark All as Read</string>
+    <string name="FeedMarkAllReadConfirm">Mark all posts in your feed channels as read? This will also mark them as read in the original channels.</string>
+    <string name="FeedMarkAllReadDone">All posts marked as read</string>
+    <string name="FeedNoPosts">No channel posts yet.</string>
+    <string name="FeedSettings">Feed Settings</string>
+    <string name="FeedShownChannels">Shown in feed</string>
+    <string name="FeedUnreadCounter">Unread Post Counter</string>
+    <string name="HideFeedTab">Hide Feed Tab</string>
 </resources>

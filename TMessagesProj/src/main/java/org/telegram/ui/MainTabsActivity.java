@@ -43,6 +43,10 @@ import androidx.core.math.MathUtils;
 import androidx.core.view.WindowInsetsCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.feed.FeedController;
+import com.exteragram.messenger.feed.ui.FeedActivity;
+import com.exteragram.messenger.feed.ui.FeedChannelsActivity;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.ContactsController;
@@ -147,6 +151,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private FrameLayout searchTabButton;
     private ArrayList<MainTabsConfigManager.TabState> configuredTabs = new ArrayList<>();
     private boolean lastBottomBarHidden = isBottomBarHidden();
+    private boolean lastFeedTabEnabled = MainTabsConfigManager.isFeedTabEnabled();
 
     public MainTabsActivity() {
         super();
@@ -288,6 +293,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void checkContactsTabBadge() {
+        if (MainTabsConfigManager.isFeedTabEnabled()) {
+            return;
+        }
         int contactsTabIndex = getTabIndex(MainTabsConfigManager.TabType.CONTACTS);
         if (tabsView != null && tabs != null && contactsTabIndex >= 0 && contactsTabIndex < tabs.length && tabs[contactsTabIndex] != null) {
             final boolean hasPermission = Build.VERSION.SDK_INT >= 23 && ContactsController.hasContactsPermission();
@@ -298,6 +306,25 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 tabs[contactsTabIndex].setCounter("!", true, true);
             } else {
                 tabs[contactsTabIndex].setCounter(null, true, true);
+            }
+        }
+    }
+
+    private void checkFeedTabUnread() {
+        checkFeedTabUnread(true);
+    }
+
+    private void checkFeedTabUnread(boolean animated) {
+        if (!MainTabsConfigManager.isFeedTabEnabled()) {
+            return;
+        }
+        int feedTabIndex = getTabIndex(MainTabsConfigManager.TabType.CONTACTS);
+        if (tabsView != null && tabs != null && feedTabIndex >= 0 && feedTabIndex < tabs.length && tabs[feedTabIndex] != null) {
+            int unread = FeedController.getInstance(currentAccount).getUnreadCount();
+            if (unread > 0) {
+                tabs[feedTabIndex].setCounter(LocaleController.formatNumber(unread, ','), false, animated);
+            } else {
+                tabs[feedTabIndex].setCounter(null, false, animated);
             }
         }
     }
@@ -424,17 +451,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
 
         int chatsTabIndex = getTabIndex(MainTabsConfigManager.TabType.CHATS);
-        if (chatsTabIndex < 0 || chatsTabIndex >= tabs.length || tabs[chatsTabIndex] == null) {
-            return;
+        if (chatsTabIndex >= 0 && chatsTabIndex < tabs.length && tabs[chatsTabIndex] != null) {
+            final int unreadCount = MessagesStorage.getInstance(currentAccount).getMainUnreadCount();
+            if (unreadCount > 0) {
+                final String unreadCountFmt = LocaleController.formatNumber(unreadCount, ',');
+                tabs[chatsTabIndex].setCounter(unreadCountFmt, false, animated);
+            } else {
+                tabs[chatsTabIndex].setCounter(null, false, animated);
+            }
         }
 
-        final int unreadCount = MessagesStorage.getInstance(currentAccount).getMainUnreadCount();
-        if (unreadCount > 0) {
-            final String unreadCountFmt = LocaleController.formatNumber(unreadCount, ',');
-            tabs[chatsTabIndex].setCounter(unreadCountFmt, false, animated);
-        } else {
-            tabs[chatsTabIndex].setCounter(null, false, animated);
-        }
+        checkFeedTabUnread(animated);
     }
 
     private boolean isBottomBarHidden() {
@@ -646,6 +673,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         blur3_invalidateBlur();
 
+        final BaseFragment visibleFragment = getCurrentVisibleFragment();
+        if (visibleFragment instanceof TabFragmentDelegate) {
+            ((TabFragmentDelegate) visibleFragment).onParentBecomeFullyVisible();
+        }
+
         if (viewPager != null) {
             final int currentPosition = viewPager.getCurrentPosition();
             if (dropCallsFragmentAfterPageScroll) {
@@ -726,13 +758,21 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     protected BaseFragment createBaseFragmentAt(int position) {
         ensureConfiguredTabsLoaded();
         position = getSafePagerPosition(position);
-        return createFragmentForTab(getTabTypeByPosition(position));
+        BaseFragment fragment = createFragmentForTab(getTabTypeByPosition(position));
+        if (fragment instanceof TabFragmentDelegate) {
+            ((TabFragmentDelegate) fragment).setParentTabsGlassInvalidationCallback(this::blur3_invalidateBlur);
+        }
+        return fragment;
     }
 
     private BaseFragment createFragmentForTab(MainTabsConfigManager.TabType tabType) {
         switch (tabType) {
             case CONTACTS: {
                 Bundle args = new Bundle();
+                if (MainTabsConfigManager.isFeedTabEnabled()) {
+                    args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
+                    return new FeedActivity(args);
+                }
                 args.putBoolean("needPhonebook", true);
                 args.putBoolean("needFinishFragment", false);
                 args.putBoolean("hasMainTabs", shouldUseMainTabsPadding());
@@ -883,6 +923,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         ArrayList<MainTabsConfigManager.TabState> newTabs = MainTabsConfigManager.getEnabledTabs();
         boolean layoutChanged = !isSameTabsLayout(configuredTabs, newTabs);
+        boolean feedTabEnabled = MainTabsConfigManager.isFeedTabEnabled();
+        if (lastFeedTabEnabled != feedTabEnabled) {
+            lastFeedTabEnabled = feedTabEnabled;
+            layoutChanged = true;
+        }
         boolean bottomBarHidden = isBottomBarHidden();
         boolean hiddenStateChanged = lastBottomBarHidden != bottomBarHidden;
         lastBottomBarHidden = bottomBarHidden;
@@ -942,6 +987,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.requestLayout();
         checkUnreadCount(false);
         checkContactsTabBadge();
+        checkFeedTabUnread();
         if (hiddenStateChanged && fragmentView != null) {
             fragmentView.requestApplyInsets();
         }
@@ -973,6 +1019,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         default boolean hasSearch() {
             return false;
+        }
+
+        default void onParentBecomeFullyVisible() {
+
+        }
+
+        default void setParentTabsGlassInvalidationCallback(Runnable callback) {
+
         }
     }
 
@@ -1099,6 +1153,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             rebuildTabs();
         } else if (id == NotificationCenter.contactsPermissionBadgeCheck) {
             checkContactsTabBadge();
+        } else if (id == NotificationCenter.feedNeedReload || id == NotificationCenter.didReceiveNewMessages) {
+            checkFeedTabUnread();
+        } else if (id == NotificationCenter.feedTabVisibleToggled) {
+            rebuildTabs();
         }
     }
 
@@ -1117,7 +1175,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             .add(NotificationCenter.updateInterfaces)
             .add(NotificationCenter.callTabsVisibleToggled)
             .add(NotificationCenter.mainUserInfoChanged)
-            .add(NotificationCenter.contactsPermissionBadgeCheck);
+            .add(NotificationCenter.contactsPermissionBadgeCheck)
+            .add(NotificationCenter.didReceiveNewMessages)
+            .add(NotificationCenter.feedNeedReload)
+            .add(NotificationCenter.feedTabVisibleToggled);
 
         globalObserversGroup = NotificationCenter.getGlobalInstance().createObserversGroup(this)
             .add(NotificationCenter.appUpdateAvailable)
@@ -1372,6 +1433,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     public boolean openContactsSelector(View anchor) {
         if (getContext() == null || getParentActivity() == null) return false;
+        if (MainTabsConfigManager.isFeedTabEnabled()) {
+            return openFeedSelector(anchor);
+        }
         final ItemOptions o = ItemOptions.makeOptions(this, anchor);
         o.add(R.drawable.msg_contact_add, getString(R.string.NewContact), () -> {
             new NewContactBottomSheet(this, getContext()).show();
@@ -1381,6 +1445,30 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             args.putBoolean("needFinishFragment", false);
             presentFragment(new CallLogActivity(args));
         });
+        setupPopupMenuStyle(o);
+        o.setGravity(Gravity.LEFT);
+        o.show();
+        return true;
+    }
+
+    /** Long-press menu of the feed tab: hide the tab, mark all read, open settings. */
+    public boolean openFeedSelector(View anchor) {
+        if (getContext() == null || getParentActivity() == null) return false;
+        final ItemOptions o = ItemOptions.makeOptions(this, anchor);
+        o.add(R.drawable.msg_archive_hide, getString(R.string.HideFeedTab), () -> {
+            ExteraConfig.setShowFeedTab(false);
+            NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.feedTabVisibleToggled);
+        });
+        o.add(R.drawable.msg_markread, getString(R.string.FeedMarkAllRead), () -> {
+            BaseFragment fragment = getCurrentVisibleFragment();
+            if (fragment instanceof FeedActivity) {
+                ((FeedActivity) fragment).markAllRead();
+            } else {
+                FeedController.getInstance(currentAccount).markAllRead();
+            }
+            checkFeedTabUnread();
+        });
+        o.add(R.drawable.msg_settings, getString(R.string.FeedSettings), () -> presentFragment(new FeedChannelsActivity()));
         setupPopupMenuStyle(o);
         o.setGravity(Gravity.LEFT);
         o.show();

@@ -351,6 +351,12 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             return;
         }
 
+        if (tabAnimation.iconDrawableFilled != 0) {
+            imageView.setImageResource(isSelected ? tabAnimation.iconDrawableFilled : tabAnimation.iconDrawableOutline);
+            updateColors();
+            return;
+        }
+
         final int animationToSet = isSelected ?
             tabAnimation.iconToFilled : tabAnimation.iconToOutline;
 
@@ -604,11 +610,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         ARTICLE(R.raw.tab_article, R.raw.tab_article_reverse),
 
         BOOSTS(R.raw.boosts, 25, 49),
-        MONETIZATION(R.raw.monetize, 19, 45);
+        MONETIZATION(R.raw.monetize, 19, 45),
+        FEED(R.drawable.ic_feed_filled, R.drawable.ic_feed, true);
 
         public final @RawRes int iconToFilled;
         public final @RawRes int iconToOutline;
         public final @DrawableRes int iconStatic;
+        public final @DrawableRes int iconDrawableFilled;
+        public final @DrawableRes int iconDrawableOutline;
         public final int endFrameMid, endFrameEnd;
 
         TabAnimation(int iconRes, int endFrameMid, int endFrameEnd) {
@@ -617,6 +626,8 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             this.endFrameMid = endFrameMid;
             this.endFrameEnd = endFrameEnd;
             this.iconStatic = -1;
+            this.iconDrawableFilled = 0;
+            this.iconDrawableOutline = 0;
         }
 
         TabAnimation(TabAnimationType type, int icon) {
@@ -631,6 +642,8 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             }
             this.endFrameMid = -1;
             this.endFrameEnd = -1;
+            this.iconDrawableFilled = 0;
+            this.iconDrawableOutline = 0;
         }
 
         TabAnimation(int iconRes) {
@@ -639,6 +652,8 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             this.endFrameMid = -1;
             this.endFrameEnd = -1;
             this.iconStatic = -1;
+            this.iconDrawableFilled = 0;
+            this.iconDrawableOutline = 0;
         }
 
         TabAnimation(int iconToFilled, int iconToOutline) {
@@ -647,6 +662,18 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             this.endFrameMid = -1;
             this.endFrameEnd = -1;
             this.iconStatic = -1;
+            this.iconDrawableFilled = 0;
+            this.iconDrawableOutline = 0;
+        }
+
+        TabAnimation(@DrawableRes int iconDrawableFilled, @DrawableRes int iconDrawableOutline, boolean drawables) {
+            this.iconToFilled = -1;
+            this.iconToOutline = -1;
+            this.endFrameMid = -1;
+            this.endFrameEnd = -1;
+            this.iconStatic = -1;
+            this.iconDrawableFilled = iconDrawableFilled;
+            this.iconDrawableOutline = iconDrawableOutline;
         }
     }
 

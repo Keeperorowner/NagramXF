@@ -278,4 +278,24 @@
     <string name="DisableTrendingChannelPremiumBanner">채널 유료 게시 배너</string>
     <string name="DisableTrendingPhoneShare">전화번호 공유 알림</string>
     <string name="DisableTrendingGiftsPremium">선물 및 유료 요소</string>
+
+    <!-- Feed -->
+    <string name="Feed">피드</string>
+    <string name="FeedAllChannelsExcluded">피드의 모든 채널이 숨겨져 있습니다.</string>
+    <string name="FeedBottomTab">하단 탭에 표시</string>
+    <string name="FeedBottomTabInfo">연락처 탭 대신 하단 내비게이션 탭으로 피드를 표시합니다.</string>
+    <string name="FeedChannelHidden">**%1$s** 이(가) 피드에서 숨겨졌습니다</string>
+    <string name="FeedChannelsInfo">체크를 해제하면 해당 채널의 게시물이 피드에 표시되지 않습니다. 새 채널은 자동으로 표시됩니다.</string>
+    <string name="FeedHiddenChannels">숨긴 채널</string>
+    <string name="FeedHideChannel">피드에서 숨기기</string>
+    <string name="FeedIncludeArchived">보관된 채널 표시</string>
+    <string name="FeedIncludeArchivedInfo">보관된 채팅의 채널도 피드에 포함합니다.</string>
+    <string name="FeedMarkAllRead">모두 읽음으로 표시</string>
+    <string name="FeedMarkAllReadConfirm">피드 채널의 모든 게시물을 읽음으로 표시하시겠습니까? 원본 채널에서도 읽음으로 표시됩니다.</string>
+    <string name="FeedMarkAllReadDone">모든 게시물을 읽음으로 표시했습니다</string>
+    <string name="FeedNoPosts">아직 채널 게시물이 없습니다.</string>
+    <string name="FeedSettings">피드 설정</string>
+    <string name="FeedShownChannels">피드에 표시 중</string>
+    <string name="FeedUnreadCounter">읽지 않은 게시물 카운터</string>
+    <string name="HideFeedTab">피드 탭 숨기기</string>
 </resources>
