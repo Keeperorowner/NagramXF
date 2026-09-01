@@ -155,7 +155,14 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
 
         searchResultMessages.clear();
         messageIds.clear();
-        ArrayList<MessageObject> searchResults = searchType == 0 ? MediaDataController.getInstance(currentAccount).getFoundMessageObjects() : HashtagSearchController.getInstance(currentAccount).getMessages(searchType);
+        ArrayList<MessageObject> searchResults;
+        if (searchType == 0) {
+            searchResults = MediaDataController.getInstance(currentAccount).getFoundMessageObjects();
+        } else if (searchType == 4) {
+            searchResults = new ArrayList<>();
+        } else {
+            searchResults = HashtagSearchController.getInstance(currentAccount).getMessages(searchType);
+        }
         for (int i = 0; i < searchResults.size(); ++i) {
             MessageObject m = searchResults.get(i);
             if ((!m.hasValidGroupId() || m.isPrimaryGroupMessage) && !messageIds.contains(m.getId())) {
@@ -168,7 +175,9 @@ public class MessagesSearchAdapter extends RecyclerListView.SelectionAdapter imp
         final int oldFlickerCount = flickerCount;
 
         loadedCount = searchResultMessages.size();
-        if (searchType != 0) {
+        if (searchType == 4) {
+            flickerCount = 0;
+        } else if (searchType != 0) {
             boolean hasMore = !HashtagSearchController.getInstance(currentAccount).isEndReached(searchType);
             flickerCount = hasMore && loadedCount != 0 ? Utilities.clamp(HashtagSearchController.getInstance(currentAccount).getCount(searchType) - loadedCount, 3, 0) : 0;
         } else {

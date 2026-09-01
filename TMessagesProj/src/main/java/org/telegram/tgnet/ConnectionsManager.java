@@ -435,6 +435,7 @@ public class ConnectionsManager extends BaseController {
             return;
         }
         requestObject = hookedRequest;
+        requestObject = com.exteragram.messenger.feed.FeedRequestNormalizer.normalize(currentAccount, requestObject);
 
         try {
 final TLObject finalRequestObject = requestObject;

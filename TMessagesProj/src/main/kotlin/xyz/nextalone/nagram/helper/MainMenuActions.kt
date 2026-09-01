@@ -91,6 +91,8 @@ object MainMenuActions {
                 fragment.presentFragment(SessionsActivity(SessionsActivity.TYPE_DEVICES))
             id == DrawerLayoutAdapter.nkbtnMainTabsCustomize ->
                 fragment.presentFragment(MainTabsCustomizeActivity())
+            id == DrawerLayoutAdapter.nkbtnFeed ->
+                com.exteragram.messenger.feed.ui.FeedActivity.presentFeed(fragment)
             id == DrawerLayoutAdapter.nkbtnRestartApp -> AppRestartHelper.triggerRebirth(
                 ApplicationLoader.applicationContext,
                 Intent(ApplicationLoader.applicationContext, LaunchActivity::class.java)

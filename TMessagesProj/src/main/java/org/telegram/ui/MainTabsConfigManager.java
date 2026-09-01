@@ -4,6 +4,8 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
+import com.exteragram.messenger.ExteraConfig;
+
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.glass.GlassTabView;
@@ -150,6 +152,20 @@ public class MainTabsConfigManager {
         };
     }
 
+    /**
+     * Whether the feed replaces the contacts tab in the bottom bar. The feed
+     * never occupies its own slot: it reuses the contacts position so the tab
+     * count stays the same.
+     */
+    public static boolean isFeedTabEnabled() {
+        return ExteraConfig.getShowFeedTab();
+    }
+
+    /** True when the given tab slot should render the feed instead of contacts. */
+    public static boolean rendersFeed(TabType type) {
+        return type == TabType.CONTACTS && isFeedTabEnabled();
+    }
+
     public static boolean isTabEnabled(TabType type) {
         for (TabState state : getAllTabs()) {
             if (state.type == type) {
@@ -174,7 +190,12 @@ public class MainTabsConfigManager {
                 GlassTabView.TabAnimation.CHATS,
                 R.string.MainTabsChats
             );
-            case CONTACTS -> GlassTabView.createMainTab(
+            case CONTACTS -> !fromSettings && isFeedTabEnabled() ? GlassTabView.createMainTab(
+                context,
+                resourceProvider,
+                GlassTabView.TabAnimation.FEED,
+                R.string.Feed
+            ) : GlassTabView.createMainTab(
                 context,
                 resourceProvider,
                 GlassTabView.TabAnimation.CONTACTS,
