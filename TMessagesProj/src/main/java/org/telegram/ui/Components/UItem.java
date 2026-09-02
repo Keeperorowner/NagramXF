@@ -43,6 +43,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
     public CharSequence animatedText;
     public String[] texts;
     public boolean accent, red, transparent, locked;
+    public boolean multiline;
     public int spanCount = MAX_SPAN_COUNT;
     public int parentSpanCount;
 
@@ -304,6 +305,12 @@ public class UItem extends AdapterWithDiffUtils.Item {
         i.id = id;
         i.text = text;
         i.textValue = value;
+        return i;
+    }
+
+    public static UItem asCheck(int id, CharSequence text, CharSequence value, boolean multiline) {
+        UItem i = asCheck(id, text, value);
+        i.multiline = multiline;
         return i;
     }
 
@@ -824,6 +831,7 @@ public class UItem extends AdapterWithDiffUtils.Item {
         if (viewType == item.viewType) {
             if (id != item.id) return false;
             if (enabled != item.enabled) return false;
+            if (multiline != item.multiline) return false;
             switch (viewType) {
                 case UniversalAdapter.VIEW_TYPE_SHADOW:
                     if (text == null && item.text == null)
@@ -834,6 +842,13 @@ public class UItem extends AdapterWithDiffUtils.Item {
                     return TextUtils.equals(text, item.text);
                 case UniversalAdapter.VIEW_TYPE_FLICKER:
                     return intValue == item.intValue;
+                case UniversalAdapter.VIEW_TYPE_CHECK:
+                    return (
+                        TextUtils.equals(text, item.text) &&
+                        TextUtils.equals(textValue, item.textValue) &&
+                        iconResId == item.iconResId &&
+                        checked == item.checked
+                    );
                 case UniversalAdapter.VIEW_TYPE_TEXT:
                     return (
                         object == item.object &&
