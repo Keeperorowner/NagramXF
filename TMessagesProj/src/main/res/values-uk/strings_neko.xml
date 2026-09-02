@@ -278,4 +278,7 @@
     <string name="DonateAfdian">Afdian</string>
     <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">Подобається цей клієнт? **Підтримати розробку**</string>
+    <string name="SensitiveDisableFiltering">Показувати чутливий контент</string>
+    <string name="SensitiveAbout">Показувати делікатний контент у публічних каналах на всіх ваших пристроях.</string>
+    <string name="About">Про Nagram XF</string>
 </resources>
