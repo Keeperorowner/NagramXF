@@ -135,9 +135,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private LinearLayout tabsBarContainer;
     private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
+    private BlurredBackgroundDrawable tabsBarBackground;
     private BlurredBackgroundDrawable searchTabButtonBackground;
     private View fadeView;
     private FrameLayout searchTabButton;
+    private View searchTabButtonDivider;
     private ArrayList<MainTabsConfigManager.TabState> configuredTabs = new ArrayList<>();
     private boolean lastBottomBarHidden = isBottomBarHidden();
 
@@ -358,6 +360,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsBarContainer.setPadding(dp(2), 0, dp(2), 0);
         tabsView.setTranslationX(0f);
         tabsBarContainer.addView(tabsView, LayoutHelper.createLinear(dp(MainTabsHelper.getTabsViewWidth()), DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
+        tabsBarBackground = iBlur3FactoryGlass.create(tabsBarContainer, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+        tabsBarBackground.setRadius(dp(MainTabsHelper.getMainTabsHeight() / 2f));
+        tabsBarBackground.setPadding(dp(mainTabsMargin - 0.334f));
+        tabsBarContainer.setBackground(tabsBarBackground);
 
         searchTabButton = new FrameLayout(context);
         searchTabButton.setClipChildren(false);
@@ -381,6 +387,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             onSearchTabButtonLongClicked();
             return true;
         });
+        searchTabButtonDivider = new View(context);
+        searchTabButtonDivider.setBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_switchTrack, resourceProvider), 63 / 255f));
+        tabsBarContainer.addView(searchTabButtonDivider, new LinearLayout.LayoutParams(dp(2), dp(44)));
         int searchBtnSize = dp(56);
         LinearLayout.LayoutParams searchBtnLp = new LinearLayout.LayoutParams(searchBtnSize, searchBtnSize);
         searchBtnLp.setMarginStart(-dp(10));
@@ -1342,8 +1351,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (tabsViewBackground != null) {
             tabsViewBackground.updateColors();
         }
+        if (tabsBarBackground != null) {
+            tabsBarBackground.updateColors();
+        }
         if (searchTabButtonBackground != null) {
             searchTabButtonBackground.updateColors();
+        }
+        if (searchTabButtonDivider != null) {
+            searchTabButtonDivider.setBackgroundColor(Theme.multAlpha(Theme.getColor(Theme.key_switchTrack, resourceProvider), 63 / 255f));
         }
         blur3_invalidateBlur();
         if (fadeView != null) {
@@ -1536,6 +1551,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private void repositionSearchButton() {
         if (searchTabButton == null || tabsView == null || tabsViewWrapper == null || tabsBarContainer == null) return;
         boolean show = NaConfig.INSTANCE.getMainTabsShowSearchButton().Bool() && !isBottomBarHidden();
+        boolean searchButtonInBar = NaConfig.INSTANCE.getMainTabsSearchButtonInBar().Bool();
 
         ViewGroup.LayoutParams tabsBaseLp = tabsView.getLayoutParams();
         LinearLayout.LayoutParams tabsLp;
@@ -1561,6 +1577,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         searchTabButton.setTranslationX(0f);
         tabsBarContainer.setTranslationX(0f);
 
+        searchTabButtonBackground.setAlpha(show && !searchButtonInBar ? 255 : 0);
+        tabsBarBackground.setAlpha(show && searchButtonInBar ? 255 : 0);
+        tabsViewBackground.setAlpha(!show ? 255 : 0);
+        searchTabButtonDivider.setVisibility(show && searchButtonInBar ? View.VISIBLE : View.GONE);
+        searchLp.setMarginStart(searchButtonInBar ? 0 : -dp(10));
+        searchLp.setMarginEnd(searchButtonInBar ? 0 : dp(4));
+        searchTabButton.setLayoutParams(searchLp);
+
         if (!show) {
             int baseTabsWidth = dp(MainTabsHelper.getTabsViewWidth());
             int wrapperWidth = tabsViewWrapper.getWidth();
@@ -1582,25 +1606,36 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (searchBtnWidth <= 0) {
             searchBtnWidth = searchLp.width > 0 ? searchLp.width : dp(56);
         }
-        int gap = searchLp.getMarginStart();
+        int gap = searchButtonInBar ? 0 : searchLp.getMarginStart();
         int endInset = searchLp.getMarginEnd();
+        int dividerWidth = 0;
+        if (searchButtonInBar) {
+            dividerWidth = searchTabButtonDivider.getMeasuredWidth();
+            if (dividerWidth <= 0 && searchTabButtonDivider.getLayoutParams() != null) {
+                dividerWidth = searchTabButtonDivider.getLayoutParams().width;
+            }
+        }
         int wrapperWidth = tabsViewWrapper.getWidth();
         if (wrapperWidth <= 0) return;
 
         int containerPadding = tabsBarContainer.getPaddingLeft() + tabsBarContainer.getPaddingRight();
         int outerInset = dp(Math.min(DialogsActivity.MAIN_TABS_MARGIN, 6));
-        int maxTabsWidth = Math.max(0, wrapperWidth - containerPadding - searchBtnWidth - gap - endInset - outerInset * 2);
+        int maxTabsWidth = searchButtonInBar
+            ? Math.max(0, wrapperWidth - containerPadding - searchBtnWidth - dividerWidth - outerInset * 2)
+            : Math.max(0, wrapperWidth - containerPadding - searchBtnWidth - gap - endInset - outerInset * 2);
         if (tabsLp.width != maxTabsWidth) {
             tabsLp.width = maxTabsWidth;
             tabsView.setLayoutParams(tabsLp);
         }
         searchTabButton.setVisibility(View.VISIBLE);
 
-        int bgPadding = dp(MainTabsHelper.getMainTabsMargin() - 0.334f);
-        int leftVisualPad = tabsBarContainer.getPaddingLeft() + bgPadding;
-        int rightVisualPad = tabsBarContainer.getPaddingRight() + endInset;
-        float correction = (rightVisualPad - leftVisualPad) / 2f;
-        tabsBarContainer.setTranslationX(correction);
+        if (!searchButtonInBar) {
+            int bgPadding = dp(MainTabsHelper.getMainTabsMargin() - 0.334f);
+            int leftVisualPad = tabsBarContainer.getPaddingLeft() + bgPadding;
+            int rightVisualPad = tabsBarContainer.getPaddingRight() + endInset;
+            float correction = (rightVisualPad - leftVisualPad) / 2f;
+            tabsBarContainer.setTranslationX(correction);
+        }
     }
 
     private void onSearchTabButtonClicked() {

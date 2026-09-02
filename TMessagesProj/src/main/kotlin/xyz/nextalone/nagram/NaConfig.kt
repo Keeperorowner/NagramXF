@@ -1449,6 +1449,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val mainTabsSearchButtonInBar =
+        addConfig(
+            "MainTabsSearchButtonInBar",
+            ConfigItem.configTypeBool,
+            false
+        )
     val mainTabsForceOpenChats =
         addConfig(
             "MainTabsForceOpenChats",

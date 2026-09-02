@@ -221,6 +221,7 @@
     <string name="MainTabsCustomize">Customize Bottom Tabs</string>
     <string name="MainTabsCustomizeDesc">Tap a tab to show or hide it. Long-press and drag to reorder.</string>
     <string name="MainTabsShowTitles">Show Tab Titles</string>
+    <string name="MainTabsSearchButtonInBar">Merge Search Button inside Bottom Bar</string>
     <string name="MainTabsForceOpenChats">Always search in chats</string>
     <string name="MainTabsForceOpenChatsDesc">When enabled, the search button always opens chat search. When disabled, it opens context search for the current screen (e.g., Settings or Contacts).</string>
     <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
