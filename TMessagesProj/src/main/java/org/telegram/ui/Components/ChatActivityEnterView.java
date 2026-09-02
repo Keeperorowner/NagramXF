@@ -5692,7 +5692,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             long chatId = ChatsHelper.getChatId();
             Locale targetLocale = Translator.getInputTranslateLangLocaleForChat(chatId);
             options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, getString(R.string.TranslateMessage), () -> {
-                translateComment(targetLocale);
+                translateComment(Translator.getInputTranslateLangLocaleForChat(chatId));
                 if (messageSendPreview != null) {
                     messageSendPreview.dismiss(false);
                     messageSendPreview = null;

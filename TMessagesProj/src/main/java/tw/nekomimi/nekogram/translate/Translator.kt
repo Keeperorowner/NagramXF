@@ -15,6 +15,7 @@ import org.telegram.messenger.R
 import org.telegram.messenger.TranslateController
 import org.telegram.tgnet.TLRPC
 import tw.nekomimi.nekogram.NekoConfig
+import tw.nekomimi.nekogram.helpers.ChatsHelper
 import tw.nekomimi.nekogram.translate.source.*
 import org.telegram.ui.ActionBar.AlertDialog
 import tw.nekomimi.nekogram.utils.AppScope
@@ -383,7 +384,11 @@ interface Translator {
             }
 
             val currLocale = LocaleController.getInstance().currentLocale
-            val currentLang = NekoConfig.translateToLang.String() ?: ""
+            val currentLang = if (input) {
+                getInputTranslateLangForChat(ChatsHelper.getChatId())
+            } else {
+                NekoConfig.translateToLang.String() ?: ""
+            }
 
             val builder = AlertDialog.Builder(context)
             builder.setTitle(getString(R.string.Language))
