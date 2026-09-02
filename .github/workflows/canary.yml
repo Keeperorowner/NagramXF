@@ -81,14 +81,9 @@ jobs:
         run: |
           export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
           export BUILD_TIMESTAMP=$(date +%s)
-          ./gradlew TMessagesProj:assembleStaging
+          ./gradlew TMessagesProj:assembleNormalStaging
       - uses: actions/upload-artifact@v4
         with:
           name: normal-canary
           path: TMessagesProj/build/outputs/apk/normal/staging/
-          if-no-files-found: error
-      - uses: actions/upload-artifact@v4
-        with:
-          name: plugin-canary
-          path: TMessagesProj/build/outputs/apk/plugin/staging/
           if-no-files-found: error
