@@ -354,7 +354,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                         return null;
                     }
                     boolean checked = PluginsController.getInstance().getPluginSettingBoolean(plugin.getId(), setting.key, setting.defaultValue);
-                    UItem uiItem = setting.subtext != null ? UItem.asButtonCheck(0, setting.text, setting.subtext) : UItem.asCheck(0, setting.text);
+                    UItem uiItem = UItem.asCheck(0, setting.text, setting.subtext, setting.subtext != null);
                     uiItem.setChecked(checked);
                     uiItem.object = setting.key;
                     uiItem.object2 = setting;

@@ -179,7 +179,7 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
         boolean queryEmpty = TextUtils.isEmpty(this.query);
         if (queryEmpty) {
             items.add(UItem.asHeader(LocaleController.getString(R.string.General)));
-            items.add(UItem.asCheck(ID_BOTTOM_TAB, LocaleController.getString(R.string.FeedBottomTab), LocaleController.getString(R.string.FeedBottomTabInfo)).setChecked(ExteraConfig.getShowFeedTab()));
+            items.add(UItem.asCheck(ID_BOTTOM_TAB, LocaleController.getString(R.string.FeedBottomTab), LocaleController.getString(R.string.FeedBottomTabInfo), true).setChecked(ExteraConfig.getShowFeedTab()));
             items.add(UItem.asCheck(ID_UNREAD_COUNTER, LocaleController.getString(R.string.FeedUnreadCounter)).setChecked(ExteraConfig.getShowFeedUnreadCounter()));
             items.add(UItem.asCheck(ID_INCLUDE_ARCHIVED, LocaleController.getString(R.string.FeedIncludeArchived)).setChecked(feedConfig.getIncludeArchived()));
             items.add(UItem.asShadow(LocaleController.getString(R.string.FeedIncludeArchivedInfo)));
