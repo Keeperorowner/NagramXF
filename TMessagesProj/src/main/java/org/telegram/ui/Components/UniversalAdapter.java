@@ -751,7 +751,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 } else {
                     final String checkText = item.text == null ? "" : item.text.toString();
                     final String checkSubtext = item.textValue.toString();
-                    checkCell.setTextAndValueAndCheck(checkText, checkSubtext, item.checked, checkSubtext.contains("\n"), divider);
+                    checkCell.setTextAndValueAndCheck(checkText, checkSubtext, item.checked, item.multiline || checkSubtext.contains("\n"), divider);
                 }
                 checkCell.itemId = item.id;
                 if (item.iconResId != 0) {
