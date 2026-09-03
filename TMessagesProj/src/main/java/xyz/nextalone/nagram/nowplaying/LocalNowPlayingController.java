@@ -31,7 +31,7 @@ public class LocalNowPlayingController {
 
     public static final String PLATFORM_LAST_FM = "LAST_FM";
     public static final String PLATFORM_STATS_FM = "STATS_FM";
-    private static final String WORKER_URL = "https://nowplaying.chenhai0731.workers.dev";
+    private static final String WORKER_URL = "https://nowplaying.nagramxf.com";
 
     private static final String CACHE_PREFS = "nowplaying_cache";
     private static final String CACHE_KEY_DTO = "last_dto";
