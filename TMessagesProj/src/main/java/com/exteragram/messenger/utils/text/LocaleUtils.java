@@ -17,6 +17,7 @@ import android.view.View;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -30,6 +31,14 @@ import java.util.regex.Pattern;
 
 public final class LocaleUtils {
     private static final Pattern USERNAME_PATTERN = Pattern.compile("(?<![\\w@])@([A-Za-z0-9_]{1,32})");
+
+    public static String getAppName() {
+        try {
+            return ApplicationLoader.applicationContext.getString(R.string.AppName);
+        } catch (Exception ignored) {
+            return "Nagram XF";
+        }
+    }
 
     private LocaleUtils() {
     }

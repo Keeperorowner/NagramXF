@@ -31,6 +31,10 @@ public class EventHookRecord implements HookRecord {
         return matchSubstring;
     }
 
+    public boolean getMatchSubstring() {
+        return matchSubstring;
+    }
+
     @Override
     public void cleanup() {
     }

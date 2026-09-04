@@ -25,4 +25,44 @@ public class SelectorSetting extends SettingItem {
         closeCallback(onChangeCallback);
         onChangeCallback = null;
     }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public int getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(int defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String[] getItems() {
+        return items;
+    }
+
+    public void setItems(String[] items) {
+        this.items = items;
+    }
+
+    public PyObject getOnChangeCallback() {
+        return onChangeCallback;
+    }
+
+    public void setOnChangeCallback(PyObject onChangeCallback) {
+        this.onChangeCallback = onChangeCallback;
+    }
 }

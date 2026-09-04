@@ -25,4 +25,44 @@ public class InputSetting extends SettingItem {
         closeCallback(onChangeCallback);
         onChangeCallback = null;
     }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(String defaultValue) {
+        this.defaultValue = defaultValue;
+    }
+
+    public String getSubtext() {
+        return subtext;
+    }
+
+    public void setSubtext(String subtext) {
+        this.subtext = subtext;
+    }
+
+    public PyObject getOnChangeCallback() {
+        return onChangeCallback;
+    }
+
+    public void setOnChangeCallback(PyObject onChangeCallback) {
+        this.onChangeCallback = onChangeCallback;
+    }
 }

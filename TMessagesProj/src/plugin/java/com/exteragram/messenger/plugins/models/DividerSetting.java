@@ -9,4 +9,12 @@ public class DividerSetting extends SettingItem {
         super(PluginsConstants.Settings.TYPE_DIVIDER);
         this.text = text;
     }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 }

@@ -9,4 +9,12 @@ public class HeaderSetting extends SettingItem {
         super(PluginsConstants.Settings.TYPE_HEADER);
         this.text = text;
     }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
 }

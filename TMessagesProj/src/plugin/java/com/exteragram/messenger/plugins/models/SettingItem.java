@@ -10,18 +10,50 @@ public abstract class SettingItem {
     public PyObject onLongClickCallback;
     public String linkAlias;
 
-    protected SettingItem(String type) {
+    public SettingItem(String type) {
         this(type, null, null, null);
     }
 
-    protected SettingItem(String type, String icon, PyObject onLongClickCallback, String linkAlias) {
+    public SettingItem(String type, String icon, PyObject onLongClickCallback, String linkAlias) {
         this.type = type;
         this.icon = icon;
         this.onLongClickCallback = onLongClickCallback;
         this.linkAlias = linkAlias;
     }
 
-    protected void closeCallback(PyObject callback) {
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public PyObject getOnLongClickCallback() {
+        return onLongClickCallback;
+    }
+
+    public void setOnLongClickCallback(PyObject onLongClickCallback) {
+        this.onLongClickCallback = onLongClickCallback;
+    }
+
+    public String getLinkAlias() {
+        return linkAlias;
+    }
+
+    public void setLinkAlias(String linkAlias) {
+        this.linkAlias = linkAlias;
+    }
+
+    public void closeCallback(PyObject callback) {
         if (callback != null) {
             try {
                 callback.close();

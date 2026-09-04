@@ -54,6 +54,14 @@ public class Plugin {
         this.engine = engine;
     }
 
+    public PluginsController.PluginsEngine getCachedEngine() {
+        return cachedEngine;
+    }
+
+    public void setCachedEngine(PluginsController.PluginsEngine cachedEngine) {
+        this.cachedEngine = cachedEngine;
+    }
+
     public String getAuthor() {
         return author;
     }
@@ -90,6 +98,10 @@ public class Plugin {
     }
 
     public boolean isNotResponding() {
+        return notResponding;
+    }
+
+    public boolean getIsNotResponding() {
         return notResponding;
     }
 

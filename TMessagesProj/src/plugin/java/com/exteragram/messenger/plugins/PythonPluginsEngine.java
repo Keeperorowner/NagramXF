@@ -106,8 +106,40 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     private final ConcurrentHashMap<String, List<String>> pluginDependencyPaths = new ConcurrentHashMap<>();
 
     @FunctionalInterface
-    interface PyMethodCaller<T> {
+    public interface PyMethodCaller<T> {
         PyObject call(PyObject plugin, T value);
+    }
+
+    public ConcurrentHashMap<String, PyObject> getPluginInstances() {
+        return pluginInstances;
+    }
+
+    public PyObject getBasePluginClass() {
+        return basePluginClass;
+    }
+
+    public void setBasePluginClass(PyObject basePluginClass) {
+        this.basePluginClass = basePluginClass;
+    }
+
+    public PyObject getDebuggerListener() {
+        return debuggerListener;
+    }
+
+    public static String getSDK_VERSION() {
+        return SDK_VERSION;
+    }
+
+    public static void setSDK_VERSION(String version) {
+        SDK_VERSION = version;
+    }
+
+    public static boolean getSDK_BETA() {
+        return SDK_BETA;
+    }
+
+    public static void setSDK_BETA(boolean beta) {
+        SDK_BETA = beta;
     }
 
     @Override
@@ -1161,6 +1193,16 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             FileLog.e("BasePlugin class is not loaded, cannot find plugin class in " + module.get("__name__"));
             return null;
         }
+        // The selection rule belongs to the SDK (BasePlugin._findPluginClass): it only considers
+        // classes declared in the plugin module itself and prefers the most derived one. The local
+        // scan below stays as a fallback for SDK builds that predate that helper.
+        try {
+            if (basePluginClass.containsKey("_findPluginClass")) {
+                return basePluginClass.callAttr("_findPluginClass", module);
+            }
+        } catch (PyException e) {
+            FileLog.e("BasePlugin._findPluginClass failed for module " + module.get("__name__"), e);
+        }
         try {
             PyObject builtins = getPython().getBuiltins();
             PyObject dict = module.get("__dict__");
@@ -1180,35 +1222,70 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         return null;
     }
 
+    /** Full teardown: drops the instance and the imported module, so the next enable is a fresh load. */
     public void unloadPlugin(String pluginId) {
         settingsCache.remove(pluginId);
         pluginDependencyPaths.remove(pluginId);
+        PyObject instance = pluginInstances.remove(pluginId);
+        Plugin plugin = getPluginsController().plugins.get(pluginId);
+        if (plugin != null) {
+            plugin.setEnabled(false);
+        }
         try {
-            PyObject instance = pluginInstances.remove(pluginId);
-            if (instance == null) {
-                pruneDependencyPaths();
-                return;
-            }
-            if (PyObjectUtils.getBoolean(instance, "initialized", false)) {
+            if (instance != null && PyObjectUtils.getBoolean(instance, "initialized", false)) {
+                getPluginsController().watchdog.onPluginExecutionStarted(pluginId);
                 try {
                     instance.callAttr(PluginsConstants.ON_PLUGIN_UNLOAD);
                 } catch (Throwable t) {
                     FileLog.e("Error during on_plugin_unload for " + pluginId, t);
+                } finally {
+                    getPluginsController().watchdog.onPluginExecutionFinished(pluginId);
                 }
             }
-            getPluginsController().cleanupPlugin(pluginId);
-            Python python = getPython();
-            if (python != null) {
-                PyObject modules = python.getModule("sys").get("modules");
-                if (modules != null && modules.callAttr("get", pluginId) != null) {
-                    modules.callAttr("pop", pluginId);
-                }
+            if (instance != null) {
+                instance.put("initialized", false);
+                instance.put("enabled", false);
             }
-            instance.close();
+            deleteStaleBytecode(pluginId);
+            refreshImportCaches(pluginId, getPluginsController().pluginsDir);
         } catch (PyException e) {
-            FileLog.e("Failed to remove module " + pluginId + " from sys.modules", e);
+            FileLog.e("Failed to unload plugin " + pluginId, e);
         } finally {
+            getPluginsController().cleanupPlugin(pluginId);
+            if (instance != null) {
+                try {
+                    instance.close();
+                } catch (Throwable t) {
+                    FileLog.e("Failed to close plugin instance " + pluginId, t);
+                }
+            }
             pruneDependencyPaths();
+        }
+    }
+
+    /**
+     * Drops the compiled bytecode of a plugin module (pluginsDir/__pycache__/&lt;id&gt;.cpython-*.pyc)
+     * so the next import reads the source file again.
+     */
+    private void deleteStaleBytecode(String pluginId) {
+        File pluginsDir = getPluginsController().pluginsDir;
+        if (pluginsDir == null) {
+            return;
+        }
+        File pycache = new File(pluginsDir, "__pycache__");
+        if (!pycache.exists() || !pycache.isDirectory()) {
+            return;
+        }
+        File[] files = pycache.listFiles();
+        if (files == null) {
+            return;
+        }
+        String prefix = pluginId + ".cpython-";
+        for (File file : files) {
+            if (file.getName().startsWith(prefix)) {
+                deleteFileIfExists(file);
+                return;
+            }
         }
     }
 
@@ -1257,34 +1334,26 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
             if (enabled) {
                 getPluginsController().cleanupPlugin(pluginId);
-                instance.callAttr(PluginsConstants.ON_PLUGIN_LOAD);
+                getPluginsController().watchdog.onPluginExecutionStarted(pluginId);
+                try {
+                    instance.callAttr(PluginsConstants.ON_PLUGIN_LOAD);
+                } finally {
+                    getPluginsController().watchdog.onPluginExecutionFinished(pluginId);
+                }
                 instance.put("initialized", true);
                 instance.put("error_message", (Object) null);
                 plugin.setError(null);
-            } else {
-                if (instance != null) {
-                    if (PyObjectUtils.getBoolean(instance, "initialized", false)) {
-                        try {
-                            instance.callAttr(PluginsConstants.ON_PLUGIN_UNLOAD);
-                        } catch (Throwable t) {
-                            FileLog.e("Error during on_plugin_unload for " + pluginId, t);
-                        }
-                    }
-                    instance.put("initialized", false);
-                }
-                getPluginsController().cleanupPlugin(pluginId);
-            }
-
-            plugin.setEnabled(enabled);
-            if (instance != null) {
-                instance.put("enabled", enabled);
-            }
-            getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, enabled).apply();
-            if (enabled) {
+                instance.put("enabled", true);
+                plugin.setEnabled(true);
+                getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, true).apply();
                 getPluginsController().loadPluginSettings(pluginId);
             } else {
-                getPluginsController().invalidatePluginSettings(pluginId);
+                // Disabling drops the instance and the imported module: re-enabling must behave like
+                // a fresh load, so the teardown goes through unloadPlugin instead of a partial cleanup.
+                getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, false).apply();
+                unloadPlugin(pluginId);
             }
+
             if (notify) {
                 getPluginsController().notifyPluginsChanged();
             }
@@ -1302,11 +1371,10 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 }
                 PyObject instance = pluginInstances.get(pluginId);
                 if (instance != null) {
-                    instance.put("enabled", false);
                     instance.put("error_message", t.getMessage());
                 }
                 getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, false).apply();
-                getPluginsController().cleanupPlugin(pluginId);
+                unloadPlugin(pluginId);
             }
             if (callback != null) {
                 AndroidUtilities.runOnUIThread(() -> callback.run(stackTraceToString(t)));

@@ -50,9 +50,73 @@ public class CustomSetting extends SettingItem {
         factoryArgs = null;
     }
 
+    public UItem getItem() {
+        return item;
+    }
+
+    public void setItem(UItem item) {
+        this.item = item;
+    }
+
+    public Factory<?> getFactory() {
+        return factory;
+    }
+
+    public void setFactory(Factory<?> factory) {
+        this.factory = factory;
+    }
+
+    public PyObject getFactoryArgs() {
+        return factoryArgs;
+    }
+
+    public void setFactoryArgs(PyObject factoryArgs) {
+        this.factoryArgs = factoryArgs;
+    }
+
+    public PyObject getOnClickCallback() {
+        return onClickCallback;
+    }
+
+    public void setOnClickCallback(PyObject onClickCallback) {
+        this.onClickCallback = onClickCallback;
+    }
+
+    public PyObject getCreateSubFragmentCallback() {
+        return createSubFragmentCallback;
+    }
+
+    public void setCreateSubFragmentCallback(PyObject createSubFragmentCallback) {
+        this.createSubFragmentCallback = createSubFragmentCallback;
+    }
+
     public static abstract class Factory<V extends View> extends UItem.UItemFactory<V> {
         public boolean isShadowValue;
         public boolean isClickableValue = true;
+
+        public boolean isShadowValue() {
+            return isShadowValue;
+        }
+
+        public void setShadowValue(boolean shadowValue) {
+            isShadowValue = shadowValue;
+        }
+
+        public boolean isClickableValue() {
+            return isClickableValue;
+        }
+
+        public void setClickableValue(boolean clickableValue) {
+            isClickableValue = clickableValue;
+        }
+
+        public boolean getIsShadowValue() {
+            return isShadowValue;
+        }
+
+        public boolean getIsClickableValue() {
+            return isClickableValue;
+        }
 
         public UItem create(Plugin plugin, CustomSetting customSetting, PyObject factoryArgs) {
             return null;

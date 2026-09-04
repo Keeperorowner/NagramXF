@@ -63,7 +63,7 @@ public class PyMethodHook extends XC_MethodHook implements AutoCloseable {
     }
 
     @Override
-    protected void beforeHookedMethod(MethodHookParam param) {
+    public void beforeHookedMethod(MethodHookParam param) {
         if (disabled || beforeHook == null || !PluginsController.getInstance().isPluginActive(pluginId)) {
             return;
         }
@@ -83,7 +83,7 @@ public class PyMethodHook extends XC_MethodHook implements AutoCloseable {
     }
 
     @Override
-    protected void afterHookedMethod(MethodHookParam param) {
+    public void afterHookedMethod(MethodHookParam param) {
         if (disabled || afterHook == null || !PluginsController.getInstance().isPluginActive(pluginId)) {
             return;
         }

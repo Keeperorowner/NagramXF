@@ -298,6 +298,36 @@ class BasePlugin:
         self.enabled = False
         self.initialized = False
 
+    @classmethod
+    def _findPluginClass(cls, module):
+        """Return the plugin class the host should instantiate for ``module``.
+
+        Only classes declared in that module are eligible, so a ``BasePlugin`` subclass that the
+        plugin merely imports is never picked. When a module declares its own intermediate base
+        (``class Base(BasePlugin)`` plus ``class Impl(Base)``) the most derived class wins; equally
+        derived candidates are ordered by name so the result is stable. Returns ``None`` when the
+        module declares no plugin class.
+        """
+        import inspect
+
+        module_name = getattr(module, "__name__", None)
+        candidates = []
+        for name, obj in inspect.getmembers(module, inspect.isclass):
+            if obj is BasePlugin:
+                continue
+            try:
+                if not issubclass(obj, BasePlugin):
+                    continue
+            except TypeError:
+                continue
+            if module_name is not None and getattr(obj, "__module__", None) != module_name:
+                continue
+            candidates.append((-len(inspect.getmro(obj)), name, obj))
+        if not candidates:
+            return None
+        candidates.sort(key=lambda item: (item[0], item[1]))
+        return candidates[0][2]
+
     # lifecycle
     def on_plugin_load(self):
         pass

@@ -6,6 +6,8 @@ import com.chaquo.python.PyException;
 import com.chaquo.python.PyObject;
 
 public final class PyObjectUtils {
+    public static final PyObjectUtils INSTANCE = new PyObjectUtils();
+
     private PyObjectUtils() {
     }
 
