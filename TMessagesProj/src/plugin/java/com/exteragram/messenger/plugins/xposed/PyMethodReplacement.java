@@ -40,7 +40,7 @@ public class PyMethodReplacement extends XC_MethodReplacement implements AutoClo
     }
 
     @Override
-    protected Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) {
+    public Object replaceHookedMethod(XC_MethodHook.MethodHookParam param) {
         if (disabled || !PluginsController.getInstance().isPluginActive(pluginId)) {
             // Fall back to the original implementation, otherwise a primitive return type would be
             // unboxed from null and blow up inside the host method instead of here.

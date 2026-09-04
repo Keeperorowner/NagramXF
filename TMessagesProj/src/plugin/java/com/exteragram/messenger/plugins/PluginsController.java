@@ -71,6 +71,11 @@ public class PluginsController implements PluginsHooks {
 
     public static final int PLUGIN_FILE_ICON_NONE = -1;
     public static final int PLUGIN_FILE_ICON_START = 101;
+    public static final int PLUGIN_FILE_ICON_ID_START = PLUGIN_FILE_ICON_START;
+
+    public static ConcurrentHashMap<String, PluginsEngine> getEngines() {
+        return engines;
+    }
 
     public static final ConcurrentHashMap<String, PluginsEngine> engines = new ConcurrentHashMap<>();
 
@@ -98,11 +103,48 @@ public class PluginsController implements PluginsHooks {
             ? ApplicationLoader.applicationContext.getSharedPreferences("plugin_settings", 0)
             : null;
     public final PluginsWatchdog watchdog = new PluginsWatchdog(this);
+    private volatile boolean initialized;
+
+    public ConcurrentHashMap<String, Plugin> getPlugins() {
+        return plugins;
+    }
+
+    public ConcurrentHashMap<String, List<SettingItem>> getSettings() {
+        return settings;
+    }
+
+    public File getPluginsDir() {
+        return pluginsDir;
+    }
+
+    public void setPluginsDir(File pluginsDir) {
+        this.pluginsDir = pluginsDir;
+    }
+
+    public SharedPreferences getPreferences() {
+        return preferences;
+    }
+
+    public void setPreferences(SharedPreferences preferences) {
+        this.preferences = preferences;
+    }
+
+    public PluginsWatchdog getWatchdog() {
+        return watchdog;
+    }
+
+    public boolean getInitialized() {
+        return initialized;
+    }
 
     private final Runnable updateNotificationRunnable = () -> {
         NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginsUpdated);
         NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.pluginMenuItemsUpdated);
     };
+
+    public interface EngineHookCaller<T> {
+        HookResult<T> call(PluginsEngine engine, T value, String pluginId);
+    }
 
     public interface PluginsEngine {
         boolean canOpenInExternalApp();
@@ -137,6 +179,10 @@ public class PluginsController implements PluginsHooks {
 
         boolean isPlugin(File file);
 
+        default boolean isPlugin(File file, MessageObject messageObject) {
+            return isPlugin(file);
+        }
+
         List<SettingItem> loadPluginSettings(String pluginId);
 
         void openInExternalApp(String pluginId);
@@ -169,13 +215,14 @@ public class PluginsController implements PluginsHooks {
 
     private static void setSafeModeFlag(boolean enabled) {
         ExteraConfig.pluginsSafeMode = enabled;
+        // commit(): crash path, must survive to the next launch.
         if (ExteraConfig.editor != null) {
-            ExteraConfig.editor.putBoolean("pluginsSafeMode", enabled).apply();
+            ExteraConfig.editor.putBoolean("pluginsSafeMode", enabled).commit();
         } else if (ApplicationLoader.applicationContext != null) {
             ApplicationLoader.applicationContext.getSharedPreferences("exteraconfig", 0)
                     .edit()
                     .putBoolean("pluginsSafeMode", enabled)
-                    .apply();
+                    .commit();
         }
     }
 
@@ -198,7 +245,8 @@ public class PluginsController implements PluginsHooks {
             } else {
                 editor.putString(PREF_CRASHED_PLUGIN_ID, crashedPluginId);
             }
-            editor.apply();
+            // commit(): crash path, apply() can lose the write with the dying process.
+            editor.commit();
         }
         setSafeModeFlag(enabled);
     }
@@ -336,6 +384,18 @@ public class PluginsController implements PluginsHooks {
         return false;
     }
 
+    public static boolean isPlugin(File file, MessageObject messageObject) {
+        if (file == null) {
+            return false;
+        }
+        for (PluginsEngine engine : engines.values()) {
+            if (engine != null && engine.isPlugin(file, messageObject)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static PluginsEngine getPluginEngine(File file) {
         if (file == null) {
             return null;
@@ -463,6 +523,21 @@ public class PluginsController implements PluginsHooks {
         }
     }
 
+    public static void openPluginSettings(String pluginId) {
+        BaseFragment lastFragment = LaunchActivity.getLastFragment();
+        if (TextUtils.isEmpty(pluginId) || lastFragment == null) {
+            return;
+        }
+        PluginsEngine engine = getInstance().getPluginEngine(pluginId);
+        if (engine != null) {
+            engine.openPluginSettings(pluginId, lastFragment);
+        }
+    }
+
+    public static void openPluginSettings(String pluginId, String settingId) {
+        openPluginSetting(pluginId, settingId);
+    }
+
     public PluginsEngine getPluginEngine(String pluginId) {
         if (TextUtils.isEmpty(pluginId)) {
             return null;
@@ -502,6 +577,20 @@ public class PluginsController implements PluginsHooks {
 
     public void init() {
         init(null);
+    }
+
+    public void init(boolean safeMode) {
+        if (safeMode) {
+            ExteraConfig.pluginsSafeMode = true;
+        }
+        init(null);
+    }
+
+    public void init(boolean safeMode, Runnable runnable) {
+        if (safeMode) {
+            ExteraConfig.pluginsSafeMode = true;
+        }
+        init(runnable);
     }
 
     public static void runOnPluginsQueue(Runnable runnable) {
@@ -580,8 +669,11 @@ public class PluginsController implements PluginsHooks {
 
         AtomicInteger completed = new AtomicInteger();
         Runnable onEngineReady = () -> {
-            if (completed.incrementAndGet() >= engines.size() && runnable != null) {
-                runnable.run();
+            if (completed.incrementAndGet() >= engines.size()) {
+                initialized = true;
+                if (runnable != null) {
+                    runnable.run();
+                }
             }
         };
         for (PluginsEngine engine : engines.values()) {
@@ -608,6 +700,7 @@ public class PluginsController implements PluginsHooks {
 
     public void shutdown(Runnable runnable) {
         runOnPluginsQueue(() -> {
+            initialized = false;
             if (engines.isEmpty()) {
                 watchdog.stop();
                 plugins.clear();
@@ -649,6 +742,13 @@ public class PluginsController implements PluginsHooks {
         });
     }
 
+    public void restart(boolean safeMode) {
+        if (safeMode) {
+            ExteraConfig.pluginsSafeMode = true;
+        }
+        restart();
+    }
+
     public boolean isPluginActive(String pluginId) {
         if (TextUtils.isEmpty(pluginId)) {
             return false;
@@ -659,6 +759,14 @@ public class PluginsController implements PluginsHooks {
 
     public boolean isPluginActive(Plugin plugin) {
         return plugin != null && plugins.get(plugin.getId()) == plugin && plugin.isEnabled();
+    }
+
+    public boolean isPluginActive$TMessagesProj(String pluginId) {
+        return isPluginActive(pluginId);
+    }
+
+    public boolean isPluginActive$TMessagesProj(Plugin plugin) {
+        return isPluginActive(plugin);
     }
 
     public List<SettingItem> getPluginSettingsList(String pluginId) {
@@ -699,7 +807,7 @@ public class PluginsController implements PluginsHooks {
         }
     }
 
-    void cleanupPlugin(String pluginId) {
+    public void cleanupPlugin(String pluginId) {
         removeHooksByPluginId(pluginId);
         invalidatePluginSettings(pluginId);
         removeMenuItemsByPluginId(pluginId);
@@ -895,6 +1003,20 @@ public class PluginsController implements PluginsHooks {
         if (engine != null) {
             engine.setPluginSetting(pluginId, key, value);
             loadPluginSettings(pluginId);
+        }
+    }
+
+    public void setPluginSettingAndTriggerOnChange(String pluginId, String key, Object value, PyObject onChange) {
+        setPluginSetting(pluginId, key, value);
+        if (onChange != null) {
+            try {
+                PyObject result = onChange.call(value);
+                if (result != null) {
+                    result.close();
+                }
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
         }
     }
 
@@ -1110,7 +1232,7 @@ public class PluginsController implements PluginsHooks {
         return result;
     }
 
-    void notifyPluginsChanged() {
+    public void notifyPluginsChanged() {
         AndroidUtilities.cancelRunOnUIThread(updateNotificationRunnable);
         AndroidUtilities.runOnUIThread(updateNotificationRunnable, 150);
     }
@@ -1382,6 +1504,30 @@ public class PluginsController implements PluginsHooks {
             this.cancel = cancel;
             this.isFinal = isFinal;
         }
+
+        public T getResult() {
+            return result;
+        }
+
+        public void setResult(T result) {
+            this.result = result;
+        }
+
+        public boolean getCancel() {
+            return cancel;
+        }
+
+        public void setCancel(boolean cancel) {
+            this.cancel = cancel;
+        }
+
+        public boolean getIsFinal() {
+            return isFinal;
+        }
+
+        public void setFinal(boolean isFinal) {
+            this.isFinal = isFinal;
+        }
     }
 
     public static class PluginValidationResult {
@@ -1390,6 +1536,22 @@ public class PluginsController implements PluginsHooks {
 
         public PluginValidationResult(Plugin plugin, String error) {
             this.plugin = plugin;
+            this.error = error;
+        }
+
+        public Plugin getPlugin() {
+            return plugin;
+        }
+
+        public void setPlugin(Plugin plugin) {
+            this.plugin = plugin;
+        }
+
+        public String getError() {
+            return error;
+        }
+
+        public void setError(String error) {
             this.error = error;
         }
     }

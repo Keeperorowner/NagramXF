@@ -23,5 +23,21 @@ public interface PluginsHooks {
             this.response = response;
             this.error = error;
         }
+
+        public TLObject getResponse() {
+            return response;
+        }
+
+        public void setResponse(TLObject response) {
+            this.response = response;
+        }
+
+        public TLRPC.TL_error getError() {
+            return error;
+        }
+
+        public void setError(TLRPC.TL_error error) {
+            this.error = error;
+        }
     }
 }

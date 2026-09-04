@@ -28,6 +28,50 @@ public class HookFilter {
         this.filterType = filterType;
     }
 
+    public String getFilterType() {
+        return filterType;
+    }
+
+    public Integer getArgIndex() {
+        return argIndex;
+    }
+
+    public void setArgIndex(Integer argIndex) {
+        this.argIndex = argIndex;
+    }
+
+    public ArrayList<HookFilter> getOrFilters() {
+        return orFilters;
+    }
+
+    public void setOrFilters(ArrayList<HookFilter> orFilters) {
+        this.orFilters = orFilters;
+    }
+
+    public String getMvelExpression() {
+        return mvelExpression;
+    }
+
+    public void setMvelExpression(String mvelExpression) {
+        this.mvelExpression = mvelExpression;
+    }
+
+    public Class<?> getInstanceOf() {
+        return instanceOf;
+    }
+
+    public void setInstanceOf(Class<?> instanceOf) {
+        this.instanceOf = instanceOf;
+    }
+
+    public Object getObject() {
+        return object;
+    }
+
+    public void setObject(Object object) {
+        this.object = object;
+    }
+
     public boolean execute(XC_MethodHook.MethodHookParam param, boolean before) {
         try {
             if (PluginsConstants.HookFilterTypes.OR.equals(filterType)) {

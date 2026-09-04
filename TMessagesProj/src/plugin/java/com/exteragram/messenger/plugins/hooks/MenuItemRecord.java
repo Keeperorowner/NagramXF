@@ -34,6 +34,46 @@ public class MenuItemRecord {
 
     private volatile boolean removed;
 
+    public String getPluginId() {
+        return pluginId;
+    }
+
+    public String getMenuType() {
+        return menuType;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public PyObject getOnClickCallback() {
+        return onClickCallback;
+    }
+
+    public String getItemId() {
+        return itemId;
+    }
+
+    public String getIconName() {
+        return iconName;
+    }
+
+    public int getIconResId() {
+        return iconResId;
+    }
+
+    public String getSubtext() {
+        return subtext;
+    }
+
+    public String getConditionString() {
+        return conditionString;
+    }
+
+    public int getPriority() {
+        return priority;
+    }
+
     public MenuItemRecord(String pluginId, PyObject object) {
         this.pluginId = pluginId;
         this.menuType = PyObjectUtils.getString(object, PluginsConstants.MenuItemProperties.MENU_TYPE, null, true);

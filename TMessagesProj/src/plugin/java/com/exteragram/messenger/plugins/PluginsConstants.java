@@ -13,7 +13,7 @@ public final class PluginsConstants {
     public static final String PARAMS = "params";
     public static final String PLUGINS = "plugins";
     public static final String PLUGINS_EXT = ".plugin";
-    public static final String PLUGINS_SDK = "plugins_sdk";
+    public static final String PLUGINS_SDK = "plugins-sdk";
     public static final String PYSDK_IMY = "pyPluginsSdk.imy";
     public static final String PYTHON = "python";
     public static final String REQUEST = "request";

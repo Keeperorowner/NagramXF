@@ -34,7 +34,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "sdk_pysrc"
-OUT_DIR = ROOT / "TMessagesProj" / "src" / "main" / "assets" / "plugins_pysdk"
+OUT_DIR = ROOT / "TMessagesProj" / "src" / "plugin" / "assets" / "plugins_pysdk"
 ABIS = ("arm64-v8a", "armeabi-v7a")
 
 # Kept in sync with PythonPluginsEngine.SDK_REQUIRED_MODULES.

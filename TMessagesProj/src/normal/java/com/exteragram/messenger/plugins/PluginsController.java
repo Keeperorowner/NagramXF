@@ -31,6 +31,10 @@ public class PluginsController {
 
     public final Map<String, ?> plugins = Collections.emptyMap();
 
+    public Map<String, ?> getPlugins() {
+        return plugins;
+    }
+
     public static boolean isPluginEngineSupported() {
         return false;
     }

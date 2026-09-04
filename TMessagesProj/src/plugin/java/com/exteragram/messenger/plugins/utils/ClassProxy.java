@@ -102,6 +102,38 @@ public class ClassProxy {
         public boolean isMvel() {
             return "mvel".equals(implementation) && mvelCode != null;
         }
+
+        public String name() {
+            return name;
+        }
+
+        public Class<?> returnType() {
+            return returnType;
+        }
+
+        public Class<?>[] parameterTypes() {
+            return parameterTypes;
+        }
+
+        public int modifiers() {
+            return modifiers;
+        }
+
+        public boolean overrideExisting() {
+            return overrideExisting;
+        }
+
+        public String implementation() {
+            return implementation;
+        }
+
+        public String mvelCode() {
+            return mvelCode;
+        }
+
+        public List<String> argumentNames() {
+            return argumentNames;
+        }
     }
 
     public static class FieldSpec {
@@ -120,6 +152,22 @@ public class ClassProxy {
             this.modifiers = modifiers;
             this.methods = methods;
         }
+
+        public String name() {
+            return name;
+        }
+
+        public Class<?> type() {
+            return type;
+        }
+
+        public int modifiers() {
+            return modifiers;
+        }
+
+        public List<FieldMethodSpec> methods() {
+            return methods;
+        }
     }
 
     public static class FieldMethodSpec {
@@ -131,6 +179,18 @@ public class ClassProxy {
             this.name = name;
             this.modifiers = modifiers;
             this.getter = getter;
+        }
+
+        public String name() {
+            return name;
+        }
+
+        public int modifiers() {
+            return modifiers;
+        }
+
+        public boolean getter() {
+            return getter;
         }
     }
 
