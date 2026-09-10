@@ -12597,7 +12597,7 @@ public class ChatActivity extends BaseFragment implements
         pinnedMessageView.setOnClickListener(v -> {
             wasManualScroll = true;
             if (isThreadChat() && !isTopic) {
-                scrollToMessageId((int) threadMessageId, 0, true, 0, true, 0);
+                scrollToMessageId((int) threadMessageId, getCurrentVisibleMessageId(), true, 0, true, 0);
             } else if (currentPinnedMessageId != 0) {
                 int currentPinned = currentPinnedMessageId;
 
@@ -12615,7 +12615,8 @@ public class ChatActivity extends BaseFragment implements
                 if (!forceScrollToFirst) {
                     forceNextPinnedMessageId = -forceNextPinnedMessageId;
                 }
-                scrollToMessageId(currentPinned, 0, true, 0, true, forceNextPinnedMessageId);
+
+                scrollToMessageId(currentPinned, getCurrentVisibleMessageId(), true, 0, true, forceNextPinnedMessageId);
                 updateMessagesVisiblePart(false);
             }
         });
@@ -18249,6 +18250,21 @@ public class ChatActivity extends BaseFragment implements
     public static final boolean SCROLL_DEBUG_DELAY = false;
     private boolean pinnedProgressIsShowing;
     Runnable updatePinnedProgressRunnable;
+
+    private int getCurrentVisibleMessageId() {
+        if (chatListView != null) {
+            for (int i = 0; i < chatListView.getChildCount(); i++) {
+                View child = chatListView.getChildAt(i);
+                if (child instanceof ChatMessageCell) {
+                    MessageObject messageObject = ((ChatMessageCell) child).getMessageObject();
+                    if (messageObject != null) {
+                        return messageObject.getId();
+                    }
+                }
+            }
+        }
+        return 0;
+    }
 
     public void scrollToMessageId(int id, int fromMessageId, boolean select, int loadIndex, boolean forceScroll, int forcePinnedMessageId) {
         scrollToMessageId(id, fromMessageId, select, loadIndex, forceScroll, forcePinnedMessageId, null, null);
