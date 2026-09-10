@@ -311,6 +311,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
                 transitionProgress = f;
                 if (f <= 0) {
                     currentForegroundIndex = -1;
+                    requestLayout();
                 }
                 invalidateTransforms();
                 isAnimationInProgress = false;
@@ -345,6 +346,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
         }
         currentForegroundIndex = viewIndex;
         overrideForegroundHeight = overrideHeightIndex.get(viewIndex);
+        requestLayout();
         animateToState(1, 0);
     }
 
@@ -359,6 +361,7 @@ public class PopupSwipeBackLayout extends FrameLayout {
         if (!animated) {
             currentForegroundIndex = -1;
             transitionProgress = 0;
+            requestLayout();
             invalidateTransforms();
             return;
         } else {
@@ -369,6 +372,63 @@ public class PopupSwipeBackLayout extends FrameLayout {
     public boolean stickToRight;
     public void setStickToRight(boolean right) {
         stickToRight = right;
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        final int count = getChildCount();
+        final boolean matchWidth = MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY;
+        final boolean matchHeight = MeasureSpec.getMode(heightMeasureSpec) == MeasureSpec.EXACTLY;
+        final int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        final int heightSize = MeasureSpec.getSize(heightMeasureSpec);
+        final int paddingWidth = getPaddingLeft() + getPaddingRight();
+        final int paddingHeight = getPaddingTop() + getPaddingBottom();
+        int maxWidth = matchWidth ? widthSize : paddingWidth;
+        int maxHeight = matchHeight ? heightSize : paddingHeight;
+        int measuredState = 0;
+        for (int i = 0; i < count; i++) {
+            View child = getChildAt(i);
+            if (child.getVisibility() == GONE) {
+                continue;
+            }
+            // 只有背景页和当前前台页参与尺寸计算，未打开的前台页不影响 popup 宽度
+            if (i != 0 && i != currentForegroundIndex) {
+                continue;
+            }
+            LayoutParams lp;
+            if (child.getLayoutParams() instanceof LayoutParams) {
+                lp = (LayoutParams) child.getLayoutParams();
+            } else {
+                measureChild(child, widthMeasureSpec, heightMeasureSpec);
+                maxWidth = Math.max(maxWidth, child.getMeasuredWidth());
+                maxHeight = Math.max(maxHeight, child.getMeasuredHeight());
+                continue;
+            }
+            int childWidthSpec;
+            if (matchWidth && lp.width == LayoutParams.MATCH_PARENT) {
+                childWidthSpec = MeasureSpec.makeMeasureSpec(widthSize - paddingWidth - lp.leftMargin - lp.rightMargin, MeasureSpec.EXACTLY);
+            } else {
+                childWidthSpec = getChildMeasureSpec(widthMeasureSpec, paddingWidth + lp.leftMargin + lp.rightMargin, lp.width);
+            }
+            int childHeightSpec;
+            if (matchHeight && lp.height == LayoutParams.MATCH_PARENT) {
+                childHeightSpec = MeasureSpec.makeMeasureSpec(heightSize - paddingHeight - lp.topMargin - lp.bottomMargin, MeasureSpec.EXACTLY);
+            } else {
+                childHeightSpec = getChildMeasureSpec(heightMeasureSpec, paddingHeight + lp.topMargin + lp.bottomMargin, lp.height);
+            }
+            child.measure(childWidthSpec, childHeightSpec);
+            measuredState = combineMeasuredStates(measuredState, child.getMeasuredState());
+            maxWidth = Math.max(maxWidth, child.getMeasuredWidth() + lp.leftMargin + lp.rightMargin);
+            maxHeight = Math.max(maxHeight, child.getMeasuredHeight() + lp.topMargin + lp.bottomMargin);
+        }
+        maxWidth = Math.max(maxWidth, getSuggestedMinimumWidth());
+        maxHeight = Math.max(maxHeight, getSuggestedMinimumHeight());
+        int width = resolveSizeAndState(maxWidth, widthMeasureSpec, measuredState);
+        if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.UNSPECIFIED) {
+            width = Math.max(paddingWidth, Math.min(width, AndroidUtilities.displaySize.x - AndroidUtilities.dp(40)));
+        }
+        int height = resolveSizeAndState(maxHeight, heightMeasureSpec, measuredState << MEASURED_HEIGHT_STATE_SHIFT);
+        setMeasuredDimension(width, height);
     }
 
     @Override
