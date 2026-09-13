@@ -219,7 +219,7 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
                 Browser.openUrl(getParentActivity(), "https://plugins.exteragram.app/");
                 break;
             case ITEM_TRUSTED:
-                Browser.openUrl(getParentActivity(), "https://t.me/addlist/pPhOtEq00KhjYTc6");
+                Browser.openUrl(getParentActivity(), "https://t.me/NagramXF_T_Plugins");
                 break;
             case ITEM_INSTALL_SMOKE_TEST:
                 installSmokeTestPlugin();

@@ -456,11 +456,11 @@ public class InstallPluginBottomSheet extends BottomSheet {
                 Long forwardedFromId = messageObject.getForwardedFromId();
                 if (forwardedFromId != null) {
                     long sourceId = -forwardedFromId;
-                    trusted = BadgesController.INSTANCE.isTrusted(sourceId) || BadgesController.INSTANCE.isExtera(sourceId);
+                    trusted = BadgesController.INSTANCE.isTrusted(sourceId);
                 }
             } else if (messageObject.isFromChannel() && !messageObject.isFromChat()) {
                 long sourceId = -messageObject.getDialogId();
-                trusted = BadgesController.INSTANCE.isTrusted(sourceId) || BadgesController.INSTANCE.isExtera(sourceId);
+                trusted = BadgesController.INSTANCE.isTrusted(sourceId);
             }
             return new PluginInstallParams(MessageHelper.getPathToMessage(messageObject), trusted);
         }
