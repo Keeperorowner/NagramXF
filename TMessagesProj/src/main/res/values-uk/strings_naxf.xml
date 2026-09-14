@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AppIconNagram">Nagram</string>
+    <!-- Pillstack (ported from exteragram/ayuGram) -->
     <string name="PillStackPills">Панель віджетів-капсул</string>
     <string name="PillStackPillsInfo">Інтерактивні плашки в полі пошуку</string>
     <string name="PillStackActivePills">Активні віджети</string>
@@ -13,6 +16,7 @@
     <string name="WeatherLocationPermissionGrant">Надати дозвіл на доступ до геоданих</string>
     <string name="WeatherLocationPermissionNo">Дозвольте додатку доступ до локації для показу прогнозу погоди.</string>
     <string name="WeatherLocationServicesEnable">Увімкнути геолокацію</string>
+    <string name="WeatherPickLocationHint">Торкніться, щоб вибрати розташування на карті</string>
     <string name="CryptoPillTargetCurrency">Цільова валюта</string>
     <string name="CryptoCurrencyUsd">Долар США</string>
     <string name="CryptoCurrencyEur">Євро</string>
@@ -29,6 +33,13 @@
     <string name="CryptoCurrencyIls">Ізраїльський шекель</string>
     <string name="CryptoCurrencyCzk">Чеська крона</string>
     <string name="CryptoCurrencyInr">Індійська рупія</string>
+
+    <!-- Missing strings used by pillstack -->
+    <string name="CurrentLocation">Поточне розташування</string>
+    <string name="SelectLocation">Виберіть розташування</string>
+    <string name="NavigationDrawerProxyPingShort">Пінг %1$d мс</string>
+    <string name="LastSeenPillAutoRefresh">Автооновлення</string>
+
     <string name="SquareFloatingButton">Квадратна плаваюча кнопка</string>
     <string name="SeparateHeaders">Розділяти заголовки секцій</string>
     <string name="RegexFiltersMaskMessages">Маскувати відфільтровані повідомлення замість приховування</string>
@@ -52,6 +63,7 @@
     <string name="HideAiEditor">Приховати ШІ-редактор</string>
     <string name="HideAiSummary">Приховати ШІ-підсумок</string>
     <string name="AiHideHeader">Приховати функції ШІ</string>
+    <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">Мітка видаленого</string>
     <string name="DeletedMarkNothing">Нічого</string>
     <string name="DeletedMarkTrashBin">Кошик</string>
@@ -90,6 +102,7 @@
     <string name="MessageSavingSaveMediaHint">Натисніть, щоб налаштувати детальніше.</string>
     <string name="HideHomeSearchField">Приховати рядок пошуку</string>
     <string name="AppWillRestartInSeconds">Додаток перезапуститься через %1$d с.</string>
+    <string name="MessagePreviewDialogMessage">Я можу їсти скло, і воно мені не шкодить.</string>
     <string name="RemoveMessageTail">Прибрати хвостик бульбашки</string>
     <string name="UserAvatarsInMessagePreview">Аватари користувачів у прев’ю повідомлень</string>
     <string name="MainTabsCustomizeDrawerLocked">Якщо ввімкнено бічну панель на головному екрані, вкладка «Чати» закріплюється ліворуч.</string>
@@ -102,6 +115,11 @@
     <string name="FoldersAtBottom">Перемістити папки вниз</string>
     <string name="SendLockedCustomEmojiAsSticker">Надсилати Premium Emoji як наліпку</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">Підтримуються лише власні емодзі у форматах WebP/WebM. Формат TGS не підтримується.</string>
+    <string name="StyleOneUI" translatable="false">OneUI</string>
+    <string name="PeekOnlineMenuText">Перевірити онлайн</string>
+    <string name="PeekOnlineSuccess">Онлайн-статус оновлено</string>
+    <string name="PeekOnlineUnavailable">Не вдалося отримати точний статус.</string>
+    <string name="PeekOnlineRestoreFailed">Не вдалося відновити налаштування приватності «Останній візит».</string>
     <string name="AppNavigation">Навігація додатком</string>
     <string name="ShowRecentChatsSidebar">Бічна панель нещодавніх чатів</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
@@ -109,12 +127,22 @@
     <string name="ForceForwardSomeSkipped">Не вдалося переслати %1$d повідомлень.</string>
     <string name="AyuMomentsPreviewMessage">Роби що можеш, решта — доля</string>
     <string name="AyuSpySettings">Налаштування стеження</string>
+    <string name="AyuStatsHeader">Статистика</string>
+    <string name="AyuStatsDeletedMessages">Видалені повідомлення</string>
+    <string name="AyuStatsDeletedDialogs">Видалені діалоги</string>
+    <string name="AyuStatsReadMarks">Позначки прочитання</string>
+    <string name="AyuStatsLastSeen">Записи останнього візиту</string>
     <string name="AyuMomentsCustomHeader">Власне</string>
+    <string name="ImportModeReplace">Замінити</string>
+    <string name="ImportModeMerge">Об\'єднати</string>
+    <string name="ImportMergeResult">Об\'єднано %1$d повідомлень.</string>
+    <string name="ImportMessageDatabaseForeign">Ця резервна копія походить з іншого клієнта, тому не може замінити локальну базу даних. Збережені повідомлення все ще можна об’єднати з вашими поточними даними.</string>
     <string name="MaximumMediaSizeCellular">Ліміт розміру (моб. мережа)</string>
     <string name="MaximumMediaSizeWiFi">Ліміт розміру (Wi-Fi)</string>
     <string name="ShowFilteredMessagesMenuText">Показувати відфільтровані</string>
     <string name="HideFilteredMessagesMenuText">Приховувати відфільтровані</string>
     <string name="HideProxySponsorChannel">Приховати спонсорський проксі-канал</string>
+    <string name="hideSponsoredMessage">Приховати спонсорські повідомлення</string>
     <string name="DisableAds">Вимкнути рекламу</string>
     <string name="StickerSizeLeft">Менше</string>
     <string name="StickerSizeRight">Більше</string>
@@ -122,12 +150,17 @@
     <string name="UseScheduledMessagesDescription">Автоматично відкладає вихідні повідомлення на ~12 секунд. Завдяки цьому ви не виходите в онлайн при відповіді. Не рекомендується за нестабільної мережі.</string>
     <string name="GhostModeGlobalSettings">Глобальні налаштування</string>
     <string name="GhostModeGlobalSettingsDescription">Спільні для всіх акаунтів</string>
+    <string name="CreationDateChat">**%1$s** створено **%2$s**.</string>
+    <string name="JoinDateChat">Ви приєдналися до **%1$s** **%2$s**.</string>
+    <string name="CreationDateUserApproximately">Акаунт **%1$s** створено приблизно **%2$s**.</string>
+    <string name="CreationDateSelfApproximately">Ви створили свій акаунт приблизно **%1$s**.</string>
     <string name="ForceSnowfall">Примусовий снігопад</string>
     <string name="ForceSnowfallInfo">Завжди показувати ефект снігопаду в заголовку, бічному меню та на тлі чату незалежно від дати.</string>
     <string name="CameraType">Тип камери</string>
     <string name="AlwaysSendInHD">Завжди надсилати в HD</string>
     <string name="ExtendedSettings">Розширені налаштування</string>
     <string name="ExtendedFramesPerSecond">Розширений діапазон FPS</string>
+    <string name="SeamlessSwitching">Безшовне перемикання</string>
     <string name="CameraStabilization">Стабілізація</string>
     <string name="RememberLastUsedCamera">Запам’ятовувати останню камеру</string>
     <string name="RememberLastUsedCameraInfo">Під час запису відеоповідомлень автоматично вибиратиметься остання використана камера.</string>
@@ -141,6 +174,8 @@
     <string name="VideoMessagesCameraAsk">Запитувати щоразу</string>
     <string name="MoveAttachCameraToBottom">Камера на нижній панелі</string>
     <string name="MoveAttachCameraToBottomNotice">Показувати камеру на нижній панелі вкладень замість сітки галереї.</string>
+
+    <!-- AI Chat -->
     <string name="AIChat">ШІ-чат</string>
     <string name="AIChatInfo">Налаштування сервісів, ролей та історії</string>
     <string name="AIChatServices">Сервіси</string>
@@ -188,6 +223,8 @@
     <string name="AIChatSelected">Вибрано</string>
     <string name="ClearConversationHistoryInfo">Очистити історію листування з ШІ?</string>
     <string name="AIChatHistoryCleared">Історію очищено</string>
+
+    <!-- AI Error messages -->
     <string name="AIError">Помилка сервера</string>
     <string name="AIErrorInfo">Сталася непередбачена помилка. Спробуйте ще раз.</string>
     <string name="AIError400">Некоректний запит</string>
@@ -202,11 +239,12 @@
     <string name="AIError408Info">Час очікування запиту вичерпано. Повторіть пізніше.</string>
     <string name="AIError429">Перевищено ліміт</string>
     <string name="AIError429Info">Забагато запитів. Зачекайте трохи.</string>
-    <string name="AIError502">Bad Gateway</string>
+    <string name="AIError502">Помилка шлюзу</string>
     <string name="AIError502Info">Сервер тимчасово недоступний.</string>
     <string name="AIError503">Сервіс недоступний</string>
     <string name="AIError503Info">Сервіс перевантажено. Повторіть пізніше.</string>
     <string name="TabStyleStroke">Контур індикатора вкладок</string>
+    <!-- AyuGram feature-gap completion -->
     <string name="SuggestGhostModeBeforeViewingStory">Попереджати перед переглядом історій</string>
     <string name="SuggestGhostModeBeforeStoryTitle">Режим привида</string>
     <string name="SuggestGhostModeBeforeStoryMessage">Перегляд цієї історії розкриє ваш онлайн-статус. Увімкнути режим привида?</string>
@@ -216,6 +254,7 @@
     <string name="SaveReadDateAbout">Фіксує дату та час, коли ваші повідомлення були прочитані співрозмовником.</string>
     <string name="AyuReadDate">Прочитано</string>
     <string name="AyuReadDateUnknown">Невідомо</string>
+    <!-- Built-in local folders -->
     <string name="BuiltInFolders">Вбудовані папки</string>
     <string name="BuiltInFoldersInfo">Вбудовані папки створюються локально на цьому пристрої та не синхронізуються з серверами Telegram. Їхню назву та значок змінити не можна.</string>
     <string name="LocalFolder">Локальна папка</string>
@@ -225,10 +264,44 @@
     <string name="BuiltInFolderBasicGroups">Звичайні групи</string>
     <string name="BuiltInFolderSupergroups">Супергрупи</string>
     <string name="BuiltInFolderAdmin">Адміністратор</string>
+    <!-- Sidebar menu manager -->
     <string name="MainMenuItems">Елементи бічного меню</string>
     <string name="MainMenuHiddenItems">Приховані елементи</string>
     <string name="MainMenuAddDivider">Додати розділювач</string>
     <string name="MainMenuDivider">Розділювач</string>
     <string name="MainMenuItemsInfo">Перетягуйте для зміни порядку. Натисніть на пункт, щоб приховати або повернути його. Натисніть на розділювач, щоб видалити його.</string>
-    <string name="CancelForwarding">Скасувати пересилання</string>
+    <!-- Sticker shape -->
+    <string name="StickerShape">Форма наліпки</string>
+    <string name="StickerShapeRounded">Заокруглена</string>
+    <string name="StickerShapeRoundedMsg">Повідомлення</string>
+    <!-- Disable trending -->
+    <string name="DisableTrendingFeaturedStickers">Популярні стікери</string>
+    <string name="DisableTrendingFeaturedGifs">Популярні GIF</string>
+    <string name="DisableTrendingFeaturedEmojis">Популярні Premium-емодзі</string>
+    <string name="DisableTrendingPremiumHints">Реклама Premium</string>
+    <string name="DisableTrendingBirthday">Нагадування про дні народження</string>
+    <string name="DisableTrendingEmojiTags">Пропозиції тегів емодзі</string>
+    <string name="DisableTrendingChannelPremiumBanner">Банер платної відправки в каналі</string>
+    <string name="DisableTrendingPhoneShare">Пропозиція поділитися номером телефону</string>
+    <string name="DisableTrendingGiftsPremium">Подарунки та платні елементи</string>
+
+    <!-- Feed -->
+    <string name="Feed">Стрічка</string>
+    <string name="FeedAllChannelsExcluded">Усі канали виключено зі стрічки.</string>
+    <string name="FeedBottomTab">Показувати на нижніх вкладках</string>
+    <string name="FeedBottomTabInfo">Відображати стрічку як вкладку нижньої навігації замість вкладки Контакти.</string>
+    <string name="FeedChannelHidden">**%1$s** приховано зі стрічки</string>
+    <string name="FeedChannelsInfo">Зніміть позначку з каналу, щоб приховати його повідомлення від стрічки. Нові канали відображаються автоматично.</string>
+    <string name="FeedHiddenChannels">Приховані</string>
+    <string name="FeedHideChannel">Приховати зі стрічки</string>
+    <string name="FeedIncludeArchived">Показати чати з архіву</string>
+    <string name="FeedIncludeArchivedInfo">Також показувати у стрічці канали з ваших архівованих чатів.</string>
+    <string name="FeedMarkAllRead">Позначити все як прочитане</string>
+    <string name="FeedMarkAllReadConfirm">Позначити всі повідомлення у ваших каналах як прочитані? Це також позначить їх як прочитані в оригінальних каналах.</string>
+    <string name="FeedMarkAllReadDone">Всі пости позначено як прочитані</string>
+    <string name="FeedNoPosts">Постів у каналі поки що немає.</string>
+    <string name="FeedSettings">Налаштування стрічки</string>
+    <string name="FeedShownChannels">Показуються у стрічці</string>
+    <string name="FeedUnreadCounter">Лічильник непрочитаних постів</string>
+    <string name="HideFeedTab">Приховати вкладку стрічка</string>
 </resources>
