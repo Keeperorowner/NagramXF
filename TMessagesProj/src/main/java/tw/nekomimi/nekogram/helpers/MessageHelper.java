@@ -83,6 +83,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -512,9 +513,10 @@ public class MessageHelper extends BaseController {
         Utilities.globalQueue.postRunnable(() -> {
             ArrayList<Integer> messageIds = new ArrayList<>();
             var latch = new CountDownLatch(1);
+            AtomicBoolean errored = new AtomicBoolean(false);
             var peer = getMessagesController().getInputPeer(dialogId);
             var fromId = MessagesController.getInputPeer(getUserConfig().getCurrentUser());
-            doSearchMessages(fragment, latch, messageIds, peer, replyMessageId, fromId, before, Integer.MAX_VALUE, 0);
+            doSearchMessages(fragment, latch, messageIds, peer, replyMessageId, fromId, before, Integer.MAX_VALUE, errored);
             try {
                 latch.await();
             } catch (Exception e) {
@@ -535,6 +537,9 @@ public class MessageHelper extends BaseController {
                     }
                 };
                 AndroidUtilities.runOnUIThread(callback != null ? () -> callback.run(messageIds.size(), deleteAction) : deleteAction);
+            } else if (mergeDialogId == 0 && callback != null && !errored.get()) {
+                // 扫描完整结束但没有命中消息时仍给出完成反馈，避免"点了没反应"的错觉
+                AndroidUtilities.runOnUIThread(() -> callback.run(0, () -> {}));
             }
             if (mergeDialogId != 0) {
                 deleteUserHistoryWithSearch(fragment, mergeDialogId, 0, 0, before, null);
@@ -546,7 +551,7 @@ public class MessageHelper extends BaseController {
         void run(int count, Runnable deleteAction);
     }
 
-    private void doSearchMessages(BaseFragment fragment, CountDownLatch latch, ArrayList<Integer> messageIds, TLRPC.InputPeer peer, int replyMessageId, TLRPC.InputPeer fromId, int before, int offsetId, long hash) {
+    private void doSearchMessages(BaseFragment fragment, CountDownLatch latch, ArrayList<Integer> messageIds, TLRPC.InputPeer peer, int replyMessageId, TLRPC.InputPeer fromId, int before, int offsetId, AtomicBoolean errored) {
         var req = new TLRPC.TL_messages_search();
         req.peer = peer;
         req.limit = 100;
@@ -568,7 +573,8 @@ public class MessageHelper extends BaseController {
                 req.flags |= 2;
             }
         }
-        req.hash = hash;
+        // 服务端 messagesNotModified 会依据 hash 命中提前返回，从而截断翻页；扫描类分页不能依赖它
+        req.hash = 0;
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response instanceof TLRPC.messages_Messages res) {
                 if (response instanceof TLRPC.TL_messages_messagesNotModified || res.messages.isEmpty()) {
@@ -583,25 +589,19 @@ public class MessageHelper extends BaseController {
                     }
                     messageIds.add(message.id);
                 }
-                doSearchMessages(fragment, latch, messageIds, peer, replyMessageId, fromId, before, newOffsetId, calcMessagesHash(res.messages));
+                if (res.messages.size() < req.limit) {
+                    latch.countDown();
+                    return;
+                }
+                doSearchMessages(fragment, latch, messageIds, peer, replyMessageId, fromId, before, newOffsetId, errored);
             } else {
                 if (error != null) {
+                    errored.set(true);
                     AndroidUtilities.runOnUIThread(() -> AlertsCreator.showSimpleAlert(fragment, getString(R.string.ErrorOccurred) + "\n" + error.text));
                 }
                 latch.countDown();
             }
         }, ConnectionsManager.RequestFlagFailOnServerErrors);
-    }
-
-    private long calcMessagesHash(ArrayList<TLRPC.Message> messages) {
-        if (messages == null || messages.isEmpty()) {
-            return 0;
-        }
-        long acc = 0;
-        for (TLRPC.Message message : messages) {
-            acc = MediaDataController.calcHash(acc, message.id);
-        }
-        return acc;
     }
 
     public static String getTextOrBase64(byte[] data) {
