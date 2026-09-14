@@ -11,6 +11,8 @@ package com.radolyn.ayugram.messages;
 
 
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.DialogObject;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.UserConfig;
@@ -28,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import xyz.nextalone.nagram.NaConfig;
 
 public class AyuSavePreferences {
+    private static final long USER_LOOKUP_TIMEOUT_MS = 1000L;
     public static final String saveExclusionPrefix = "saveDeletedExclusion_";
     public static ConcurrentHashMap<Long, Boolean> saveDeletedExclusions = new ConcurrentHashMap<>();
     public static boolean isSaveDeletedExclusionsLoaded = false;
@@ -48,8 +51,8 @@ public class AyuSavePreferences {
             return;
         }
 
-        this.dialogId = dialogId;
-        this.topicId = topicId;
+        this.dialogId = dialogId != 0 ? dialogId : MessageObject.getDialogId(msg);
+        this.topicId = dialogId == 0 ? resolveTopicId(accountId, msg, this.dialogId) : topicId;
         this.messageId = messageId;
         this.requestCatchTime = requestCatchTime;
     }
@@ -63,7 +66,7 @@ public class AyuSavePreferences {
             return;
         }
 
-        this.dialogId = msg.dialog_id;
+        this.dialogId = MessageObject.getDialogId(msg);
         this.topicId = resolveTopicId(accountId, msg);
         this.messageId = msg.id;
         this.requestCatchTime = (int) (System.currentTimeMillis() / 1000);
@@ -108,6 +111,23 @@ public class AyuSavePreferences {
         return saveDeletedMessageFor(accountId, dialogId, 0);
     }
 
+    /**
+     * 阅后即焚 / 一次性媒体保护等入口统一用这个条件：
+     * 与普通消息删除一致地尊重会话排除与机器人设置，而不是只看总开关。
+     */
+    public static boolean shouldKeepMediaFor(int accountId, long dialogId, MessageObject messageObject) {
+        return saveDeletedMessageFor(accountId, dialogId, messageObject);
+    }
+
+    public static boolean shouldKeepMediaFor(int accountId, long dialogId, TLRPC.Message message) {
+        long fromUserId = message != null && message.from_id != null ? message.from_id.user_id : 0;
+        return saveDeletedMessageFor(accountId, dialogId, fromUserId);
+    }
+
+    public static boolean shouldKeepMediaFor(int accountId, long dialogId, long userId) {
+        return saveDeletedMessageFor(accountId, dialogId, userId);
+    }
+
     public static boolean saveDeletedMessageFor(int accountId, long dialogId, long userId) {
         if (!NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
             return false;
@@ -117,37 +137,65 @@ public class AyuSavePreferences {
             return false;
         }
 
+        // 发送者判断与机器人会话判断都必须通过，不能因为命中发送者缓存就短路后面的判断。
+        boolean senderAllowed = true;
         if (userId != 0) {
             if (getSaveDeletedExclusion(userId)) {
                 return false;
             }
-            var fromUser = MessagesController.getInstance(accountId).getUser(userId);
-            if (fromUser != null) {
-                return !fromUser.bot || NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().Bool();
-            } else {
-                final MessagesStorage messagesStorage = MessagesStorage.getInstance(accountId);
-                final CountDownLatch countDownLatch = new CountDownLatch(1);
-                final TLRPC.User[] user = {null};
-                messagesStorage.getStorageQueue().postRunnable(() -> {
-                    user[0] = messagesStorage.getUser(userId);
-                    countDownLatch.countDown();
-                });
-                try {
-                    countDownLatch.await();
-                } catch (Exception ignored) {
-                }
-                if (user[0] != null) {
-                    return !user[0].bot || NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().Bool();
-                }
+            TLRPC.User fromUser = getCachedOrStoredUser(accountId, userId);
+            if (fromUser != null && fromUser.bot) {
+                senderAllowed = NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().Bool();
             }
         }
+        if (!senderAllowed) {
+            return false;
+        }
 
-        var user = MessagesController.getInstance(accountId).getUser(Math.abs(dialogId));
+        if (!DialogObject.isUserDialog(dialogId)) return true;
+        var user = getCachedOrStoredUser(accountId, dialogId);
         if (user == null) {
             return true;
         }
 
         return !user.bot || NaConfig.INSTANCE.getSaveDeletedMessageForBot().Bool();
+    }
+
+    /**
+     * 先查内存缓存，未命中再直读存储。
+     *
+     * <p>不能用"post 到存储队列再无限 await"：整段备份等链路本身就跑在存储队列上，
+     * 那样会等一个排在自己后面的任务直接死锁；即便在别的线程上，无界等待也可能在
+     * 存储队列繁忙时把调用方（含 UI 线程）拖住，所以这里带上限等待。
+     */
+    private static TLRPC.User getCachedOrStoredUser(int accountId, long userId) {
+        var user = MessagesController.getInstance(accountId).getUser(userId);
+        if (user != null) {
+            return user;
+        }
+        var messagesStorage = MessagesStorage.getInstance(accountId);
+        if (Thread.currentThread() == messagesStorage.getStorageQueue()) {
+            return messagesStorage.getUser(userId);
+        }
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final TLRPC.User[] stored = {null};
+        messagesStorage.getStorageQueue().postRunnable(() -> {
+            try {
+                stored[0] = messagesStorage.getUser(userId);
+            } finally {
+                countDownLatch.countDown();
+            }
+        });
+        try {
+            if (!countDownLatch.await(USER_LOOKUP_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                FileLog.d("AyuSavePreferences: user lookup timed out, fall back to dialog rules userId=" + userId);
+                return null;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
+        return stored[0];
     }
 
     public static void setSaveDeletedExclusion(long chatId, boolean value) {

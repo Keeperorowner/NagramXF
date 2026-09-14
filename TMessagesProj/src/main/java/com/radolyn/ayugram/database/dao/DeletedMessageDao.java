@@ -38,6 +38,28 @@ public interface DeletedMessageDao {
     List<DeletedMessageFull> getThreadMessages(long userId, long dialogId, long threadMessageId, long startId, long endId, int limit);
 
     @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND :startId <= messageId AND messageId <= :endId ORDER BY messageId DESC LIMIT :limit")
+    List<DeletedMessageFull> getMessagesDescending(long userId, long dialogId, long startId, long endId, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND topicId = :topicId AND :startId <= messageId AND messageId <= :endId ORDER BY messageId DESC LIMIT :limit")
+    List<DeletedMessageFull> getTopicMessagesDescending(long userId, long dialogId, long topicId, long startId, long endId, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND replyMessageId = :threadMessageId AND :startId <= messageId AND messageId <= :endId ORDER BY messageId DESC LIMIT :limit")
+    List<DeletedMessageFull> getThreadMessagesDescending(long userId, long dialogId, long threadMessageId, long startId, long endId, int limit);
+
+    @Query("SELECT COALESCE(MAX(CASE WHEN date <= :date THEN messageId END), MIN(messageId)) " +
+            "FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId) AND (:threadMessageId = 0 OR replyMessageId = :threadMessageId) " +
+            "AND messageId > 0")
+    Integer getMessageIdAtDate(long userId, long dialogId, long topicId, long threadMessageId, int date);
+
+    @Query("SELECT COALESCE(MIN(CASE WHEN date <= :date THEN messageId END), MAX(messageId)) " +
+            "FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND messageId < 0")
+    Integer getEncryptedMessageIdAtDate(long userId, long dialogId, int date);
+
+    @Transaction
     @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND groupedId = :groupedId ORDER BY messageId")
     List<DeletedMessageFull> getMessagesGrouped(long userId, long dialogId, long groupedId);
 
@@ -73,9 +95,59 @@ public interface DeletedMessageDao {
 
     @Transaction
     @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
-            "AND text IS NOT NULL AND text != '' AND text LIKE '%' || :query || '%' " +
+            "AND text IS NOT NULL AND text != '' AND text LIKE '%' || :query || '%' ESCAPE '\\' " +
             "ORDER BY messageId DESC LIMIT :limit")
     List<DeletedMessageFull> searchByText(long userId, long dialogId, String query, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId) " +
+            "AND text IS NOT NULL AND text != '' AND text LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "ORDER BY messageId DESC LIMIT :limit")
+    List<DeletedMessageFull> searchByTextTopic(long userId, long dialogId, long topicId, String query, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND (:topicId = 0 OR topicId = :topicId) " +
+            "AND date BETWEEN :startDate AND :endDate ORDER BY messageId")
+    List<DeletedMessageFull> getMessagesByDate(long userId, long dialogId, long topicId, int startDate, int endDate);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId) AND messageId < :beforeId " +
+            "AND (:query = '' OR text LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "OR mediaPath LIKE '%' || :query || '%' ESCAPE '\\' OR fwdName LIKE '%' || :query || '%' ESCAPE '\\') " +
+            "ORDER BY messageId DESC LIMIT :limit")
+    List<DeletedMessageFull> getMessagesForScroll(long userId, long dialogId, long topicId, String query, int beforeId, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId) AND messageId BETWEEN :minId AND :maxId " +
+            "AND (:query = '' OR text LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "OR mediaPath LIKE '%' || :query || '%' ESCAPE '\\' OR fwdName LIKE '%' || :query || '%' ESCAPE '\\') " +
+            "ORDER BY messageId DESC LIMIT :limit")
+    List<DeletedMessageFull> getMessagesForScrollDescending(long userId, long dialogId, long topicId, String query, int minId, int maxId, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId) AND messageId BETWEEN :minId AND :maxId " +
+            "AND (:query = '' OR text LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "OR mediaPath LIKE '%' || :query || '%' ESCAPE '\\' OR fwdName LIKE '%' || :query || '%' ESCAPE '\\') " +
+            "ORDER BY messageId ASC LIMIT :limit")
+    List<DeletedMessageFull> getMessagesForScrollAscending(long userId, long dialogId, long topicId, String query, int minId, int maxId, int limit);
+
+    @Transaction
+    @Query("SELECT * FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId)")
+    List<DeletedMessageFull> getMessagesByDialogTopic(long userId, long dialogId, long topicId);
+
+    @Query("SELECT COUNT(*) FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId " +
+            "AND (:topicId = 0 OR topicId = :topicId) " +
+            "AND (:query = '' OR text LIKE '%' || :query || '%' ESCAPE '\\' " +
+            "OR mediaPath LIKE '%' || :query || '%' ESCAPE '\\' OR fwdName LIKE '%' || :query || '%' ESCAPE '\\')")
+    int countByDialogTopic(long userId, long dialogId, long topicId, String query);
+
+    @Query("DELETE FROM deletedmessage WHERE userId = :userId AND dialogId = :dialogId AND (:topicId = 0 OR topicId = :topicId)")
+    void deleteByDialogTopic(long userId, long dialogId, long topicId);
 
     @Insert
     long insert(DeletedMessage msg);

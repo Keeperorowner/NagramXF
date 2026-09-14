@@ -15,6 +15,8 @@ import android.text.TextUtils;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
+import androidx.collection.LongSparseArray;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.ConnectionsManager;
@@ -39,6 +41,7 @@ import tw.nekomimi.nekogram.utils.AlertUtil;
 import xyz.nextalone.nagram.NaConfig;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.messages.AyuMessagesController;
+import com.radolyn.ayugram.messages.AyuHistoryDeletion;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 
 public class SecretChatHelper extends BaseController {
@@ -1149,15 +1152,11 @@ public class SecretChatHelper extends BaseController {
                     return newMessage;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionFlushHistory) {
                     long did = DialogObject.makeEncryptedDialogId(chat.id);
-                    // save all messages before flushing encrypted chat history
-                    if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
-                        getMessagesStorage().getStorageQueue().postRunnable(() -> {
-                            saveAllMessagesFromEncryptedChat(did);
-                            AndroidUtilities.runOnUIThread(() -> performFlushEncryptedHistory(did));
-                        });
-                    } else {
-                        AndroidUtilities.runOnUIThread(() -> performFlushEncryptedHistory(did));
-                    }
+                    // 负 ID 分界点区分此次清空前后的消息，后到的新消息不属于清空范围。
+                    int boundary = getUserConfig().getNewMessageId();
+                    getUserConfig().saveConfig(false);
+                    Utilities.stageQueue.postRunnable(() -> AyuMessagesController.getInstance().onHistoryFlushed(
+                            currentAccount, did, boundary + 1, -1, this::performFlushEncryptedHistory));
                     return null;
                 } else if (serviceMessage.action instanceof TLRPC.TL_decryptedMessageActionDeleteMessages) {
                     if (!serviceMessage.action.random_ids.isEmpty()) {
@@ -2056,60 +2055,21 @@ public class SecretChatHelper extends BaseController {
     }
 
     // save deleted start
-    private void saveAllMessagesFromEncryptedChat(long dialogId) {
-        SQLiteCursor cursor = null;
-        NativeByteBuffer data = null;
-        try {
-            var ayuMessagesController = AyuMessagesController.getInstance();
-            cursor = getMessagesStorage().getDatabase().queryFinalized("SELECT data FROM messages_v2 WHERE uid = " + dialogId);
-            ArrayList<Integer> savedMessageIds = new ArrayList<>();
-            while (cursor.next()) {
-                data = cursor.byteBufferValue(0);
-                if (data != null) {
-                    TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
-                    if (message != null) {
-                        message.readAttachPath(data, getUserConfig().clientUserId);
-                        message.dialog_id = dialogId;
-                        var prefs = new AyuSavePreferences(message, currentAccount);
-                        prefs.setDialogId(dialogId);
-                        ayuMessagesController.onMessageDeleted(prefs, false);
-                        savedMessageIds.add(message.id);
-                    }
-                    data.reuse();
-                }
-            }
-            if (!savedMessageIds.isEmpty()) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    getNotificationCenter().postNotificationName(AyuConstants.MESSAGES_DELETED_NOTIFICATION, dialogId, savedMessageIds);
-                });
-            }
-        } catch (Exception e) {
-            FileLog.e("saveAllMessagesFromEncryptedChat", e);
-        } finally {
-            if (cursor != null) {
-                cursor.dispose();
-            }
-            if (data != null) {
-                data.reuse();
-            }
-        }
-    }
-
-    private void performFlushEncryptedHistory(long did) {
-        TLRPC.Dialog dialog = getMessagesController().dialogs_dict.get(did);
-        if (dialog != null) {
-            dialog.unread_count = 0;
-            getMessagesController().dialogMessage.remove(dialog.id);
-        }
-        getMessagesStorage().getStorageQueue().postRunnable(() -> AndroidUtilities.runOnUIThread(() -> {
-            getNotificationsController().processReadMessages(null, did, 0, Integer.MAX_VALUE, false);
-            LongSparseIntArray dialogsToUpdate = new LongSparseIntArray(1);
-            dialogsToUpdate.put(did, 0);
-            getNotificationsController().processDialogsUpdateRead(dialogsToUpdate);
-        }));
-        getMessagesStorage().deleteDialog(did, 1);
-        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
-        getNotificationCenter().postNotificationName(NotificationCenter.removeAllMessagesFromDialog, did, false, null);
+    private void performFlushEncryptedHistory(AyuHistoryDeletion deletion) {
+        if (!deletion.captured) return;
+        long did = deletion.dialogId;
+        ArrayList<Integer> ids = new ArrayList<>(deletion.messageIds);
+        getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            ArrayList<Long> dialogIds = getMessagesStorage().markMessagesAsDeleted(did, ids, false, true, 0, 0);
+            getMessagesStorage().updateDialogsWithDeletedMessages(did, 0, ids, dialogIds);
+            AndroidUtilities.runOnUIThread(() -> {
+                LongSparseArray<ArrayList<Integer>> removed = new LongSparseArray<>();
+                removed.put(did, ids);
+                getNotificationsController().removeDeletedMessagesFromNotifications(removed, false);
+                getNotificationCenter().postNotificationName(AyuConstants.HISTORY_FLUSHED_NOTIFICATION, did, deletion);
+                getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+            });
+        });
     }
     // save deleted end
 }

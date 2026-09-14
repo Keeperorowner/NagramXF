@@ -126,6 +126,47 @@ public class NotificationsController extends BaseController implements Notificat
     private final HashSet<String> pendingVoiceLoads = new HashSet<>();
     public final ArrayList<MessageObject> popupMessages = new ArrayList<>();
     public ArrayList<MessageObject> popupReplyMessages = new ArrayList<>();
+
+    /**
+     * 在待通知 / 弹出通知的消息里找一条尚未写入主消息表的记录。
+     *
+     * <p>删除归档链路会用到：消息可能只在通知里出现过，界面还在，但 {@code messages_v2} 还没有。
+     */
+    public MessageObject findPushedOrPopupMessage(long dialogId, int messageId) {
+        ArrayList<MessageObject> popup = popupMessages;
+        MessageObject found = findInMessageList(popup, dialogId, messageId);
+        if (found != null) {
+            return found;
+        }
+        return findInMessageList(pushMessages, dialogId, messageId);
+    }
+
+    public ArrayList<MessageObject> getDeletionSnapshot(long dialogId, ArrayList<Integer> messageIds) {
+        HashSet<Integer> wanted = new HashSet<>(messageIds);
+        ArrayList<MessageObject> candidates = new ArrayList<>(pushMessages);
+        candidates.addAll(new ArrayList<>(popupMessages));
+        ArrayList<MessageObject> result = new ArrayList<>();
+        for (MessageObject message : candidates) {
+            if (message != null && wanted.contains(message.getId())
+                    && com.radolyn.ayugram.utils.AyuMessageUtils.matchesDeletionMessage(currentAccount, dialogId, message.getId(), message)) {
+                wanted.remove(message.getId());
+                result.add(message);
+            }
+        }
+        return result;
+    }
+
+    private MessageObject findInMessageList(ArrayList<MessageObject> list, long dialogId, int messageId) {
+        if (list == null) {
+            return null;
+        }
+        for (MessageObject messageObject : new ArrayList<>(list)) {
+            if (com.radolyn.ayugram.utils.AyuMessageUtils.matchesDeletionMessage(currentAccount, dialogId, messageId, messageObject)) {
+                return messageObject;
+            }
+        }
+        return null;
+    }
     private final HashSet<Long> openedInBubbleDialogs = new HashSet<>();
     private final ArrayList<StoryNotification> storyPushMessages = new ArrayList<>();
     private final LongSparseArray<StoryNotification> storyPushMessagesDict = new LongSparseArray<>();
@@ -522,22 +563,45 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
-    public void removeDeletedMessagesFromNotifications(LongSparseArray<ArrayList<Integer>> deletedMessages, boolean isReactions) {
-        // keep notifications for messages that were saved as deleted
-        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && !isReactions) {
-            return;
+    private LongSparseArray<ArrayList<Integer>> resolveNotificationDeletionDialogs(LongSparseArray<ArrayList<Integer>> deletedMessages) {
+        LongSparseArray<ArrayList<Integer>> result = new LongSparseArray<>();
+        for (int i = 0; i < deletedMessages.size(); i++) {
+            long dialogId = deletedMessages.keyAt(i);
+            ArrayList<Integer> ids = deletedMessages.valueAt(i);
+            if (dialogId != 0) {
+                ArrayList<Integer> actualIds = result.get(dialogId);
+                if (actualIds == null) result.put(dialogId, actualIds = new ArrayList<>());
+                actualIds.addAll(ids);
+                continue;
+            }
+            for (int j = 0; j < pushMessagesDict.size(); j++) {
+                long actualDialogId = pushMessagesDict.keyAt(j);
+                SparseArray<MessageObject> messages = pushMessagesDict.valueAt(j);
+                for (int id : ids) {
+                    MessageObject message = messages.get(id);
+                    if (message == null || message.messageOwner.peer_id == null || message.messageOwner.peer_id.channel_id != 0) continue;
+                    ArrayList<Integer> actualIds = result.get(actualDialogId);
+                    if (actualIds == null) result.put(actualDialogId, actualIds = new ArrayList<>());
+                    actualIds.add(id);
+                }
+            }
         }
+        return result;
+    }
+
+    public void removeDeletedMessagesFromNotifications(LongSparseArray<ArrayList<Integer>> deletedMessages, boolean isReactions) {
         ArrayList<MessageObject> popupArrayRemove = new ArrayList<>(0);
         notificationsQueue.postRunnable(() -> {
+            LongSparseArray<ArrayList<Integer>> scopedMessages = resolveNotificationDeletionDialogs(deletedMessages);
             int old_unread_count = total_unread_count;
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
-            for (int a = 0; a < deletedMessages.size(); a++) {
-                long key = deletedMessages.keyAt(a);
+            for (int a = 0; a < scopedMessages.size(); a++) {
+                long key = scopedMessages.keyAt(a);
                 SparseArray<MessageObject> sparseArray = pushMessagesDict.get(key);
                 if (sparseArray == null) {
                     continue;
                 }
-                ArrayList<Integer> mids = deletedMessages.get(key);
+                ArrayList<Integer> mids = scopedMessages.get(key);
                 for (int b = 0, N = mids.size(); b < N; b++) {
                     int mid = mids.get(b);
                     MessageObject messageObject = sparseArray.get(mid);
@@ -548,6 +612,7 @@ public class NotificationsController extends BaseController implements Notificat
                             continue;
                         }
                         long dialogId = messageObject.getDialogId();
+                        if (!isReactions && com.radolyn.ayugram.messages.AyuSavePreferences.saveDeletedMessageFor(currentAccount, dialogId, messageObject)) continue;
                         Integer currentCount = pushDialogs.get(dialogId);
                         if (currentCount == null) {
                             currentCount = 0;
@@ -616,9 +681,6 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     public void removeDeletedHisoryFromNotifications(LongSparseIntArray deletedMessages) {
-        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
-            return;
-        }
         ArrayList<MessageObject> popupArrayRemove = new ArrayList<>(0);
         notificationsQueue.postRunnable(() -> {
             int old_unread_count = total_unread_count;
@@ -626,7 +688,7 @@ public class NotificationsController extends BaseController implements Notificat
 
             for (int a = 0; a < deletedMessages.size(); a++) {
                 long key = deletedMessages.keyAt(a);
-                long dialogId = -key;
+                long dialogId = key;
                 long id = deletedMessages.get(key);
                 Integer currentCount = pushDialogs.get(dialogId);
                 if (currentCount == null) {
@@ -636,7 +698,12 @@ public class NotificationsController extends BaseController implements Notificat
 
                 for (int c = 0; c < pushMessages.size(); c++) {
                     MessageObject messageObject = pushMessages.get(c);
-                    if (messageObject.getDialogId() == dialogId && messageObject.getId() <= id) {
+                    if (messageObject.getDialogId() == dialogId && messageObject.getId() > 0 && messageObject.getId() <= id) {
+                        if (com.radolyn.ayugram.messages.AyuSavePreferences.saveDeletedMessageFor(currentAccount, dialogId, messageObject)) {
+                            com.radolyn.ayugram.messages.AyuMessagesController.getInstance().onMessageDeleted(
+                                    new com.radolyn.ayugram.messages.AyuSavePreferences(messageObject.messageOwner, currentAccount));
+                            continue;
+                        }
                         SparseArray<MessageObject> sparseArray = pushMessagesDict.get(dialogId);
                         if (sparseArray != null) {
                             sparseArray.remove(messageObject.getId());
@@ -676,7 +743,7 @@ public class NotificationsController extends BaseController implements Notificat
                     pushDialogsOverrideMention.remove(dialogId);
                 }
             }
-            if (popupArrayRemove.isEmpty()) {
+            if (!popupArrayRemove.isEmpty()) {
                 AndroidUtilities.runOnUIThread(() -> {
                     for (int a = 0, size = popupArrayRemove.size(); a < size; a++) {
                         popupMessages.remove(popupArrayRemove.get(a));

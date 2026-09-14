@@ -9,6 +9,7 @@ import com.radolyn.ayugram.database.entities.DeletedMessageReaction;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
 
+import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.MessageObject;
@@ -24,102 +25,201 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Predicate;
 
 public abstract class AyuHistoryHook {
 
-    public static void doHookSync(
+    public static AyuHistoryPagination.Page<DeletedMessageFull> doHookSync(
             int currentAccount,
             TLRPC.messages_Messages messagesRes,
             LongSparseArray<TLRPC.User> usersDict,
             LongSparseArray<TLRPC.Chat> chatsDict,
             long dialogId, long topicId, int loadType,
+            int count, int offsetId, int offsetDate, boolean isCache,
             boolean isChannelComment, long threadMessageId, boolean isTopic
     ) {
+        boolean encrypted = DialogObject.isEncryptedDialog(dialogId);
         int minId = Integer.MAX_VALUE;
         int maxId = Integer.MIN_VALUE;
+        boolean onlyServiceMessages = true;
+        Set<Integer> existingIds = new HashSet<>();
         for (int i = 0; i < messagesRes.messages.size(); i++) {
-            int id = messagesRes.messages.get(i).id;
-            if (id > 0) {
+            TLRPC.Message message = messagesRes.messages.get(i);
+            int id = message.id;
+            existingIds.add(id);
+            if ((encrypted ? id < 0 : id > 0) && !(message instanceof TLRPC.TL_messageEmpty)) {
                 if (id < minId) minId = id;
                 if (id > maxId) maxId = id;
+                if (!(message instanceof TLRPC.TL_messageService)) {
+                    onlyServiceMessages = false;
+                }
             }
         }
-        if (minId == Integer.MAX_VALUE) {
-            minId = 0;
-            maxId = Integer.MAX_VALUE;
-        } else if (reachesDialogEnd(currentAccount, dialogId, topicId, loadType, isTopic, maxId)) {
-            // 处于会话末尾时上界必须放开：id 比现存最新消息更大的已删除消息
-            // 否则会被区间条件排除，直到有新消息把上界抬高才会显示
-            maxId = Integer.MAX_VALUE;
+        if (isCache && !encrypted && minId > maxId) {
+            return null;
         }
 
         long clientUserId = UserConfig.getInstance(currentAccount).clientUserId;
         AyuMessagesController ayuController = AyuMessagesController.getInstance();
-        Set<Integer> existingIds = new HashSet<>();
-        for (int i = 0; i < messagesRes.messages.size(); i++) {
-            existingIds.add(messagesRes.messages.get(i).id);
-        }
-
-        List<DeletedMessageFull> deletedMessages;
-        // monoForum（频道私信）也是按 topicId 归档的，但 ChatActivity 不会把它标成 isTopic，
-        // 若不单独识别就会落进 isChannelComment 分支、拿 replyMessageId 列去匹配而永远查不到
         boolean isMonoForum = isMonoForum(currentAccount, dialogId);
-        long resolvedTopicId = topicId != 0 ? topicId : (isMonoForum ? threadMessageId : 0);
-        if (isMonoForum && resolvedTopicId != 0) {
-            deletedMessages = ayuController.getTopicMessages(clientUserId, dialogId, resolvedTopicId, minId, maxId, 200);
-        } else if (isChannelComment) {
-            deletedMessages = ayuController.getThreadMessages(clientUserId, dialogId, threadMessageId, minId, maxId, 200);
-        } else if (isTopic && topicId != 0) {
-            deletedMessages = ayuController.getTopicMessages(clientUserId, dialogId, topicId, minId, maxId, 200);
-        } else {
-            deletedMessages = ayuController.getMessages(clientUserId, dialogId, minId, maxId, 200);
+        long savedTopicId = isMonoForum ? (topicId != 0 ? topicId : threadMessageId) : (isTopic ? topicId : 0);
+        long savedThreadId = savedTopicId == 0 && isChannelComment ? threadMessageId : 0;
+
+        if (loadType == MessagesController.LOAD_AROUND_DATE && offsetDate > 0
+                && ((encrypted ? offsetId >= 0 : offsetId <= 0) || onlyServiceMessages)) {
+            Integer savedId = encrypted
+                    ? ayuController.getEncryptedMessageIdAtDate(clientUserId, dialogId, offsetDate)
+                    : ayuController.getMessageIdAtDate(clientUserId, dialogId, savedTopicId, savedThreadId, offsetDate);
+            offsetId = savedId != null ? savedId : encrypted ? -1 : 1;
         }
-        if (deletedMessages.isEmpty()) {
-            return;
+        boolean hasAnchor = encrypted ? offsetId < 0 : offsetId > 0;
+        AyuHistoryPagination.Direction direction;
+        if (loadType == MessagesController.LOAD_FORWARD) {
+            direction = AyuHistoryPagination.Direction.FORWARD;
+        } else if (hasAnchor && (loadType == MessagesController.LOAD_FROM_UNREAD
+                || loadType == MessagesController.LOAD_AROUND_MESSAGE || loadType == MessagesController.LOAD_AROUND_DATE)) {
+            direction = AyuHistoryPagination.Direction.AROUND;
+        } else {
+            direction = AyuHistoryPagination.Direction.BACKWARD;
         }
 
+        if (encrypted) {
+            if (minId > maxId || onlyServiceMessages) {
+                minId = Integer.MIN_VALUE;
+                maxId = -1;
+            }
+            if (direction == AyuHistoryPagination.Direction.BACKWARD) {
+                minId = hasAnchor ? offsetId + 1 : Integer.MIN_VALUE;
+                if (messagesRes.messages.size() < count) maxId = -1;
+            } else if (direction == AyuHistoryPagination.Direction.FORWARD) {
+                maxId = offsetId > Integer.MIN_VALUE ? offsetId - 1 : Integer.MIN_VALUE;
+                if (messagesRes.messages.size() < count) minId = Integer.MIN_VALUE;
+            } else {
+                minId = Math.min(minId, offsetId);
+                maxId = Math.max(maxId, offsetId);
+                if (messagesRes.messages.size() < count) {
+                    int olderCount = 0;
+                    int newerCount = 0;
+                    for (TLRPC.Message message : messagesRes.messages) {
+                        if (message.id < 0 && message.id > offsetId) olderCount++;
+                        if (message.id <= offsetId) newerCount++;
+                    }
+                    if (olderCount < count / 2) maxId = -1;
+                    if (newerCount < count / 2) minId = Integer.MIN_VALUE;
+                }
+            }
+        } else {
+            if (minId > maxId || (onlyServiceMessages && !isCache)) {
+                minId = 1;
+                maxId = Integer.MAX_VALUE;
+            } else if (reachesDialogEnd(currentAccount, dialogId, savedTopicId, isTopic || isMonoForum, maxId)) {
+                maxId = Integer.MAX_VALUE;
+            }
+            if (direction == AyuHistoryPagination.Direction.BACKWARD) {
+                maxId = offsetId > 0 ? offsetId - 1 : Integer.MAX_VALUE;
+                if (!isCache && messagesRes.messages.size() < count) {
+                    minId = 1;
+                }
+            } else if (direction == AyuHistoryPagination.Direction.FORWARD) {
+                minId = offsetId;
+                if (!isCache && messagesRes.messages.size() < count) {
+                    maxId = Integer.MAX_VALUE;
+                }
+            } else {
+                minId = Math.min(minId, offsetId);
+                maxId = Math.max(maxId, offsetId);
+                if (!isCache && messagesRes.messages.size() < count) {
+                    int olderCount = 0;
+                    int newerCount = 0;
+                    for (TLRPC.Message message : messagesRes.messages) {
+                        if (message.id > 0 && message.id <= offsetId) olderCount++;
+                        if (message.id > offsetId) newerCount++;
+                    }
+                    int requestedOlder = loadType == MessagesController.LOAD_AROUND_MESSAGE ? count / 2
+                            : loadType == MessagesController.LOAD_AROUND_DATE ? 5
+                            : threadMessageId != 0 && !isMonoForum ? 10 : 6;
+                    requestedOlder = Math.min(count, requestedOlder);
+                    if (olderCount < requestedOlder) minId = 1;
+                    if (newerCount < count - requestedOlder) maxId = Integer.MAX_VALUE;
+                }
+            }
+        }
+
+        Map<Integer, TLRPC.TL_message> mappedMessages = new HashMap<>();
+        AyuHistoryPagination.Source<DeletedMessageFull> source = (start, end, limit, ascending) -> ayuController.getHistoryMessages(
+                clientUserId, dialogId, savedTopicId, savedThreadId, start, end, limit, ascending);
+        Predicate<DeletedMessageFull> canDisplay = full -> {
+            if (existingIds.contains(full.message.messageId)) {
+                return true;
+            }
+            if (!hasContent(full)) {
+                return false;
+            }
+            try {
+                mappedMessages.put(full.message.messageId, map(full, currentAccount));
+                return true;
+            } catch (Exception e) {
+                FileLog.e("AyuHistoryHook.map", e);
+                return false;
+            }
+        };
+        AyuHistoryPagination.Page<DeletedMessageFull> page = encrypted
+                ? AyuHistoryPagination.loadEncrypted(direction, offsetId, minId, maxId, count, source, full -> full.message.messageId, canDisplay)
+                : AyuHistoryPagination.load(direction, offsetId, minId, maxId, count, source, full -> full.message.messageId, canDisplay);
         Set<Long> groupIds = new HashSet<>();
-        Set<Integer> replyIds = new HashSet<>();
         ArrayList<Long> usersToLoad = new ArrayList<>();
         ArrayList<Long> chatsToLoad = new ArrayList<>();
         // 自定义 emoji 的 document id：不收集的话 messagesRes.animatedEmoji 为空，
         // MessagesController 就不会 processDocuments，气泡里的自定义 emoji 首屏显示为空白
         ArrayList<Long> emojiToLoad = new ArrayList<>();
 
-        for (DeletedMessageFull full : deletedMessages) {
-            if (!hasContent(full) || existingIds.contains(full.message.messageId)) {
-                continue;
-            }
-            TLRPC.TL_message msg = map(full, currentAccount);
-            existingIds.add(msg.id);
-            messagesRes.messages.add(msg);
-            if (msg.grouped_id != 0) groupIds.add(msg.grouped_id);
-            collectReplyId(msg, replyIds);
-            MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, emojiToLoad);
-        }
+        if (!page.messages.isEmpty()) {
+            messagesRes.messages.removeIf(message -> !page.contains(message.id));
 
-        if (!groupIds.isEmpty()) {
-            for (DeletedMessageFull full : ayuController.getMessagesGroupedIn(clientUserId, dialogId, new ArrayList<>(groupIds))) {
-                if (!hasContent(full) || existingIds.contains(full.message.messageId)) {
+            for (DeletedMessageFull full : page.messages) {
+                if (existingIds.contains(full.message.messageId)) {
                     continue;
                 }
-                TLRPC.TL_message msg = map(full, currentAccount);
+                TLRPC.TL_message msg = mappedMessages.get(full.message.messageId);
                 existingIds.add(msg.id);
                 messagesRes.messages.add(msg);
-                collectReplyId(msg, replyIds);
+                if (msg.grouped_id != 0) groupIds.add(msg.grouped_id);
                 MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, emojiToLoad);
+            }
+
+            if (!groupIds.isEmpty()) {
+                for (DeletedMessageFull full : ayuController.getMessagesGroupedIn(clientUserId, dialogId, new ArrayList<>(groupIds))) {
+                    if (!hasContent(full) || existingIds.contains(full.message.messageId) || !page.contains(full.message.messageId)) {
+                        continue;
+                    }
+                    TLRPC.TL_message msg = map(full, currentAccount);
+                    existingIds.add(msg.id);
+                    messagesRes.messages.add(msg);
+                    MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, emojiToLoad);
+                }
             }
         }
 
-        // 服务端仍存在的消息也可能回复了一条已删除消息，同样需要补全预览
-        for (int i = 0; i < messagesRes.messages.size(); i++) {
-            collectReplyId(messagesRes.messages.get(i), replyIds);
-        }
-
-        fixReplies(currentAccount, clientUserId, dialogId, messagesRes, replyIds, usersToLoad, chatsToLoad, emojiToLoad);
+        // 服务端仍存在的消息也可能回复了一条已删除消息：即使本次没有可注入的归档消息，
+        // 引用预览也得补上，否则气泡里引用头一直是空的
+        fixReplies(currentAccount, clientUserId, dialogId, messagesRes, usersToLoad, chatsToLoad, emojiToLoad);
 
         appendAnimatedEmoji(currentAccount, messagesRes, emojiToLoad);
 
+        appendDicts(currentAccount, messagesRes, usersDict, chatsDict, usersToLoad, chatsToLoad);
+
+        messagesRes.messages.sort((a, b) -> encrypted ? Integer.compare(a.id, b.id) : Integer.compare(b.id, a.id));
+        return page.messages.isEmpty() ? null : page;
+    }
+
+    /**
+     * 把注入消息引用到的用户/会话补进 messagesRes 和渲染用的 dict。
+     */
+    private static void appendDicts(
+            int currentAccount, TLRPC.messages_Messages messagesRes,
+            LongSparseArray<TLRPC.User> usersDict, LongSparseArray<TLRPC.Chat> chatsDict,
+            ArrayList<Long> usersToLoad, ArrayList<Long> chatsToLoad
+    ) {
         MessagesController messagesController = MessagesController.getInstance(currentAccount);
         try {
             for (Long uid : usersToLoad) {
@@ -145,8 +245,6 @@ public abstract class AyuHistoryHook {
         } catch (Exception e) {
             FileLog.e(e);
         }
-
-        messagesRes.messages.sort((a, b) -> Integer.compare(b.id, a.id));
     }
 
     /**
@@ -193,19 +291,19 @@ public abstract class AyuHistoryHook {
     /**
      * 按关键词搜索已删除消息，供聊天内搜索合并进结果列表。
      *
-     * <p>此前搜索只覆盖服务端与本地缓存，已删除消息即使存着也搜不到。
-     *
+     * @param topicId 非 0 时只搜该话题，避免话题内混进别的讨论串结果
      * @return 匹配的消息，按 id 倒序；出错返回空列表
      */
-    public static ArrayList<MessageObject> searchDeletedMessages(int currentAccount, long dialogId, String query, int limit) {
+    public static ArrayList<MessageObject> searchDeletedMessages(int currentAccount, long dialogId, long topicId, String query, int limit) {
         ArrayList<MessageObject> result = new ArrayList<>();
         if (TextUtils.isEmpty(query) || dialogId == 0) {
             return result;
         }
         try {
             long clientUserId = UserConfig.getInstance(currentAccount).clientUserId;
-            List<DeletedMessageFull> found = AyuMessagesController.getInstance()
-                    .searchByText(clientUserId, dialogId, query, limit);
+            List<DeletedMessageFull> found = topicId != 0
+                    ? AyuMessagesController.getInstance().searchByTextTopic(clientUserId, dialogId, topicId, query, limit)
+                    : AyuMessagesController.getInstance().searchByText(clientUserId, dialogId, query, limit);
             if (found == null || found.isEmpty()) {
                 return result;
             }
@@ -232,9 +330,7 @@ public abstract class AyuHistoryHook {
     /**
      * 把已删除的媒体消息注入媒体页（共享媒体标签）。
      *
-     * <p>此前媒体页完全看不到已删除内容——文件还在磁盘上、库里也有记录，
-     * 但只能从独立的"已删除消息"界面进入。这里按服务端本页的 id 区间去查已删除表，
-     * 只挑与当前标签类型匹配的媒体补进去。
+     * <p>按服务端本页的 id 区间查已删除表，只挑与当前标签类型匹配的媒体补进去。
      *
      * @param type {@code MediaDataController.MEDIA_*}
      */
@@ -342,6 +438,46 @@ public abstract class AyuHistoryHook {
         }
     }
 
+    /**
+     * 从归档里取回复目标，供 {@code loadReplyMessagesForMessages} 使用。
+     *
+     * @return 找到的消息；其 {@code dialog_id} 已补齐
+     */
+    public static ArrayList<TLRPC.Message> loadDeletedRepliesForLoad(int currentAccount, long dialogId, List<Integer> messageIds) {
+        ArrayList<TLRPC.Message> result = new ArrayList<>();
+        if (messageIds == null || messageIds.isEmpty() || dialogId == 0
+                || !xyz.nextalone.nagram.NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+            return result;
+        }
+        try {
+            long clientUserId = UserConfig.getInstance(currentAccount).clientUserId;
+            List<DeletedMessageFull> found = AyuMessagesController.getInstance().getMessagesByIds(clientUserId, dialogId, new ArrayList<>(messageIds));
+            if (found == null || found.isEmpty()) {
+                return result;
+            }
+            Set<Integer> seen = new HashSet<>();
+            for (DeletedMessageFull full : found) {
+                if (!hasContent(full)) {
+                    continue;
+                }
+                try {
+                    TLRPC.TL_message msg = map(full, currentAccount);
+                    if (msg.dialog_id == 0) {
+                        msg.dialog_id = dialogId;
+                    }
+                    if (seen.add(msg.id)) {
+                        result.add(msg);
+                    }
+                } catch (Exception e) {
+                    FileLog.e("AyuHistoryHook.loadDeletedRepliesForLoad", e);
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e("AyuHistoryHook.loadDeletedRepliesForLoad", e);
+        }
+        return result;
+    }
+
     private static boolean isMonoForum(int currentAccount, long dialogId) {
         try {
             return MessagesController.getInstance(currentAccount).isMonoForum(dialogId);
@@ -372,7 +508,39 @@ public abstract class AyuHistoryHook {
         }
     }
 
-    private static void collectReplyId(TLRPC.Message msg, Set<Integer> replyIds) {
+    /** 回复目标的消息键：跨会话回复（reply_to_peer_id）必须连会话 id 一起比 */
+    private static final class ReplyKey {
+        final long dialogId;
+        final int messageId;
+
+        ReplyKey(long dialogId, int messageId) {
+            this.dialogId = dialogId;
+            this.messageId = messageId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof ReplyKey)) return false;
+            ReplyKey other = (ReplyKey) o;
+            return dialogId == other.dialogId && messageId == other.messageId;
+        }
+
+        @Override
+        public int hashCode() {
+            return Long.hashCode(dialogId) * 31 + messageId;
+        }
+    }
+
+    private static ReplyKey replyKeyOf(TLRPC.Message msg, long defaultDialogId) {
+        long targetDialogId = MessageObject.getReplyToDialogId(msg);
+        if (targetDialogId == 0) {
+            targetDialogId = msg.dialog_id != 0 ? msg.dialog_id : defaultDialogId;
+        }
+        return new ReplyKey(targetDialogId, msg.reply_to.reply_to_msg_id);
+    }
+
+    private static void collectReplyId(TLRPC.Message msg, Set<ReplyKey> replyIds, long defaultDialogId) {
         if (msg == null || msg.reply_to == null) {
             return;
         }
@@ -382,53 +550,65 @@ public abstract class AyuHistoryHook {
         }
         int replyToMsgId = msg.reply_to.reply_to_msg_id;
         if (replyToMsgId > 0) {
-            replyIds.add(replyToMsgId);
+            replyIds.add(replyKeyOf(msg, defaultDialogId));
         }
     }
 
     /**
      * 给回复了已删除消息的气泡补上引用预览。
      *
-     * <p>此前的做法是把被回复的已删除消息作为独立一行插进列表——用户看到的是一条散落的
-     * 旧消息，而不是引用头。这里改成挂到 {@code reply_to} 上：
-     * {@link org.telegram.messenger.MessageObject} 构造时若发现 {@code replyMessage}
-     * 非空就会自动建出 {@code replyMessageObject}，因此设置 TL 字段即可。
+     * <p>直接写 {@code reply_to}：{@link org.telegram.messenger.MessageObject} 构造时若发现
+     * {@code replyMessage} 非空会自动建出 {@code replyMessageObject}。
      *
-     * <p>两级兜底：先查已删除消息表，未命中的再查本地消息缓存（消息可能只是被本地清理、
-     * 并未真正删除）。
+     * <p>目标按 {@code (dialogId, messageId)} 复合键取：跨会话回复只按 messageId 查
+     * 会取到同 id 的另一会话消息。
+     *
+     * <p>两级兜底：先查已删除消息表，未命中的再查本地消息缓存。
      */
     private static void fixReplies(
             int currentAccount, long clientUserId, long dialogId,
-            TLRPC.messages_Messages messagesRes, Set<Integer> replyIds,
+            TLRPC.messages_Messages messagesRes,
             ArrayList<Long> usersToLoad, ArrayList<Long> chatsToLoad, ArrayList<Long> emojiToLoad
     ) {
+        Set<ReplyKey> replyIds = new HashSet<>();
+        for (int i = 0; i < messagesRes.messages.size(); i++) {
+            collectReplyId(messagesRes.messages.get(i), replyIds, dialogId);
+        }
         if (replyIds.isEmpty()) {
             return;
         }
 
-        Map<Integer, TLRPC.Message> replyTargets = new HashMap<>();
+        // 按目标会话分组，跨会话回复去各自的会话里找
+        Map<Long, ArrayList<Integer>> idsByDialog = new HashMap<>();
+        for (ReplyKey key : replyIds) {
+            idsByDialog.computeIfAbsent(key.dialogId, k -> new ArrayList<>()).add(key.messageId);
+        }
+
+        Map<ReplyKey, TLRPC.Message> replyTargets = new HashMap<>();
         try {
-            for (DeletedMessageFull full : AyuMessagesController.getInstance()
-                    .getMessagesByIds(clientUserId, dialogId, new ArrayList<>(replyIds))) {
-                if (!hasContent(full)) {
-                    continue;
+            for (Map.Entry<Long, ArrayList<Integer>> entry : idsByDialog.entrySet()) {
+                for (DeletedMessageFull full : AyuMessagesController.getInstance()
+                        .getMessagesByIds(clientUserId, entry.getKey(), entry.getValue())) {
+                    if (!hasContent(full)) {
+                        continue;
+                    }
+                    TLRPC.TL_message target = map(full, currentAccount);
+                    replyTargets.put(new ReplyKey(entry.getKey(), target.id), target);
                 }
-                TLRPC.TL_message target = map(full, currentAccount);
-                replyTargets.put(target.id, target);
             }
         } catch (Exception e) {
             FileLog.e("AyuHistoryHook.fixReplies#deleted", e);
         }
 
         // 已删除表没有的，退回本地消息缓存
-        Set<Integer> missing = new HashSet<>();
-        for (Integer replyId : replyIds) {
+        Set<ReplyKey> missing = new HashSet<>();
+        for (ReplyKey replyId : replyIds) {
             if (!replyTargets.containsKey(replyId)) {
                 missing.add(replyId);
             }
         }
-        if (!missing.isEmpty()) {
-            replyTargets.putAll(loadCachedReplies(currentAccount, dialogId, missing));
+        for (Map.Entry<ReplyKey, TLRPC.Message> entry : loadCachedReplies(currentAccount, missing).entrySet()) {
+            replyTargets.putIfAbsent(entry.getKey(), entry.getValue());
         }
 
         if (replyTargets.isEmpty()) {
@@ -443,8 +623,8 @@ public abstract class AyuHistoryHook {
             if (msg.reply_to.story_id != 0) {
                 continue;
             }
-            TLRPC.Message target = replyTargets.get(msg.reply_to.reply_to_msg_id);
-            if (target == null || target.id == msg.id) {
+            TLRPC.Message target = replyTargets.get(replyKeyOf(msg, dialogId));
+            if (target == null || target.id == msg.id && MessageObject.getDialogId(target) == MessageObject.getDialogId(msg)) {
                 continue;
             }
             msg.replyMessage = target;
@@ -509,26 +689,23 @@ public abstract class AyuHistoryHook {
     }
 
     /**
-     * 从本地消息缓存取回复目标。{@link MessagesStorage#getMessage} 是 post-and-wait，
-     * 已经在 storageQueue 上时会自锁死，故此时直接跳过——那条路径上被回复消息通常
-     * 已随本批一起加载，上游的 loadReplyMessagesForMessages 也会再兜一次。
+     * 从本地消息缓存取回复目标。用 {@link MessagesStorage#getMessageLegit} 直读，
+     * 不能走 {@code getMessage} 的 post-and-wait：本方法可能在存储队列上被调用，
+     * 那样会等一个排在自己后面的任务。
      */
-    private static Map<Integer, TLRPC.Message> loadCachedReplies(int currentAccount, long dialogId, Set<Integer> messageIds) {
-        Map<Integer, TLRPC.Message> result = new HashMap<>();
+    private static Map<ReplyKey, TLRPC.Message> loadCachedReplies(int currentAccount, Set<ReplyKey> keys) {
+        Map<ReplyKey, TLRPC.Message> result = new HashMap<>();
         MessagesStorage storage = MessagesStorage.getInstance(currentAccount);
-        if (Thread.currentThread() == storage.getStorageQueue()) {
-            return result;
-        }
-        for (Integer messageId : messageIds) {
+        for (ReplyKey key : keys) {
             try {
-                TLRPC.Message message = storage.getMessage(dialogId, messageId);
+                TLRPC.Message message = storage.getMessageLegit(key.dialogId, key.messageId);
                 if (message != null && !(message instanceof TLRPC.TL_messageEmpty)) {
                     if (message.dialog_id == 0) {
-                        message.dialog_id = dialogId;
+                        message.dialog_id = key.dialogId;
                     }
-                    message.id = messageId;
+                    message.id = key.messageId;
                     MessageObject.normalizeFlags(message);
-                    result.put(messageId, message);
+                    result.put(key, message);
                 }
             } catch (Exception e) {
                 FileLog.e("AyuHistoryHook.loadCachedReplies", e);
@@ -543,7 +720,7 @@ public abstract class AyuHistoryHook {
      */
     private static boolean reachesDialogEnd(
             int currentAccount,
-            long dialogId, long topicId, int loadType, boolean isTopic, int maxId
+            long dialogId, long topicId, boolean isTopic, int maxId
     ) {
         try {
             MessagesController messagesController = MessagesController.getInstance(currentAccount);
@@ -561,8 +738,7 @@ public abstract class AyuHistoryHook {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        // 拿不到会话信息时退回加载类型判断：首屏与向下加载都可能停在末尾
-        return loadType == 2 || loadType == 0;
+        return false;
     }
 
     private static TLRPC.TL_message map(DeletedMessageFull deletedMessageFull, int accountId) {
@@ -599,7 +775,7 @@ public abstract class AyuHistoryHook {
         AyuMessageUtils.mapMedia(deletedMessageFull.message, tlMessage, accountId);
         // 必须放在 mapMedia 之后：flags 是从库里原样读回的，若某些字段这次没能重建
         // （媒体反序列化失败、reply 头缺失等），对应 flag 位会与实际内容不符，
-        // 导致序列化或渲染异常。上游从存储读消息的每条路径都会做这一步。
+        // 导致序列化或渲染异常。
         MessageObject.normalizeFlags(tlMessage);
         return tlMessage;
     }

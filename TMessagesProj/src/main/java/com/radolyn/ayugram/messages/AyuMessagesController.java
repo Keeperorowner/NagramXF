@@ -22,11 +22,15 @@ import com.radolyn.ayugram.database.entities.DeletedMessageFull;
 import com.radolyn.ayugram.database.entities.DeletedMessageReaction;
 import com.radolyn.ayugram.database.entities.EditedMessage;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
+import com.radolyn.ayugram.utils.AyuState;
 import com.radolyn.ayugram.utils.LastSeenHelper;
 
+import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.UserConfig;
@@ -43,6 +47,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Consumer;
 
 
 import tw.nekomimi.nekogram.NekoConfig;
@@ -64,10 +72,20 @@ public class AyuMessagesController {
     private static final String ATTACHMENTS_MAINTENANCE_KEY = "ayuLastAttachmentsMaintenance";
     private static final long MAINTENANCE_INTERVAL_MS = 24L * 60L * 60L * 1000L;
     private final DeletedDialogService deletedDialogService;
+    private final ExecutorService executor;
 
     private AyuMessagesController() {
         initializeAttachmentsFolder();
         AyuSavePreferences.loadAllExclusions();
+
+        executor = Executors.newFixedThreadPool(3, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable runnable) {
+                Thread thread = new Thread(runnable);
+                thread.setName("AyuMessagesController");
+                return thread;
+            }
+        });
 
         deletedDialogService = new DeletedDialogService();
         scheduleRestoreDeletedDialogs();
@@ -158,6 +176,10 @@ public class AyuMessagesController {
 
     public MessageObject getLastMessageCached(long dialogId) {
         return getLastMessageCached(UserConfig.selectedAccount, dialogId);
+    }
+
+    public MessageObject getLastTopicMessageCached(int account, long dialogId, long topicId) {
+        return deletedDialogService.getLastTopicMessageCached(account, dialogId, topicId);
     }
 
     public DeletedDialogService getDeletedDialogService() {
@@ -324,23 +346,25 @@ public class AyuMessagesController {
     }
 
     public void onMessageEdited(AyuSavePreferences prefs, TLRPC.Message newMessage) {
-        Utilities.globalQueue.postRunnable(() -> {
+        // 与删除归档一样跑在控制器自有线程池上：附件缺失时 mapMedia 会同步等待补下载，
+        // 若放在 globalQueue 上会与"下载完成回调 + 间谍设置统计"同队列，互相阻塞。
+        executeAsync(() -> {
             try {
                 onMessageEditedInner(prefs, newMessage, false);
             } catch (Exception e) {
                 FileLog.e("onMessageEdited", e);
             }
-        });
+        }, "onMessageEdited");
     }
 
     public void onMessageEditedForce(AyuSavePreferences prefs) {
-        Utilities.globalQueue.postRunnable(() -> {
+        executeAsync(() -> {
             try {
                 onMessageEditedInner(prefs, prefs.getMessage(), true);
             } catch (Exception e) {
                 FileLog.e("onMessageEditedForce", e);
             }
-        });
+        }, "onMessageEditedForce");
     }
 
     private void onMessageEditedInner(AyuSavePreferences prefs, TLRPC.Message newMessage, boolean force) {
@@ -485,34 +509,162 @@ public class AyuMessagesController {
     }
 
     public void onMessageDeleted(AyuSavePreferences prefs) {
-        onMessageDeleted(prefs, true);
-    }
-
-    public void onMessageDeleted(AyuSavePreferences prefs, boolean useQueue) {
         if (prefs == null || prefs.getMessage() == null) {
             return;
         }
-        Runnable task = () -> {
+        // 保存链路一律在专用线程池执行：可能在存储队列上被触发，
+        // 若在队列内同步跑，AyuSavePreferences 的用户查询会回头等队列，直接自锁死。
+        executeAsync(() -> {
             try {
-                onMessageDeletedInner(prefs);
+                if (onMessageDeletedInner(prefs)) {
+                    ArrayList<Integer> ids = new ArrayList<>();
+                    ids.add(prefs.getMessageId());
+                    AndroidUtilities.runOnUIThread(() -> NotificationCenter.getInstance(prefs.getAccountId())
+                            .postNotificationName(AyuConstants.MESSAGES_DELETED_NOTIFICATION, prefs.getDialogId(), ids, prefs.getRequestCatchTime()));
+                }
             } catch (Throwable e) {
                 FileLog.e("onMessageDeleted", e);
             }
-        };
-        try {
-            if (useQueue) {
-                Utilities.globalQueue.postRunnable(task);
-            } else {
-                task.run();
-            }
-        } catch (Throwable e) {
-            FileLog.e("onMessageDeleted", e);
-        }
+        }, "saveDeletedMessage");
     }
 
-    private void onMessageDeletedInner(AyuSavePreferences prefs) {
-        if (!AyuSavePreferences.saveDeletedMessageFor(prefs.getAccountId(), prefs.getDialogId(), prefs.getFromUserId())) {
+    public ExecutorService getExecutor() {
+        return executor;
+    }
+
+    public void executeAsync(Runnable runnable, String tag) {
+        if (executor.isShutdown() || executor.isTerminated()) {
+            FileLog.d("AyuMessagesController executor shutdown: " + tag);
             return;
+        }
+        executor.execute(() -> {
+            try {
+                runnable.run();
+            } catch (Throwable e) {
+                FileLog.e(tag, e);
+            }
+        });
+    }
+
+    /** 在存储队列捕获删除范围，随后在归档线程保存并回传结果。 */
+    public void onHistoryFlushed(int account, long dialogId, int minId, int maxId, Consumer<AyuHistoryDeletion> callback) {
+        long userId = UserConfig.getInstance(account).getClientUserId();
+        if (userId == 0) return;
+        int deleteDate = ConnectionsManager.getInstance(account).getCurrentTime();
+        MessagesStorage messagesStorage = MessagesStorage.getInstance(account);
+        messagesStorage.getStorageQueue().postRunnable(() -> {
+            if (UserConfig.getInstance(account).getClientUserId() != userId) return;
+            ArrayList<TLRPC.Message> snapshot = new ArrayList<>();
+            ArrayList<Integer> messageIds = new ArrayList<>();
+            SQLiteCursor cursor = null;
+            try {
+                cursor = messagesStorage.getDatabase().queryFinalized(
+                        "SELECT mid, data, date, ttl FROM messages_v2 WHERE uid = " + dialogId
+                                + " AND mid BETWEEN " + minId + " AND " + maxId);
+                while (cursor.next()) {
+                    int id = cursor.intValue(0);
+                    messageIds.add(id);
+                    NativeByteBuffer data = cursor.byteBufferValue(1);
+                    if (data == null) continue;
+                    try {
+                        TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                        if (message == null) continue;
+                        message.readAttachPath(data, userId);
+                        message.id = id;
+                        message.dialog_id = dialogId;
+                        message.date = cursor.intValue(2);
+                        if (message.ttl == 0) message.ttl = cursor.intValue(3);
+                        if (!AyuState.isDeletePermitted(dialogId, id)) snapshot.add(message);
+                    } catch (Exception e) {
+                        FileLog.e("captureHistory", e);
+                    } finally {
+                        data.reuse();
+                    }
+                }
+            } catch (Exception e) {
+                messagesStorage.checkSQLException(e);
+                callback.accept(new AyuHistoryDeletion(dialogId, deleteDate, minId, maxId, messageIds, new ArrayList<>(), false));
+                return;
+            } finally {
+                if (cursor != null) cursor.dispose();
+            }
+            if (!AyuSavePreferences.saveDeletedMessageFor(account, dialogId, 0)) {
+                callback.accept(new AyuHistoryDeletion(dialogId, deleteDate, minId, maxId, messageIds, new ArrayList<>(), true));
+                return;
+            }
+            executeAsync(() -> {
+                if (UserConfig.getInstance(account).getClientUserId() != userId) return;
+                ArrayList<Integer> savedIds = new ArrayList<>();
+                for (TLRPC.Message message : snapshot) {
+                    try {
+                        long topicId = AyuSavePreferences.resolveTopicId(account, message, dialogId);
+                        if (onMessageDeletedInner(new AyuSavePreferences(message, account, dialogId, topicId, message.id, deleteDate))) {
+                            savedIds.add(message.id);
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e("saveHistory", e);
+                    }
+                }
+                if (UserConfig.getInstance(account).getClientUserId() == userId) {
+                    callback.accept(new AyuHistoryDeletion(dialogId, deleteDate, minId, maxId, messageIds, savedIds, true));
+                }
+            }, "saveHistory");
+        });
+    }
+
+    /**
+     * 归档调用方已经读出来的整批消息；在专用线程池执行，避免阻塞或自等待存储队列。
+     *
+     * @param messages 已 {@code readAttachPath} 且设置好 {@code dialog_id} 的消息
+     */
+    public void saveCollectedMessages(int account, long dialogId, ArrayList<TLRPC.Message> messages) {
+        saveCollectedMessages(account, dialogId, messages, null);
+    }
+
+    public void saveCollectedMessages(int account, long dialogId, ArrayList<TLRPC.Message> messages, Runnable onComplete) {
+        if (messages == null || messages.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+        ArrayList<TLRPC.Message> snapshot = new ArrayList<>(messages);
+        long userId = UserConfig.getInstance(account).getClientUserId();
+        if (userId == 0) return;
+        int catchTime = ConnectionsManager.getInstance(account).getCurrentTime();
+        executeAsync(() -> {
+            if (UserConfig.getInstance(account).getClientUserId() != userId) return;
+            androidx.collection.LongSparseArray<ArrayList<Integer>> savedIds = new androidx.collection.LongSparseArray<>();
+            for (TLRPC.Message message : snapshot) {
+                long actualDialogId = dialogId != 0 ? dialogId : MessageObject.getDialogId(message);
+                if (actualDialogId == 0) continue;
+                message.dialog_id = actualDialogId;
+                long topicId = AyuSavePreferences.resolveTopicId(account, message, actualDialogId);
+                AyuSavePreferences prefs = new AyuSavePreferences(message, account, actualDialogId, topicId, message.id, catchTime);
+                try {
+                    if (onMessageDeletedInner(prefs)) {
+                        ArrayList<Integer> ids = savedIds.get(actualDialogId);
+                        if (ids == null) savedIds.put(actualDialogId, ids = new ArrayList<>());
+                        ids.add(message.id);
+                    }
+                } catch (Throwable e) {
+                    FileLog.e("saveCollectedMessages", e);
+                }
+            }
+            if (savedIds.size() > 0) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    for (int i = 0; i < savedIds.size(); i++) {
+                        NotificationCenter.getInstance(account).postNotificationName(
+                                AyuConstants.MESSAGES_DELETED_NOTIFICATION, savedIds.keyAt(i), savedIds.valueAt(i), catchTime);
+                    }
+                });
+            }
+            if (onComplete != null && UserConfig.getInstance(account).getClientUserId() == userId) onComplete.run();
+        }, "saveCollectedMessages");
+    }
+
+    private boolean onMessageDeletedInner(AyuSavePreferences prefs) {
+        if (prefs.getDialogId() == 0 || prefs.getUserId() == 0 || prefs.getUserId() != UserConfig.getInstance(prefs.getAccountId()).getClientUserId()
+                || !AyuSavePreferences.saveDeletedMessageFor(prefs.getAccountId(), prefs.getDialogId(), prefs.getFromUserId())) {
+            return false;
         }
 
         var msg = prefs.getMessage();
@@ -521,7 +673,7 @@ public class AyuMessagesController {
         if ((msg.send_state == 1 && msg.id < 0)
                 || msg instanceof TLRPC.TL_messageService
                 || msg instanceof TLRPC.TL_messageEmpty) {
-            return;
+            return false;
         }
 
         Boolean exists = withDaoRetry(
@@ -529,9 +681,8 @@ public class AyuMessagesController {
                 () -> deletedMessageDao().exists(prefs.getUserId(), prefs.getDialogId(), prefs.getTopicId(), prefs.getMessageId())
         );
 
-        if (exists == null || exists) {
-            return;
-        }
+        if (exists == null) return false;
+        if (exists) return true;
 
         var deletedMessage = new DeletedMessage();
         deletedMessage.userId = prefs.getUserId();
@@ -550,7 +701,7 @@ public class AyuMessagesController {
         );
 
         if (fakeMsgId == null) {
-            return;
+            return false;
         }
 
         if (msg != null && msg.reactions != null) {
@@ -558,6 +709,7 @@ public class AyuMessagesController {
         }
 
         updateLastMessageCache(prefs, msg);
+        return true;
     }
 
     private void updateLastMessageCache(AyuSavePreferences prefs, TLRPC.Message msg) {
@@ -566,7 +718,10 @@ public class AyuMessagesController {
         }
         int account = prefs.getAccountId();
         long dialogId = prefs.getDialogId();
-        MessageObject existing = deletedDialogService.getLastMessageCached(account, dialogId);
+        long topicId = prefs.getTopicId();
+        MessageObject existing = topicId != 0
+                ? deletedDialogService.getLastTopicMessageCached(account, dialogId, topicId)
+                : deletedDialogService.getLastMessageCached(account, dialogId);
         // 不能直接比 id：密聊 id 为负且越新越小
         if (existing != null && existing.messageOwner != null
                 && AyuMessageUtils.compareMessages(msg, existing.messageOwner) >= 0) {
@@ -582,6 +737,9 @@ public class AyuMessagesController {
             tl.ayuDeleted = true;
             MessageObject mo = new MessageObject(account, tl, false, false);
             if (!android.text.TextUtils.isEmpty(mo.messageText)) {
+                if (topicId != 0) {
+                    deletedDialogService.putLastTopicMessage(account, dialogId, topicId, mo);
+                }
                 deletedDialogService.putLastMessage(account, dialogId, mo);
             }
         } catch (Throwable e) {
@@ -645,6 +803,38 @@ public class AyuMessagesController {
         return deletedMessageDao().getThreadMessages(userId, dialogId, threadMessageId, startId, endId, limit);
     }
 
+    public List<DeletedMessageFull> getHistoryMessages(long userId, long dialogId, long topicId, long threadMessageId, int startId, int endId, int limit, boolean ascending) {
+        DeletedMessageDao dao = deletedMessageDao();
+        if (topicId != 0) {
+            return ascending
+                    ? dao.getTopicMessages(userId, dialogId, topicId, startId, endId, limit)
+                    : dao.getTopicMessagesDescending(userId, dialogId, topicId, startId, endId, limit);
+        }
+        if (threadMessageId != 0) {
+            return ascending
+                    ? dao.getThreadMessages(userId, dialogId, threadMessageId, startId, endId, limit)
+                    : dao.getThreadMessagesDescending(userId, dialogId, threadMessageId, startId, endId, limit);
+        }
+        return ascending
+                ? dao.getMessages(userId, dialogId, startId, endId, limit)
+                : dao.getMessagesDescending(userId, dialogId, startId, endId, limit);
+    }
+
+    public Integer getMessageIdAtDate(long userId, long dialogId, long topicId, long threadMessageId, int date) {
+        return deletedMessageDao().getMessageIdAtDate(userId, dialogId, topicId, threadMessageId, date);
+    }
+
+    public Integer getEncryptedMessageIdAtDate(long userId, long dialogId, int date) {
+        return deletedMessageDao().getEncryptedMessageIdAtDate(userId, dialogId, date);
+    }
+
+    /**
+     * 按时间区间取归档，用于把迁移前群组的已删除消息并进迁移后会话的展示。
+     */
+    public List<DeletedMessageFull> getMessagesByDate(long userId, long dialogId, long topicId, int startDate, int endDate) {
+        return deletedMessageDao().getMessagesByDate(userId, dialogId, topicId, startDate, endDate);
+    }
+
     public List<DeletedMessageFull> getMessagesGroupedIn(long userId, long dialogId, List<Long> groupedIds) {
         if (groupedIds == null || groupedIds.isEmpty()) {
             return new ArrayList<>();
@@ -670,7 +860,44 @@ public class AyuMessagesController {
         if (TextUtils.isEmpty(query)) {
             return new ArrayList<>();
         }
-        return deletedMessageDao().searchByText(userId, dialogId, query, limit);
+        return deletedMessageDao().searchByText(userId, dialogId, escapeSearchQuery(query), limit);
+    }
+
+    /** 话题内搜索：不能把同会话其它话题的归档混进结果里。 */
+    public List<DeletedMessageFull> searchByTextTopic(long userId, long dialogId, long topicId, String query, int limit) {
+        if (TextUtils.isEmpty(query)) {
+            return new ArrayList<>();
+        }
+        return deletedMessageDao().searchByTextTopic(userId, dialogId, topicId, escapeSearchQuery(query), limit);
+    }
+
+    /**
+     * 话题内按关键词翻页取回已删除消息：先按关键词过滤，再翻页，
+     * 不能只在已经载入内存的最近一页里过滤。
+     *
+     * @param beforeId 只取 messageId 小于该值的记录；首屏传 {@link Integer#MAX_VALUE}
+     */
+    public List<DeletedMessageFull> getMessagesForScroll(long userId, long dialogId, long topicId, String query, int beforeId, int limit) {
+        return deletedMessageDao().getMessagesForScroll(userId, dialogId, topicId, escapeSearchQuery(query), beforeId, limit);
+    }
+
+    public List<DeletedMessageFull> getMessagesForScrollRange(long userId, long dialogId, long topicId, String query, int minId, int maxId, int limit, boolean ascending) {
+        String text = escapeSearchQuery(query);
+        return ascending
+                ? deletedMessageDao().getMessagesForScrollAscending(userId, dialogId, topicId, text, minId, maxId, limit)
+                : deletedMessageDao().getMessagesForScrollDescending(userId, dialogId, topicId, text, minId, maxId, limit);
+    }
+
+    public List<DeletedMessageFull> getMessagesByDialogTopic(long userId, long dialogId, long topicId) {
+        return deletedMessageDao().getMessagesByDialogTopic(userId, dialogId, topicId);
+    }
+
+    public int getDeletedCount(long userId, long dialogId, long topicId, String query) {
+        return deletedMessageDao().countByDialogTopic(userId, dialogId, topicId, escapeSearchQuery(query));
+    }
+
+    private static String escapeSearchQuery(String query) {
+        return query == null ? "" : query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     public void delete(long userId, long dialogId, int messageId) {
@@ -691,6 +918,7 @@ public class AyuMessagesController {
                 FileLog.e(e);
             }
         }
+        refreshLastMessagesAfterDelete(userId, dialogId);
     }
 
     public void deleteMessages(long userId, long dialogId, List<Integer> messageIds) {
@@ -721,6 +949,29 @@ public class AyuMessagesController {
                 FileLog.e(e);
             }
         }
+        refreshLastMessagesAfterDelete(userId, dialogId);
+    }
+
+    /**
+     * 从归档里删掉记录后刷新会话预览缓存，否则已删掉的内容会一直挂在会话列表上，
+     * 直到下次冷启动重算。
+     */
+    private void refreshLastMessagesAfterDelete(long userId, long dialogId) {
+        int account = accountForUserId(userId);
+        deletedDialogService.removeLastMessages(account, dialogId, 0);
+        executeAsync(() -> deletedDialogService.reloadLastMessages(account), "refreshLastMessages");
+    }
+
+    private int accountForUserId(long userId) {
+        if (userId == 0) {
+            return UserConfig.selectedAccount;
+        }
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated() && UserConfig.getInstance(a).clientUserId == userId) {
+                return a;
+            }
+        }
+        return UserConfig.selectedAccount;
     }
 
     public void deleteRevision(long fakeId) {
@@ -741,42 +992,85 @@ public class AyuMessagesController {
         }
     }
 
-    public void deleteCurrent(long dialogId, long mergeDialogId, Runnable callback) {
-        long currentUserId = UserConfig.getInstance(UserConfig.selectedAccount).clientUserId;
-        List<DeletedMessageFull> messages = deletedMessageDao().getMessagesByDialog(currentUserId, dialogId);
+    /**
+     * 清理本会话（或其中一个话题）的已删除消息归档。
+     *
+     * @param account   发起操作的账号；不能用全局选中账号，多窗口 / 非当前账号会清错
+     * @param topicId   0 表示整个会话；非 0 时只清该话题
+     */
+    public void deleteCurrent(int account, long dialogId, long mergeDialogId, long topicId, Runnable callback) {
+        long currentUserId = UserConfig.getInstance(account).clientUserId;
+        List<DeletedMessageFull> messages = new ArrayList<>(deletedMessageDao().getMessagesByDialogTopic(currentUserId, dialogId, topicId));
 
         if (mergeDialogId != 0) {
-            List<DeletedMessageFull> mergeMessages = deletedMessageDao().getMessagesByDialog(currentUserId, mergeDialogId);
-            messages.addAll(mergeMessages);
+            messages.addAll(deletedMessageDao().getMessagesByDialogTopic(currentUserId, mergeDialogId, topicId));
+        }
+
+        List<String> mediaPaths = new ArrayList<>();
+        List<Integer> clearedMessageIds = new ArrayList<>();
+        List<Integer> clearedMergeMessageIds = new ArrayList<>();
+        for (DeletedMessageFull msg : messages) {
+            if (msg == null || msg.message == null) {
+                continue;
+            }
+            if (msg.message.dialogId == mergeDialogId) {
+                clearedMergeMessageIds.add(msg.message.messageId);
+            } else {
+                clearedMessageIds.add(msg.message.messageId);
+            }
+            if (!TextUtils.isEmpty(msg.message.mediaPath)) {
+                mediaPaths.add(msg.message.mediaPath);
+            }
         }
 
         // Delete messages and their edit history from database
-        deletedMessageDao().delete(currentUserId, dialogId);
-        editedMessageDao().delete(currentUserId, dialogId);
-
-        if (mergeDialogId != 0) {
-            deletedMessageDao().delete(currentUserId, mergeDialogId);
-            editedMessageDao().delete(currentUserId, mergeDialogId);
+        deletedMessageDao().deleteByDialogTopic(currentUserId, dialogId, topicId);
+        if (topicId == 0) {
+            editedMessageDao().delete(currentUserId, dialogId);
+        } else if (!clearedMessageIds.isEmpty()) {
+            editedMessageDao().deleteByDialogIdAndMessageIds(currentUserId, dialogId, clearedMessageIds);
         }
 
-        deleteDialogRecord(currentUserId, dialogId);
         if (mergeDialogId != 0) {
-            deleteDialogRecord(currentUserId, mergeDialogId);
+            deletedMessageDao().deleteByDialogTopic(currentUserId, mergeDialogId, topicId);
+            if (topicId == 0) {
+                editedMessageDao().delete(currentUserId, mergeDialogId);
+            } else if (!clearedMergeMessageIds.isEmpty()) {
+                editedMessageDao().deleteByDialogIdAndMessageIds(currentUserId, mergeDialogId, clearedMergeMessageIds);
+            }
+        }
+
+        if (topicId == 0) {
+            // 只有整会话清理才该连带丢掉会话快照；单话题清理不该把整个会话的快照删掉
+            deleteDialogRecord(account, currentUserId, dialogId);
+            if (mergeDialogId != 0) {
+                deleteDialogRecord(account, currentUserId, mergeDialogId);
+            }
         }
 
         // Clean up media files
-        for (DeletedMessageFull msg : messages) {
-            if (msg.message.mediaPath != null && !msg.message.mediaPath.isEmpty()) {
-                File mediaFile = new File(msg.message.mediaPath);
-                try {
-                    if (mediaFile.exists() && !mediaFile.delete()) {
-                        mediaFile.deleteOnExit();
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
+        for (String mediaPath : mediaPaths) {
+            File mediaFile = new File(mediaPath);
+            try {
+                if (mediaFile.exists() && !mediaFile.delete()) {
+                    mediaFile.deleteOnExit();
                 }
+            } catch (Exception e) {
+                FileLog.e(e);
             }
         }
+
+        // 归档记录没了，会话预览里残留的"已删除最后一条消息"必须一起失效并重算；
+        // 只清某个话题时不能把整个会话的预览一起丢掉
+        if (topicId == 0) {
+            deletedDialogService.removeLastMessages(account, dialogId, mergeDialogId);
+        } else {
+            deletedDialogService.removeTopicMessages(account, dialogId);
+            if (mergeDialogId != 0) {
+                deletedDialogService.removeTopicMessages(account, mergeDialogId);
+            }
+        }
+        executeAsync(() -> deletedDialogService.reloadLastMessages(account), "refreshLastMessages");
 
         if (callback != null) {
             callback.run();

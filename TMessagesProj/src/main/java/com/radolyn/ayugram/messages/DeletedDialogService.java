@@ -38,6 +38,8 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class DeletedDialogService {
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, MessageObject>> lastMessagesByAccount = new ConcurrentHashMap<>();
+    /** dialogId -> (topicId -> 该话题内最后一条已删除消息)，供话题单元格的预览回退 */
+    private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>>> lastTopicMessagesByAccount = new ConcurrentHashMap<>();
 
     public DeletedDialogService() {
     }
@@ -46,9 +48,41 @@ public class DeletedDialogService {
         return lastMessagesByAccount.computeIfAbsent(account, k -> new ConcurrentHashMap<>());
     }
 
+    private ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>> topicMapForAccount(int account) {
+        return lastTopicMessagesByAccount.computeIfAbsent(account, k -> new ConcurrentHashMap<>());
+    }
+
     public MessageObject getLastMessageCached(int account, long dialogId) {
         ConcurrentHashMap<Long, MessageObject> map = lastMessagesByAccount.get(account);
         return map != null ? map.get(dialogId) : null;
+    }
+
+    public MessageObject getLastTopicMessageCached(int account, long dialogId, long topicId) {
+        ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>> map = lastTopicMessagesByAccount.get(account);
+        if (map == null || topicId == 0) {
+            return null;
+        }
+        ConcurrentHashMap<Long, MessageObject> topicMap = map.get(dialogId);
+        return topicMap != null ? topicMap.get(topicId) : null;
+    }
+
+    public void putLastTopicMessage(int account, long dialogId, long topicId, MessageObject messageObject) {
+        if (messageObject == null || topicId == 0) {
+            return;
+        }
+        ConcurrentHashMap<Long, MessageObject> topicMap = topicMapForAccount(account)
+                .computeIfAbsent(dialogId, k -> new ConcurrentHashMap<>());
+        MessageObject existing = topicMap.get(topicId);
+        if (AyuMessageUtils.isNewerMessage(messageObject, existing)) {
+            topicMap.put(topicId, messageObject);
+        }
+    }
+
+    public void removeTopicMessages(int account, long dialogId) {
+        ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>> map = lastTopicMessagesByAccount.get(account);
+        if (map != null) {
+            map.remove(dialogId);
+        }
     }
 
     public void putLastMessage(int account, long dialogId, MessageObject messageObject) {
@@ -120,6 +154,31 @@ public class DeletedDialogService {
         });
     }
 
+    /**
+     * 归档被清空后立刻丢掉这些会话（含其话题）的预览缓存，避免界面继续显示已经不存在的内容。
+     */
+    public void removeLastMessages(int account, long dialogId, long mergeDialogId) {
+        ConcurrentHashMap<Long, MessageObject> map = lastMessagesByAccount.get(account);
+        if (map != null) {
+            map.remove(dialogId);
+            if (mergeDialogId != 0) {
+                map.remove(mergeDialogId);
+            }
+        }
+        removeTopicMessages(account, dialogId);
+        if (mergeDialogId != 0) {
+            removeTopicMessages(account, mergeDialogId);
+        }
+    }
+
+    /** 重新载入最后消息缓存（归档行被删除后刷新会话预览）。 */
+    public void reloadLastMessages(int account) {
+        if (!NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+            return;
+        }
+        loadLastMessages(account);
+    }
+
     private void loadLastMessages(int account) {
         long userId = UserConfig.getInstance(account).clientUserId;
         if (userId == 0) {
@@ -135,6 +194,8 @@ public class DeletedDialogService {
 
         ConcurrentHashMap<Long, MessageObject> accountMap = mapForAccount(account);
         accountMap.clear();
+        ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>> topicMap = topicMapForAccount(account);
+        topicMap.clear();
         if (list == null || list.isEmpty()) {
             return;
         }
@@ -163,6 +224,14 @@ public class DeletedDialogService {
                     MessageObject existing = mapped.get(full.message.dialogId);
                     if (AyuMessageUtils.isNewerMessage(messageObject, existing)) {
                         mapped.put(full.message.dialogId, messageObject);
+                    }
+                    if (full.message.topicId != 0) {
+                        ConcurrentHashMap<Long, MessageObject> topicMessages = topicMap.computeIfAbsent(
+                                full.message.dialogId, k -> new ConcurrentHashMap<>());
+                        MessageObject existingTopic = topicMessages.get(full.message.topicId);
+                        if (AyuMessageUtils.isNewerMessage(messageObject, existingTopic)) {
+                            topicMessages.put(full.message.topicId, messageObject);
+                        }
                     }
                 }
             } catch (Throwable e) {

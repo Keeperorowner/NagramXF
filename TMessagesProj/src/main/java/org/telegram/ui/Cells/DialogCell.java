@@ -319,7 +319,32 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 archivedChatsDrawable.setCell(this);
             }
         }
+        // 话题的最后一条被删除后，话题单元格没有 message 可显示；用归档缓存补一个预览
+        if (forumTopic != null) {
+            applyDeletedTopicPreview(com.radolyn.ayugram.messages.AyuMessagesController.getInstance()
+                    .getLastTopicMessageCached(currentAccount, dialog_id, forumTopic.id), forumTopic.id);
+        }
         update(0, animated);
+    }
+
+    private void applyDeletedTopicPreview(MessageObject preview, long topicId) {
+        if (preview == null || preview == message || preview.messageOwner == null
+                || !xyz.nextalone.nagram.NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+            return;
+        }
+        if (preview.messageOwner instanceof TLRPC.TL_messageService || preview.messageOwner instanceof TLRPC.TL_messageEmpty) {
+            return;
+        }
+        if ((message == null || preview.messageOwner.date > lastMessageDate)
+                && !AyuFilter.shouldHideFilteredMessage(preview, null)) {
+            groupMessages = null;
+            message = preview;
+            lastMessageDate = preview.messageOwner.date;
+            currentEditDate = preview.messageOwner.edit_date;
+            messageId = preview.getId();
+            lastUnreadState = preview.isUnread();
+            lastSendState = preview.messageOwner.send_state;
+        }
     }
 
     public void setRightFragmentOpenedProgress(float rightFragmentOpenedProgress) {

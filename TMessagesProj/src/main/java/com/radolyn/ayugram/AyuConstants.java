@@ -31,6 +31,9 @@ public class AyuConstants {
 
     public static final int LAST_SEEN_PILL_FETCH = 6971;
 
+    /** 会话历史整体清空（含密聊 flush）归档完成，通知聊天界面给现存消息补删除标记。 */
+    public static final int HISTORY_FLUSHED_NOTIFICATION = 6972;
+
     public static String AYU_DATABASE = "ayu-data";
 
     public static String APP_NAME = NekoConfig.customSavePath.String();

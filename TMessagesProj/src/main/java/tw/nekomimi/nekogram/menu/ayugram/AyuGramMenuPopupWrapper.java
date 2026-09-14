@@ -218,7 +218,9 @@ public class AyuGramMenuPopupWrapper {
             ActionBarMenuSubItem item = addItem(mainOptionsContainer, R.drawable.msg_view_file, LocaleController.getString(R.string.ViewDeleted), false);
             item.setOnClickListener(v -> {
                 if (dismissMenu != null) dismissMenu.run();
-                AndroidUtilities.runOnUIThread(() -> fragment.presentFragment(new AyuViewDeleted(chatId)), 50);
+                // 带话题打开：话题内查看 / 搜索不能混进同会话其它话题的归档
+                long ayuTopicId = fragment.getAyuDeletedMessagesTopicId();
+                AndroidUtilities.runOnUIThread(() -> fragment.presentFragment(new AyuViewDeleted(fragment.getCurrentAccount(), chatId, ayuTopicId)), 50);
             });
         }
 
@@ -233,7 +235,9 @@ public class AyuGramMenuPopupWrapper {
                     builder.setTitle(LocaleController.getString(R.string.ClearDeleted));
                     builder.setMessage(LocaleController.getString(R.string.ClearDeletedAlertMessage));
                     builder.setPositiveButton(LocaleController.getString(R.string.Clear), (dialogInterface, i) -> {
-                        AyuMessagesController.getInstance().deleteCurrent(chatId, fragment.getMergeDialogId(), () -> {
+                        // 话题内清理只作用于当前话题；账号取发起操作的 fragment
+                        long ayuTopicId = fragment.getAyuDeletedMessagesTopicId();
+                        AyuMessagesController.getInstance().deleteCurrent(fragment.getCurrentAccount(), chatId, fragment.getMergeDialogId(), ayuTopicId, () -> {
                             AndroidUtilities.runOnUIThread(() -> {
                                 NotificationCenter.getInstance(fragment.getCurrentAccount()).removeObserver(fragment, NotificationCenter.closeChats);
                                 NotificationCenter.getInstance(fragment.getCurrentAccount()).postNotificationName(NotificationCenter.closeChats);

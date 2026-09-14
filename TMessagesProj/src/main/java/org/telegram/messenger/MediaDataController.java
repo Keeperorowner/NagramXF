@@ -118,6 +118,8 @@ import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.NaConfig;
 
 import com.radolyn.ayugram.proprietary.AyuHistoryHook;
+import com.radolyn.ayugram.utils.AyuMessageKey;
+import com.radolyn.ayugram.utils.AyuMessageUtils;
 
 @SuppressWarnings("unchecked")
 public class MediaDataController extends BaseController {
@@ -3734,11 +3736,13 @@ public class MediaDataController extends BaseController {
     private int messagesLocalSearchCount;
     private int[] messagesSearchCount = new int[]{0, 0};
     private boolean[] messagesSearchEndReached = new boolean[]{false, false};
+    private final int[] serverSearchOffsets = new int[2];
     public ArrayList<MessageObject> searchResultMessages = new ArrayList<>();
     public ArrayList<MessageObject> searchServerResultMessages = new ArrayList<>();
     public ArrayList<MessageObject> searchLocalResultMessages = new ArrayList<>();
     // AyuGram: 已删除消息的搜索命中，在 updateSearchResults 里合并
     public ArrayList<MessageObject> searchDeletedResultMessages = new ArrayList<>();
+    private final AtomicInteger deletedSearchGeneration = new AtomicInteger();
     private SparseArray<MessageObject>[] searchServerResultMessagesMap = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private ArrayList<MessageObject> deletedFromResultMessages = new ArrayList<>();
     private String lastSearchQuery;
@@ -3749,23 +3753,27 @@ public class MediaDataController extends BaseController {
     private boolean loadedPredirectedSearchLocal;
 
     public void removeMessageFromResults(int id) {
+        removeMessageFromResults(id, 0);
+    }
+
+    public void removeMessageFromResults(int id, long dialogId) {
         for (int i = 0; i < searchResultMessages.size(); ++i) {
             MessageObject m = searchResultMessages.get(i);
-            if (id == m.getId()) {
+            if (id == m.getId() && (dialogId == 0 || m.getDialogId() == dialogId)) {
                 deletedFromResultMessages.add(searchResultMessages.remove(i));
                 i--;
             }
         }
         for (int i = 0; i < searchServerResultMessages.size(); ++i) {
             MessageObject m = searchServerResultMessages.get(i);
-            if (id == m.getId()) {
+            if (id == m.getId() && (dialogId == 0 || m.getDialogId() == dialogId)) {
                 searchServerResultMessages.remove(i);
                 i--;
             }
         }
         for (int i = 0; i < searchLocalResultMessages.size(); ++i) {
             MessageObject m = searchLocalResultMessages.get(i);
-            if (id == m.getId()) {
+            if (id == m.getId() && (dialogId == 0 || m.getDialogId() == dialogId)) {
                 searchLocalResultMessages.remove(i);
                 i--;
             }
@@ -3773,7 +3781,7 @@ public class MediaDataController extends BaseController {
         // AyuGram: 同步移除，否则下次 updateSearchResults 会把它加回来
         for (int i = 0; i < searchDeletedResultMessages.size(); ++i) {
             MessageObject m = searchDeletedResultMessages.get(i);
-            if (id == m.getId()) {
+            if (id == m.getId() && (dialogId == 0 || m.getDialogId() == dialogId)) {
                 searchDeletedResultMessages.remove(i);
                 i--;
             }
@@ -3800,13 +3808,15 @@ public class MediaDataController extends BaseController {
     private void updateSearchResults() {
         ArrayList<MessageObject> previousSearchResultMessages = new ArrayList<>(searchResultMessages);
         searchResultMessages.clear();
-        HashSet<Integer> messageIds = new HashSet<>();
+        HashSet<AyuMessageKey> messageIds = new HashSet<>();
         for (int i = 0; i < searchServerResultMessages.size(); ++i) {
             MessageObject m = searchServerResultMessages.get(i);
-            if ((!m.hasValidGroupId() || m.isPrimaryGroupMessage) && !messageIds.contains(m.getId())) {
+            AyuMessageKey key = new AyuMessageKey(m.getDialogId(), m.getId());
+            if ((!m.hasValidGroupId() || m.isPrimaryGroupMessage) && !messageIds.contains(key)) {
                 MessageObject prev = null;
                 for (int j = 0; j < previousSearchResultMessages.size(); ++j) {
-                    if (previousSearchResultMessages.get(j).getId() == m.getId()) {
+                    if (previousSearchResultMessages.get(j).getId() == m.getId()
+                            && previousSearchResultMessages.get(j).getDialogId() == m.getDialogId()) {
                         prev = previousSearchResultMessages.get(j);
                         break;
                     }
@@ -3818,15 +3828,17 @@ public class MediaDataController extends BaseController {
                 }
                 m.isSavedFiltered = true;
                 searchResultMessages.add(m);
-                messageIds.add(m.getId());
+                messageIds.add(key);
             }
         }
         for (int i = 0; i < searchLocalResultMessages.size(); ++i) {
             MessageObject m = searchLocalResultMessages.get(i);
-            if (!messageIds.contains(m.getId())) {
+            AyuMessageKey key = new AyuMessageKey(m.getDialogId(), m.getId());
+            if (!messageIds.contains(key)) {
                 MessageObject prev = null;
                 for (int j = 0; j < previousSearchResultMessages.size(); ++j) {
-                    if (previousSearchResultMessages.get(j).getId() == m.getId()) {
+                    if (previousSearchResultMessages.get(j).getId() == m.getId()
+                            && previousSearchResultMessages.get(j).getDialogId() == m.getDialogId()) {
                         prev = previousSearchResultMessages.get(j);
                         break;
                     }
@@ -3838,7 +3850,7 @@ public class MediaDataController extends BaseController {
                 }
                 m.isSavedFiltered = true;
                 searchResultMessages.add(m);
-                messageIds.add(m.getId());
+                messageIds.add(key);
             }
         }
         // --- AyuGram hook: 已删除消息也应出现在聊天内搜索结果里
@@ -3846,17 +3858,17 @@ public class MediaDataController extends BaseController {
             boolean addedAny = false;
             for (int i = 0; i < searchDeletedResultMessages.size(); ++i) {
                 MessageObject m = searchDeletedResultMessages.get(i);
-                if (messageIds.contains(m.getId())) {
+                AyuMessageKey key = new AyuMessageKey(m.getDialogId(), m.getId());
+                if (messageIds.contains(key)) {
                     continue;
                 }
                 m.isSavedFiltered = true;
                 searchResultMessages.add(m);
-                messageIds.add(m.getId());
+                messageIds.add(key);
                 addedAny = true;
             }
             if (addedAny) {
-                // 与上游一致按 id 倒序，避免已删除项固定堆在末尾
-                Collections.sort(searchResultMessages, (a, b) -> Integer.compare(b.getId(), a.getId()));
+                searchResultMessages.sort((a, b) -> AyuMessageUtils.compareMessages(a.messageOwner, b.messageOwner));
             }
         }
         // --- AyuGram hook
@@ -3878,6 +3890,12 @@ public class MediaDataController extends BaseController {
     }
 
     public void clearFoundMessageObjects() {
+        deletedSearchGeneration.incrementAndGet();
+        lastReqId++;
+        if (reqId != 0) getConnectionsManager().cancelRequest(reqId, true);
+        if (mergeReqId != 0) getConnectionsManager().cancelRequest(mergeReqId, true);
+        reqId = mergeReqId = 0;
+        loadingMoreSearchMessages = false;
         searchResultMessages.clear();
         searchServerResultMessages.clear();
         searchLocalResultMessages.clear();
@@ -3906,10 +3924,13 @@ public class MediaDataController extends BaseController {
     }
 
     public int getSearchCount() {
+        int count;
         if (searchServerResultMessages.isEmpty()) {
-            return Math.max(Math.max(messagesSearchCount[0] + messagesSearchCount[1], messagesLocalSearchCount), searchServerResultMessages.size());
+            count = Math.max(Math.max(messagesSearchCount[0] + messagesSearchCount[1], messagesLocalSearchCount), searchServerResultMessages.size());
+        } else {
+            count = Math.max(messagesSearchCount[0] + messagesSearchCount[1], searchServerResultMessages.size());
         }
-        return Math.max(messagesSearchCount[0] + messagesSearchCount[1], searchServerResultMessages.size());
+        return Math.max(count, searchResultMessages.size());
     }
 
     public void setSearchedPosition(int index) {
@@ -3971,14 +3992,11 @@ public class MediaDataController extends BaseController {
                     }
                     firstQuery = false;
                     query = lastSearchQuery;
-                    MessageObject messageObject = searchResultMessages.get(searchResultMessages.size() - 1);
-                    if (messageObject.getDialogId() == dialogId && !messagesSearchEndReached[0]) {
-                        max_id = messageObject.getId();
+                    if (!messagesSearchEndReached[0]) {
+                        max_id = serverSearchOffsets[0];
                         queryWithDialog = dialogId;
                     } else {
-                        if (messageObject.getDialogId() == mergeDialogId) {
-                            max_id = messageObject.getId();
-                        }
+                        max_id = serverSearchOffsets[1];
                         queryWithDialog = mergeDialogId;
                         messagesSearchEndReached[1] = false;
                     }
@@ -4001,19 +4019,51 @@ public class MediaDataController extends BaseController {
                 return;
             }
         } else if (firstQuery) {
+            serverSearchOffsets[0] = serverSearchOffsets[1] = 0;
             messagesSearchEndReached[0] = messagesSearchEndReached[1] = false;
             messagesSearchCount[0] = messagesSearchCount[1] = 0;
             searchResultMessages.clear();
             searchLocalResultMessages.clear();
             searchServerResultMessagesMap[0].clear();
             searchServerResultMessagesMap[1].clear();
-            // --- AyuGram hook: 首次查询时同步搜一遍已删除消息
+            int deletedRequest = deletedSearchGeneration.incrementAndGet();
             searchDeletedResultMessages.clear();
             if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && !DialogObject.isEncryptedDialog(dialogId)) {
-                searchDeletedResultMessages.addAll(AyuHistoryHook.searchDeletedMessages(currentAccount, dialogId, query, 200));
-                if (mergeDialogId != 0) {
-                    searchDeletedResultMessages.addAll(AyuHistoryHook.searchDeletedMessages(currentAccount, mergeDialogId, query, 200));
-                }
+                final long deletedSearchTopicId = getMessagesController().isForum(dialogId) || getMessagesController().isMonoForum(dialogId) ? replyMessageId : 0;
+                final String deletedSearchQuery = query;
+                final int deletedSearchGuid = guid;
+                final long deletedSearchDialogId = dialogId;
+                final long deletedSearchMergeDialogId = mergeDialogId;
+                final long deletedSearchSenderId = user != null ? user.id : chat != null ? -chat.id : 0;
+                Utilities.searchQueue.postRunnable(() -> {
+                    if (deletedSearchGeneration.get() != deletedRequest) return;
+                    ArrayList<MessageObject> deletedResults = new ArrayList<>();
+                    deletedResults.addAll(AyuHistoryHook.searchDeletedMessages(currentAccount, deletedSearchDialogId, deletedSearchTopicId, deletedSearchQuery, 200));
+                    if (deletedSearchMergeDialogId != 0) {
+                        deletedResults.addAll(AyuHistoryHook.searchDeletedMessages(currentAccount, deletedSearchMergeDialogId, 0, deletedSearchQuery, 200));
+                    }
+                    if (deletedSearchSenderId != 0) {
+                        deletedResults.removeIf(message -> MessageObject.getPeerId(message.messageOwner.from_id) != deletedSearchSenderId);
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (deletedSearchGeneration.get() != deletedRequest) return;
+                        MessageObject selected = lastReturnedNum >= 0 && lastReturnedNum < searchResultMessages.size()
+                                ? searchResultMessages.get(lastReturnedNum) : null;
+                        searchDeletedResultMessages.clear();
+                        searchDeletedResultMessages.addAll(deletedResults);
+                        updateSearchResults();
+                        if (selected != null) {
+                            for (int i = 0; i < searchResultMessages.size(); i++) {
+                                MessageObject message = searchResultMessages.get(i);
+                                if (message.getId() == selected.getId() && message.getDialogId() == selected.getDialogId()) {
+                                    lastReturnedNum = i;
+                                    break;
+                                }
+                            }
+                        }
+                        getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsAvailable, deletedSearchGuid, 0, getMask(), deletedSearchDialogId, lastReturnedNum, getSearchCount(), false);
+                    });
+                });
             }
             // --- AyuGram hook
             getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsLoading, guid);
@@ -4151,6 +4201,7 @@ public class MediaDataController extends BaseController {
                 int N = Math.min(res.messages.size(), req.limit - 1);
                 for (int a = 0; a < N; a++) {
                     TLRPC.Message message = res.messages.get(a);
+                    if (message instanceof TLRPC.TL_messageEmpty || message.action instanceof TLRPC.TL_messageActionHistoryClear) continue;
                     MessageObject messageObject = new MessageObject(currentAccount, message, null, null, null, null, null, true, true, 0, false, false, isSaved);
                     if (messageObject.hasValidGroupId()) {
                         messageObject.isPrimaryGroupMessage = true;
@@ -4167,17 +4218,13 @@ public class MediaDataController extends BaseController {
                     }
                     if (response != null) {
                         TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                        for (int a = 0; a < res.messages.size(); a++) {
-                            TLRPC.Message message = res.messages.get(a);
-                            if (message instanceof TLRPC.TL_messageEmpty || message.action instanceof TLRPC.TL_messageActionHistoryClear) {
-                                res.messages.remove(a);
-                                a--;
-                            }
-                        }
+                        int pageSize = Math.min(res.messages.size(), req.limit - 1);
+                        if (pageSize > 0) serverSearchOffsets[queryWithDialogFinal == dialogId ? 0 : 1] = res.messages.get(pageSize - 1).id;
                         getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
                         getMessagesController().putUsers(res.users, false);
                         getMessagesController().putChats(res.chats, false);
                         Runnable done = () -> {
+                            if (currentReqId != lastReqId) return;
                             if (req.offset_id == 0 && queryWithDialogFinal == dialogId) {
                                 lastReturnedNum = 0;
                                 searchServerResultMessages.clear();
@@ -4187,7 +4234,7 @@ public class MediaDataController extends BaseController {
                                 getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsLoading, guid);
                             }
                             boolean added = false;
-                            int N = Math.min(res.messages.size(), req.limit - 1);
+                            int N = messageObjects.size();
                             for (int a = 0; a < N; a++) {
                                 added = true;
                                 MessageObject messageObject = messageObjects.get(a);
@@ -4197,10 +4244,10 @@ public class MediaDataController extends BaseController {
                             updateSearchResults();
                             messagesSearchEndReached[queryWithDialogFinal == dialogId ? 0 : 1] = res.messages.size() < req.limit;
                             messagesSearchCount[queryWithDialogFinal == dialogId ? 0 : 1] = res instanceof TLRPC.TL_messages_messagesSlice || res instanceof TLRPC.TL_messages_channelMessages ? res.count : res.messages.size();
-                            if (searchServerResultMessages.isEmpty()) {
+                            if (searchResultMessages.isEmpty()) {
                                 getNotificationCenter().postNotificationName(NotificationCenter.chatSearchResultsAvailable, guid, 0, getMask(), (long) 0, 0, 0, jumpToMessage);
                             } else {
-                                if (added) {
+                                if (added || !searchDeletedResultMessages.isEmpty()) {
                                     if (lastReturnedNum >= searchResultMessages.size()) {
                                         lastReturnedNum = searchResultMessages.size() - 1;
                                     }
@@ -4226,6 +4273,14 @@ public class MediaDataController extends BaseController {
     }
 
     public void portSavedSearchResults(int guid, ReactionsLayoutInBubble.VisibleReaction reaction, String query, ArrayList<MessageObject> local, ArrayList<MessageObject> loaded, int num, int count, boolean reached) {
+        deletedSearchGeneration.incrementAndGet();
+        searchDeletedResultMessages.clear();
+        int serverOffset = Integer.MAX_VALUE;
+        for (MessageObject message : loaded) {
+            if (message.getId() > 0) serverOffset = Math.min(serverOffset, message.getId());
+        }
+        serverSearchOffsets[0] = serverOffset == Integer.MAX_VALUE ? 0 : serverOffset;
+        serverSearchOffsets[1] = 0;
         lastReaction = reaction;
         lastSearchQuery = query;
         messagesSearchEndReached[0] = reached;
@@ -4603,7 +4658,9 @@ public class MediaDataController extends BaseController {
             if (fromCache == 0) {
                 ImageLoader.saveMessagesThumbs(res.messages);
                 getMessagesStorage().putUsersAndChats(res.users, res.chats, true, true);
-                putMediaDatabase(dialogId, topicId, type, res.messages, max_id, min_id, topReached);
+                // 传快照：注入已删除媒体是在另一个队列上原地改 res.messages 的，
+                // 直接把原列表交给异步写库会把合成消息混进媒体缓存
+                putMediaDatabase(dialogId, topicId, type, new ArrayList<>(res.messages), max_id, min_id, topReached);
             }
 
             Utilities.searchQueue.postRunnable(() -> {
@@ -6460,6 +6517,7 @@ public class MediaDataController extends BaseController {
         } else {
             LongSparseArray<SparseArray<ArrayList<MessageObject>>> replyMessageOwners = new LongSparseArray<>();
             LongSparseArray<ArrayList<Integer>> dialogReplyMessagesIds = new LongSparseArray<>();
+            LongSparseArray<Long> replyChannels = new LongSparseArray<>();
             LongSparseArray<ArrayList<MessageObject>> messagesWithUnknownStories = null;
             Timer.Task t2 = Timer.start(logLogger, "loadReplyMessagesForMessages: filling replies from the same array");
             for (int a = 0; a < messages.size(); a++) {
@@ -6536,7 +6594,9 @@ public class MediaDataController extends BaseController {
                     }
                 } else if (messageObject.getRealId() > 0 && messageObject.isReply()) {
                     int messageId = messageObject.messageOwner.reply_to.reply_to_msg_id;
-                    if (messageId == threadMessageId) {
+                    long replyDialogId = MessageObject.getReplyToDialogId(messageObject.messageOwner);
+                    if (replyDialogId == 0) replyDialogId = dialogId;
+                    if (messageId == threadMessageId && replyDialogId == dialogId) {
                         continue;
                     }
                     long channelId = 0;
@@ -6544,7 +6604,7 @@ public class MediaDataController extends BaseController {
                         if (messageObject.messageOwner.reply_to.reply_to_peer_id.channel_id != 0) {
                             channelId = messageObject.messageOwner.reply_to.reply_to_peer_id.channel_id;
                         }
-                    } else if (messageObject.messageOwner.peer_id.channel_id != 0) {
+                    } else if (messageObject.messageOwner.peer_id != null && messageObject.messageOwner.peer_id.channel_id != 0) {
                         channelId = messageObject.messageOwner.peer_id.channel_id;
                     }
 
@@ -6552,7 +6612,7 @@ public class MediaDataController extends BaseController {
                         if (messageObject.replyMessageObject.messageOwner == null || messageObject.replyMessageObject.messageOwner.peer_id == null || messageObject.messageOwner instanceof TLRPC.TL_messageEmpty) {
                             continue;
                         }
-                        if (messageObject.replyMessageObject.messageOwner.peer_id.channel_id == channelId) {
+                        if (messageObject.replyMessageObject.getDialogId() == replyDialogId) {
                             continue;
                         }
                     }
@@ -6564,16 +6624,17 @@ public class MediaDataController extends BaseController {
                         }
                     }
 
-                    SparseArray<ArrayList<MessageObject>> sparseArray = replyMessageOwners.get(dialogId);
-                    ArrayList<Integer> ids = dialogReplyMessagesIds.get(channelId);
+                    SparseArray<ArrayList<MessageObject>> sparseArray = replyMessageOwners.get(replyDialogId);
+                    ArrayList<Integer> ids = dialogReplyMessagesIds.get(replyDialogId);
                     if (sparseArray == null) {
                         sparseArray = new SparseArray<>();
-                        replyMessageOwners.put(dialogId, sparseArray);
+                        replyMessageOwners.put(replyDialogId, sparseArray);
                     }
                     if (ids == null) {
                         ids = new ArrayList<>();
-                        dialogReplyMessagesIds.put(channelId, ids);
+                        dialogReplyMessagesIds.put(replyDialogId, ids);
                     }
+                    replyChannels.put(replyDialogId, channelId);
                     ArrayList<MessageObject> arrayList = sparseArray.get(messageId);
                     if (arrayList == null) {
                         arrayList = new ArrayList<>();
@@ -6659,20 +6720,21 @@ public class MediaDataController extends BaseController {
                     for (int b = 0, N2 = replyMessageOwners.size(); b < N2; b++) {
                         long did = replyMessageOwners.keyAt(b);
                         SparseArray<ArrayList<MessageObject>> owners = replyMessageOwners.valueAt(b);
-                        ArrayList<Integer> ids = dialogReplyMessagesIds.get(-did);
+                        ArrayList<Integer> ids = dialogReplyMessagesIds.get(did);
                         if (ids == null) {
                             continue;
                         }
                         for (int i = 0; i < 2; i++) {
+                            if (ids.isEmpty()) break;
                             if (i == 1 && !scheduled) {
                                 continue;
                             }
                             boolean findInScheduled = i == 1;
                             SQLiteCursor cursor;
                             if (findInScheduled) {
-                                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), did));
                             } else {
-                                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
+                                cursor = getMessagesStorage().getDatabase().queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), did));
                             }
                             while (cursor.next()) {
                                 NativeByteBuffer data = cursor.byteBufferValue(0);
@@ -6682,18 +6744,11 @@ public class MediaDataController extends BaseController {
                                     data.reuse();
                                     message.id = cursor.intValue(1);
                                     message.date = cursor.intValue(2);
-                                    message.dialog_id = dialogId;
+                                    message.dialog_id = did;
                                     MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
                                     result.add(message);
 
-                                    long channelId = message.peer_id != null ? message.peer_id.channel_id : 0;
-                                    ArrayList<Integer> mids = dialogReplyMessagesIds.get(channelId);
-                                    if (mids != null) {
-                                        mids.remove((Integer) message.id);
-                                        if (mids.isEmpty()) {
-                                            dialogReplyMessagesIds.remove(channelId);
-                                        }
-                                    }
+                                    ids.remove((Integer) message.id);
                                 }
                             }
                             cursor.dispose();
@@ -6706,15 +6761,26 @@ public class MediaDataController extends BaseController {
                             }
                         }
                         if (!ephemeralIds.isEmpty()) {
-                            ArrayList<TL_ephemeral.EphemeralMessage> ephemeralMessages = getMessagesStorage().getEphemeralMessagesInternal(dialogId, ephemeralIds);
+                            ArrayList<TL_ephemeral.EphemeralMessage> ephemeralMessages = getMessagesStorage().getEphemeralMessagesInternal(did, ephemeralIds);
                             if (ephemeralMessages != null) {
                                 for (TL_ephemeral.EphemeralMessage ephemeralMessage : ephemeralMessages) {
                                     TLRPC.Message convetedEphemeralMessage = EphemeralMessagesHelper.convertEphemeralToFakeDefault(ephemeralMessage);
+                                    convetedEphemeralMessage.dialog_id = did;
                                     MessagesStorage.addUsersAndChatsFromMessage(convetedEphemeralMessage, usersToLoad, chatsToLoad, null);
                                     result.add(convetedEphemeralMessage);
+                                    ids.remove((Integer) convetedEphemeralMessage.id);
                                 }
                             }
                         }
+
+                        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && !ids.isEmpty()) {
+                            for (TLRPC.Message message : AyuHistoryHook.loadDeletedRepliesForLoad(currentAccount, did, new ArrayList<>(ids))) {
+                                MessagesStorage.addUsersAndChatsFromMessage(message, usersToLoad, chatsToLoad, null);
+                                result.add(message);
+                                ids.remove((Integer) message.id);
+                            }
+                        }
+                        if (ids.isEmpty()) dialogReplyMessagesIds.remove(did);
                     }
 
                     if (!usersToLoad.isEmpty()) {
@@ -6727,13 +6793,15 @@ public class MediaDataController extends BaseController {
 
                     if (!dialogReplyMessagesIds.isEmpty()) {
                         Timer.done(t5);
+                        requestsCount.addAndGet(dialogReplyMessagesIds.size() - 1);
                         for (int a = 0, N = dialogReplyMessagesIds.size(); a < N; a++) {
-                            long channelId = dialogReplyMessagesIds.keyAt(a);
+                            long replyDialogId = dialogReplyMessagesIds.keyAt(a);
+                            long channelId = replyChannels.get(replyDialogId, 0L);
                             if (scheduled) {
                                 Timer.Task t6 = Timer.start(logLogger, "loadReplyMessagesForMessages: load scheduled");
                                 TLRPC.TL_messages_getScheduledMessages req = new TLRPC.TL_messages_getScheduledMessages();
-                                req.peer = getMessagesController().getInputPeer(dialogId);
-                                req.id = dialogReplyMessagesIds.valueAt(a);
+                                req.peer = getMessagesController().getInputPeer(replyDialogId);
+                                req.id = new ArrayList<>(dialogReplyMessagesIds.valueAt(a));
                                 int reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
                                     Timer.done(t6);
                                     if (error == null) {
@@ -6746,27 +6814,30 @@ public class MediaDataController extends BaseController {
                                             }
                                         }
                                         if (messagesRes.messages.size() < req.id.size()) {
+                                            ArrayList<Integer> missing = new ArrayList<>(req.id);
+                                            for (TLRPC.Message message : messagesRes.messages) missing.remove((Integer) message.id);
                                             TLObject req2;
                                             if (channelId != 0) {
                                                 TLRPC.TL_channels_getMessages reqInner = new TLRPC.TL_channels_getMessages();
                                                 reqInner.channel = getMessagesController().getInputChannel(channelId);
-                                                reqInner.id = req.id;
+                                                reqInner.id = missing;
                                                 req2 = reqInner;
                                             } else {
                                                 TLRPC.TL_messages_getMessages reqInner = new TLRPC.TL_messages_getMessages();
-                                                reqInner.id = req.id;
+                                                reqInner.id = missing;
                                                 req2 = reqInner;
                                             }
-                                            getConnectionsManager().sendRequest(req2, (response2, error2) -> {
-                                                if (error == null) {
+                                            int fallbackReqId = getConnectionsManager().sendRequest(req2, (response2, error2) -> {
+                                                if (error2 == null && response2 instanceof TLRPC.messages_Messages) {
                                                     TLRPC.messages_Messages messagesRes2 = (TLRPC.messages_Messages) response2;
                                                     messagesRes.messages.addAll(messagesRes2.messages);
                                                     messagesRes.users.addAll(messagesRes2.users);
                                                     messagesRes.chats.addAll(messagesRes2.chats);
+                                                }
                                                     for (int i = 0; i < messagesRes.messages.size(); i++) {
                                                         TLRPC.Message message = messagesRes.messages.get(i);
                                                         if (message.dialog_id == 0) {
-                                                            message.dialog_id = dialogId;
+                                                            message.dialog_id = replyDialogId;
                                                         }
                                                     }
                                                     MessageObject.fixMessagePeer(messagesRes.messages, channelId);
@@ -6774,13 +6845,17 @@ public class MediaDataController extends BaseController {
                                                     broadcastReplyMessages(messagesRes.messages, replyMessageOwners, messagesRes.users, messagesRes.chats, dialogId, false);
                                                     getMessagesStorage().putUsersAndChats(messagesRes.users, messagesRes.chats, true, true);
                                                     saveReplyMessages(replyMessageOwners, messagesRes.messages, scheduled);
+                                                if (requestsCount.decrementAndGet() == 0 && callback != null) {
+                                                    AndroidUtilities.runOnUIThread(callback);
                                                 }
                                             });
+                                            if (classGuid != 0) getConnectionsManager().bindRequestToGuid(fallbackReqId, classGuid);
+                                            return;
                                         } else {
                                             for (int i = 0; i < messagesRes.messages.size(); i++) {
                                                 TLRPC.Message message = messagesRes.messages.get(i);
                                                 if (message.dialog_id == 0) {
-                                                    message.dialog_id = dialogId;
+                                                    message.dialog_id = replyDialogId;
                                                 }
                                             }
                                             MessageObject.fixMessagePeer(messagesRes.messages, channelId);
@@ -6805,7 +6880,7 @@ public class MediaDataController extends BaseController {
                                 Timer.Task t6 = Timer.start(logLogger, "loadReplyMessagesForMessages: load channel messages");
                                 TLRPC.TL_channels_getMessages req = new TLRPC.TL_channels_getMessages();
                                 req.channel = getMessagesController().getInputChannel(channelId);
-                                req.id = dialogReplyMessagesIds.valueAt(a);
+                                req.id = new ArrayList<>(dialogReplyMessagesIds.valueAt(a));
                                 int reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
                                     Timer.done(t6);
                                     if (error == null) {
@@ -6813,7 +6888,7 @@ public class MediaDataController extends BaseController {
                                         for (int i = 0; i < messagesRes.messages.size(); i++) {
                                             TLRPC.Message message = messagesRes.messages.get(i);
                                             if (message.dialog_id == 0) {
-                                                message.dialog_id = dialogId;
+                                                message.dialog_id = replyDialogId;
                                             }
                                         }
                                         MessageObject.fixMessagePeer(messagesRes.messages, channelId);
@@ -6836,7 +6911,7 @@ public class MediaDataController extends BaseController {
                             } else {
                                 Timer.Task t6 = Timer.start(logLogger, "loadReplyMessagesForMessages: load messages");
                                 TLRPC.TL_messages_getMessages req = new TLRPC.TL_messages_getMessages();
-                                req.id = dialogReplyMessagesIds.valueAt(a);
+                                req.id = new ArrayList<>(dialogReplyMessagesIds.valueAt(a));
                                 int reqId = getConnectionsManager().sendRequest(req, (response, error) -> {
                                     Timer.done(t6);
                                     if (error == null) {
@@ -6844,7 +6919,7 @@ public class MediaDataController extends BaseController {
                                         for (int i = 0; i < messagesRes.messages.size(); i++) {
                                             TLRPC.Message message = messagesRes.messages.get(i);
                                             if (message.dialog_id == 0) {
-                                                message.dialog_id = dialogId;
+                                                message.dialog_id = replyDialogId;
                                             }
                                         }
                                         ImageLoader.saveMessagesThumbs(messagesRes.messages);

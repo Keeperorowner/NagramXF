@@ -4658,10 +4658,8 @@ public class MessagesStorage extends BaseController {
                         cursor2.dispose();
                         cursor2 = null;
 
-                        // --- AyuGram hook: save before bulk history clear (keep last)
-                        saveDeletedMessagesBeforeDialogClear(did, last_mid_i, last_mid);
-                        // --- AyuGram hook
-
+                        // messagesOnly == 2 只是本地缓存淘汰（保留最后一条），消息仍在服务器上，
+                        // 归档会把仍然存在的消息误记为已删除。
                         database.executeFast("DELETE FROM messages_v2 WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
                         database.executeFast("DELETE FROM messages_topics WHERE uid = " + did + " AND mid != " + last_mid_i + " AND mid != " + last_mid).stepThis().dispose();
                         database.executeFast("DELETE FROM messages_holes WHERE uid = " + did).stepThis().dispose();
@@ -4919,7 +4917,8 @@ public class MessagesStorage extends BaseController {
 
     public void emptyMessagesMedia(long dialogId, ArrayList<Integer> mids) {
         // view-once media must stay in the chat and on disk when deleted-message saving is on
-        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+        // for this dialog; must follow the same per-dialog rules as saving (exclusions, bots)
+        if (AyuSavePreferences.saveDeletedMessageFor(currentAccount, dialogId, 0)) {
             return;
         }
         storageQueue.postRunnable(() -> {
@@ -14757,7 +14756,7 @@ public class MessagesStorage extends BaseController {
                                     msg.dialog_id = dialogId;
                                     var prefs = new AyuSavePreferences(msg, currentAccount);
                                     prefs.setDialogId(dialogId);
-                                    ayuMessagesController.onMessageDeleted(prefs, true);
+                                    ayuMessagesController.onMessageDeleted(prefs);
                                 }
                             }
                         }
@@ -15632,6 +15631,12 @@ public class MessagesStorage extends BaseController {
         return null;
     }
 
+    /**
+     * 频道"历史不再可用"式的范围清理。
+     *
+     * @param channelId 正的 channel/chat id（不是负的 dialogId）；内部按 {@code -channelId} 访问以
+     *                  dialogId 为键的表（messages_v2、media_v4、chat_pinned_v2 等）
+     */
     private ArrayList<Long> markMessagesAsDeletedInternal(long channelId, int mid, boolean deleteFiles) {
         SQLiteCursor cursor = null;
         SQLitePreparedStatement state = null;
@@ -15644,7 +15649,7 @@ public class MessagesStorage extends BaseController {
             ArrayList<Pair<Long, Integer>> idsToDelete = new ArrayList<>();
             long currentUser = getUserConfig().getClientUserId();
 
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, data, read_state, out, mention FROM messages_v2 WHERE uid = %d AND mid <= %d", -channelId, mid));
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, data, read_state, out, mention FROM messages_v2 WHERE uid = %d AND mid > 0 AND mid <= %d", -channelId, mid));
 
             try {
                 while (cursor.next()) {
@@ -15713,7 +15718,7 @@ public class MessagesStorage extends BaseController {
 
 
             database.executeFast(String.format(Locale.US, "UPDATE chat_settings_v2 SET pinned = 0 WHERE uid = %d AND pinned <= %d", channelId, mid)).stepThis().dispose();
-            database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid <= %d", channelId, mid)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "DELETE FROM chat_pinned_v2 WHERE uid = %d AND mid <= %d", -channelId, mid)).stepThis().dispose();
             int updatedCount = 0;
             cursor = database.queryFinalized("SELECT changes()");
             if (cursor.next()) {
@@ -15737,9 +15742,9 @@ public class MessagesStorage extends BaseController {
                 cursor = null;
             }
 
-            database.executeFast(String.format(Locale.US, "DELETE FROM messages_v2 WHERE uid = %d AND mid <= %d", -channelId, mid)).stepThis().dispose();
-            database.executeFast(String.format(Locale.US, "DELETE FROM messages_topics WHERE uid = %d AND mid <= %d", -channelId, mid)).stepThis().dispose();
-            database.executeFast(String.format(Locale.US, "DELETE FROM media_v4 WHERE uid = %d AND mid <= %d", -channelId, mid)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "DELETE FROM messages_v2 WHERE uid = %d AND mid > 0 AND mid <= %d", -channelId, mid)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "DELETE FROM messages_topics WHERE uid = %d AND mid > 0 AND mid <= %d", -channelId, mid)).stepThis().dispose();
+            database.executeFast(String.format(Locale.US, "DELETE FROM media_v4 WHERE uid = %d AND mid > 0 AND mid <= %d", -channelId, mid)).stepThis().dispose();
             database.executeFast(String.format(Locale.US, "UPDATE media_counts_v2 SET old = 1 WHERE uid = %d", -channelId)).stepThis().dispose();
             database.executeFast(String.format(Locale.US, "UPDATE media_counts_topics SET old = 1 WHERE uid = %d", -channelId)).stepThis().dispose();
             updateWidgets(dialogsIds);
@@ -16141,7 +16146,8 @@ public class MessagesStorage extends BaseController {
         }
         // don't overwrite local media with the burned (empty) version coming from the server
         TLRPC.MessageMedia media = message.media;
-        if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && media != null && media.ttl_seconds != 0
+        if (AyuSavePreferences.shouldKeepMediaFor(currentAccount, MessageObject.getDialogId(message), message)
+                && media != null && media.ttl_seconds != 0
                 && (media.photo instanceof TLRPC.TL_photoEmpty || media.document instanceof TLRPC.TL_documentEmpty)) {
             return;
         }
@@ -18958,12 +18964,15 @@ public class MessagesStorage extends BaseController {
         if (!NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
             return;
         }
+        // 密聊整段清理由 SecretChatHelper 的 onHistoryFlushed 链路负责归档，
+        // 这里重复读一遍只会产生两套并发的保存任务。
+        if (DialogObject.isEncryptedDialog(dialogId)) {
+            return;
+        }
         SQLiteCursor cursor = null;
         try {
             cursor = database.queryFinalized("SELECT mid, data FROM messages_v2 WHERE uid = " + dialogId);
-            var ayuMessagesController = AyuMessagesController.getInstance();
-            ArrayList<Integer> savedIds = new ArrayList<>();
-            int catchTime = (int) (System.currentTimeMillis() / 1000);
+            ArrayList<TLRPC.Message> toSave = new ArrayList<>();
             while (cursor.next()) {
                 int mid = cursor.intValue(0);
                 if (keepMid1 != 0 && mid == keepMid1) {
@@ -18984,10 +18993,7 @@ public class MessagesStorage extends BaseController {
                     if (message != null) {
                         message.readAttachPath(data, getUserConfig().clientUserId);
                         message.dialog_id = dialogId;
-                        long topicId = AyuSavePreferences.resolveTopicId(currentAccount, message, dialogId);
-                        var prefs = new AyuSavePreferences(message, currentAccount, dialogId, topicId, message.id, catchTime);
-                        ayuMessagesController.onMessageDeleted(prefs, false);
-                        savedIds.add(message.id);
+                        toSave.add(message);
                     }
                 } finally {
                     data.reuse();
@@ -18995,9 +19001,10 @@ public class MessagesStorage extends BaseController {
             }
             cursor.dispose();
             cursor = null;
-            if (!savedIds.isEmpty()) {
-                final long notifyDialogId = dialogId;
-                AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(AyuConstants.MESSAGES_DELETED_NOTIFICATION, notifyDialogId, savedIds));
+            if (!toSave.isEmpty()) {
+                // 归档耗时的读写放到 AyuMessagesController 的线程池，
+                // 存储队列里绝不能同步等待别的存储队列任务。
+                AyuMessagesController.getInstance().saveCollectedMessages(currentAccount, dialogId, toSave);
             }
         } catch (Exception e) {
             checkSQLException(e);
@@ -19536,6 +19543,76 @@ public class MessagesStorage extends BaseController {
             }
         }
         return null;
+    }
+
+    /**
+     * 不经存储队列、当前线程直读一条消息，供删除归档等"可能在存储队列上被调用"的链路使用。
+     *
+     * <p>与 {@link #getMessage(long, long)} 的区别：后者 post 到存储队列并等待，
+     * 在存储队列线程上调用会自锁死。
+     */
+    public TLRPC.Message getMessageLegit(long dialogId, long msgId) {
+        SQLiteCursor cursor = null;
+        TLRPC.Message message = null;
+        try {
+            String sql = dialogId != 0
+                    ? "SELECT data, send_state, mid, date, replydata, ttl, uid FROM messages_v2 WHERE uid = " + dialogId + " AND mid = " + msgId + " LIMIT 1"
+                    : "SELECT data, send_state, mid, date, replydata, ttl, uid FROM messages_v2 WHERE is_channel = 0 AND mid = " + msgId + " LIMIT 1";
+            cursor = database.queryFinalized(sql);
+            while (cursor.next()) {
+                NativeByteBuffer data = cursor.byteBufferValue(0);
+                if (data == null) {
+                    continue;
+                }
+                try {
+                    TLRPC.Message msg = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
+                    if (msg == null) {
+                        continue;
+                    }
+                    msg.send_state = cursor.intValue(1);
+                    msg.id = cursor.intValue(2);
+                    if (msg.id > 0 && msg.send_state != 0 && msg.send_state != 2) {
+                        msg.send_state = 0;
+                    }
+                    long actualDialogId = cursor.longValue(6);
+                    if (actualDialogId == getUserConfig().clientUserId) {
+                        msg.out = true;
+                        msg.unread = false;
+                    } else {
+                        msg.unread = true;
+                    }
+                    msg.readAttachPath(data, getUserConfig().clientUserId);
+                    msg.date = cursor.intValue(3);
+                    msg.dialog_id = actualDialogId;
+                    if (msg.ttl == 0) {
+                        msg.ttl = cursor.intValue(5);
+                    }
+                    if (msg.reply_to != null && (msg.reply_to.reply_to_msg_id != 0 || msg.reply_to.reply_to_random_id != 0) && !cursor.isNull(4)) {
+                        NativeByteBuffer replyData = cursor.byteBufferValue(4);
+                        if (replyData != null) {
+                            try {
+                                msg.replyMessage = TLRPC.Message.TLdeserialize(replyData, replyData.readInt32(false), false);
+                                if (msg.replyMessage != null) {
+                                    msg.replyMessage.readAttachPath(replyData, getUserConfig().clientUserId);
+                                }
+                            } finally {
+                                replyData.reuse();
+                            }
+                        }
+                    }
+                    message = msg;
+                } finally {
+                    data.reuse();
+                }
+            }
+        } catch (Exception e) {
+            checkSQLException(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return message;
     }
 
     private TLRPC.Message getMessageInternalSync(long dialogId, int msgId) {
