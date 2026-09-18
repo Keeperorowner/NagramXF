@@ -4846,46 +4846,50 @@ public class MessagesStorage extends BaseController {
 
                 int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
                 int dialogsLoadOffsetId;
-                int dialogsLoadOffsetDate;
+                int dialogsLoadOffsetDate = 0;
                 long dialogsLoadOffsetChannelId = 0;
                 long dialogsLoadOffsetChatId = 0;
                 long dialogsLoadOffsetUserId = 0;
                 long dialogsLoadOffsetAccess = 0;
 
                 totalDialogsLoadCount += dialogsRes.dialogs.size();
-                dialogsLoadOffsetId = lastMessage.id;
-                dialogsLoadOffsetDate = lastMessage.date;
-                if (lastMessage.peer_id.channel_id != 0) {
-                    dialogsLoadOffsetChannelId = lastMessage.peer_id.channel_id;
-                    dialogsLoadOffsetChatId = 0;
-                    dialogsLoadOffsetUserId = 0;
-                    for (int a = 0; a < dialogsRes.chats.size(); a++) {
-                        TLRPC.Chat chat = dialogsRes.chats.get(a);
-                        if (chat.id == dialogsLoadOffsetChannelId) {
-                            dialogsLoadOffsetAccess = chat.access_hash;
-                            break;
+                if (lastMessage == null) {
+                    dialogsLoadOffsetId = Integer.MAX_VALUE;
+                } else {
+                    dialogsLoadOffsetId = lastMessage.id;
+                    dialogsLoadOffsetDate = lastMessage.date;
+                    if (lastMessage.peer_id.channel_id != 0) {
+                        dialogsLoadOffsetChannelId = lastMessage.peer_id.channel_id;
+                        dialogsLoadOffsetChatId = 0;
+                        dialogsLoadOffsetUserId = 0;
+                        for (int a = 0; a < dialogsRes.chats.size(); a++) {
+                            TLRPC.Chat chat = dialogsRes.chats.get(a);
+                            if (chat.id == dialogsLoadOffsetChannelId) {
+                                dialogsLoadOffsetAccess = chat.access_hash;
+                                break;
+                            }
                         }
-                    }
-                } else if (lastMessage.peer_id.chat_id != 0) {
-                    dialogsLoadOffsetChatId = lastMessage.peer_id.chat_id;
-                    dialogsLoadOffsetChannelId = 0;
-                    dialogsLoadOffsetUserId = 0;
-                    for (int a = 0; a < dialogsRes.chats.size(); a++) {
-                        TLRPC.Chat chat = dialogsRes.chats.get(a);
-                        if (chat.id == dialogsLoadOffsetChatId) {
-                            dialogsLoadOffsetAccess = chat.access_hash;
-                            break;
+                    } else if (lastMessage.peer_id.chat_id != 0) {
+                        dialogsLoadOffsetChatId = lastMessage.peer_id.chat_id;
+                        dialogsLoadOffsetChannelId = 0;
+                        dialogsLoadOffsetUserId = 0;
+                        for (int a = 0; a < dialogsRes.chats.size(); a++) {
+                            TLRPC.Chat chat = dialogsRes.chats.get(a);
+                            if (chat.id == dialogsLoadOffsetChatId) {
+                                dialogsLoadOffsetAccess = chat.access_hash;
+                                break;
+                            }
                         }
-                    }
-                } else if (lastMessage.peer_id.user_id != 0) {
-                    dialogsLoadOffsetUserId = lastMessage.peer_id.user_id;
-                    dialogsLoadOffsetChatId = 0;
-                    dialogsLoadOffsetChannelId = 0;
-                    for (int a = 0; a < dialogsRes.users.size(); a++) {
-                        TLRPC.User user = dialogsRes.users.get(a);
-                        if (user.id == dialogsLoadOffsetUserId) {
-                            dialogsLoadOffsetAccess = user.access_hash;
-                            break;
+                    } else if (lastMessage.peer_id.user_id != 0) {
+                        dialogsLoadOffsetUserId = lastMessage.peer_id.user_id;
+                        dialogsLoadOffsetChatId = 0;
+                        dialogsLoadOffsetChannelId = 0;
+                        for (int a = 0; a < dialogsRes.users.size(); a++) {
+                            TLRPC.User user = dialogsRes.users.get(a);
+                            if (user.id == dialogsLoadOffsetUserId) {
+                                dialogsLoadOffsetAccess = user.access_hash;
+                                break;
+                            }
                         }
                     }
                 }

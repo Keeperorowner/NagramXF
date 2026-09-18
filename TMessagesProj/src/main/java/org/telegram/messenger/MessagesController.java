@@ -13308,6 +13308,34 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    private static TLRPC.Message findDialogsPageTailMessage(TLRPC.messages_Dialogs dialogsRes, int dialogsCount) {
+        if (dialogsRes == null || dialogsRes.dialogs == null || dialogsRes.messages == null) {
+            return null;
+        }
+        int count = Math.min(Math.max(dialogsCount, 0), dialogsRes.dialogs.size());
+        for (int i = count - 1; i >= 0; i--) {
+            TLRPC.Dialog dialog = dialogsRes.dialogs.get(i);
+            if (dialog == null || dialog.pinned || dialog.top_message <= 0 || dialog.peer == null) {
+                continue;
+            }
+            long dialogId = DialogObject.getPeerDialogId(dialog.peer);
+            if (dialogId == 0) {
+                continue;
+            }
+            for (int j = 0; j < dialogsRes.messages.size(); j++) {
+                TLRPC.Message message = dialogsRes.messages.get(j);
+                if (message != null
+                        && message.date > 0
+                        && message.peer_id != null
+                        && message.id == dialog.top_message
+                        && DialogObject.getPeerDialogId(message.peer_id) == dialogId) {
+                    return message;
+                }
+            }
+        }
+        return null;
+    }
+
     private void resetDialogs(boolean query, int seq, int newPts, int date, int qts) {
         if (query) {
             if (resetingDialogs) {
@@ -13359,14 +13387,9 @@ public class MessagesController extends BaseController implements NotificationCe
                 chatsDict.put(c.id, c);
             }
 
-            TLRPC.Message lastMessage = null;
+            TLRPC.Message lastMessage = findDialogsPageTailMessage(resetDialogsAll, dialogsCount);
             for (int a = 0; a < resetDialogsAll.messages.size(); a++) {
                 TLRPC.Message message = resetDialogsAll.messages.get(a);
-                if (a < messagesCount) {
-                    if (lastMessage == null || message.date < lastMessage.date) {
-                        lastMessage = message;
-                    }
-                }
                 if (message.peer_id.channel_id != 0) {
                     TLRPC.Chat chat = chatsDict.get(message.peer_id.channel_id);
                     if (chat != null && chat.left) {
@@ -13591,20 +13614,23 @@ public class MessagesController extends BaseController implements NotificationCe
                 TLRPC.messages_Dialogs dialogsRes = (TLRPC.messages_Dialogs) response;
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
                     try {
+                        TLRPC.Message lastMessage = findDialogsPageTailMessage(dialogsRes, dialogsRes.dialogs.size());
+                        if (dialogsRes.dialogs.size() >= 100 && lastMessage == null) {
+                            FileLog.e("migrate stop: dialog page has no valid tail message");
+                            AndroidUtilities.runOnUIThread(() -> migratingDialogs = false);
+                            return;
+                        }
+
                         int offsetId;
                         int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
                         getUserConfig().setTotalDialogsCount(0, totalDialogsLoadCount + dialogsRes.dialogs.size());
-                        TLRPC.Message lastMessage = null;
                         for (int a = 0; a < dialogsRes.messages.size(); a++) {
                             TLRPC.Message message = dialogsRes.messages.get(a);
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.d("search migrate id " + message.id + " date " + LocaleController.getInstance().getFormatterStats().format((long) message.date * 1000));
                             }
-                            if (lastMessage == null || message.date < lastMessage.date) {
-                                lastMessage = message;
-                            }
                         }
-                        if (BuildVars.LOGS_ENABLED) {
+                        if (BuildVars.LOGS_ENABLED && lastMessage != null) {
                             FileLog.d("migrate step with id " + lastMessage.id + " date " + LocaleController.getInstance().getFormatterStats().format((long) lastMessage.date * 1000));
                         }
                         if (dialogsRes.dialogs.size() >= 100) {
@@ -13714,38 +13740,40 @@ public class MessagesController extends BaseController implements NotificationCe
                         }
                         cursor.dispose();
 
-                        getUserConfig().migrateOffsetDate = lastMessage.date;
-                        if (lastMessage.peer_id.channel_id != 0) {
-                            getUserConfig().migrateOffsetChannelId = lastMessage.peer_id.channel_id;
-                            getUserConfig().migrateOffsetChatId = 0;
-                            getUserConfig().migrateOffsetUserId = 0;
-                            for (int a = 0; a < dialogsRes.chats.size(); a++) {
-                                TLRPC.Chat chat = dialogsRes.chats.get(a);
-                                if (chat.id == getUserConfig().migrateOffsetChannelId) {
-                                    getUserConfig().migrateOffsetAccess = chat.access_hash;
-                                    break;
+                        if (lastMessage != null) {
+                            getUserConfig().migrateOffsetDate = lastMessage.date;
+                            if (lastMessage.peer_id.channel_id != 0) {
+                                getUserConfig().migrateOffsetChannelId = lastMessage.peer_id.channel_id;
+                                getUserConfig().migrateOffsetChatId = 0;
+                                getUserConfig().migrateOffsetUserId = 0;
+                                for (int a = 0; a < dialogsRes.chats.size(); a++) {
+                                    TLRPC.Chat chat = dialogsRes.chats.get(a);
+                                    if (chat.id == getUserConfig().migrateOffsetChannelId) {
+                                        getUserConfig().migrateOffsetAccess = chat.access_hash;
+                                        break;
+                                    }
                                 }
-                            }
-                        } else if (lastMessage.peer_id.chat_id != 0) {
-                            getUserConfig().migrateOffsetChatId = lastMessage.peer_id.chat_id;
-                            getUserConfig().migrateOffsetChannelId = 0;
-                            getUserConfig().migrateOffsetUserId = 0;
-                            for (int a = 0; a < dialogsRes.chats.size(); a++) {
-                                TLRPC.Chat chat = dialogsRes.chats.get(a);
-                                if (chat.id == getUserConfig().migrateOffsetChatId) {
-                                    getUserConfig().migrateOffsetAccess = chat.access_hash;
-                                    break;
+                            } else if (lastMessage.peer_id.chat_id != 0) {
+                                getUserConfig().migrateOffsetChatId = lastMessage.peer_id.chat_id;
+                                getUserConfig().migrateOffsetChannelId = 0;
+                                getUserConfig().migrateOffsetUserId = 0;
+                                for (int a = 0; a < dialogsRes.chats.size(); a++) {
+                                    TLRPC.Chat chat = dialogsRes.chats.get(a);
+                                    if (chat.id == getUserConfig().migrateOffsetChatId) {
+                                        getUserConfig().migrateOffsetAccess = chat.access_hash;
+                                        break;
+                                    }
                                 }
-                            }
-                        } else if (lastMessage.peer_id.user_id != 0) {
-                            getUserConfig().migrateOffsetUserId = lastMessage.peer_id.user_id;
-                            getUserConfig().migrateOffsetChatId = 0;
-                            getUserConfig().migrateOffsetChannelId = 0;
-                            for (int a = 0; a < dialogsRes.users.size(); a++) {
-                                TLRPC.User user = dialogsRes.users.get(a);
-                                if (user.id == getUserConfig().migrateOffsetUserId) {
-                                    getUserConfig().migrateOffsetAccess = user.access_hash;
-                                    break;
+                            } else if (lastMessage.peer_id.user_id != 0) {
+                                getUserConfig().migrateOffsetUserId = lastMessage.peer_id.user_id;
+                                getUserConfig().migrateOffsetChatId = 0;
+                                getUserConfig().migrateOffsetChannelId = 0;
+                                for (int a = 0; a < dialogsRes.users.size(); a++) {
+                                    TLRPC.User user = dialogsRes.users.get(a);
+                                    if (user.id == getUserConfig().migrateOffsetUserId) {
+                                        getUserConfig().migrateOffsetAccess = user.access_hash;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -13829,15 +13857,12 @@ public class MessagesController extends BaseController implements NotificationCe
                 nextDialogsCacheOffset.put(folderId, offset + count);
             }
 
-            TLRPC.Message lastMessage = null;
+            TLRPC.Message lastMessage = findDialogsPageTailMessage(dialogsRes, dialogsRes.dialogs.size());
             ArrayList<MessageObject> newMessages = new ArrayList<>();
             for (int a = 0; a < dialogsRes.messages.size(); a++) {
                 TLRPC.Message message = dialogsRes.messages.get(a);
                 if (message.date == 0) {
                     continue;
-                }
-                if (lastMessage == null || message.date < lastMessage.date) {
-                    lastMessage = message;
                 }
                 if (message.peer_id == null) {
                     continue;
