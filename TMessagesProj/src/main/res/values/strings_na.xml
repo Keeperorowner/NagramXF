@@ -16,6 +16,7 @@
     <string name="PhotoCopied">Photo copied to clipboard</string>
     <string name="ToTheBeginning">To Beginning</string>
     <string name="DateOfForwardedMsg">Show Date on Forwarded Messages</string>
+    <string name="ShowForwardCount">Show Forward Count</string>
     <string name="ShowMessageID">Show Message ID</string>
     <string name="ShowRPCError">Toast RPC Errors</string>
     <string name="ShowPremiumStickersAnimation">Show Premium Stickers Animation</string>

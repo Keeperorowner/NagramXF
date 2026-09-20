@@ -18810,7 +18810,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentViewsString = null;
             viewsTextWidth = 0;
         }
-        if (messageObject.messageOwner.forwards > 0) {
+        if (NaConfig.INSTANCE.getShowForwardCount().Bool() && messageObject.messageOwner.forwards > 0) {
             currentForwardsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.forwards), null));
             forwardsTextWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentForwardsString));
             float drawableWidth = TimeStringHelper.forwardsDrawable != null ? (TimeStringHelper.forwardsDrawable.getIntrinsicWidth() * Theme.chat_timePaint.getTextSize() / Math.max(1f, TimeStringHelper.forwardsDrawable.getIntrinsicHeight())) : 0;
