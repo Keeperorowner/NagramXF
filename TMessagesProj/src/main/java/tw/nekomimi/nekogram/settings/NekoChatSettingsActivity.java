@@ -156,6 +156,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell groupedMessageMenuRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getGroupedMessageMenu(), getString(R.string.GroupedMessageMenuNotice)));
     private final AbstractConfigCell showMessageIDRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowMessageID()));
     private final AbstractConfigCell dateOfForwardMsgRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getDateOfForwardedMsg()));
+    private final AbstractConfigCell showForwardCountRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowForwardCount()));
     private final AbstractConfigCell dividerMessages = cellGroup.appendCell(new ConfigCellDivider());
 
     // Chats
@@ -739,6 +740,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             } else if (key.equals(NaConfig.INSTANCE.getShowOnlineStatus().getKey())
                     || key.equals(NaConfig.INSTANCE.getHideShareButtonInChannel().getKey())
                     || key.equals(NaConfig.INSTANCE.getCustomEditedMessage().getKey())
+                    || key.equals(NaConfig.INSTANCE.getShowForwardCount().getKey())
                     || key.equals(NaConfig.INSTANCE.getShowMessageID().getKey())) {
                 if (messageSettingsPreviewCell != null) {
                     messageSettingsPreviewCell.refresh();
