@@ -29,11 +29,15 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
+import android.util.SparseArray;
 import android.util.Xml;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 
+import org.telegram.localization.Localization;
+import org.telegram.localization.LocalizationUtils;
 import org.telegram.messenger.time.FastDateFormat;
 import org.telegram.tgnet.Vector;
 import org.telegram.ui.Components.TypefaceSpan;
@@ -59,6 +63,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.TimeZone;
 
 import tw.nekomimi.nekogram.NekoConfig;
@@ -409,16 +414,12 @@ public class LocaleController {
         return formatterScheduleSend[n];
     }
 
-
-    private static HashMap<Integer, String> resourcesCacheMap = new HashMap<>();
-
     private HashMap<String, PluralRules> allRules = new HashMap<>();
 
     public Locale currentLocale;
     private Locale systemDefaultLocale;
     private PluralRules currentPluralRules;
     private LocaleInfo currentLocaleInfo;
-    private HashMap<String, String> localeValues = new HashMap<>();
     private String languageOverride;
     private boolean changingConfiguration = false;
     private boolean reloadLastFile;
@@ -1088,7 +1089,12 @@ public class LocaleController {
 
                     saveOtherLanguages();
                 }
-                localeValues = stringMap;
+
+                localizationExternal = new Localization.Builder()
+                    .addLocalization(stringMap)
+                    .build();
+                localizationExternalSize = calculateTranslatedCount(stringMap);
+
                 applyLanguage(localeInfo, true, false, true, false, currentAccount, null);
                 return true;
             }
@@ -1363,15 +1369,22 @@ public class LocaleController {
                 editor.apply();
             }
             if (pathToFile == null) {
-                localeValues.clear();
+                localizationExternal = Localization.EMPTY;
+                localizationExternalSize = 0;
             } else if (!fromFile) {
+                HashMap<String, String> localeValues;
                 localeValues = getLocaleFileStrings(hasBase ? localeInfo.getPathToBaseFile() : localeInfo.getPathToFile());
                 if (hasBase) {
                     localeValues.putAll(getLocaleFileStrings(localeInfo.getPathToFile()));
                 }
+                localizationExternal = new Localization.Builder()
+                    .addLocalization(localeValues)
+                    .build();
+                localizationExternalSize = calculateTranslatedCount(localeValues);
             }
             currentLocale = newLocale;
             currentLocaleInfo = localeInfo;
+            // checkLocalizationInternal();
             FileLog.d("applyLanguage: currentLocaleInfo is set");
 
             if (!TextUtils.isEmpty(currentLocaleInfo.pluralLangCode)) {
@@ -1445,19 +1458,18 @@ public class LocaleController {
     }
 
     private String getStringInternal(String key, String fallback, int fallbackRes, int res) {
-        String value = BuildVars.USE_CLOUD_STRINGS ? localeValues.get(key) : null;
+        String value = BuildVars.USE_CLOUD_STRINGS ? localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, key, res) : null;
         if (value == null) {
             if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
-                value = localeValues.get(fallback);
+                value = localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes);
             }
             if (value == null) {
                 try {
-                    fixContextLocale(currentLocale);
-                    value = ApplicationLoader.applicationContext.getString(res);
+                    value = getLocalizedString(res);
                 } catch (Exception e) {
                     if (fallbackRes != 0) {
                         try {
-                            value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                            value = getLocalizedString(fallbackRes);
                         } catch (Exception ignored) {}
                     }
                     FileLog.e(e);
@@ -1471,40 +1483,24 @@ public class LocaleController {
     }
 
     public static String getServerString(String key) {
-        String value = getInstance().localeValues.get(key);
+        String value = getInstance().localizationExternal.getByResName(key);
         if (value == null) {
-            int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key, "string", ApplicationLoader.applicationContext.getPackageName());
+            int resourceId = getLocalizedStringByName(key);
             if (resourceId != 0) {
-                value = ApplicationLoader.applicationContext.getString(resourceId);
+                value = getInstance().getLocalizedString(resourceId);
             }
         }
         return value;
     }
 
     public static String getString(@StringRes int res) {
-        String key = resourcesCacheMap.get(res);
-        if (key == null) {
-            resourcesCacheMap.put(res, key = ApplicationLoader.applicationContext.getResources().getResourceEntryName(res));
-        }
-        return getString(key, res);
+        return getString(null, res);
     }
 
     // deprecated: String key is no longer necessary
     @Deprecated
     public static String getString(String key, @StringRes int res) {
         return getInstance().getStringInternal(key, res);
-    }
-
-    // deprecated: String key is no longer necessary
-    @Deprecated
-    public static String getString(String key, String fallback, int fallbackRes, int res) {
-        return getInstance().getStringInternal(key, fallback, fallbackRes, res);
-    }
-
-    // deprecated: String key is no longer necessary
-    @Deprecated
-    public static String getString(String key, String fallback, int res) {
-        return getInstance().getStringInternal(key, fallback, 0, res);
     }
 
     // deprecated: String key is no longer necessary
@@ -1521,7 +1517,7 @@ public class LocaleController {
     }
 
     public static int getStringResId(String key) {
-        return ApplicationLoader.applicationContext.getResources().getIdentifier(key, "string", ApplicationLoader.applicationContext.getPackageName());
+        return getLocalizedStringByName(key);
     }
 
     public static String nullable(String val) {
@@ -1535,9 +1531,9 @@ public class LocaleController {
         }
         String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
         param = key + "_" + param;
-        int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
-        int fallbackResourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
-        return getString(param, key + "_other", resourceId, fallbackResourceId);
+        int resourceId = getLocalizedStringByName(param);
+        int fallbackResourceId = getLocalizedStringByName(key + "_other");
+        return getInstance().getStringInternal(param, key + "_other", fallbackResourceId, resourceId);
     }
 
     public static String formatPluralString(String key, int plural, Object... args) {
@@ -1546,8 +1542,8 @@ public class LocaleController {
         }
         String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
         param = key + "_" + param;
-        int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
-        int fallbackResourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
+        int resourceId = getLocalizedStringByName(param);
+        int fallbackResourceId = getLocalizedStringByName(key + "_other");
         Object[] argsWithPlural = new Object[args.length + 1];
         argsWithPlural[0] = plural;
         System.arraycopy(args, 0, argsWithPlural, 1, args.length);
@@ -1560,8 +1556,8 @@ public class LocaleController {
         }
         String param = getInstance().stringForQuantity(getInstance().currentPluralRules.quantityForNumber(plural));
         param = key + "_" + param;
-        int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
-        int fallbackResourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
+        int resourceId = getLocalizedStringByName(param);
+        int fallbackResourceId = getLocalizedStringByName(key + "_other");
         Object[] argsWithPlural = new Object[args.length + 1];
         argsWithPlural[0] = plural;
         System.arraycopy(args, 0, argsWithPlural, 1, args.length);
@@ -1616,19 +1612,19 @@ public class LocaleController {
                 stringBuilder.insert(a, symbol);
             }
 
-            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(param) : null;
+            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(param) : null;
             if (value == null) {
-                value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key + "_other") : null;
+                value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResName(key + "_other") : null;
             }
             if (value == null) {
                 try {
-                    int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(param, "string", ApplicationLoader.applicationContext.getPackageName());
-                    value = ApplicationLoader.applicationContext.getString(resourceId);
+                    int resourceId = getLocalizedStringByName(param);
+                    value = getInstance().getLocalizedString(resourceId);
                 } catch (Exception e2) {}
             }
             if (value == null) {
-                int resourceId = ApplicationLoader.applicationContext.getResources().getIdentifier(key + "_other", "string", ApplicationLoader.applicationContext.getPackageName());
-                value = ApplicationLoader.applicationContext.getString(resourceId);
+                int resourceId = getLocalizedStringByName(key + "_other");
+                value = getInstance().getLocalizedString(resourceId);
             }
             value = value.replace("%d", "%1$s");
             value = value.replace("%1$d", "%1$s");
@@ -1669,11 +1665,7 @@ public class LocaleController {
     }
 
     public static String formatString(@StringRes int res, Object... args) {
-        String key = resourcesCacheMap.get(res);
-        if (key == null) {
-            resourcesCacheMap.put(res, key = ApplicationLoader.applicationContext.getResources().getResourceEntryName(res));
-        }
-        return formatString(key, res, args);
+        return formatString(null, res, args);
     }
 
     // deprecated: String key is no longer necessary
@@ -1682,27 +1674,27 @@ public class LocaleController {
         return formatString(key, null, res, 0, args);
     }
 
-    public static String formatString(String key, String fallback, int res, int fallbackRes, Object... args) {
+    private static String formatString(String key, String fallback, int res, int fallbackRes, Object... args) {
         try {
-            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
+            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, key, res) : null;
             if (value == null) {
                 if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
-                    value = getInstance().localeValues.get(fallback);
+                    value = getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes);
                 }
                 if (value == null) {
                     if (res != 0) {
                         try {
-                            value = ApplicationLoader.applicationContext.getString(res);
+                            value = getInstance().getLocalizedString(res);
                         } catch (Exception e) {
                             if (fallbackRes != 0) {
                                 try {
-                                    value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                                    value = getInstance().getLocalizedString(fallbackRes);
                                 } catch (Exception ignored) {}
                             }
                         }
                     } else if (fallbackRes != 0) {
                         try {
-                            value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                            value = getInstance().getLocalizedString(fallbackRes);
                         } catch (Exception ignored) {}
                     }
                 }
@@ -1720,38 +1712,34 @@ public class LocaleController {
     }
 
     public static CharSequence formatSpannable(@StringRes int res, Object... args) {
-        String key = resourcesCacheMap.get(res);
-        if (key == null) {
-            resourcesCacheMap.put(res, key = ApplicationLoader.applicationContext.getResources().getResourceEntryName(res));
-        }
-        return formatSpannable(key, res, args);
+        return formatSpannable(null, res, args);
     }
 
     public static CharSequence formatSpannable(String key, int res, Object... args) {
         return formatSpannable(key, null, res, 0, args);
     }
 
-    public static CharSequence formatSpannable(String key, String fallback, int res, int fallbackRes, Object... args) {
+    private static CharSequence formatSpannable(String key, String fallback, int res, int fallbackRes, Object... args) {
         try {
-            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localeValues.get(key) : null;
+            String value = BuildVars.USE_CLOUD_STRINGS ? getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, key, res) : null;
             if (value == null) {
                 if (BuildVars.USE_CLOUD_STRINGS && fallback != null) {
-                    value = getInstance().localeValues.get(fallback);
+                    value = getInstance().localizationExternal.getByResNameOrResId(ApplicationLoader.applicationContext, fallback, fallbackRes);
                 }
                 if (value == null) {
                     if (res != 0) {
                         try {
-                            value = ApplicationLoader.applicationContext.getString(res);
+                            value = getInstance().getLocalizedString(res);
                         } catch (Exception e) {
                             if (fallbackRes != 0) {
                                 try {
-                                    value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                                    value = getInstance().getLocalizedString(fallbackRes);
                                 } catch (Exception ignored) {}
                             }
                         }
                     } else if (fallbackRes != 0) {
                         try {
-                            value = ApplicationLoader.applicationContext.getString(fallbackRes);
+                            value = getInstance().getLocalizedString(fallbackRes);
                         } catch (Exception ignored) {}
                     }
                 }
@@ -2171,6 +2159,7 @@ public class LocaleController {
             currentSystemLocale = newSystemLocale;
             ConnectionsManager.setSystemLangCode(currentSystemLocale);
         }
+        checkLocalizationInternal();
     }
 
     public static String formatDateChat(long date) {
@@ -3235,9 +3224,15 @@ public class LocaleController {
                         editor.putString("language", localeInfo.getKey());
                         editor.apply();
 
-                        localeValues = valuesToSet;
+                        localizationExternal = new Localization.Builder()
+                            .addLocalization(valuesToSet)
+                            .build();
+                        localizationExternalSize = calculateTranslatedCount(valuesToSet);
+
                         currentLocale = newLocale;
                         currentLocaleInfo = localeInfo;
+                        // checkLocalizationInternal();
+
                         if (!TextUtils.isEmpty(currentLocaleInfo.pluralLangCode)) {
                             currentPluralRules = allRules.get(currentLocaleInfo.pluralLangCode);
                         }
@@ -4325,7 +4320,7 @@ public class LocaleController {
         if (alreadyPatched) {
             return false;
         }
-        int count = calculateTranslatedCount(localeValues);
+        int count = localizationExternalSize;
         if (count >= mustBeCount) {
             return false;
         }
@@ -4586,34 +4581,56 @@ public class LocaleController {
         }
     }
 
-    public static Locale getContextLocale() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return ApplicationLoader.applicationContext.getResources().getConfiguration().getLocales().get(0);
-        } else {
-            return ApplicationLoader.applicationContext.getResources().getConfiguration().locale;
-        }
+
+    private static int getLocalizedStringByName(String key) {
+        return ApplicationLoader.applicationContext.getResources().getIdentifier(key, "string", ApplicationLoader.applicationContext.getPackageName());
     }
 
-    public void fixContextLocale(Locale locale) {
-        try {
-            Locale currentEffectiveLocale = getContextLocale();
-            if (currentEffectiveLocale != null && currentEffectiveLocale.equals(locale)) {
-                return;
+    private String getLocalizedString(@StringRes int stringRes) {
+        checkLocalizationInternal();
+        return localizationInternal.getByResId(ApplicationLoader.applicationContext, stringRes);
+    }
+
+
+    /* */
+
+    private Localization localizationInternalDefault;
+    private volatile Locale localizationInternalLastLocale;
+    private volatile Localization localizationInternal = Localization.EMPTY;
+    private volatile boolean localizationInternalPending;
+    private @NonNull Localization localizationExternal = Localization.EMPTY;
+    private int localizationExternalSize;
+
+    private void checkLocalizationInternal() {
+        Locale currentLocale = this.currentLocale;
+        boolean localeChanged = !Objects.equals(localizationInternalLastLocale, currentLocale);
+
+        if (localeChanged || localizationInternal == null || localizationInternalPending) {
+            localizationInternalPending = true;
+            synchronized (this) {
+                currentLocale = this.currentLocale;
+                localeChanged = !Objects.equals(localizationInternalLastLocale, currentLocale);
+                if (localeChanged || localizationInternal == null) {
+                    if (localizationInternalDefault == null) {
+                        localizationInternalDefault = new Localization.Builder()
+                            .addResLocalization(ApplicationLoader.applicationContext, LocalizationUtils.DEFAULT_LOCALIZATION)
+                            .build();
+                    }
+
+                    final String assetPath = LocalizationUtils.getLocalizationAsset(currentLocale);
+                    if (assetPath == null || TextUtils.equals(assetPath, LocalizationUtils.DEFAULT_LOCALIZATION)) {
+                        localizationInternal = localizationInternalDefault;
+                    } else {
+                        localizationInternal = new Localization.Builder()
+                            .addLocalization(localizationInternalDefault)
+                            .addResLocalization(ApplicationLoader.applicationContext, assetPath)
+                            .build();
+                    }
+
+                    localizationInternalLastLocale = currentLocale;
+                }
             }
-            changingConfiguration = true;
-            Resources resources = ApplicationLoader.applicationContext.getResources();
-            Configuration config = resources.getConfiguration();
-            Locale.setDefault(locale);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                config.setLocale(locale);
-            } else {
-                config.locale = locale;
-            }
-            resources.updateConfiguration(config, resources.getDisplayMetrics());
-            changingConfiguration = false;
-        } catch (Exception e) {
-            FileLog.e(e);
-            changingConfiguration = false;
+            localizationInternalPending = false;
         }
     }
 }

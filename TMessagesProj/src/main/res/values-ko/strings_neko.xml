@@ -201,8 +201,8 @@
     <string name="ImportStickersX">파일에서 스티커 가져오기</string>
     <string name="ImportStickersList">스티커 가져오기</string>
     <string name="StickerSets">스티커 세트</string>
-    <string name="InvalidStickersFile">잘못된 스티커 파일:\u0020</string>
-    <string name="ImportedProxies">가져온 프록시 서버:\u0020</string>
+    <string name="InvalidStickersFile">잘못된 스티커 파일: </string>
+    <string name="ImportedProxies">가져온 프록시 서버: </string>
     <string name="DeleteAllServer">모든 서버 삭제</string>
     <string name="DeleteUnavailableServer">사용할 수 없는 서버 삭제</string>
     <string name="ImportProxyFromClipboard">클립보드에서 가져오기</string>
