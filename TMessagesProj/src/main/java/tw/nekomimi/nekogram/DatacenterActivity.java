@@ -24,6 +24,7 @@ import org.telegram.messenger.MediaDataController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SvgHelper;
+import org.telegram.proxy.ProxySettings;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.Theme;
@@ -120,7 +121,7 @@ public class DatacenterActivity extends BaseNekoSettingsActivity implements Noti
         if (force) {
             listAdapter.notifyItemChanged(position);
         }
-        datacenterInfo.pingId = ConnectionsManager.getInstance(currentAccount).checkProxy("ping.neko", datacenterInfo.id, null, null, null, time -> AndroidUtilities.runOnUIThread(() -> {
+        datacenterInfo.pingId = ConnectionsManager.getInstance(currentAccount).checkProxy(ProxySettings.builder().setAddress("ping.neko").setPort(datacenterInfo.id).build(), time -> AndroidUtilities.runOnUIThread(() -> {
             datacenterInfo.availableCheckTime = SystemClock.elapsedRealtime();
             datacenterInfo.checking = false;
             if (time == -1) {

@@ -434,4 +434,6 @@
     <string name="ForceForwardStatusMediaReady">メディア準備完了</string>
     <string name="ForceForwardStatusStopping">転送を停止中</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">現在のバッチを停止中</string>
-    <string name="ForceFontWeightFallback">フォントウェイトのフォールバックを強制</string></resources>
+    <string name="ForceFontWeightFallback">フォントウェイトのフォールバックを強制</string>
+    <string name="ChatHistory_ChatsRemoved_one">%1$d 件のチャットを削除しました</string>
+    <string name="ChatHistory_ChatsRemoved_other">%1$d 件のチャットを削除しました</string></resources>
