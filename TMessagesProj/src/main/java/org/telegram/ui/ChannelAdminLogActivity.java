@@ -75,8 +75,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import org.telegram.ui.recyclerview.LinearSmoothScrollerCustom;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
-
 import org.telegram.messenger.AndroidUtilities;
 
 import com.exteragram.messenger.utils.ui.TextPaint;

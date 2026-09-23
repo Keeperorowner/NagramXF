@@ -358,6 +358,10 @@
     <string name="ChatHistory_EnterSearchQuery">Введіть запит для пошуку</string>
     <string name="ChatHistory_LinkSharedToChat_one">Посилання переслано **до 1 чату**.</string>
     <string name="ChatHistory_LinkSharedToChat_other">Посилання переслано **до %1$d чатів**.</string>
+    <string name="ChatHistory_ChatsRemoved_one">Видалено %1$d чат</string>
+    <string name="ChatHistory_ChatsRemoved_few">Видалено %1$d чати</string>
+    <string name="ChatHistory_ChatsRemoved_many">Видалено %1$d чатів</string>
+    <string name="ChatHistory_ChatsRemoved_other">Видалено %1$d чатів</string>
     <string name="StorageSettings">Пам’ять і сховище</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">Попередній перегляд повідомлень</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Показувати вміст сповіщень навіть тоді, коли додаток заблоковано.</string>

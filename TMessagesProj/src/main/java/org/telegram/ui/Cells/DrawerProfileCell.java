@@ -168,7 +168,7 @@ public class DrawerProfileCell extends FrameLayout implements NotificationCenter
         addView(arrowView, LayoutHelper.createFrame(59, 59, Gravity.RIGHT | Gravity.BOTTOM));
         setArrowState(false);
 
-        sunDrawable = new RLottieDrawable(R.raw.sun, "" + R.raw.sun, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
+        sunDrawable = new RLottieDrawable(R.raw.sun, AndroidUtilities.dp(24), AndroidUtilities.dp(24), true, null);
         sunDrawable.setPlayInDirectionOfCustomEndFrame(true);
         darkThemeBackgroundView = new FrameLayout(context);
         ScaleStateListAnimator.apply(darkThemeBackgroundView);

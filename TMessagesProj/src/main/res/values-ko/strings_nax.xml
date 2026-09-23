@@ -355,6 +355,8 @@
     <string name="ChatHistory_EnterSearchQuery">검색어를 입력하세요.</string>
     <string name="ChatHistory_LinkSharedToChat_one">링크를 **채팅 1개**에 전달했습니다.</string>
     <string name="ChatHistory_LinkSharedToChat_other">링크를 **채팅 %1$d개**에 전달했습니다.</string>
+    <string name="ChatHistory_ChatsRemoved_one">채팅 %1$d개를 제거했습니다.</string>
+    <string name="ChatHistory_ChatsRemoved_other">채팅 %1$d개를 제거했습니다.</string>
     <string name="StorageSettings">저장소</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">메시지 미리보기 표시</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">암호 잠금이 활성화되어 있어도 알림 내용을 표시합니다.</string>

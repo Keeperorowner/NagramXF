@@ -1,0 +1,27 @@
+def mediaRoot = file('TMessagesProj_Modules/media')
+if (!gradle.ext.has('androidxMediaSettingsDir')) {
+    gradle.ext.androidxMediaSettingsDir = mediaRoot.getCanonicalPath()
+}
+def prefix = ':TMessagesProj_Modules:media3:media-'
+include ':TMessagesProj_Modules:media3'
+project(':TMessagesProj_Modules:media3').projectDir = mediaRoot
+def modules = [
+    'common', 'container', 'session', 'exoplayer', 'exoplayer_dash',
+    'exoplayer_hls', 'exoplayer_rtsp', 'exoplayer_smoothstreaming',
+    'exoplayer_ima', 'exoplayer_workmanager', 'ui', 'ui_leanback',
+    'database', 'datasource', 'datasource_cronet', 'datasource_rtmp',
+    'datasource_okhttp', 'decoder', 'decoder_av1', 'decoder_ffmpeg',
+    'decoder_flac', 'decoder_iamf', 'decoder_mpegh', 'decoder_opus',
+    'decoder_vp9', 'extractor', 'cast', 'effect', 'muxer', 'transformer'
+]
+
+modules.each { moduleName ->
+    def projectName = 'lib-' + moduleName.replace('_', '-')
+    include prefix + projectName
+    project(prefix + projectName).projectDir = file("TMessagesProj_Modules/media/libraries/${moduleName}")
+}
+
+['test-utils-robolectric': 'test_utils_robolectric', 'test-data': 'test_data', 'test-utils': 'test_utils'].each { projectSuffix, dirName ->
+    include prefix + projectSuffix
+    project(prefix + projectSuffix).projectDir = file("TMessagesProj_Modules/media/libraries/${dirName}")
+}
