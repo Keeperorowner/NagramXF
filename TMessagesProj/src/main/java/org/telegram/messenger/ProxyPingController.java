@@ -13,8 +13,7 @@ public class ProxyPingController {
         SharedConfig.ProxyInfo proxyInfo;
         if (SharedConfig.isProxyEnabled() && (proxyInfo = SharedConfig.currentProxy) != null) {
             ConnectionsManager.getInstance(UserConfig.selectedAccount).checkProxy(
-                    proxyInfo.address, proxyInfo.port,
-                    proxyInfo.username, proxyInfo.password, proxyInfo.secret,
+                    proxyInfo.settings,
                     new RequestTimeDelegate() {
                         @Override
                         public void run(long time) {

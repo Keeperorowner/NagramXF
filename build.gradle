@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     // AGP version comes from buildSrc (the lottie-meta plugin needs AGP on its classpath);
     // declaring a version here too conflicts with that.
@@ -9,6 +7,19 @@ plugins {
 }
 
 subprojects {
+    if (path.startsWith(':TMessagesProj_Modules:media3:')) {
+        plugins.withId('com.android.library') {
+            androidComponents.finalizeDsl { androidDsl ->
+                if (androidDsl.namespace == null) {
+                    def manifestFile = file('src/main/AndroidManifest.xml')
+                    if (manifestFile.exists()) {
+                        androidDsl.namespace = new groovy.xml.XmlSlurper().parse(manifestFile).@package.text()
+                    }
+                }
+            }
+        }
+    }
+
     afterEvaluate {
         if (plugins.hasPlugin("com.android.library") || plugins.hasPlugin("com.android.application")) {
             android {
@@ -28,18 +39,15 @@ subprojects {
                     coreLibraryDesugaringEnabled = true
                 }
 
-                kotlin {
-                    compilerOptions {
-                        jvmTarget = JvmTarget.JVM_21
-                    }
-                }
-
                 defaultConfig {
                     minSdk = 27
                     targetSdk = 36
                 }
 
                 buildFeatures.buildConfig = true
+            }
+            dependencies {
+                coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
             }
         }
     }

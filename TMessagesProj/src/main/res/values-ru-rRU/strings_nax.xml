@@ -437,4 +437,8 @@
     <string name="ForceForwardStatusMediaReady">Медиа готовы</string>
     <string name="ForceForwardStatusStopping">Остановка пересылки</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">Остановка текущей партии</string>
-    <string name="ForceFontWeightFallback">Принудительный фолбэк насыщенности шрифта</string></resources>
+    <string name="ForceFontWeightFallback">Принудительный фолбэк насыщенности шрифта</string>
+    <string name="ChatHistory_ChatsRemoved_one">Удалён %1$d чат</string>
+    <string name="ChatHistory_ChatsRemoved_few">Удалено %1$d чата</string>
+    <string name="ChatHistory_ChatsRemoved_many">Удалено %1$d чатов</string>
+    <string name="ChatHistory_ChatsRemoved_other">Удалено %1$d чатов</string></resources>

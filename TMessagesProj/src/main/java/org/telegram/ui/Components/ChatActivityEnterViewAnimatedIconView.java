@@ -37,7 +37,7 @@ public class ChatActivityEnterViewAnimatedIconView extends RLottieImageView {
                         res = R.raw.voice_and_video_cg_2;
                     }
                 }
-                RLottieDrawable rLottieDrawable = new RLottieDrawable(res, String.valueOf(res), AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
+                RLottieDrawable rLottieDrawable = new RLottieDrawable(res, AndroidUtilities.dp(sizeDp), AndroidUtilities.dp(sizeDp));
                 put(state, rLottieDrawable);
                 return rLottieDrawable;
             }
