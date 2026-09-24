@@ -354,6 +354,8 @@
     <string name="ChatHistory_EnterSearchQuery">输入搜索内容</string>
     <string name="ChatHistory_LinkSharedToChat_one">链接已转发到 **1 个聊天**。</string>
     <string name="ChatHistory_LinkSharedToChat_other">链接已转发到 **%1$d 个聊天**。</string>
+    <string name="ChatHistory_ChatsRemoved_one">已移除 %1$d 个聊天</string>
+    <string name="ChatHistory_ChatsRemoved_other">已移除 %1$d 个聊天</string>
     <string name="StorageSettings">存储</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">显示消息预览</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">在密码锁启用时不再隐藏通知内容。</string>

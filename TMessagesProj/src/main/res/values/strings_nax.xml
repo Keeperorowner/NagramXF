@@ -375,6 +375,10 @@
     <string name="ChatHistory_EnterSearchQuery">Enter search query</string>
     <string name="ChatHistory_LinkSharedToChat_one">Link forwarded to **a chat**.</string>
     <string name="ChatHistory_LinkSharedToChat_other">Link forwarded to **%1$d chats**.</string>
+    <string name="ChatHistory_ChatsRemoved_one">%1$d chat removed</string>
+    <string name="ChatHistory_ChatsRemoved_few">%1$d chats removed</string>
+    <string name="ChatHistory_ChatsRemoved_many">%1$d chats removed</string>
+    <string name="ChatHistory_ChatsRemoved_other">%1$d chats removed</string>
     <string name="StorageSettings">Storage</string>
     <string name="PasscodeShowMessagePreviewWhenLocked">Show Message Previews</string>
     <string name="PasscodeShowMessagePreviewWhenLockedAbout">Shows notification content even when passcode lock is active.</string>

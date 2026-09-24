@@ -440,5 +440,7 @@
     <string name="ForceForwardStatusStopping">正在停止轉傳</string>
     <string name="ForceForwardStatusStoppingCurrentBatch">正在停止目前批次</string>
     <string name="ForceFontWeightFallback">強制字體粗細回退</string>
+    <string name="ChatHistory_ChatsRemoved_one">已移除 %1$d 個聊天</string>
+    <string name="ChatHistory_ChatsRemoved_other">已移除 %1$d 個聊天</string>
 
 </resources>
