@@ -46,6 +46,13 @@ public class DeletedDialogService {
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>>> lastTopicMessagesByAccount = new ConcurrentHashMap<>();
     /** dialogId -> 最后一条已删除消息，供会话排序；与预览缓存不同，官方会话加载后不会被移除 */
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, MessageObject>> bumpMessagesByAccount = new ConcurrentHashMap<>();
+    /**
+     * 置顶缓存的重载与归档线程池的写入可能并发：重载期间写入的条目先记下来，重载结束时并入新缓存，
+     * 否则会被重载结果整体替换掉。以下两个字段只在 bumpLock 内访问，锁只在很短的操作内持有。
+     */
+    private final Object bumpLock = new Object();
+    private final HashMap<Integer, Integer> bumpReloads = new HashMap<>();
+    private final HashMap<Integer, HashMap<Long, MessageObject>> bumpPendingPuts = new HashMap<>();
     private final ConcurrentHashMap<Integer, Runnable> resortDialogsRunnables = new ConcurrentHashMap<>();
     /** 排序用的日期快照，只在主线程重建：排序过程中缓存可能被归档线程修改，比较结果必须保持一致 */
     private final ConcurrentHashMap<Integer, HashMap<Long, Integer>> dialogSortDates = new ConcurrentHashMap<>();
@@ -110,6 +117,44 @@ public class DeletedDialogService {
         Runnable runnable = resortDialogsRunnables.computeIfAbsent(account, a -> () -> resortDialogs(a, false));
         AndroidUtilities.cancelRunOnUIThread(runnable);
         AndroidUtilities.runOnUIThread(runnable, 100);
+    }
+
+    private void removeBumpMessage(int account, long dialogId) {
+        ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.get(account);
+        if (bumpMap != null) {
+            bumpMap.remove(dialogId);
+        }
+        HashMap<Long, MessageObject> pending = bumpPendingPuts.get(account);
+        if (pending != null) {
+            pending.remove(dialogId);
+        }
+    }
+
+    private void finishBumpReload(int account, ConcurrentHashMap<Long, MessageObject> loaded) {
+        synchronized (bumpLock) {
+            HashMap<Long, MessageObject> pending = bumpPendingPuts.get(account);
+            if (loaded != null) {
+                ConcurrentHashMap<Long, MessageObject> bumpMap = new ConcurrentHashMap<>(loaded);
+                if (pending != null) {
+                    for (Map.Entry<Long, MessageObject> entry : pending.entrySet()) {
+                        if (AyuMessageUtils.isNewerMessage(entry.getValue(), bumpMap.get(entry.getKey()))) {
+                            bumpMap.put(entry.getKey(), entry.getValue());
+                        }
+                    }
+                }
+                bumpMessagesByAccount.put(account, bumpMap);
+            }
+            Integer reloads = bumpReloads.get(account);
+            if (reloads == null || reloads <= 1) {
+                bumpReloads.remove(account);
+                bumpPendingPuts.remove(account);
+            } else {
+                bumpReloads.put(account, reloads - 1);
+            }
+        }
+        if (loaded != null) {
+            scheduleResortDialogs(account);
+        }
     }
 
     private void refreshSortDates(int account) {
@@ -192,9 +237,19 @@ public class DeletedDialogService {
         if (AyuMessageUtils.isNewerMessage(messageObject, existing)) {
             map.put(dialogId, messageObject);
         }
-        ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.computeIfAbsent(account, k -> new ConcurrentHashMap<>());
-        if (AyuMessageUtils.isNewerMessage(messageObject, bumpMap.get(dialogId))) {
-            bumpMap.put(dialogId, messageObject);
+        boolean bumped = false;
+        synchronized (bumpLock) {
+            ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.computeIfAbsent(account, k -> new ConcurrentHashMap<>());
+            if (AyuMessageUtils.isNewerMessage(messageObject, bumpMap.get(dialogId))) {
+                bumpMap.put(dialogId, messageObject);
+                bumped = true;
+            }
+            HashMap<Long, MessageObject> pending = bumpPendingPuts.get(account);
+            if (pending != null && AyuMessageUtils.isNewerMessage(messageObject, pending.get(dialogId))) {
+                pending.put(dialogId, messageObject);
+            }
+        }
+        if (bumped) {
             scheduleResortDialogs(account);
         }
     }
@@ -268,11 +323,10 @@ public class DeletedDialogService {
                 map.remove(mergeDialogId);
             }
         }
-        ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.get(account);
-        if (bumpMap != null) {
-            bumpMap.remove(dialogId);
+        synchronized (bumpLock) {
+            removeBumpMessage(account, dialogId);
             if (mergeDialogId != 0) {
-                bumpMap.remove(mergeDialogId);
+                removeBumpMessage(account, mergeDialogId);
             }
         }
         removeTopicMessages(account, dialogId);
@@ -291,16 +345,30 @@ public class DeletedDialogService {
     }
 
     private void loadLastMessages(int account) {
+        synchronized (bumpLock) {
+            bumpReloads.merge(account, 1, Integer::sum);
+            bumpPendingPuts.computeIfAbsent(account, k -> new HashMap<>());
+        }
+        ConcurrentHashMap<Long, MessageObject> loaded = null;
+        try {
+            loaded = loadLastMessagesInternal(account);
+        } finally {
+            finishBumpReload(account, loaded);
+        }
+    }
+
+    /** @return 每个会话最后一条已删除消息；读取失败时为 null */
+    private ConcurrentHashMap<Long, MessageObject> loadLastMessagesInternal(int account) {
         long userId = UserConfig.getInstance(account).clientUserId;
         if (userId == 0) {
-            return;
+            return null;
         }
         List<DeletedMessageFull> list;
         try {
             list = AyuData.getDeletedMessageDao().getLastMessages(userId);
         } catch (Throwable e) {
             FileLog.e("loadLastMessages", e);
-            return;
+            return null;
         }
 
         ConcurrentHashMap<Long, MessageObject> accountMap = mapForAccount(account);
@@ -308,9 +376,7 @@ public class DeletedDialogService {
         ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>> topicMap = topicMapForAccount(account);
         topicMap.clear();
         if (list == null || list.isEmpty()) {
-            bumpMessagesByAccount.put(account, new ConcurrentHashMap<>());
-            scheduleResortDialogs(account);
-            return;
+            return new ConcurrentHashMap<>();
         }
 
         ArrayList<Long> usersToLoad = new ArrayList<>();
@@ -353,7 +419,6 @@ public class DeletedDialogService {
         }
 
         accountMap.putAll(mapped);
-        bumpMessagesByAccount.put(account, new ConcurrentHashMap<>(mapped));
 
         ArrayList<TLRPC.User> users = new ArrayList<>();
         ArrayList<TLRPC.Chat> chats = new ArrayList<>();
@@ -368,7 +433,7 @@ public class DeletedDialogService {
                 mc.putChats(chats, true);
             }
         });
-        scheduleResortDialogs(account);
+        return mapped;
     }
 
     private void loadDeletedDialogs(int account) {
@@ -624,11 +689,6 @@ public class DeletedDialogService {
             ConcurrentHashMap<Long, MessageObject> map = lastMessagesByAccount.get(account);
             if (map != null) {
                 map.remove(dialogId);
-            }
-            // 用户主动删除/清空会话后不再按已删除消息置顶
-            ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.get(account);
-            if (bumpMap != null && bumpMap.remove(dialogId) != null) {
-                scheduleResortDialogs(account);
             }
         } catch (Throwable e) {
             FileLog.e("deleteDialogRecord", e);
