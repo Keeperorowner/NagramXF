@@ -288,4 +288,6 @@
     <string name="FeedShownChannels">显示的频道</string>
     <string name="FeedUnreadCounter">未读帖子计数</string>
     <string name="HideFeedTab">隐藏信息流标签页</string>
+    <string name="BumpDialogsWithDeletedMessages">按已删除消息排序会话</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">将已保存的已删除消息视为未被删除，参与会话列表排序并显示在会话预览中</string>
 </resources>

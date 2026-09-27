@@ -944,6 +944,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val bumpDialogsWithDeletedMessages =
+        addConfig(
+            "BumpDialogsWithDeletedMessages", // sort dialogs by saved deleted messages too
+            ConfigItem.configTypeBool,
+            false
+        )
     val customDeletedMark =
         addConfig(
             "CustomDeletedMark",
