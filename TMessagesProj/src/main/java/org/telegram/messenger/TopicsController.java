@@ -7,6 +7,9 @@ import android.text.TextUtils;
 
 import androidx.collection.LongSparseArray;
 
+import com.radolyn.ayugram.messages.AyuMessagesController;
+import com.radolyn.ayugram.messages.DeletedDialogService;
+
 import org.telegram.SQLite.SQLiteCursor;
 import org.telegram.messenger.support.LongSparseIntArray;
 import org.telegram.tgnet.ConnectionsManager;
@@ -401,13 +404,22 @@ public class TopicsController extends BaseController {
                     if (a.pinned && b.pinned) {
                         return a.pinnedOrder - b.pinnedOrder;
                     }
-                    return (b.topMessage != null ? b.topMessage.date : 0) - (a.topMessage != null ? a.topMessage.date : 0);
+                    return getTopicSortDate(chatId, b) - getTopicSortDate(chatId, a);
                 });
             }
             if (notify) {
                 getNotificationCenter().postNotificationName(NotificationCenter.topicsDidLoaded, chatId, true);
             }
         }
+    }
+
+    private int getTopicSortDate(long chatId, TLRPC.TL_forumTopic topic) {
+        int date = topic.topMessage != null ? topic.topMessage.date : 0;
+        // --- AyuGram: saved deleted messages keep their topic up as if they were not deleted
+        if (DeletedDialogService.isBumpDialogsEnabled()) {
+            date = Math.max(date, AyuMessagesController.getInstance().getDeletedDialogService().getLastTopicDeletedDate(currentAccount, -chatId, topic.id));
+        }
+        return date;
     }
 
     public void updateTopicsWithDeletedMessages(long dialogId, ArrayList<Integer> messages) {
