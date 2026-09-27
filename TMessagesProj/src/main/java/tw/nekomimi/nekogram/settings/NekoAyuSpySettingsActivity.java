@@ -963,7 +963,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private void resortDialogs() {
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             if (UserConfig.getInstance(a).isClientActivated()) {
-                AyuMessagesController.getInstance().getDeletedDialogService().resortDialogs(a);
+                AyuMessagesController.getInstance().getDeletedDialogService().resortDialogs(a, true);
             }
         }
     }

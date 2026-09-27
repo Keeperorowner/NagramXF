@@ -32,9 +32,10 @@ import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import xyz.nextalone.nagram.NaConfig;
@@ -43,8 +44,9 @@ public class DeletedDialogService {
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, MessageObject>> lastMessagesByAccount = new ConcurrentHashMap<>();
     /** dialogId -> (topicId -> 该话题内最后一条已删除消息)，供话题单元格的预览回退 */
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>>> lastTopicMessagesByAccount = new ConcurrentHashMap<>();
+    /** dialogId -> 最后一条已删除消息，供会话排序；与预览缓存不同，官方会话加载后不会被移除 */
+    private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, MessageObject>> bumpMessagesByAccount = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, Runnable> resortDialogsRunnables = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Integer, Set<Long>> resortTopicsChatIds = new ConcurrentHashMap<>();
     /** 排序用的日期快照，只在主线程重建：排序过程中缓存可能被归档线程修改，比较结果必须保持一致 */
     private final ConcurrentHashMap<Integer, HashMap<Long, Integer>> dialogSortDates = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Integer, HashMap<Long, HashMap<Long, Integer>>> topicSortDates = new ConcurrentHashMap<>();
@@ -56,6 +58,11 @@ public class DeletedDialogService {
     public static boolean isBumpDialogsEnabled() {
         return NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()
                 && NaConfig.INSTANCE.getBumpDialogsWithDeletedMessages().Bool();
+    }
+
+    public MessageObject getLastBumpMessage(int account, long dialogId) {
+        ConcurrentHashMap<Long, MessageObject> map = bumpMessagesByAccount.get(account);
+        return map != null ? map.get(dialogId) : null;
     }
 
     public int getLastDeletedDate(int account, long dialogId) {
@@ -71,15 +78,26 @@ public class DeletedDialogService {
         return date != null ? date : 0;
     }
 
-    /** 主线程调用：重建日期快照并重新排序会话列表 */
-    public void resortDialogs(int account) {
+    /**
+     * 主线程调用：重建日期快照并重新排序会话列表，以及日期有变化的话题列表。
+     *
+     * @param allTopics 开关变化时为 true，此时所有含已删除消息的话题列表都要重排
+     */
+    public void resortDialogs(int account, boolean allTopics) {
+        HashMap<Long, HashMap<Long, Integer>> oldTopicDates = topicSortDates.get(account);
         refreshSortDates(account);
-        MessagesController.getInstance(account).sortDialogs(null);
+        HashMap<Long, HashMap<Long, Integer>> newTopicDates = topicSortDates.get(account);
+        MessagesController mc = MessagesController.getInstance(account);
+        mc.sortDialogs(null);
         NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.dialogsNeedReload);
-        Set<Long> chatIds = resortTopicsChatIds.remove(account);
-        if (chatIds != null) {
-            for (long chatId : chatIds) {
-                MessagesController.getInstance(account).getTopicsController().sortTopics(chatId, true);
+        HashSet<Long> dialogIds = new HashSet<>(newTopicDates.keySet());
+        if (oldTopicDates != null) {
+            dialogIds.addAll(oldTopicDates.keySet());
+        }
+        for (long dialogId : dialogIds) {
+            if (dialogId < 0 && (allTopics || oldTopicDates == null
+                    || !Objects.equals(oldTopicDates.get(dialogId), newTopicDates.get(dialogId)))) {
+                mc.getTopicsController().sortTopics(-dialogId, true);
             }
         }
     }
@@ -89,22 +107,14 @@ public class DeletedDialogService {
         if (!isBumpDialogsEnabled()) {
             return;
         }
-        Runnable runnable = resortDialogsRunnables.computeIfAbsent(account, a -> () -> resortDialogs(a));
+        Runnable runnable = resortDialogsRunnables.computeIfAbsent(account, a -> () -> resortDialogs(a, false));
         AndroidUtilities.cancelRunOnUIThread(runnable);
         AndroidUtilities.runOnUIThread(runnable, 100);
     }
 
-    private void scheduleResortTopics(int account, long dialogId) {
-        if (!isBumpDialogsEnabled() || dialogId >= 0) {
-            return;
-        }
-        resortTopicsChatIds.computeIfAbsent(account, a -> ConcurrentHashMap.newKeySet()).add(-dialogId);
-        scheduleResortDialogs(account);
-    }
-
     private void refreshSortDates(int account) {
         HashMap<Long, Integer> dialogs = new HashMap<>();
-        ConcurrentHashMap<Long, MessageObject> map = lastMessagesByAccount.get(account);
+        ConcurrentHashMap<Long, MessageObject> map = bumpMessagesByAccount.get(account);
         if (map != null) {
             for (Map.Entry<Long, MessageObject> entry : map.entrySet()) {
                 MessageObject messageObject = entry.getValue();
@@ -162,7 +172,7 @@ public class DeletedDialogService {
         MessageObject existing = topicMap.get(topicId);
         if (AyuMessageUtils.isNewerMessage(messageObject, existing)) {
             topicMap.put(topicId, messageObject);
-            scheduleResortTopics(account, dialogId);
+            scheduleResortDialogs(account);
         }
     }
 
@@ -181,6 +191,10 @@ public class DeletedDialogService {
         MessageObject existing = map.get(dialogId);
         if (AyuMessageUtils.isNewerMessage(messageObject, existing)) {
             map.put(dialogId, messageObject);
+        }
+        ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.computeIfAbsent(account, k -> new ConcurrentHashMap<>());
+        if (AyuMessageUtils.isNewerMessage(messageObject, bumpMap.get(dialogId))) {
+            bumpMap.put(dialogId, messageObject);
             scheduleResortDialogs(account);
         }
     }
@@ -254,6 +268,13 @@ public class DeletedDialogService {
                 map.remove(mergeDialogId);
             }
         }
+        ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.get(account);
+        if (bumpMap != null) {
+            bumpMap.remove(dialogId);
+            if (mergeDialogId != 0) {
+                bumpMap.remove(mergeDialogId);
+            }
+        }
         removeTopicMessages(account, dialogId);
         if (mergeDialogId != 0) {
             removeTopicMessages(account, mergeDialogId);
@@ -287,6 +308,7 @@ public class DeletedDialogService {
         ConcurrentHashMap<Long, ConcurrentHashMap<Long, MessageObject>> topicMap = topicMapForAccount(account);
         topicMap.clear();
         if (list == null || list.isEmpty()) {
+            bumpMessagesByAccount.put(account, new ConcurrentHashMap<>());
             scheduleResortDialogs(account);
             return;
         }
@@ -331,6 +353,7 @@ public class DeletedDialogService {
         }
 
         accountMap.putAll(mapped);
+        bumpMessagesByAccount.put(account, new ConcurrentHashMap<>(mapped));
 
         ArrayList<TLRPC.User> users = new ArrayList<>();
         ArrayList<TLRPC.Chat> chats = new ArrayList<>();
@@ -601,6 +624,11 @@ public class DeletedDialogService {
             ConcurrentHashMap<Long, MessageObject> map = lastMessagesByAccount.get(account);
             if (map != null) {
                 map.remove(dialogId);
+            }
+            // 用户主动删除/清空会话后不再按已删除消息置顶
+            ConcurrentHashMap<Long, MessageObject> bumpMap = bumpMessagesByAccount.get(account);
+            if (bumpMap != null && bumpMap.remove(dialogId) != null) {
+                scheduleResortDialogs(account);
             }
         } catch (Throwable e) {
             FileLog.e("deleteDialogRecord", e);

@@ -3310,17 +3310,19 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         clearingDialog = MessagesController.getInstance(currentAccount).isClearingDialog(dialog.id);
                         groupMessages = MessagesController.getInstance(currentAccount).dialogMessage.get(dialog.id);
                         message = groupMessages != null && groupMessages.size() > 0 ? groupMessages.get(0) : null;
-                        MessageObject ayuPreview = com.radolyn.ayugram.messages.AyuMessagesController.getInstance().getLastMessageCached(currentAccount, dialog.id);
                         if (message == null) {
+                            MessageObject ayuPreview = com.radolyn.ayugram.messages.AyuMessagesController.getInstance().getLastMessageCached(currentAccount, dialog.id);
                             if (ayuPreview != null) {
                                 message = ayuPreview;
                             }
-                        } else if (ayuPreview != null && ayuPreview.messageOwner.date > message.messageOwner.date
-                                && com.radolyn.ayugram.messages.DeletedDialogService.isBumpDialogsEnabled()
-                                && !AyuFilter.shouldHideFilteredMessage(ayuPreview, null)) {
-                            // the dialog is sorted by this deleted message, so preview it as well
-                            message = ayuPreview;
-                            groupMessages = null;
+                        } else if (com.radolyn.ayugram.messages.DeletedDialogService.isBumpDialogsEnabled()) {
+                            MessageObject bumpPreview = com.radolyn.ayugram.messages.AyuMessagesController.getInstance().getDeletedDialogService().getLastBumpMessage(currentAccount, dialog.id);
+                            if (bumpPreview != null && bumpPreview.messageOwner.date > message.messageOwner.date
+                                    && !AyuFilter.shouldHideFilteredMessage(bumpPreview, null)) {
+                                // the dialog is sorted by this deleted message, so preview it as well
+                                message = bumpPreview;
+                                groupMessages = null;
+                            }
                         }
                         if (message != null) {
                             boolean blocked = false;
