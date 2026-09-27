@@ -304,4 +304,6 @@
     <string name="FeedShownChannels">Shown in feed</string>
     <string name="FeedUnreadCounter">Unread Post Counter</string>
     <string name="HideFeedTab">Hide Feed Tab</string>
+    <string name="BumpDialogsWithDeletedMessages">Bump Chats With Deleted Messages</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">Sort the chat list by saved deleted messages as if they were never deleted, and show them in the chat preview</string>
 </resources>

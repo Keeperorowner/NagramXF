@@ -286,4 +286,6 @@
     <string name="FeedShownChannels">Показуються у стрічці</string>
     <string name="FeedUnreadCounter">Лічильник непрочитаних постів</string>
     <string name="HideFeedTab">Приховати вкладку стрічка</string>
+    <string name="BumpDialogsWithDeletedMessages">Піднімати чати з видаленими повідомленнями</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">Сортувати список чатів за збереженими видаленими повідомленнями, ніби їх не видаляли, і показувати їх у превʼю чату</string>
 </resources>

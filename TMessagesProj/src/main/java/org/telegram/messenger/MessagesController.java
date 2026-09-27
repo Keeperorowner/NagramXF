@@ -152,6 +152,7 @@ import xyz.nextalone.nagram.helper.LocalPremiumStatusHelper;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 import com.radolyn.ayugram.messages.AyuMessagesController;
+import com.radolyn.ayugram.messages.DeletedDialogService;
 import com.radolyn.ayugram.proprietary.AyuHistoryHook;
 import com.radolyn.ayugram.proprietary.AyuHistoryPagination;
 import com.radolyn.ayugram.utils.AyuMessageUtils;
@@ -1507,8 +1508,8 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         MediaDataController mediaDataController = getMediaDataController();
-        long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id, 0));
-        long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id, 0));
+        long date1 = getDialogSortDate(dialog1, mediaDataController);
+        long date2 = getDialogSortDate(dialog2, mediaDataController);
         if (date1 < date2) {
             return 1;
         } else if (date1 > date2) {
@@ -1516,6 +1517,15 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         return 0;
     };
+
+    private long getDialogSortDate(TLRPC.Dialog dialog, MediaDataController mediaDataController) {
+        long date = DialogObject.getLastMessageOrDraftDate(dialog, mediaDataController.getDraft(dialog.id, 0));
+        // --- AyuGram: saved deleted messages keep their dialog up as if they were not deleted
+        if (DeletedDialogService.isBumpDialogsEnabled()) {
+            date = Math.max(date, AyuMessagesController.getInstance().getDeletedDialogService().getLastDeletedDate(currentAccount, dialog.id));
+        }
+        return date;
+    }
 
     public void sortDialogsList(ArrayList<TLRPC.Dialog> dialogs) {
         if (dialogs == null) {
@@ -1550,8 +1560,8 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         }
         MediaDataController mediaDataController = getMediaDataController();
-        long date1 = DialogObject.getLastMessageOrDraftDate(dialog1, mediaDataController.getDraft(dialog1.id, 0));
-        long date2 = DialogObject.getLastMessageOrDraftDate(dialog2, mediaDataController.getDraft(dialog2.id, 0));
+        long date1 = getDialogSortDate(dialog1, mediaDataController);
+        long date2 = getDialogSortDate(dialog2, mediaDataController);
         if (date1 < date2) {
             return 1;
         } else if (date1 > date2) {

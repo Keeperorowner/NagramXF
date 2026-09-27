@@ -373,4 +373,6 @@
     <string name="FeedShownChannels">Показаны в ленте</string>
     <string name="FeedUnreadCounter">Счётчик непрочитанных постов</string>
     <string name="HideFeedTab">Скрыть вкладку ленты</string>
+    <string name="BumpDialogsWithDeletedMessages">Поднимать чаты с удалёнными сообщениями</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">Сортировать список чатов по сохранённым удалённым сообщениям, как будто их не удаляли, и показывать их в превью чата</string>
 </resources>

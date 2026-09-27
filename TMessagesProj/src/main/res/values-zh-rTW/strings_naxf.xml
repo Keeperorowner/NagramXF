@@ -374,4 +374,6 @@
     <string name="FeedShownChannels">顯示的頻道</string>
     <string name="FeedUnreadCounter">未讀貼文計數</string>
     <string name="HideFeedTab">隱藏資訊流標籤頁</string>
+    <string name="BumpDialogsWithDeletedMessages">依已刪除訊息排序聊天</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">將已儲存的已刪除訊息視為未被刪除，參與聊天列表排序並顯示在聊天預覽中</string>
 </resources>
