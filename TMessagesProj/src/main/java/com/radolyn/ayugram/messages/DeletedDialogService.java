@@ -48,11 +48,13 @@ public class DeletedDialogService {
     private final ConcurrentHashMap<Integer, ConcurrentHashMap<Long, MessageObject>> bumpMessagesByAccount = new ConcurrentHashMap<>();
     /**
      * 置顶缓存的重载与归档线程池的写入可能并发：重载期间写入的条目先记下来，重载结束时并入新缓存，
-     * 否则会被重载结果整体替换掉。以下两个字段只在 bumpLock 内访问，锁只在很短的操作内持有。
+     * 否则会被重载结果整体替换掉；期间的移除同理，否则读库早于移除的重载会把条目恢复回来。
+     * 以下字段只在 bumpLock 内访问，锁只在很短的操作内持有。
      */
     private final Object bumpLock = new Object();
     private final HashMap<Integer, Integer> bumpReloads = new HashMap<>();
     private final HashMap<Integer, HashMap<Long, MessageObject>> bumpPendingPuts = new HashMap<>();
+    private final HashMap<Integer, HashSet<Long>> bumpPendingRemovals = new HashMap<>();
     private final ConcurrentHashMap<Integer, Runnable> resortDialogsRunnables = new ConcurrentHashMap<>();
     /** 排序用的日期快照，只在主线程重建：排序过程中缓存可能被归档线程修改，比较结果必须保持一致 */
     private final ConcurrentHashMap<Integer, HashMap<Long, Integer>> dialogSortDates = new ConcurrentHashMap<>();
@@ -128,6 +130,10 @@ public class DeletedDialogService {
         if (pending != null) {
             pending.remove(dialogId);
         }
+        HashSet<Long> removals = bumpPendingRemovals.get(account);
+        if (removals != null) {
+            removals.add(dialogId);
+        }
     }
 
     private void finishBumpReload(int account, ConcurrentHashMap<Long, MessageObject> loaded) {
@@ -135,6 +141,13 @@ public class DeletedDialogService {
             HashMap<Long, MessageObject> pending = bumpPendingPuts.get(account);
             if (loaded != null) {
                 ConcurrentHashMap<Long, MessageObject> bumpMap = new ConcurrentHashMap<>(loaded);
+                HashSet<Long> removals = bumpPendingRemovals.get(account);
+                if (removals != null) {
+                    // 先应用移除，之后更新的写入仍可通过下面的合并恢复条目
+                    for (long dialogId : removals) {
+                        bumpMap.remove(dialogId);
+                    }
+                }
                 if (pending != null) {
                     for (Map.Entry<Long, MessageObject> entry : pending.entrySet()) {
                         if (AyuMessageUtils.isNewerMessage(entry.getValue(), bumpMap.get(entry.getKey()))) {
@@ -148,6 +161,7 @@ public class DeletedDialogService {
             if (reloads == null || reloads <= 1) {
                 bumpReloads.remove(account);
                 bumpPendingPuts.remove(account);
+                bumpPendingRemovals.remove(account);
             } else {
                 bumpReloads.put(account, reloads - 1);
             }
@@ -348,6 +362,7 @@ public class DeletedDialogService {
         synchronized (bumpLock) {
             bumpReloads.merge(account, 1, Integer::sum);
             bumpPendingPuts.computeIfAbsent(account, k -> new HashMap<>());
+            bumpPendingRemovals.computeIfAbsent(account, k -> new HashSet<>());
         }
         ConcurrentHashMap<Long, MessageObject> loaded = null;
         try {
