@@ -258,3 +258,4 @@
 -keep class org.scilab.forge.jlatexmath.** { *; }
 -keep class ru.noties.jlatexmath.** { *; }
 -dontwarn org.scilab.forge.jlatexmath.**
+-keep class org.telegram.tgnet.** { *; }
