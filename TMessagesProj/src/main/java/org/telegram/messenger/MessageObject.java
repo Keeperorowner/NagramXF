@@ -8352,6 +8352,9 @@ public class MessageObject {
         int linksCount = 0, spoilersCount = 0, codesCount = 0;
         for (int a = 0; a < count; a++) {
             TextStyleSpan.TextStyleRun run = runs.get(a);
+            if (run.start < 0 || run.start >= run.end || run.end > text.length()) {
+                continue;
+            }
 
             if (run.start >= run.end)
                 continue;
