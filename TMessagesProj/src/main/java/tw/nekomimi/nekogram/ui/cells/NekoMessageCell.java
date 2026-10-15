@@ -21,7 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.radolyn.ayugram.database.entities.EditedMessage;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.CodeHighlighting;
+import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.ImageLoader;
 import org.telegram.messenger.ImageLocation;

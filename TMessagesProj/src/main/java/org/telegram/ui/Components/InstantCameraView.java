@@ -49,6 +49,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
@@ -192,6 +193,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     private Camera2Session[] camera2Sessions = new Camera2Session[2];
     private Camera2Session camera2SessionCurrent;
     private boolean needDrawFlickerStub;
+    private volatile long legacyCameraSwitchStartedNs;
+    private volatile int legacyCameraSwitchSequence;
+    private volatile int legacyCameraSwitchTargetSurface;
+    private volatile boolean legacyCameraSwitchAwaitingFrame;
+    private volatile String legacyCameraSwitchPath;
 
     private boolean isCameraSessionInitiated() {
         if (useCamera2) {
@@ -810,6 +816,12 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 if (camera2SessionCurrent != null && camera2Sessions[isFrontface == initialCameraFront ? 1 : 0] == null) {
                     bothCameras = false;
                 }
+                if (BuildVars.LOGS_ENABLED) {
+                    FileLog.d("InstantCamera legacy switch capability: dual=" + bothCameras
+                            + ", initialFacing=" + (isFrontface ? "FRONT" : "BACK")
+                            + ", frontSession=" + (camera2Sessions[0] != null)
+                            + ", backSession=" + (camera2Sessions[1] != null));
+                }
                 if (camera2SessionCurrent == null) return;
             } else {
                 camera2SessionCurrent = camera2Sessions[isFrontface ? 0 : 1] = Camera2Session.create(isFrontface, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize);
@@ -1163,6 +1175,20 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
     }
 
     private void switchCamera() {
+        legacyCameraSwitchStartedNs = SystemClock.elapsedRealtimeNanos();
+        legacyCameraSwitchSequence++;
+        legacyCameraSwitchTargetSurface = useCamera2 && bothCameras
+                ? 1 - surfaceIndex
+                : 0;
+        legacyCameraSwitchAwaitingFrame = true;
+        legacyCameraSwitchPath = useCamera2
+                ? bothCameras ? "DUAL_PREOPENED" : "SEQUENTIAL_CAMERA2"
+                : "SEQUENTIAL_CAMERA1";
+        logLegacyCameraSwitchStage("requested: from="
+                + (isFrontface ? "FRONT" : "BACK")
+                + ", to=" + (isFrontface ? "BACK" : "FRONT")
+                + ", currentSurface=" + surfaceIndex
+                + ", targetSurface=" + legacyCameraSwitchTargetSurface);
         if (!(useCamera2 && bothCameras)) {
             saveLastCameraBitmap();
             if (lastBitmap != null) {
@@ -1186,7 +1212,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                     camera2Sessions[isFrontface ? 1 : 0] = null;
                 }
                 camera2SessionCurrent = camera2Sessions[isFrontface ? 0 : 1] = Camera2Session.create(isFrontface, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize, MessagesController.getInstance(UserConfig.selectedAccount).roundVideoSize);
-                if (camera2SessionCurrent == null) return;
+                if (camera2SessionCurrent == null) {
+                    legacyCameraSwitchAwaitingFrame = false;
+                    logLegacyCameraSwitchStage("failed: Camera2Session.create returned null");
+                    return;
+                }
                 camera2SessionCurrent.setRecordingVideo(true);
                 previewSize[0] = new Size(camera2SessionCurrent.getPreviewWidth(), camera2SessionCurrent.getPreviewHeight());
                 cameraThread.setCurrentSession(camera2SessionCurrent);
@@ -1202,6 +1232,18 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
         initCamera();
         cameraReady = false;
         cameraThread.reinitForNewCamera();
+    }
+
+    private void logLegacyCameraSwitchStage(String stage) {
+        if (!BuildVars.LOGS_ENABLED) return;
+        long startedNs = legacyCameraSwitchStartedNs;
+        long elapsedMs = startedNs == 0L
+                ? 0L
+                : (SystemClock.elapsedRealtimeNanos() - startedNs) / 1_000_000L;
+        FileLog.d("InstantCamera legacy switch[" + legacyCameraSwitchSequence + "] "
+                + stage + ", path=" + legacyCameraSwitchPath
+                + ", elapsedMs=" + elapsedMs
+                + ", thread=" + Thread.currentThread().getName());
     }
 
     // Old Camera1 API
@@ -1364,6 +1406,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             }
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("InstantCamera create camera session " + index);
+            }
+            if (legacyCameraSwitchAwaitingFrame
+                    && index == legacyCameraSwitchTargetSurface) {
+                logLegacyCameraSwitchStage("camera open submitted: surface=" + index);
             }
 
             if (useCamera2) {
@@ -1829,6 +1875,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             if (updateTexImage2) {
                 cameraSurface[1].updateTexImage();
             }
+            boolean completesCameraSwitch = legacyCameraSwitchAwaitingFrame
+                    && surfaceIndex == legacyCameraSwitchTargetSurface
+                    && (surfaceIndex == 0 && updateTexImage1
+                    || surfaceIndex == 1 && updateTexImage2);
 
             boolean captureFirstFrameThumb = false;
             if (!recording) {
@@ -1888,6 +1938,11 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
             GLES20.glUseProgram(0);
 
             egl10.eglSwapBuffers(eglDisplay, eglSurface);
+            if (completesCameraSwitch && legacyCameraSwitchAwaitingFrame) {
+                legacyCameraSwitchAwaitingFrame = false;
+                logLegacyCameraSwitchStage("first target frame presented: surface="
+                        + surfaceIndex);
+            }
 
             if (captureFirstFrameThumb) {
                 AndroidUtilities.runOnUIThread(() -> {
@@ -1957,6 +2012,9 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
 
                     cameraSurface[0] = new SurfaceTexture(cameraTexture[0]);
                     cameraSurface[0].setOnFrameAvailableListener(surfaceTexture -> requestRender(true, false));
+                    if (legacyCameraSwitchAwaitingFrame) {
+                        logLegacyCameraSwitchStage("GL input recreated: surface=0");
+                    }
                     createCamera(0, cameraSurface[0]);
 
                     updateScale();
@@ -2000,6 +2058,10 @@ public class InstantCameraView extends InstantCameraViewBase implements Notifica
                 }
                 case DO_FLIP: {
                     surfaceIndex = 1 - surfaceIndex;
+                    if (legacyCameraSwitchAwaitingFrame) {
+                        logLegacyCameraSwitchStage("GL surface flip applied: surface="
+                                + surfaceIndex);
+                    }
 
                     updateScale();
 

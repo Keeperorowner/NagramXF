@@ -2308,6 +2308,14 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     public boolean doNotDrawGlassMenu;
+    private boolean drawGlassTitle = true;
+
+    public void setDrawGlassTitle(boolean draw) {
+        if (drawGlassTitle != draw) {
+            drawGlassTitle = draw;
+            invalidate();
+        }
+    }
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
@@ -2325,7 +2333,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         final boolean centeredAvatarPill = chatAvatarContainer != null && chatAvatarContainer.useSeparateAvatarPill()
                 && chatAvatarContainer.hasVisibleAvatar() && !isActionModeShowed() && searchFactor <= 0f;
 
-        if (glassDrawable != null && !glassOnlyBack) {
+        if (glassDrawable != null && !glassOnlyBack && drawGlassTitle) {
             final int menuWidthWithPadding = menuWidth + ((hasForcedMenuWidth || hasForcedMenuMinWidth) ? (menuWidth > 0 ? p : 0) : (int) (p * animatorHasMenuItems.getFloatValue()));
 
             final int left = hasBackButton ? s + p : 0;
@@ -2624,3 +2632,4 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
     // --- Spring Animation ---
 }
+

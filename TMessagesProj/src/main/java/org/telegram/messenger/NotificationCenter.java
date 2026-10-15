@@ -318,6 +318,8 @@ public class NotificationCenter {
     public static final int profileMusicUpdated = totalEvents++;
     public static final int updatedChatRanks = totalEvents++;
     public static final int joinedGroup = totalEvents++;
+    public static final int walletUpdate = totalEvents++;
+    public static final int walletTransactionsUpdate = totalEvents++;
 
     //global
     public static final int pushMessagesUpdated = totalEvents++;
