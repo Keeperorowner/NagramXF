@@ -30,12 +30,13 @@
     <string name="TestBackend">Тестовий сервер</string>
     <string name="ViewHistory">Історія</string>
     <string name="Nya">Няв!</string>
-    <string name="SensitiveDisableFiltering">Вимкнути фільтрацію чутливого контенту</string>
+    <string name="SensitiveDisableFiltering">Показувати чутливий контент</string>
     <string name="SensitiveAbout">Відображати чутливі медіафайли в публічних каналах на всіх ваших пристроях.</string>
     <string name="StickerSize">Розмір наліпок</string>
     <string name="StickerSizeDialogMessageBigOne">Великий</string>
     <string name="StickerSizeDialogMessageSmallOne">Маленький</string>
     <string name="StickerSizeDialogMessageReplyTo">Няв</string>
+    <string name="StickerSizeDialogName">Duang</string>
     <string name="Experimental">Експериментальні</string>
     <string name="UnlimitedFavoredStickers">Необмежені обрані наліпки</string>
     <string name="UnlimitedFavoredStickersAbout">Додавайте необмежену кількість наліпок до обраного (вони не будуть синхронізуватися з іншими клієнтами).</string>
@@ -72,7 +73,7 @@
     <string name="DisableNumberRounding">Не округлювати числа</string>
     <string name="Categories">Категорії</string>
     <string name="OfficialChannel">Канал Nagram</string>
-    <string name="About">Про додаток</string>
+    <string name="About">Про Nagram XF</string>
     <string name="IgnoreBlockedAbout">Ви більше не бачитимете повідомлень від заблокованих користувачів.</string>
     <string name="SourceCode">Вихідний код</string>
     <string name="ResetStickerSize">Скинути розмір наліпок</string>
@@ -147,12 +148,13 @@
     <string name="EmojiSetApplied">Набір емодзі застосовано.</string>
     <string name="EmojiSetAppliedInfo">%1$s тепер ваш набір емодзі.</string>
     <string name="EmojiSetAlreadyApplied">Набір емодзі вже застосовано.</string>
+    <string name="ProviderTelegramAPI">Telegram API</string>
     <string name="RecentChats">Нещодавні чати</string>
     <string name="ClearRecentChats">Очистити нещодавні чати</string>
     <string name="ClearRecentChatAlert">Ви дійсно хочете очистити останні чати?</string>
     <string name="CloudConfig">Налаштування хмарного сховища</string>
     <string name="CloudConfigDesc">Збережіть свої N-налаштування у хмарі Telegram.</string>
-    <string name="CloudConfigSyncDate" formatted="false">Остання синхронізація: %s, хмара: %s</string>
+    <string name="CloudConfigSyncDate">Остання синхронізація: %s, хмара: %s</string>
     <string name="CloudConfigSyncDateNever">ніколи</string>
     <string name="CloudConfigSync">Синхронізувати з хмарою</string>
     <string name="CloudConfigSyncShort">Синхронізувати</string>
@@ -166,6 +168,7 @@
     <string name="CopyCallback">Копіювати Callback-дані</string>
     <string name="CopyInlineQuery">Копіювати Inline-запит</string>
     <string name="CopyID">Копіювати ID</string>
+    <string name="NekoX" translatable="false">NekoX</string>
     <string name="Locked">Заблоковано</string>
     <string name="AccDescrChatAttachEnterMenu">Меню надсилання</string>
     <string name="ChatAttachEnterMenuRecordVideo">Записати відео</string>
@@ -176,9 +179,7 @@
     <string name="UseChatAttachEnterMenuNotice">Кнопку надсилання буде замінено на розширене меню.</string>
     <string name="DisableLinkPreviewByDefault">Вимкнути прев’ю посилань за замовчуванням</string>
     <string name="CustomApi">Власний API</string>
-    <string name="UseCustomApiNotice">"Вхід за допомогою власних ключів API Telegram. Якщо виникають проблеми з авторизацією, це може зарадити.
-
-Зверніть увагу: доставка сповіщень через FCM не працюватиме при власному API."</string>
+    <string name="UseCustomApiNotice">Вхід за допомогою власних ключів API Telegram. Якщо виникають проблеми з авторизацією, це може зарадити.\n\nЗверніть увагу: доставка сповіщень через FCM не працюватиме при власному API.</string>
     <string name="CustomApiNo">Не використовувати (рекомендовано)</string>
     <string name="CustomApiInput">Ввести вручну</string>
     <string name="LinkedGroupChat">Прив’язана група</string>
@@ -209,8 +210,8 @@
     <string name="ImportStickersX">Імпорт наліпок з файлу</string>
     <string name="ImportStickersList">Імпорт наліпок</string>
     <string name="StickerSets">Набори наліпок</string>
-    <string name="InvalidStickersFile">Недійсний файл наліпок:</string>
-    <string name="ImportedProxies">Імпортовані проксі-сервери:</string>
+    <string name="InvalidStickersFile">Недійсний файл наліпок: </string>
+    <string name="ImportedProxies">Імпортовані проксі-сервери: </string>
     <string name="DeleteAllServer">Видалити всі сервери</string>
     <string name="DeleteUnavailableServer">Видалити недоступні сервери</string>
     <string name="ImportProxyFromClipboard">Імпортувати з буфера обміну</string>
@@ -240,7 +241,7 @@
     <string name="AutoLockImmediately">Негайно</string>
     <string name="BackupSettings">Експорт налаштувань</string>
     <string name="ImportSettings">Імпорт налаштувань</string>
-    <string name="ImportSettingsAlert">Перезаписати налаштування? Імпорт налаштувань з невідомих джерел може перезаписати PIN-код і заблокувати додаток.</string>
+    <string name="ImportSettingsAlert">Перезаписати налаштування\? Імпорт налаштувань з невідомих джерел може перезаписати PIN-код і заблокувати додаток.</string>
     <string name="nekoXPaymentRemovedToast">Функції оплати було видалено.</string>
     <string name="unreadBadgeOnBackButton">Лічильник непрочитаного на кнопці «Назад»</string>
     <string name="DeleteDownloadedFileConfirm">Видалити цей файл з локального кешу?</string>
@@ -273,5 +274,7 @@
     <string name="Appearance">Зовнішній вигляд</string>
     <string name="Donate">Підтримати</string>
     <string name="DonateDesc">Якщо вам подобається Nagram XF, будь ласка, підтримайте розробку.</string>
+    <string name="DonateAfdian">Afdian</string>
+    <string name="DonateKoFi">Ko-fi</string>
     <string name="DonateInfo">Подобається цей клієнт? **Підтримати розробку**</string>
 </resources>
