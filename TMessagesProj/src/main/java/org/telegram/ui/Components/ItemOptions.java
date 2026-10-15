@@ -372,6 +372,10 @@ public class ItemOptions {
         return add(iconResId, text, false, onClickListener);
     }
 
+    public ItemOptions add(int iconResId, CharSequence text, CharSequence subtext, Runnable onClickListener) {
+        return add(iconResId, null, text, subtext, Theme.key_actionBarDefaultSubmenuItemIcon, Theme.key_actionBarDefaultSubmenuItem, onClickListener);
+    }
+
     public ItemOptions add(Drawable icon, CharSequence text, Runnable onClickListener) {
         return add(0, icon, text, Theme.key_actionBarDefaultSubmenuItemIcon, Theme.key_actionBarDefaultSubmenuItem, null, onClickListener);
     }
@@ -400,7 +404,19 @@ public class ItemOptions {
         return add(iconResId, null, text, iconColorKey, textColorKey, onLongClickListener, onClickListener);
     }
 
+    public ItemOptions add(int iconResId, Drawable iconDrawable, CharSequence text, int iconColorKey, int textColorKey, Runnable onClickListener) {
+        return add(iconResId, iconDrawable, text, null, iconColorKey, textColorKey, null, onClickListener);
+    }
+
+    public ItemOptions add(int iconResId, Drawable iconDrawable, CharSequence text, CharSequence subtext, int iconColorKey, int textColorKey, Runnable onClickListener) {
+        return add(iconResId, iconDrawable, text, subtext, iconColorKey, textColorKey, null, onClickListener);
+    }
+
     public ItemOptions add(int iconResId, Drawable iconDrawable, CharSequence text, int iconColorKey, int textColorKey, Runnable onLongClickListener, Runnable onClickListener) {
+        return add(iconResId, iconDrawable, text, null, iconColorKey, textColorKey, onLongClickListener, onClickListener);
+    }
+
+    public ItemOptions add(int iconResId, Drawable iconDrawable, CharSequence text, CharSequence subtext, int iconColorKey, int textColorKey, Runnable onLongClickListener, Runnable onClickListener) {
         if (context == null) {
             return this;
         }
@@ -411,6 +427,9 @@ public class ItemOptions {
             subItem.setTextAndIcon(text, iconResId, iconDrawable);
         } else {
             subItem.setText(text);
+        }
+        if (!TextUtils.isEmpty(subtext)) {
+            subItem.setSubtext(subtext);
         }
 
         subItem.setColors(textColor != null ? textColor : Theme.getColor(textColorKey, resourcesProvider), iconColor != null ? iconColor : Theme.getColor(iconColorKey, resourcesProvider));

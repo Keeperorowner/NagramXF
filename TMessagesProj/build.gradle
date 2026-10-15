@@ -31,6 +31,10 @@ idea {
             file('jni/third_party/libyuv'),
             file('jni/third_party/openh264'),
             file('jni/third_party/xiph'),
+            file('jni/third_party/wamr'),
+            file('jni/third_party/libprisma'),
+            file('jni/third_party/boost-regex'),
+            file('jni/tgcalls'),
             file('jni/tlottie'),
             file('jni/boringssl'),
             file('jni/sqlite')
@@ -275,7 +279,6 @@ android {
         }
     }
 
-    sourceSets.main.jniLibs.srcDirs = ['./jni/']
     sourceSets.plugin.jniLibs.srcDirs += "$buildDir/generated/chaquopyJniLibs"
     sourceSets.plugin.assets.srcDirs += "$buildDir/generated/chaquopyBootstrapNative"
     sourceSets.plugin.assets.srcDirs += "$buildDir/generated/chaquopyStdlib"
@@ -569,6 +572,7 @@ dependencies {
     implementation project(':TMessagesProj_Modules:media3:media-lib-session')
     // vendored zxing sources were removed upstream; QR now goes through the maven artifact
     implementation 'com.google.zxing:core:3.5.4'
+    implementation 'com.neovisionaries:nv-websocket-client:2.14'
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     compileOnly 'org.checkerframework:checker-qual:2.5.2'
     compileOnly 'org.checkerframework:checker-compat-qual:2.5.0'

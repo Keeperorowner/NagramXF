@@ -734,6 +734,7 @@ public class UniversalAdapter extends AdapterWithDiffUtils {
                 } else {
                     cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                 }
+                cell.setDrawLoading(item.locked, 45, true);
                 cell.setEnabled(item.enabled, true);
                 final boolean hasSubtitle = !TextUtils.isEmpty(item.subtext);
                 cell.setSubtitle(item.subtext);
