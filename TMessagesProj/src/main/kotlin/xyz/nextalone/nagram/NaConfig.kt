@@ -203,6 +203,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val showForwardCount =
+        addConfig(
+            "ShowForwardCount",
+            ConfigItem.configTypeBool,
+            true
+        )
     val showMessageID =
         addConfig(
             "ShowMessageID",

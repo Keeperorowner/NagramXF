@@ -85,6 +85,7 @@ public class MessageSettingsPreviewCell extends FrameLayout {
             message.message = getString(R.string.MessagePreviewDialogMessage);
             message.date = now - 3540;
             message.edit_date = now - 3480;
+            message.forwards = 12;
             message.dialog_id = 1L;
             message.flags = 33027;
             message.from_id = new TLRPC.TL_peerUser();
