@@ -689,6 +689,7 @@ class _CallbackBridge(dynamic_proxy(Utilities.Callback3Return)):
     """
 
     def __init__(self, meta: _ClassMeta, cls: type):
+        super().__init__()
         self._meta = meta
         self._cls = cls
 
