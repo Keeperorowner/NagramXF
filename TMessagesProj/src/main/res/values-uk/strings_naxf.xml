@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AppIconNagram">Nagram</string>
+    <!-- Pillstack (ported from exteragram/ayuGram) -->
     <string name="PillStackPills">Панель віджетів-капсул</string>
     <string name="PillStackPillsInfo">Інтерактивні плашки в полі пошуку</string>
     <string name="PillStackActivePills">Активні віджети</string>
@@ -30,10 +33,13 @@
     <string name="CryptoCurrencyIls">Ізраїльський шекель</string>
     <string name="CryptoCurrencyCzk">Чеська крона</string>
     <string name="CryptoCurrencyInr">Індійська рупія</string>
+
+    <!-- Missing strings used by pillstack -->
     <string name="CurrentLocation">Поточне розташування</string>
     <string name="SelectLocation">Виберіть розташування</string>
     <string name="NavigationDrawerProxyPingShort">Пінг %1$d мс</string>
     <string name="LastSeenPillAutoRefresh">Автооновлення</string>
+
     <string name="SquareFloatingButton">Квадратна плаваюча кнопка</string>
     <string name="SeparateHeaders">Розділяти заголовки секцій</string>
     <string name="RegexFiltersMaskMessages">Маскувати відфільтровані повідомлення замість приховування</string>
@@ -57,6 +63,7 @@
     <string name="HideAiEditor">Приховати ШІ-редактор</string>
     <string name="HideAiSummary">Приховати ШІ-підсумок</string>
     <string name="AiHideHeader">Приховати функції ШІ</string>
+    <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">Мітка видаленого</string>
     <string name="DeletedMarkNothing">Нічого</string>
     <string name="DeletedMarkTrashBin">Кошик</string>
@@ -78,6 +85,7 @@
     <string name="RegexFiltersImportFromClipboard">З буфера обміну</string>
     <string name="RegexFiltersImportFromURL">За посиланням</string>
     <string name="RegexFiltersImportUrlTitle">Імпорт за URL</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
     <string name="RegexFiltersImportUrlAction">Завантажити</string>
     <string name="RegexFiltersImportUrlFetchFailed">Не вдалося завантажити фільтри за цим посиланням.</string>
     <string name="RegexFiltersImportPreviewTitle">Перевірте імпорт</string>
@@ -107,12 +115,14 @@
     <string name="FoldersAtBottom">Перемістити папки вниз</string>
     <string name="SendLockedCustomEmojiAsSticker">Надсилати Premium Emoji як наліпку</string>
     <string name="SendLockedCustomEmojiAsStickerInfo">Підтримуються лише власні емодзі у форматах WebP/WebM. Формат TGS не підтримується.</string>
+    <string name="StyleOneUI" translatable="false">OneUI</string>
     <string name="PeekOnlineMenuText">Перевірити онлайн</string>
     <string name="PeekOnlineSuccess">Онлайн-статус оновлено</string>
     <string name="PeekOnlineUnavailable">Не вдалося отримати точний статус.</string>
     <string name="PeekOnlineRestoreFailed">Не вдалося відновити налаштування приватності «Останній візит».</string>
     <string name="AppNavigation">Навігація додатком</string>
     <string name="ShowRecentChatsSidebar">Бічна панель нещодавніх чатів</string>
+    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="ForceForwardStatusChunkCount">фрагмент %1$d з %2$d</string>
     <string name="ForceForwardSomeSkipped">Не вдалося переслати %1$d повідомлень.</string>
     <string name="AyuMomentsPreviewMessage">Роби що можеш, решта — доля</string>
@@ -164,6 +174,8 @@
     <string name="VideoMessagesCameraAsk">Запитувати щоразу</string>
     <string name="MoveAttachCameraToBottom">Камера на нижній панелі</string>
     <string name="MoveAttachCameraToBottomNotice">Показувати камеру на нижній панелі вкладень замість сітки галереї.</string>
+
+    <!-- AI Chat -->
     <string name="AIChat">ШІ-чат</string>
     <string name="AIChatInfo">Налаштування сервісів, ролей та історії</string>
     <string name="AIChatServices">Сервіси</string>
@@ -211,6 +223,8 @@
     <string name="AIChatSelected">Вибрано</string>
     <string name="ClearConversationHistoryInfo">Очистити історію листування з ШІ?</string>
     <string name="AIChatHistoryCleared">Історію очищено</string>
+
+    <!-- AI Error messages -->
     <string name="AIError">Помилка сервера</string>
     <string name="AIErrorInfo">Сталася непередбачена помилка. Спробуйте ще раз.</string>
     <string name="AIError400">Некоректний запит</string>
@@ -225,10 +239,12 @@
     <string name="AIError408Info">Час очікування запиту вичерпано. Повторіть пізніше.</string>
     <string name="AIError429">Перевищено ліміт</string>
     <string name="AIError429Info">Забагато запитів. Зачекайте трохи.</string>
+    <string name="AIError502">Помилка шлюзу</string>
     <string name="AIError502Info">Сервер тимчасово недоступний.</string>
     <string name="AIError503">Сервіс недоступний</string>
     <string name="AIError503Info">Сервіс перевантажено. Повторіть пізніше.</string>
     <string name="TabStyleStroke">Контур індикатора вкладок</string>
+    <!-- AyuGram feature-gap completion -->
     <string name="SuggestGhostModeBeforeViewingStory">Попереджати перед переглядом історій</string>
     <string name="SuggestGhostModeBeforeStoryTitle">Режим привида</string>
     <string name="SuggestGhostModeBeforeStoryMessage">Перегляд цієї історії розкриє ваш онлайн-статус. Увімкнути режим привида?</string>
@@ -238,6 +254,7 @@
     <string name="SaveReadDateAbout">Фіксує дату та час, коли ваші повідомлення були прочитані співрозмовником.</string>
     <string name="AyuReadDate">Прочитано</string>
     <string name="AyuReadDateUnknown">Невідомо</string>
+    <!-- Built-in local folders -->
     <string name="BuiltInFolders">Вбудовані папки</string>
     <string name="BuiltInFoldersInfo">Вбудовані папки створюються локально на цьому пристрої та не синхронізуються з серверами Telegram. Їхню назву та значок змінити не можна.</string>
     <string name="LocalFolder">Локальна папка</string>
@@ -247,15 +264,16 @@
     <string name="BuiltInFolderBasicGroups">Звичайні групи</string>
     <string name="BuiltInFolderSupergroups">Супергрупи</string>
     <string name="BuiltInFolderAdmin">Адміністратор</string>
+    <!-- Sidebar menu manager -->
     <string name="MainMenuItems">Елементи бічного меню</string>
     <string name="MainMenuHiddenItems">Приховані елементи</string>
     <string name="MainMenuAddDivider">Додати розділювач</string>
     <string name="MainMenuDivider">Розділювач</string>
     <string name="MainMenuItemsInfo">Перетягуйте для зміни порядку. Натисніть на пункт, щоб приховати або повернути його. Натисніть на розділювач, щоб видалити його.</string>
+    <!-- Sticker shape -->
     <string name="StickerShape">Форма наліпки</string>
     <string name="StickerShapeRounded">Заокруглена</string>
     <string name="StickerShapeRoundedMsg">Повідомлення</string>
-    <string name="CancelForwarding">Скасувати пересилання</string>
     <!-- Disable trending -->
     <string name="DisableTrendingFeaturedStickers">Популярні стікери</string>
     <string name="DisableTrendingFeaturedGifs">Популярні GIF</string>
