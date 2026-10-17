@@ -75,6 +75,18 @@ public final class AyuHistoryPagination {
         return load(direction, anchorId, Integer.MIN_VALUE, Integer.MAX_VALUE, count, false, true, source, messageId, canDisplay);
     }
 
+    /**
+     * Inclusive id range of deleted media to merge into a shared media page. Viewers continue from the
+     * oldest shown message, so the range stays within the server page until the history edge is reached.
+     */
+    public static int[] mediaRange(int maxId, int minId, int pageMinId, int pageMaxId, boolean edgeReached) {
+        boolean open = edgeReached || pageMinId > pageMaxId;
+        if (minId != 0) {
+            return new int[]{minId, open ? Integer.MAX_VALUE : pageMaxId};
+        }
+        return new int[]{open ? 0 : pageMinId, maxId == 0 ? Integer.MAX_VALUE : maxId};
+    }
+
     private static <T> Page<T> load(
             Direction direction, int anchorId, int minId, int maxId, int count, boolean encrypted, boolean archive,
             Source<T> source, ToIntFunction<T> messageId, Predicate<T> canDisplay
