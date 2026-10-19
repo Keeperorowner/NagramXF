@@ -1,18 +1,31 @@
 package org.telegram.messenger;
 
+import android.content.Context;
 import android.os.SystemClock;
 import android.text.TextUtils;
 
 import org.unifiedpush.android.connector.UnifiedPush;
 
-import java.util.List;
-
 public class UnifiedPushListenerServiceProvider implements PushListenerController.IPushListenerServiceProvider {
-    public UnifiedPushListenerServiceProvider(){}
+    // Use the built-in FCM distributor instead of a distributor app
+    private final boolean fcm;
+
+    public UnifiedPushListenerServiceProvider(boolean fcm) {
+        this.fcm = fcm;
+    }
 
     @Override
     public boolean hasServices() {
-        return !UnifiedPush.getDistributors(ApplicationLoader.applicationContext).isEmpty();
+        Context context = ApplicationLoader.applicationContext;
+        if (fcm) {
+            return UnifiedPushFcmDistributor.isAvailable(context);
+        }
+        for (String distributor : UnifiedPush.getDistributors(context)) {
+            if (!context.getPackageName().equals(distributor)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -22,9 +35,8 @@ public class UnifiedPushListenerServiceProvider implements PushListenerControlle
 
     @Override
     public void onRequestPushToken() {
-        String currentPushString = SharedConfig.pushString;
-        if (!TextUtils.isEmpty(currentPushString)) {
-            FileLog.d("UnifiedPush endpoint = " + currentPushString);
+        if (!TextUtils.isEmpty(SharedConfig.pushString)) {
+            FileLog.d("UnifiedPush endpoint found"); // the Web Push token carries the auth secret
         } else {
             FileLog.d("No UnifiedPush string found");
         }
@@ -32,17 +44,26 @@ public class UnifiedPushListenerServiceProvider implements PushListenerControlle
             try {
                 SharedConfig.pushStringGetTimeStart = SystemClock.elapsedRealtime();
                 SharedConfig.saveConfig();
-                if (UnifiedPush.getAckDistributor(ApplicationLoader.applicationContext) == null) {
-                    List<String> distributors = UnifiedPush.getDistributors(ApplicationLoader.applicationContext);
-                    if (distributors.size() > 0) {
-                        String distributor =  distributors.get(0);
-                        UnifiedPush.saveDistributor(ApplicationLoader.applicationContext, distributor);
+                Context context = ApplicationLoader.applicationContext;
+                String self = context.getPackageName();
+                String current = UnifiedPush.getAckDistributor(context);
+                if (fcm) {
+                    if (!self.equals(current)) {
+                        UnifiedPush.saveDistributor(context, self);
+                    }
+                } else if (current == null || self.equals(current)) {
+                    // Our own package is listed too, as the built-in FCM distributor
+                    for (String distributor : UnifiedPush.getDistributors(context)) {
+                        if (!self.equals(distributor)) {
+                            UnifiedPush.saveDistributor(context, distributor);
+                            break;
+                        }
                     }
                 }
                 UnifiedPush.register(
                         ApplicationLoader.applicationContext,
                         "default",
-                        "Telegram Simple Push",
+                        "Telegram Web Push",
                         null
                 );
             } catch (Throwable e) {
@@ -53,6 +74,6 @@ public class UnifiedPushListenerServiceProvider implements PushListenerControlle
 
     @Override
     public int getPushType() {
-        return PushListenerController.PUSH_TYPE_SIMPLE;
+        return PushListenerController.PUSH_TYPE_WEB;
     }
 }
