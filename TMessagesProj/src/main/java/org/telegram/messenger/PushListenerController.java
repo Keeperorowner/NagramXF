@@ -37,12 +37,14 @@ import xyz.nextalone.nagram.NaConfig;
 public class PushListenerController {
     public static final int PUSH_TYPE_FIREBASE = 2,
         PUSH_TYPE_SIMPLE = 4,
+        PUSH_TYPE_WEB = 10,
         PUSH_TYPE_HUAWEI = 13;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({
             PUSH_TYPE_FIREBASE,
             PUSH_TYPE_SIMPLE,
+            PUSH_TYPE_WEB,
             PUSH_TYPE_HUAWEI
     })
     public @interface PushType {}
@@ -92,6 +94,25 @@ public class PushListenerController {
                         ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
                     }
                     AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).registerForPush(pushType, token));
+                }
+            }
+        });
+    }
+
+    public static void unregisterSimplePush() {
+        // Read before clearing: the runnable below runs later
+        String token = NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String();
+        NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().setConfigString("");
+        if (TextUtils.isEmpty(token)) {
+            return;
+        }
+        Utilities.stageQueue.postRunnable(() -> {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                UserConfig userConfig = UserConfig.getInstance(a);
+                if (userConfig.getClientUserId() != 0) {
+                    final int currentAccount = a;
+                    AndroidUtilities.runOnUIThread(() ->
+                            MessagesController.getInstance(currentAccount).unregisterSimplePush(token));
                 }
             }
         });
@@ -294,12 +315,19 @@ public class PushListenerController {
                                     args[a] = loc_args.getString(a);
                                 }
                             } else {
+                                countDownLatch.countDown();
                                 return;
                             }
-                            if (args.length < 2) return;
+                            if (args.length < 2) {
+                                countDownLatch.countDown();
+                                return;
+                            }
 
                             final String data_url = custom.optString("url");
-                            if (TextUtils.isEmpty(data_url)) return;
+                            if (TextUtils.isEmpty(data_url)) {
+                                countDownLatch.countDown();
+                                return;
+                            }
 
                             final long dialogId = UserObject.OAUTH; // UserConfig.getInstance(currentAccount).getClientUserId();
                             final String messageText = LocaleController.formatString(R.string.BotAuthNotification, args[0], args[1]);
@@ -1820,7 +1848,11 @@ public class PushListenerController {
                 break;
             }
             case 2: {
-                instance = new UnifiedPushListenerServiceProvider();
+                instance = new UnifiedPushListenerServiceProvider(false);
+                break;
+            }
+            case 4: {
+                instance = new UnifiedPushListenerServiceProvider(true);
                 break;
             }
             default: {
