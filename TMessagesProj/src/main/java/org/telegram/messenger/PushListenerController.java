@@ -2,6 +2,8 @@ package org.telegram.messenger;
 
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -28,7 +30,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import xyz.nextalone.nagram.NaConfig;
@@ -51,6 +57,9 @@ public class PushListenerController {
 
     public static final int NOTIFICATION_ID = 1;
     private static CountDownLatch countDownLatch = new CountDownLatch(1);
+    // Retired tokens stay in prefs until every account has unregistered them, so failures are retried on the next start
+    private static final HashMap<String, Integer> retirements = new HashMap<>();
+    private static final Set<String> unregisteringTokens = Collections.synchronizedSet(new HashSet<>());
 
     public static void sendRegistrationToServer(@PushType int pushType, String token) {
         Utilities.stageQueue.postRunnable(() -> {
@@ -58,6 +67,8 @@ public class PushListenerController {
             if (token == null) {
                 return;
             }
+            String previousToken = SharedConfig.pushString;
+            int previousType = SharedConfig.pushType;
             boolean sendStat = false;
             if (SharedConfig.pushStringGetTimeStart != 0 && SharedConfig.pushStringGetTimeEnd != 0 && (!SharedConfig.pushStatSent || !TextUtils.equals(SharedConfig.pushString, token))) {
                 sendStat = true;
@@ -65,6 +76,11 @@ public class PushListenerController {
             }
             SharedConfig.pushString = token;
             SharedConfig.pushType = pushType;
+            SharedConfig.saveConfig();
+            if (!TextUtils.equals(previousToken, token)) {
+                // A new endpoint or distributor: Telegram would keep pushing to the old token too
+                retireToken(previousType, previousToken);
+            }
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                 UserConfig userConfig = UserConfig.getInstance(a);
                 userConfig.registeredForPush = false;
@@ -93,29 +109,163 @@ public class PushListenerController {
                         SharedConfig.saveConfig();
                         ConnectionsManager.getInstance(currentAccount).sendRequest(req, null);
                     }
-                    AndroidUtilities.runOnUIThread(() -> MessagesController.getInstance(currentAccount).registerForPush(pushType, token));
+                    AndroidUtilities.runOnUIThread(() -> {
+                        // A register response handled on the UI thread meanwhile may have set it again
+                        userConfig.registeredForPush = false;
+                        MessagesController.getInstance(currentAccount).registerForPush(pushType, token);
+                    });
                 }
             }
         });
     }
 
-    public static void unregisterSimplePush() {
-        // Read before clearing: the runnable below runs later
-        String token = NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String();
-        NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().setConfigString("");
+    public static void tearDownPreviousMode() {
+        IPushListenerServiceProvider provider = getProvider();
+        boolean unified = provider instanceof UnifiedPushListenerServiceProvider;
+        int ownedType = unified ? PUSH_TYPE_WEB : provider instanceof GooglePushListenerServiceProvider ? PUSH_TYPE_FIREBASE : -1;
+        Utilities.stageQueue.postRunnable(() -> {
+            if (SharedConfig.pushType != ownedType) {
+                retireRegisteredToken();
+            }
+            if (!unified) {
+                retireSimplePush();
+                Utilities.globalQueue.postRunnable(UnifiedPushListenerServiceProvider::unregister);
+            }
+            AndroidUtilities.runOnUIThread(PushListenerController::unregisterStaleTokens);
+        });
+    }
+
+    // Call on the queue that stores new endpoints, so a newer Simple Push URL is not retired
+    public static void retireUnifiedPush() {
+        retireSimplePush();
+        Utilities.stageQueue.postRunnable(() -> {
+            if (SharedConfig.pushType == PUSH_TYPE_WEB) {
+                retireRegisteredToken();
+            }
+        });
+    }
+
+    private static void retireRegisteredToken() {
+        String token = SharedConfig.pushString;
         if (TextUtils.isEmpty(token)) {
             return;
         }
-        Utilities.stageQueue.postRunnable(() -> {
-            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                UserConfig userConfig = UserConfig.getInstance(a);
-                if (userConfig.getClientUserId() != 0) {
-                    final int currentAccount = a;
-                    AndroidUtilities.runOnUIThread(() ->
-                            MessagesController.getInstance(currentAccount).unregisterSimplePush(token));
-                }
+        SharedConfig.pushString = "";
+        SharedConfig.saveConfig();
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            UserConfig userConfig = UserConfig.getInstance(a);
+            userConfig.registeredForPush = false;
+            userConfig.saveConfig(false);
+        }
+        retireToken(SharedConfig.pushType, token);
+    }
+
+    private static void retireSimplePush() {
+        String token = NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String();
+        if (TextUtils.isEmpty(token)) {
+            return;
+        }
+        NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().setConfigString("");
+        retireToken(PUSH_TYPE_SIMPLE, token);
+    }
+
+    // Call after the token stopped being the current one, otherwise it is dropped as live
+    public static void retireToken(@PushType int pushType, String token) {
+        if (TextUtils.isEmpty(token)) {
+            return;
+        }
+        setStale(pushType + ":" + token, true);
+        AndroidUtilities.runOnUIThread(PushListenerController::unregisterStaleTokens);
+    }
+
+    private static SharedPreferences staleTokenPrefs() {
+        return ApplicationLoader.applicationContext.getSharedPreferences("push_stale_tokens", Context.MODE_PRIVATE);
+    }
+
+    private static synchronized Set<String> getStaleTokens() {
+        return new HashSet<>(staleTokenPrefs().getStringSet("tokens", Collections.emptySet()));
+    }
+
+    private static synchronized void setStale(String entry, boolean stale) {
+        Set<String> tokens = getStaleTokens();
+        if (stale) {
+            retirements.put(entry, getRetirements(entry) + 1);
+        } else {
+            retirements.remove(entry);
+        }
+        if (stale ? tokens.add(entry) : tokens.remove(entry)) {
+            staleTokenPrefs().edit().putStringSet("tokens", tokens).apply();
+        }
+    }
+
+    private static synchronized int getRetirements(String entry) {
+        Integer count = retirements.get(entry);
+        return count == null ? 0 : count;
+    }
+
+    // Returns true if the token was retired again since retiredBefore was read
+    private static synchronized boolean finishUnregistering(String entry, int retiredBefore, boolean failed) {
+        if (getRetirements(entry) != retiredBefore) {
+            return true;
+        }
+        if (!failed) {
+            setStale(entry, false);
+        }
+        return false;
+    }
+
+    public static boolean isUnregistering(@PushType int pushType, String token) {
+        return unregisteringTokens.contains(pushType + ":" + token);
+    }
+
+    private static boolean isLive(@PushType int pushType, String token) {
+        return pushType == SharedConfig.pushType && token.equals(SharedConfig.pushString)
+                || pushType == PUSH_TYPE_SIMPLE && token.equals(NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String());
+    }
+
+    private static void unregisterStaleTokens() {
+        ArrayList<Integer> accounts = new ArrayList<>();
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                accounts.add(a);
             }
-        });
+        }
+        for (String entry : getStaleTokens()) {
+            if (unregisteringTokens.contains(entry)) {
+                continue;
+            }
+            int separator = entry.indexOf(':');
+            int pushType = Utilities.parseInt(entry.substring(0, separator));
+            String token = entry.substring(separator + 1);
+            int retiredBefore = getRetirements(entry);
+            if (isLive(pushType, token) || accounts.isEmpty()) {
+                finishUnregistering(entry, retiredBefore, false);
+                continue;
+            }
+            unregisteringTokens.add(entry);
+            int[] pending = {accounts.size()};
+            boolean[] failed = {false};
+            for (int account : accounts) {
+                MessagesController.getInstance(account).unregisterPush(pushType, token, done -> {
+                    failed[0] |= !done;
+                    if (--pending[0] > 0) {
+                        return;
+                    }
+                    unregisteringTokens.remove(entry);
+                    if (finishUnregistering(entry, retiredBefore, failed[0])) {
+                        // A request in flight registered it again
+                        unregisterStaleTokens();
+                    }
+                    if (isLive(pushType, token)) {
+                        // Became current again while being unregistered
+                        for (int a : accounts) {
+                            UserConfig.getInstance(a).registeredForPush = false;
+                            MessagesController.getInstance(a).registerForPush(SharedConfig.pushType, SharedConfig.pushString);
+                        }
+                    }
+                });
+            }
+        }
     }
 
     public static void processRemoteMessage(@PushType int pushType, String data, long time) {

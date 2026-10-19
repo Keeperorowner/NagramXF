@@ -606,6 +606,7 @@ public class ApplicationLoader extends Application {
 
     private static void initPushServices() {
         AndroidUtilities.runOnUIThread(() -> {
+            PushListenerController.tearDownPreviousMode();
             if (getPushProvider().hasServices()) {
                 getPushProvider().onRequestPushToken();
             } else {
