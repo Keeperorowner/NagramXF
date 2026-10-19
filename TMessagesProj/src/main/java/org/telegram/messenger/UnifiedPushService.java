@@ -106,9 +106,15 @@ public class UnifiedPushService extends PushService {
         return true;
     }
 
+    // Outside UnifiedPush modes the callbacks come from tearing down the previous mode
+    // and must not touch the reg id or tokens of the current one
+    private static boolean isActive() {
+        return PushListenerController.getProvider() instanceof UnifiedPushListenerServiceProvider;
+    }
+
     @Override
     public void onNewEndpoint(@NonNull PushEndpoint endpoint, @NonNull String instance) {
-        if (!(PushListenerController.getProvider() instanceof UnifiedPushListenerServiceProvider)) {
+        if (!isActive()) {
             return;
         }
         Utilities.globalQueue.postRunnable(() -> {
@@ -142,7 +148,11 @@ public class UnifiedPushService extends PushService {
                 String simplePushUrl = fcm
                         ? endpoint.getUrl()
                         : gateway + URLEncoder.encode(endpoint.getUrl(), StandardCharsets.UTF_8.name());
+                String previousSimplePushUrl = NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String();
                 NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().setConfigString(simplePushUrl);
+                if (!simplePushUrl.equals(previousSimplePushUrl)) {
+                    PushListenerController.retireToken(PushListenerController.PUSH_TYPE_SIMPLE, previousSimplePushUrl);
+                }
 
                 org.json.JSONObject keys = new org.json.JSONObject();
                 keys.put("p256dh", p256dh);
@@ -228,21 +238,29 @@ public class UnifiedPushService extends PushService {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("Failed to get endpoint: " + reason);
         }
-        SharedConfig.pushStringStatus = UP_FAILED;
-        Utilities.globalQueue.postRunnable(() -> {
-            SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
-            PushListenerController.sendRegistrationToServer(PushListenerController.PUSH_TYPE_WEB, null);
-            PushListenerController.unregisterSimplePush();
-        });
+        // The connector keeps the registration, so its endpoint may still deliver
+        onRegistrationLost(false);
     }
 
     @Override
     public void onUnregistered(@NonNull String instance) {
+        if (BuildVars.LOGS_ENABLED) {
+            FileLog.d("UnifiedPush unregistered");
+        }
+        onRegistrationLost(true);
+    }
+
+    private static void onRegistrationLost(boolean unregistered) {
+        if (!isActive()) {
+            return;
+        }
         SharedConfig.pushStringStatus = UP_FAILED;
         Utilities.globalQueue.postRunnable(() -> {
             SharedConfig.pushStringGetTimeEnd = SystemClock.elapsedRealtime();
+            if (unregistered) {
+                PushListenerController.retireUnifiedPush();
+            }
             PushListenerController.sendRegistrationToServer(PushListenerController.PUSH_TYPE_WEB, null);
-            PushListenerController.unregisterSimplePush();
         });
     }
 }
