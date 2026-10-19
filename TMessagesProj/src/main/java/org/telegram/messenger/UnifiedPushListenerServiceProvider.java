@@ -7,6 +7,8 @@ import android.text.TextUtils;
 import org.unifiedpush.android.connector.UnifiedPush;
 
 public class UnifiedPushListenerServiceProvider implements PushListenerController.IPushListenerServiceProvider {
+    private static final String INSTANCE = "default";
+
     // Use the built-in FCM distributor instead of a distributor app
     private final boolean fcm;
 
@@ -62,7 +64,7 @@ public class UnifiedPushListenerServiceProvider implements PushListenerControlle
                 }
                 UnifiedPush.register(
                         ApplicationLoader.applicationContext,
-                        "default",
+                        INSTANCE,
                         "Telegram Web Push",
                         null
                 );
@@ -70,6 +72,14 @@ public class UnifiedPushListenerServiceProvider implements PushListenerControlle
                 FileLog.e(e);
             }
         });
+    }
+
+    public static void unregister() {
+        try {
+            UnifiedPush.unregister(ApplicationLoader.applicationContext, INSTANCE);
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
     }
 
     @Override
