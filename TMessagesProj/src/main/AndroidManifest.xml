@@ -851,6 +851,19 @@
             </intent-filter>
         </service>
 
+        <receiver android:name=".UnifiedPushFcmDistributor"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.distributor.feature.BYTES_MESSAGE" />
+                <action android:name="org.unifiedpush.android.distributor.REGISTER" />
+                <action android:name="org.unifiedpush.android.distributor.UNREGISTER" />
+            </intent-filter>
+        </receiver>
+        <!-- Replaced by UnifiedPushFcmDistributor, which routes through the configured gateway -->
+        <receiver android:name="org.unifiedpush.android.embedded_fcm_distributor.impl.UnifiedPushReceiver"
+            tools:node="remove" />
+
         <service android:name=".GcmPushListenerService"
             android:exported="false">
             <intent-filter>
