@@ -35,6 +35,7 @@ public class LocalNowPlayingController {
 
     private static final String CACHE_PREFS = "nowplaying_cache";
     private static final String CACHE_KEY_DTO = "last_dto";
+    private static final long CACHE_MAX_AGE_MS = 2 * 60 * 1000L;
 
     private static final OkHttpClient httpClient = new OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -202,20 +203,28 @@ public class LocalNowPlayingController {
             AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(null));
             return;
         }
-        final NowPlayingDTO cached = getCachedTrack();
         Utilities.globalQueue.postRunnable(() -> {
             NowPlayingDTO dto = null;
+            boolean requestSucceeded;
             try {
                 dto = fetchFromWorker();
+                requestSucceeded = true;
             } catch (Exception e) {
                 FileLog.e(e);
+                requestSucceeded = false;
             }
-            final NowPlayingDTO result = dto;
-            if (result != null && result.isPlaying()) {
-                cachedDto = result;
-                persistCachedDto(result);
+            if (requestSucceeded) {
+                if (dto != null) {
+                    cachedDto = dto;
+                    persistCachedDto(dto);
+                } else {
+                    // 服务端明确返回没有在播，丢弃可能已过期的缓存
+                    cachedDto = null;
+                    clearCachedDto();
+                }
             }
-            AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(result != null ? result : cached));
+            final NowPlayingDTO result = dto != null ? dto : getCachedTrack();
+            AndroidUtilities.runOnUIThread(() -> callback.onTrackLoaded(result));
         });
     }
 
@@ -296,6 +305,11 @@ public class LocalNowPlayingController {
             String json = prefs.getString(CACHE_KEY_DTO, null);
             if (TextUtils.isEmpty(json)) return null;
             JSONObject o = new JSONObject(json);
+            long savedAt = o.optLong("savedAt", 0L);
+            // 缓存只用于请求失败时的短暂兜底，过期即视为没有在播
+            if (savedAt <= 0L || System.currentTimeMillis() - savedAt > CACHE_MAX_AGE_MS) {
+                return null;
+            }
             String trackName = o.optString("trackName", null);
             JSONArray arr = o.optJSONArray("artists");
             List<String> artists = new ArrayList<>();
@@ -345,8 +359,20 @@ public class LocalNowPlayingController {
             if (dto.duration != null) {
                 o.put("duration", dto.duration);
             }
+            o.put("savedAt", System.currentTimeMillis());
             SharedPreferences prefs = ctx.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE);
             prefs.edit().putString(CACHE_KEY_DTO, o.toString()).apply();
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static void clearCachedDto() {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx == null) return;
+            SharedPreferences prefs = ctx.getSharedPreferences(CACHE_PREFS, Context.MODE_PRIVATE);
+            prefs.edit().remove(CACHE_KEY_DTO).apply();
         } catch (Exception e) {
             FileLog.e(e);
         }
