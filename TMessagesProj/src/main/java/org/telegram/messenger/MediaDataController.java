@@ -4667,7 +4667,7 @@ public class MediaDataController extends BaseController {
             Utilities.searchQueue.postRunnable(() -> {
                 // --- AyuGram hook: 把已删除的媒体一并显示在媒体页
                 if (NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool() && !DialogObject.isEncryptedDialog(dialogId)) {
-                    AyuHistoryHook.injectDeletedMedia(currentAccount, res, dialogId, topicId, type, max_id, min_id);
+                    AyuHistoryHook.injectDeletedMedia(currentAccount, res, dialogId, topicId, type, max_id, min_id, topReached);
                 }
                 // --- AyuGram hook
                 LongSparseArray<TLRPC.User> usersDict = new LongSparseArray<>();
