@@ -215,7 +215,7 @@ public abstract class AyuHistoryHook {
 
     // The loaded page is already in display order and may hold local messages with negative ids,
     // which an id sort would move to the oldest end.
-    private static void mergeInjected(ArrayList<TLRPC.Message> messages, ArrayList<TLRPC.Message> injected, boolean encrypted) {
+    static void mergeInjected(ArrayList<TLRPC.Message> messages, ArrayList<TLRPC.Message> injected, boolean encrypted) {
         if (encrypted) {
             messages.addAll(injected);
             messages.sort((a, b) -> Integer.compare(a.id, b.id));
