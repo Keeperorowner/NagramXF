@@ -128,7 +128,8 @@ public final class SettingsBackupHelper {
 
         spToJSON("mainconfig", configJson, mainconfig::contains);
         if (!isCloud) spToJSON("themeconfig", configJson, null);
-        spToJSON("nkmrcfg", configJson, null, includeApiKeys);
+        // Web Push keys and token are bound to this device's push registration
+        spToJSON("nkmrcfg", configJson, key -> !key.startsWith("PushServiceTypeUnifiedWebPush") && !"PushServiceTypeUnifiedSimple".equals(key), includeApiKeys);
         spToJSON("nekox_config", configJson, null, includeApiKeys);
         spToJSON("pillstackconfig", configJson, null, includeApiKeys);
         spToJSON("aichatconfig", configJson, includeApiKeys ? null : key -> !"services".equals(key), true);

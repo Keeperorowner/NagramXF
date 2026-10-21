@@ -32,12 +32,20 @@ public class GcmPushListenerService extends FirebaseMessagingService {
         if (BuildVars.LOGS_ENABLED) {
             FileLog.d("FCM received data: " + data + " from: " + from);
         }
+        if (!data.containsKey("p")) {
+            // Web Push for the built-in UnifiedPush FCM distributor, which receives it on its own
+            return;
+        }
 
         PushListenerController.processRemoteMessage(PushListenerController.PUSH_TYPE_FIREBASE, data.get("p"), time);
     }
 
     @Override
     public void onNewToken(@NonNull String token) {
+        if (!(PushListenerController.getProvider() instanceof GooglePushListenerServiceProvider)) {
+            // Firebase initializes in every push mode; its token would replace the UnifiedPush one
+            return;
+        }
         AndroidUtilities.runOnUIThread(() -> {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("Refreshed FCM token: " + token);

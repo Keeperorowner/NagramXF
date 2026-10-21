@@ -16647,7 +16647,13 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void registerForPush(@PushListenerController.PushType int pushType, String regid) {
-        if (TextUtils.isEmpty(regid) || registeringForPush || getUserConfig().getClientUserId() == 0) {
+        if (TextUtils.isEmpty(regid)) {
+            // Nothing to refresh until a new token arrives
+            lastPushRegisterSendTime = 0;
+            return;
+        }
+        // The unregistration registers it again when it ends
+        if (registeringForPush || getUserConfig().getClientUserId() == 0 || PushListenerController.isUnregistering(pushType, regid)) {
             return;
         }
         if (getUserConfig().registeredForPush && regid.equals(SharedConfig.pushString)) {
@@ -16675,17 +16681,87 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
         }
-        getConnectionsManager().sendRequest(req, (response, error) -> {
-            if (response instanceof TLRPC.TL_boolTrue) {
+        getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            registeringForPush = false;
+            boolean registered = response instanceof TLRPC.TL_boolTrue;
+            if (!regid.equals(SharedConfig.pushString)) {
+                // Replaced or retired while in flight: undo it and register the token dropped meanwhile
+                if (registered) {
+                    PushListenerController.retireToken(pushType, regid);
+                }
+                registerForPush(SharedConfig.pushType, SharedConfig.pushString);
+                return;
+            }
+            if (registered) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("account " + currentAccount + " registered for push, push type: " + pushType);
                 }
                 getUserConfig().registeredForPush = true;
-                SharedConfig.pushString = regid;
-                SharedConfig.pushType = pushType;
                 getUserConfig().saveConfig(false);
+                if (pushType == PushListenerController.PUSH_TYPE_WEB) {
+                    registerSimplePush(NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String());
+                }
             }
-            AndroidUtilities.runOnUIThread(() -> registeringForPush = false);
+        }));
+    }
+
+    /** Simple Push (token_type=4) next to Web Push; registeredForPush tracks only the Web Push token. */
+    public void registerSimplePush(String token) {
+        if (TextUtils.isEmpty(token) || getUserConfig().getClientUserId() == 0) {
+            return;
+        }
+        if (SharedConfig.pushAuthKey == null) {
+            SharedConfig.pushAuthKey = new byte[256];
+            Utilities.random.nextBytes(SharedConfig.pushAuthKey);
+            SharedConfig.saveConfig();
+        }
+        TL_account.registerDevice req = new TL_account.registerDevice();
+        req.token_type = PushListenerController.PUSH_TYPE_SIMPLE;
+        req.token = token;
+        req.no_muted = false;
+        req.secret = SharedConfig.pushAuthKey;
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            UserConfig userConfig = UserConfig.getInstance(a);
+            if (a != currentAccount && userConfig.isClientActivated()) {
+                req.other_uids.add(userConfig.getClientUserId());
+            }
+        }
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (BuildVars.LOGS_ENABLED) {
+                if (response instanceof TLRPC.TL_boolTrue) {
+                    FileLog.d("account " + currentAccount + " registered simple push");
+                } else {
+                    FileLog.d("account " + currentAccount + " simple push registration failed: " + error);
+                }
+            }
+            if (response instanceof TLRPC.TL_boolTrue) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!token.equals(NaConfig.INSTANCE.getPushServiceTypeUnifiedSimple().String())) {
+                        PushListenerController.retireToken(PushListenerController.PUSH_TYPE_SIMPLE, token);
+                    }
+                });
+            }
+        });
+    }
+
+    // Reports true once the server has no registration of the token left for this account
+    public void unregisterPush(@PushListenerController.PushType int pushType, String token, Consumer<Boolean> onDone) {
+        TL_account.unregisterDevice req = new TL_account.unregisterDevice();
+        req.token_type = pushType;
+        req.token = token;
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            UserConfig userConfig = UserConfig.getInstance(a);
+            if (a != currentAccount && userConfig.isClientActivated()) {
+                req.other_uids.add(userConfig.getClientUserId());
+            }
+        }
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            // An invalid token or a dropped authorization leaves nothing to unregister
+            boolean done = response != null || error != null && (error.code == 400 || error.code == 401);
+            if (BuildVars.LOGS_ENABLED) {
+                FileLog.d("account " + currentAccount + " unregistered push type " + pushType + ": " + (error != null ? error.code + " " + error.text : response));
+            }
+            AndroidUtilities.runOnUIThread(() -> onDone.accept(done));
         });
     }
 
