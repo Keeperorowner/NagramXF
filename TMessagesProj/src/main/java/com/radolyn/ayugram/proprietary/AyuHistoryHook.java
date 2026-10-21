@@ -175,6 +175,7 @@ public abstract class AyuHistoryHook {
 
         if (!page.messages.isEmpty()) {
             messagesRes.messages.removeIf(message -> !page.contains(message.id));
+            ArrayList<TLRPC.Message> injected = new ArrayList<>();
 
             for (DeletedMessageFull full : page.messages) {
                 if (existingIds.contains(full.message.messageId)) {
@@ -182,7 +183,7 @@ public abstract class AyuHistoryHook {
                 }
                 TLRPC.TL_message msg = mappedMessages.get(full.message.messageId);
                 existingIds.add(msg.id);
-                messagesRes.messages.add(msg);
+                injected.add(msg);
                 if (msg.grouped_id != 0) groupIds.add(msg.grouped_id);
                 MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, emojiToLoad);
             }
@@ -194,10 +195,11 @@ public abstract class AyuHistoryHook {
                     }
                     TLRPC.TL_message msg = map(full, currentAccount);
                     existingIds.add(msg.id);
-                    messagesRes.messages.add(msg);
+                    injected.add(msg);
                     MessagesStorage.addUsersAndChatsFromMessage(msg, usersToLoad, chatsToLoad, emojiToLoad);
                 }
             }
+            mergeInjected(messagesRes.messages, injected, encrypted);
         }
 
         // 服务端仍存在的消息也可能回复了一条已删除消息：即使本次没有可注入的归档消息，
@@ -208,8 +210,46 @@ public abstract class AyuHistoryHook {
 
         appendDicts(currentAccount, messagesRes, usersDict, chatsDict, usersToLoad, chatsToLoad);
 
-        messagesRes.messages.sort((a, b) -> encrypted ? Integer.compare(a.id, b.id) : Integer.compare(b.id, a.id));
         return page.messages.isEmpty() ? null : page;
+    }
+
+    // The loaded page is already in display order and may hold local messages with negative ids,
+    // which an id sort would move to the oldest end.
+    private static void mergeInjected(ArrayList<TLRPC.Message> messages, ArrayList<TLRPC.Message> injected, boolean encrypted) {
+        if (encrypted) {
+            messages.addAll(injected);
+            messages.sort((a, b) -> Integer.compare(a.id, b.id));
+            return;
+        }
+        if (injected.isEmpty()) {
+            return;
+        }
+        injected.sort((a, b) -> Integer.compare(b.id, a.id));
+        ArrayList<TLRPC.Message> loaded = new ArrayList<>(messages);
+        int[] remainingMaxId = new int[loaded.size() + 1];
+        for (int i = loaded.size() - 1; i >= 0; i--) {
+            remainingMaxId[i] = Math.max(loaded.get(i).id, remainingMaxId[i + 1]);
+        }
+        messages.clear();
+        int next = 0;
+        for (int i = 0; i < loaded.size(); i++) {
+            TLRPC.Message message = loaded.get(i);
+            while (next < injected.size() && isNewer(injected.get(next), message)) {
+                TLRPC.Message candidate = injected.get(next);
+                if (message.id <= 0 && candidate.id > 0 && candidate.id <= remainingMaxId[i]) {
+                    break;
+                }
+                messages.add(injected.get(next++));
+            }
+            messages.add(message);
+        }
+        while (next < injected.size()) {
+            messages.add(injected.get(next++));
+        }
+    }
+
+    private static boolean isNewer(TLRPC.Message injected, TLRPC.Message loaded) {
+        return loaded.id > 0 ? injected.id > loaded.id : injected.date > loaded.date;
     }
 
     /**
