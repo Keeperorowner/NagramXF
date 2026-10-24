@@ -9414,7 +9414,8 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             sizes.add(size);
         }
         if (highQuality) {
-            size = ImageLoader.scaleAndSaveImage(null, bitmap, Bitmap.CompressFormat.JPEG, true, AndroidUtilities.getPhotoSize(highQuality), AndroidUtilities.getPhotoSize(highQuality), 99, false, 101, 101, false);
+            // The server re-encodes uploaded photos at q87; matching its tables keeps that pass nearly lossless
+            size = ImageLoader.scaleAndSaveImage(null, bitmap, Bitmap.CompressFormat.JPEG, true, AndroidUtilities.getPhotoSize(highQuality), AndroidUtilities.getPhotoSize(highQuality), 87, false, 101, 101, false);
         } else {
             size = ImageLoader.scaleAndSaveImage(bitmap, AndroidUtilities.getPhotoSize(highQuality), AndroidUtilities.getPhotoSize(highQuality), true, 80, false, 101, 101);
         }
