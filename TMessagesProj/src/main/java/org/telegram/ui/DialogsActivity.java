@@ -716,6 +716,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public boolean notify = true;
     public int scheduleDate;
     public int scheduleRepeatPeriod;
+    public boolean forceDocument;
 
     private int canReadCount;
     private int canPinCount;
@@ -5369,6 +5370,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (delegate == null || selectedDialogs.isEmpty()) {
                     return;
                 }
+                forceDocument = false;
                 ArrayList<MessagesStorage.TopicKey> topicKeys = new ArrayList<>();
                 for (int i = 0; i < selectedDialogs.size(); i++) {
                     topicKeys.add(MessagesStorage.TopicKey.of(selectedDialogs.get(i), 0));
@@ -11784,6 +11786,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         sharedMediaEntries = entries;
         sharedLink = null;
+        forceDocument = false;
         if (commentView != null) {
             attachShareTopView(initialCaption);
         } else {
@@ -11939,6 +11942,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
 
             @Override
+            public int getSelectedCount() {
+                return sharedMediaEntries != null ? sharedMediaEntries.size() : 0;
+            }
+
+            @Override
+            public boolean canSendAsFile() {
+                return canSendDocumentsToSelectedDialogs();
+            }
+
+            @Override
             public long getDialogId() {
                 return selectedDialogs.isEmpty() ? 0 : selectedDialogs.get(0);
             }
@@ -11995,10 +12008,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (shareTopView != null) {
                     shareTopView.setSharedMedia(currentAccount, sharedMediaEntries);
                 }
-                final boolean useExternalOptions = !notify || scheduleDate != 0;
+                final boolean useExternalOptions = !notify || scheduleDate != 0 || forceDocument;
                 if (useExternalOptions && delegate != null && !selectedDialogs.isEmpty()) {
                     DialogsActivity.this.notify = notify;
                     DialogsActivity.this.scheduleDate = scheduleDate;
+                    DialogsActivity.this.forceDocument = forceDocument;
                     final ArrayList<MessagesStorage.TopicKey> topicKeys = new ArrayList<>();
                     for (int i = 0; i < selectedDialogs.size(); i++) {
                         topicKeys.add(MessagesStorage.TopicKey.of(selectedDialogs.get(i), 0));
@@ -12361,6 +12375,16 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         );
     }
 
+    private boolean canSendDocumentsToSelectedDialogs() {
+        for (int i = 0; i < selectedDialogs.size(); ++i) {
+            final TLRPC.Chat chat = getMessagesController().getChat(-selectedDialogs.get(i));
+            if (chat != null && !ChatObject.canSendDocument(chat)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private boolean onSendLongClick(View view) {
         final Activity parentActivity = getParentActivity();
         final Theme.ResourcesProvider resourcesProvider = getResourceProvider();
@@ -12405,6 +12429,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 sendPopupWindow.dismiss();
             }
             this.notify = false;
+            this.forceDocument = false;
             if (delegate == null || selectedDialogs.isEmpty()) {
                 return;
             }
@@ -12439,9 +12464,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         sendPopupLayout2.addView(showSendersNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
         sendPopupLayout2.addView(hideSendersNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
-        sendPopupLayout2.addView(sendWithoutSound, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
 
-        boolean onlyMyself = false;
+        boolean onlyMyself = !selectedDialogs.isEmpty();
         boolean canSchedule = true;
         for (int i = 0; i < selectedDialogs.size(); ++i) {
             final long did = selectedDialogs.get(i);
@@ -12457,9 +12481,41 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         final boolean onlyMyselfFinal = onlyMyself;
 
+        boolean canSendDocs = hasSharedMediaEntries() && canSendDocumentsToSelectedDialogs();
+        if (canSendDocs) {
+            for (MediaController.PhotoEntry entry : sharedMediaEntries) {
+                if (entry.hasVideoEditsLostAsDocument()) {
+                    canSendDocs = false;
+                    break;
+                }
+            }
+        }
+        if (canSendDocs) {
+            final boolean multipleMedia = sharedMediaEntries.size() > 1;
+            ActionBarMenuSubItem sendAsFileView = new ActionBarMenuSubItem(parentActivity, false, false, resourcesProvider);
+            sendAsFileView.setTextAndIcon(LocaleController.getString(multipleMedia ? R.string.SendAsFiles : R.string.SendAsFile), R.drawable.msg_sendfile);
+            sendAsFileView.setMinimumWidth(dp(196));
+            sendAsFileView.setOnClickListener(v -> {
+                if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
+                    sendPopupWindow.dismiss();
+                }
+                this.forceDocument = true;
+                if (delegate == null || selectedDialogs.isEmpty()) {
+                    return;
+                }
+                ArrayList<MessagesStorage.TopicKey> topicKeys = new ArrayList<>();
+                for (int i = 0; i < selectedDialogs.size(); i++) {
+                    topicKeys.add(MessagesStorage.TopicKey.of(selectedDialogs.get(i), 0));
+                }
+                delegate.didSelectDialogs(DialogsActivity.this, topicKeys, commentView.getFieldText(), false, notify, scheduleDate, scheduleRepeatPeriod, null);
+            });
+            sendPopupLayout2.addView(sendAsFileView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+        }
+        sendPopupLayout2.addView(sendWithoutSound, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+
         if (canSchedule) {
             ActionBarMenuSubItem scheduleView = new ActionBarMenuSubItem(parentActivity, false, true, resourcesProvider);
-            scheduleView.setTextAndIcon(LocaleController.getString(R.string.ScheduleMessage), R.drawable.msg_calendar2);
+            scheduleView.setTextAndIcon(LocaleController.getString(onlyMyselfFinal ? R.string.SetReminder : R.string.ScheduleMessage), R.drawable.msg_calendar2);
             scheduleView.setMinimumWidth(dp(196));
             scheduleView.setOnClickListener(v -> {
                 if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
@@ -12470,6 +12526,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     public void didSelectDate(boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
                         DialogsActivity.this.scheduleDate = scheduleDate;
                         DialogsActivity.this.scheduleRepeatPeriod = scheduleRepeatPeriod;
+                        DialogsActivity.this.forceDocument = false;
                         if (delegate == null || selectedDialogs.isEmpty()) {
                             return;
                         }
