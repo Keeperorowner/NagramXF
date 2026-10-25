@@ -336,7 +336,7 @@ public abstract class AyuHistoryHook {
      */
     public static void injectDeletedMedia(
             int currentAccount, TLRPC.messages_Messages messagesRes,
-            long dialogId, long topicId, int type, int maxId, int minId
+            long dialogId, long topicId, int type, int maxId, int minId, boolean topReached
     ) {
         if (messagesRes == null || messagesRes.messages == null) {
             return;
@@ -357,27 +357,14 @@ public abstract class AyuHistoryHook {
                 }
             }
 
-            // 媒体页按 id 倒序翻页：max_id 是本页上界，min_id 用于向新方向加载。
-            // 首屏（两者都为 0）放开整个区间，其余场景以本页实际拿到的 id 区间为准。
-            int queryStart;
-            int queryEnd;
-            if (maxId == 0 && minId == 0) {
-                queryStart = 0;
-                queryEnd = Integer.MAX_VALUE;
-            } else if (minId != 0) {
-                queryStart = minId;
-                queryEnd = pageMaxId == Integer.MIN_VALUE ? Integer.MAX_VALUE : pageMaxId;
-            } else {
-                queryStart = pageMinId == Integer.MAX_VALUE ? 0 : pageMinId;
-                queryEnd = maxId;
-            }
-            if (queryStart > queryEnd) {
+            int[] range = AyuHistoryPagination.mediaRange(maxId, minId, pageMinId, pageMaxId, topReached);
+            if (range[0] > range[1]) {
                 return;
             }
 
             List<DeletedMessageFull> deleted = topicId != 0
-                    ? ayuController.getTopicMessages(clientUserId, dialogId, topicId, queryStart, queryEnd, 200)
-                    : ayuController.getMessages(clientUserId, dialogId, queryStart, queryEnd, 200);
+                    ? ayuController.getTopicMessages(clientUserId, dialogId, topicId, range[0], range[1], 200)
+                    : ayuController.getMessages(clientUserId, dialogId, range[0], range[1], 200);
             if (deleted == null || deleted.isEmpty()) {
                 return;
             }
