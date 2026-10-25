@@ -12,7 +12,8 @@ def modules = [
     'database', 'datasource', 'datasource_cronet', 'datasource_rtmp',
     'datasource_okhttp', 'decoder', 'decoder_av1', 'decoder_ffmpeg',
     'decoder_flac', 'decoder_iamf', 'decoder_mpegh', 'decoder_opus',
-    'decoder_vp9', 'extractor', 'cast', 'effect', 'muxer', 'transformer'
+    'decoder_vp9', 'extractor', 'cast', 'effect', 'effect_lottie',
+    'inspector', 'inspector_frame', 'muxer', 'transformer'
 ]
 
 modules.each { moduleName ->
