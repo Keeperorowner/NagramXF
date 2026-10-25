@@ -1,5 +1,6 @@
 package com.radolyn.ayugram.proprietary;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -313,6 +314,59 @@ public class AyuHistoryPaginationTest {
         assertTrue(page.contains(30));
         assertFalse(page.contains(29));
         assertFalse(page.contains(-1));
+    }
+
+    @Test
+    public void deletedMediaKeepsSharedMediaPagesContiguous() {
+        assertMediaPagesShowEverything(false);
+    }
+
+    @Test
+    public void deletedMediaOlderThanCachedHistoryLandsOnTheLastPage() {
+        assertMediaPagesShowEverything(true);
+    }
+
+    @Test
+    public void newerMediaPagesStopAtTheirNewestMessageUntilTheEnd() {
+        assertArrayEquals(new int[]{100, 150}, AyuHistoryPagination.mediaRange(0, 100, 101, 150, false));
+        assertArrayEquals(new int[]{100, Integer.MAX_VALUE}, AyuHistoryPagination.mediaRange(0, 100, 101, 150, true));
+        assertArrayEquals(new int[]{100, Integer.MAX_VALUE},
+                AyuHistoryPagination.mediaRange(0, 100, Integer.MAX_VALUE, Integer.MIN_VALUE, false));
+    }
+
+    /** Pages like MediaDataController.loadMedia: the server returns ids below the cursor, the viewer continues from the oldest shown one. */
+    private static void assertMediaPagesShowEverything(boolean cached) {
+        List<Integer> server = IntStream.rangeClosed(1, 200).map(id -> id * 2).boxed().toList();
+        List<Integer> deleted = IntStream.rangeClosed(0, 200).map(id -> id * 2 + 1).boxed().toList();
+        Set<Integer> seen = new HashSet<>();
+        int cursor = 0;
+
+        for (int request = 0; request < 30; request++) {
+            int maxId = cursor;
+            List<Integer> page = server.stream()
+                    .filter(id -> maxId == 0 || id < maxId)
+                    .sorted(Comparator.reverseOrder())
+                    .limit(20)
+                    .toList();
+            boolean topReached = cached ? page.contains(server.get(0)) : page.isEmpty();
+            int[] range = AyuHistoryPagination.mediaRange(maxId, 0,
+                    page.isEmpty() ? Integer.MAX_VALUE : page.get(page.size() - 1),
+                    page.isEmpty() ? Integer.MIN_VALUE : page.get(0), topReached);
+            ArrayList<Integer> shown = new ArrayList<>(page);
+            deleted.stream().filter(id -> range[0] <= id && id <= range[1]).limit(200).forEach(shown::add);
+            shown.sort(Comparator.reverseOrder());
+            for (int id : shown) {
+                assertTrue("Media repeated: " + id, seen.add(id));
+            }
+            if (topReached || shown.isEmpty()) {
+                break;
+            }
+            cursor = shown.get(shown.size() - 1);
+        }
+
+        Set<Integer> expected = new HashSet<>(server);
+        expected.addAll(deleted);
+        assertEquals(expected, seen);
     }
 
     private static AyuHistoryPagination.Page<Integer> load(AyuHistoryPagination.Direction direction, int anchor, List<Integer> deleted) {
