@@ -6036,36 +6036,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menuItem.getPopupLayout().setFitItems(true);
 
         chooseDownloadQualityLayout = new ChooseDownloadQualityLayout(activityContext, menuItem.getPopupLayout().getSwipeBack(), (messageObject, quality) -> {
-            if (quality == null) return;
-            TLRPC.Document document = quality.getDownloadDocument();
-            if (document == null) return;
-            File f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, false, true);
-            if (f == null || !f.exists()) {
-                f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, true, true);
-            }
-            if (f != null && f.exists()) {
-                MediaController.saveFile(f.toString(), parentActivity, 1, null, null, uri -> BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show());
-            } else {
-                ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                messageObject.qualityToSave = document;
-                messageObjects.add(messageObject);
-                MediaController.saveFilesFromMessages(parentActivity, AccountInstance.getInstance(currentAccount), messageObjects, (count) -> {
-                    if (parentActivity == null || containerView == null) {
-                        return;
-                    }
-                    if (count > 0) {
-                        BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show();
-                    }
-                });
-            }
+            saveVideoQuality(messageObject, quality);
             menuItem.toggleSubMenu();
         });
 
         galleryButton = menuItem.addSwipeBackItem(R.drawable.msg_gallery, null, getString(R.string.SaveToGallery), chooseDownloadQualityLayout.layout).setColors(0xfffafafa, 0xfffafafa);
         galleryButton.setOnClickListener(v -> {
-            if (currentMessageObject != null && currentMessageObject.hasVideoQualities() && chooseDownloadQualityLayout.update(currentMessageObject)) {
-                galleryButton.openSwipeBack();
-                return;
+            if (currentMessageObject != null && currentMessageObject.hasVideoQualities()) {
+                final VideoPlayer.Quality configuredQuality = getConfiguredVideoQuality(currentMessageObject);
+                if (configuredQuality != null) {
+                    saveVideoQuality(currentMessageObject, configuredQuality);
+                    menuItem.toggleSubMenu();
+                    return;
+                }
+                if (chooseDownloadQualityLayout.update(currentMessageObject)) {
+                    galleryButton.openSwipeBack();
+                    return;
+                }
             }
             if (actionBar != null && actionBar.getActionBarMenuOnItemClick() != null) {
                 actionBar.getActionBarMenuOnItemClick().onItemClick(gallery_menu_save);
@@ -8119,6 +8106,56 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         textSelectionHelper.setInvalidateParent();
 
         animatorPollAttachButtonsVisibility.setValue(false, false);
+    }
+
+    /**
+     * 按「默认 HLS 视频画质」设置解析保存视频时使用的画质。
+     *
+     * @return 设置为自动时返回 {@code null}，此时交给画质选择菜单由用户决定
+     */
+    private VideoPlayer.Quality getConfiguredVideoQuality(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.media == null) {
+            return null;
+        }
+        if (NaConfig.INSTANCE.getDefaultHlsVideoQuality().Int() == 0) {
+            return null;
+        }
+        final ArrayList<VideoPlayer.Quality> qualities = VideoPlayer.getQualities(currentAccount, messageObject.messageOwner.media.document, messageObject.messageOwner.media.alt_documents, 0, false);
+        if (qualities == null || qualities.isEmpty()) {
+            return null;
+        }
+        final VideoPlayer.Quality quality = VideoPlayer.getDefaultSavedQuality(qualities);
+        return quality != null && quality.getDownloadDocument() != null ? quality : null;
+    }
+
+    /** 把指定画质的视频保存到相册。 */
+    private void saveVideoQuality(MessageObject messageObject, VideoPlayer.Quality quality) {
+        if (quality == null) {
+            return;
+        }
+        final TLRPC.Document document = quality.getDownloadDocument();
+        if (document == null) {
+            return;
+        }
+        File f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, false, true);
+        if (f == null || !f.exists()) {
+            f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, true, true);
+        }
+        if (f != null && f.exists()) {
+            MediaController.saveFile(f.toString(), parentActivity, 1, null, null, uri -> BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show());
+        } else {
+            final ArrayList<MessageObject> messageObjects = new ArrayList<>();
+            messageObject.qualityToSave = document;
+            messageObjects.add(messageObject);
+            MediaController.saveFilesFromMessages(parentActivity, AccountInstance.getInstance(currentAccount), messageObjects, (count) -> {
+                if (parentActivity == null || containerView == null) {
+                    return;
+                }
+                if (count > 0) {
+                    BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show();
+                }
+            });
+        }
     }
 
     public void invalidateAllGlassAttachedViews() {
