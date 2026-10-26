@@ -283,6 +283,21 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 
 已核对无需改动（与官方文档一致）：`extera_utils.classes` 的 `Base/java_subclass/joverride/joverload/jmethod/jMVELmethod/jMVELoverride/jclassbuilder/jfield/jgetmethod/jsetmethod/jconstructor/jpreconstructor`、`ui.settings` 的 `Header/Divider/Switch/Selector/Input/Text/EditText/Custom/SimpleSettingFactory`、`extera_utils.text_formatting.parse_text`（含 `TLEntityType`/`RawEntity`）、`file_utils.FilesController`（含 `FileInfo`/`ExtensionAlreadyRegistered` 等异常）、`ui.bulletin.BulletinHelper.show_error/show_info/...`、`base_plugin.hook_filters/fn_hook_filters`、`Plugin` 的 `app_version`/`min_version`/`sdk_version` 三套兼容判定、`PluginsWatchdog` 已是 per-thread + 5s 冻结（不是报告里的 1s 全表扫描）。
 
+### 3.9 回归：Java 类面变化（B5）
+
+本地 `assemblePluginDebug` 因 submodule 未初始化（`jni/td`、`third_party/absl`、`boringssl`、`wamr`、`boost-regex`、`libprisma`、`wallet-engine` 均为空目录）在 CMake configure 阶段失败，拿不到 dex；因此改用「pluginDebug 的 javac/Kotlin 产物类名」与 `D:\tg_scraper\app_classes_raw.txt`（12.10.1 plugin-release 基线）做集合比较，先回答「13.1.1 合并 + 本次改动是否删掉了插件可能引用的类」：
+
+| 结果 | 数量 | 说明 |
+|---|---|---|
+| 基线类名（`org.telegram`/`com.exteragram`/`tw.nekomimi`/`xyz.nextalone`，去掉 R8 合成类） | 13896 | 12.10.1 release APK |
+| 当前类名（pluginDebug 产物） | 14493 | 13.1.1 + 本次改动 |
+| 消失 | 89 | 见下 |
+| 新增 | 686 | 含本次新增 `WidePosts`、`TelegramAiReplacement`、`ai.network.backend.*`、`AiHistoryActivity`、`PluginSettingsTranslation`、`TranslatableText` 等 |
+
+消失的 89 个拆解：**37 个是我改动导致匿名内部类编号变化**（`PluginSettingsActivity$18$1` 这类，插件不会引用）；**16 个是包移动/构建生成**（`org.telegram.messenger.CodeHighlighting*` → `org.telegram.utils.code.highlight.CodeHighlighting*`，`R`/`R$*` 由 aapt 生成不在 javac 产物里）；**其余约 36 个是上游 13.1.1 自身的删除/改名**：`org.telegram.ui.QrActivity*`、`org.telegram.messenger.voip.VoIPController*`、`DispatchQueueMainThreadSync*`、`DownloadController$DownloadingDocumentEntry`、`NotificationCenter$ObserversGroup$Observer`、`PasscodeView$FingerprintDialog`、`ProfileGiftsContainer$SelectGiftsBottomSheet`、`TL_bots$botVerification`（13.1.1 改名 `BotVerification`）等。**本次改动没有删除任何插件可引用的类。**
+
+权威重导仍需 CI 产物：`dev` 触发的 staging workflow 会产出 `plugin-staging` APK，届时用 `apkanalyzer dex packages --defined-only <apk> > D:\tg_scraper\app_classes_raw.txt` 再跑 `sync.ps1` 的 `final_list` 阶段核对 `BANNED_RUNTIME`（`extera_rpc`/`details_deeplink`/`altylib`/`reExtera`/`floating_rounds`）。
+
 按计划**暂缓**：`SdkSignature` 更新验签（必须先有发布侧离线签名，否则现有 SDK 更新通道会被全部拒绝）；`RequiredPluginCell`/`RequiredPluginInfo` 依赖插件逐项安装（缺插件清单里「requires 插件」的元数据规范与下载源，无法凭猜测实现）；`PythonSdkUpdateAlert`（`PluginsInfoActivity` 已有完整 Python SDK 分区：自动更新/beta/检查/恢复/状态，弹窗冗余）；`HookFilter` 的 typeId 化与 `executeGenericHook` 重构（纯性能/维护）。
 
 ---
