@@ -49,6 +49,7 @@ import androidx.collection.LongSparseArray;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
+import com.exteragram.messenger.utils.chats.WidePosts;
 import com.exteragram.messenger.utils.ui.TextPaint;
 
 import org.telegram.messenger.browser.Browser;
@@ -1744,6 +1745,7 @@ public class MessageObject {
                     }
                 }
             }
+            WidePosts.updateGroupedLayout(this, WidePosts.getDefaultGroupWidth());
         }
 
         public int getMaxEditDate() {
@@ -7654,7 +7656,9 @@ public class MessageObject {
         if (voiceTranscription == null) {
             return 0;
         }
-        int width = AndroidUtilities.displaySize.x - dp(this.needDrawAvatar() ? 147 : 95);
+        int width = widePostsTextWidth > 0
+                ? Math.max(dp(10), widePostsTextWidth - dp(type != 5 ? 14 : 0))
+                : AndroidUtilities.displaySize.x - dp(this.needDrawAvatar() ? 147 : 95);
         StaticLayout captionLayout;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             captionLayout = StaticLayout.Builder.obtain(voiceTranscription, 0, voiceTranscription.length(), Theme.chat_msgTextPaint, width)
@@ -8610,6 +8614,16 @@ public class MessageObject {
     }
 
     public boolean sideMenuEnabled;
+    private int widePostsTextWidth;
+
+    /** Forces the text width used by wide channel posts; 0 keeps the regular width. */
+    public void setWidePostsTextWidth(int width) {
+        if (widePostsTextWidth != width) {
+            widePostsTextWidth = width;
+            generateLayout(null);
+        }
+    }
+
     public int getMaxMessageTextWidth() {
         int maxWidth = 0;
         if (AndroidUtilities.isTablet() && eventId != 0) {
@@ -8656,6 +8670,9 @@ public class MessageObject {
         }
         if (emojiOnlyCount >= 1 && totalAnimatedEmojiCount <= 100 && (emojiOnlyCount - totalAnimatedEmojiCount) < (SharedConfig.getDevicePerformanceClass() >= SharedConfig.PERFORMANCE_CLASS_HIGH ? 100 : 50) && (hasValidReplyMessageObject() || isForwarded())) {
             maxWidth = Math.min(maxWidth, (int) (generatedWithMinSize * .65f));
+        }
+        if (widePostsTextWidth > 0) {
+            maxWidth = widePostsTextWidth;
         }
         return maxWidth;
     }

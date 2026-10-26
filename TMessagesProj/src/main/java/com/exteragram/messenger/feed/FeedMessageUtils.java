@@ -33,6 +33,33 @@ public abstract class FeedMessageUtils {
         return message != null && !message.isDateObject && message.type != MessageObject.TYPE_LOADING && !message.isSponsored();
     }
 
+    /**
+     * Channel whose post is being displayed inside the feed. Only real broadcast
+     * channel posts qualify; anything else (previews, sponsored rows, joined-channel
+     * recommendations) is not a feed post.
+     */
+    public static TLRPC.Chat resolveDisplayChannel(MessageObject message) {
+        if (message == null || message.messageOwner == null || message.searchType != 4
+                || message.preview || message.isSponsored()
+                || message.type == MessageObject.TYPE_JOINED_CHANNEL) {
+            return null;
+        }
+        TLRPC.Message owner = message.messageOwner;
+        if (owner.post && owner.action == null && owner.peer_id != null && owner.peer_id.channel_id != 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(message.currentAccount).getChat(owner.peer_id.channel_id);
+            if (ChatObject.isChannelAndNotMegaGroup(chat)) {
+                return chat;
+            }
+        }
+        return null;
+    }
+
+    /** Whether the displayed feed channel shows per-post author signatures. */
+    public static boolean hasProfileSignature(MessageObject message) {
+        TLRPC.Chat chat = resolveDisplayChannel(message);
+        return chat != null && chat.signature_profiles;
+    }
+
     public static MessageObject createUnreadDivider(int account, int stableId) {
         TLRPC.TL_message tl_message = new TLRPC.TL_message();
         tl_message.message = "";
