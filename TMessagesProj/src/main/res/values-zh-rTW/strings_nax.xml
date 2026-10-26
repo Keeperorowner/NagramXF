@@ -376,6 +376,8 @@
     <string name="PluginDependencyNativeUnsupported">依賴 %1$s 在目前版本範圍內僅提供原生 wheel。此客戶端目前僅支援純 Python wheel。</string>
     <string name="PluginDependencySourceUnsupported">依賴 %1$s 在目前版本範圍內僅提供原始碼分發包。此客戶端目前僅支援純 Python wheel。</string>
     <string name="PluginDependencyPythonUnsupported">依賴 %1$s 需要 Python %2$s，而目前客戶端執行 Python 3.11。</string>
+    <string name="PluginsSettingsTranslate">翻譯設定</string>
+    <string name="PluginsSettingsShowOriginal">顯示原文</string>
     <string name="PluginsSafeMode">外掛安全模式</string>
     <string name="PluginsSafeModeInfo">外掛在崩潰後已被停用。你可以離開安全模式並重新啟動外掛引擎。</string>
     <string name="PluginsSafeModeInfoManual">外掛安全模式已手動開啟。關閉安全模式後才能再次載入外掛。</string>
