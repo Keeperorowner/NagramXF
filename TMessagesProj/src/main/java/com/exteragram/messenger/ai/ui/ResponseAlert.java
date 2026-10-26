@@ -120,6 +120,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
     private final FrameLayout textViewContainer;
     private final ThinkingDotsView thinkingDotsView;
     private boolean thinkingVisible;
+    private boolean turnSaved;
     private boolean useHistory;
 
     @Override
@@ -463,6 +464,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
 
     private void generate() {
         currentResponse = null;
+        turnSaved = false;
         stopThinking();
         if (AiController.getInstance().getSelected().isReasoningEnabled() && AiConfig.responseStreaming) {
             showThinking();
@@ -480,6 +482,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
                 if (TextUtils.isEmpty(response)) return;
                 stopThinking();
                 currentResponse = response;
+                turnSaved = useHistory;
                 setFormattedResponse(response);
                 adapter.updateMainView(textViewContainer);
                 updateMainButton(false);
@@ -490,6 +493,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
                 if (TextUtils.isEmpty(chunk)) return;
                 stopThinking();
                 currentResponse = chunk;
+                turnSaved = useHistory;
                 setFormattedResponse(chunk);
                 adapter.updateMainView(textViewContainer);
             }
@@ -497,6 +501,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             @Override
             public void onError(int code, String message) {
                 stopThinking();
+                turnSaved = false;
                 AiController.showErrorBulletin(containerView, resourcesProvider, code);
                 adapter.updateMainView(textViewContainer);
                 updateMainButton(false, true);
@@ -865,13 +870,17 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
                             .createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
                 }
             } else if (id == 2) {
-                AiConfig.removeLastFromHistory();
+                if (turnSaved) {
+                    AiConfig.removeLastFromHistory();
+                }
                 adapter.updateMainView(loadingTextView);
                 updateMainButton(true);
                 generate();
             } else if (id == 3) {
                 new GenerateFromMessageBottomSheet(prompt, imagePath, fragment, context, data -> {
-                    AiConfig.removeLastFromHistory();
+                    if (turnSaved) {
+                        AiConfig.removeLastFromHistory();
+                    }
                     setPrompt(data.prompt());
                     imagePath = data.imagePath();
                     useHistory = data.useHistory();
