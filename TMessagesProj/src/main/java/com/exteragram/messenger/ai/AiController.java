@@ -7,6 +7,8 @@ import android.widget.TextView;
 
 import com.exteragram.messenger.ai.data.Role;
 import com.exteragram.messenger.ai.data.Service;
+import com.exteragram.messenger.ai.network.backend.Backend;
+import com.exteragram.messenger.ai.network.backend.RestBackend;
 import com.exteragram.messenger.ai.data.Suggestions;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -44,6 +46,13 @@ public class AiController {
 
     public static AiController getInstance() {
         return SingletonHolder.INSTANCE;
+    }
+
+    private static final Backend REST_BACKEND = new RestBackend();
+
+    /** Backend used for new generation requests. */
+    public static Backend getBackend() {
+        return REST_BACKEND;
     }
 
     public static boolean canUseAI() {
