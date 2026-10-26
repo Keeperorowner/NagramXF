@@ -173,6 +173,7 @@
     <string name="AIChatUseLlmProvider">AI 번역 제공자 사용</string>
     <string name="AIChatRoles">역할</string>
     <string name="AIChatMessageHistory">메시지 기록</string>
+    <string name="AIChatSaveHistory">기록 저장</string>
     <string name="AIChatHistoryInfo">사용하면 AI가 대화의 이전 메시지를 기억합니다.</string>
     <string name="AIChatOther">기타</string>
     <string name="AIChatResponseStreaming">응답 스트리밍</string>
@@ -302,4 +303,5 @@
     <string name="AIFeaturesSummaries">요약</string>
     <string name="AIReplaceTelegramEditorInfo">자신의 AI 서비스로 초안을 번역, 재작성, 교정합니다</string>
     <string name="AIReplaceTelegramSummariesInfo">자신의 AI 서비스로 긴 메시지와 게시물을 요약합니다</string>
+    <string name="AIChatHistoryEmpty">저장된 대화가 없습니다</string>
 </resources>

@@ -51,7 +51,8 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
     private final ConfigCellTextCheckIcon servicesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatServices", getString(R.string.AIChatServices), R.drawable.msg_language, true, () -> presentFragment(new ServicesActivity())));
     private final AbstractConfigCell useLlmProviderRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.useLlmProviderConfig, null, getString(R.string.AIChatUseLlmProvider), R.drawable.magic_stick, true, null));
     private final ConfigCellTextCheckIcon rolesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatRoles", getString(R.string.AIChatRoles), R.drawable.msg_openprofile, true, () -> presentFragment(new RolesActivity())));
-    private final AbstractConfigCell saveHistoryRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.saveHistoryConfig, getString(R.string.AIChatMessageHistory), R.drawable.msg_discuss, false));
+    private final ConfigCellTextCheckIcon historyRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatHistory", getString(R.string.AIChatMessageHistory), R.drawable.msg_discuss, true, () -> presentFragment(new AiHistoryActivity())));
+    private final AbstractConfigCell saveHistoryRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.saveHistoryConfig, null, getString(R.string.AIChatSaveHistory), getString(R.string.AIChatHistoryInfo), R.drawable.msg_discuss, false, null));
 
     private final AbstractConfigCell dividerGeneral = cellGroup.appendCell(new ConfigCellDivider());
     private final AbstractConfigCell headerTemperature = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIChatTemperature)));

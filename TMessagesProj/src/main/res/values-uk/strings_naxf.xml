@@ -179,6 +179,7 @@
     <string name="AIChatUseLlmProvider">Провайдер ШІ-перекладача</string>
     <string name="AIChatRoles">Ролі</string>
     <string name="AIChatMessageHistory">Історія повідомлень</string>
+    <string name="AIChatSaveHistory">Зберігати історію</string>
     <string name="AIChatHistoryInfo">Якщо увімкнено, ШІ пам’ятатиме попередні повідомлення в діалозі.</string>
     <string name="AIChatOther">Інше</string>
     <string name="AIChatResponseStreaming">Потокова відповідь</string>
@@ -308,4 +309,5 @@
     <string name="AIFeaturesSummaries">Підсумки</string>
     <string name="AIReplaceTelegramEditorInfo">Переклад, переписування та вичитування чернеток через ваш AI-сервіс</string>
     <string name="AIReplaceTelegramSummariesInfo">Стислий виклад довгих повідомлень і постів через ваш AI-сервіс</string>
+    <string name="AIChatHistoryEmpty">Збережених повідомлень ще немає</string>
 </resources>
