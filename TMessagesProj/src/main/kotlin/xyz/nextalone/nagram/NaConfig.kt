@@ -804,15 +804,15 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
-    val hideAiEditor =
+    val widePostsInFeed =
         addConfig(
-            "HideAiEditor",
+            "WidePostsInFeed",
             ConfigItem.configTypeBool,
-            false
+            true
         )
-    val hideAiSummary =
+    val widePostsInChannels =
         addConfig(
-            "HideAiSummary",
+            "WidePostsInChannels",
             ConfigItem.configTypeBool,
             false
         )
