@@ -179,6 +179,7 @@
     <string name="AIChatUseLlmProvider">Use AI Translator Provider</string>
     <string name="AIChatRoles">Roles</string>
     <string name="AIChatMessageHistory">Message History</string>
+    <string name="AIChatSaveHistory">Save History</string>
     <string name="AIChatHistoryInfo">When enabled, the AI will remember previous messages in the conversation.</string>
     <string name="AIChatOther">Other</string>
     <string name="AIChatResponseStreaming">Response Streaming</string>
@@ -308,4 +309,5 @@
     <string name="AIFeaturesSummaries">Summaries</string>
     <string name="AIReplaceTelegramEditorInfo">Translate, restyle and proofread drafts with your AI service</string>
     <string name="AIReplaceTelegramSummariesInfo">Summarize long messages and posts with your AI service</string>
+    <string name="AIChatHistoryEmpty">No saved messages yet</string>
 </resources>

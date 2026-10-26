@@ -234,6 +234,7 @@
     <string name="AIChatUseLlmProvider">AI 翻訳のプロバイダーを使用</string>
     <string name="AIChatRoles">ロール</string>
     <string name="AIChatMessageHistory">メッセージ履歴</string>
+    <string name="AIChatSaveHistory">履歴を保存</string>
     <string name="AIChatHistoryInfo">有効にすると、AI は会話の以前のメッセージを記憶します。</string>
     <string name="AIChatOther">その他</string>
     <string name="AIChatResponseStreaming">ストリーミング応答</string>
@@ -377,4 +378,5 @@
     <string name="AIFeaturesSummaries">要約</string>
     <string name="AIReplaceTelegramEditorInfo">自分の AI サービスで下書きを翻訳・書き換え・校正します</string>
     <string name="AIReplaceTelegramSummariesInfo">自分の AI サービスで長いメッセージや投稿を要約します</string>
+    <string name="AIChatHistoryEmpty">保存された会話はまだありません</string>
 </resources>
