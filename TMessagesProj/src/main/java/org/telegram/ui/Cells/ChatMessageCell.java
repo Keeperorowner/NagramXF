@@ -346,6 +346,14 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     setAvatar(currentMessageObject);
                 }
             }
+            if (widePostsEmbeddedProfileAvatar) {
+                Long uid = (Long) args[0];
+                MessageObject primary = getPrimaryMessageObject();
+                if (uid != null && primary != null && WidePosts.getEmbeddedProfileDialogId(primary) == uid.longValue()) {
+                    setWidePostsProfileAvatar();
+                    invalidate();
+                }
+            }
         } else if (id == NotificationCenter.emojiLoaded) {
             invalidate();
         } else if (id == NotificationCenter.didUpdatePremiumGiftStickers) {
@@ -359,6 +367,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public void setAvatar(MessageObject messageObject) {
         if (messageObject == null) {
             return;
+        }
+        if (widePostsEmbeddedProfileAvatar) {
+            setWidePostsProfileAvatar();
         }
         if (isAvatarVisible) {
             if (messageObject.customAvatarDrawable != null) {
@@ -1630,6 +1641,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     private boolean widePostsHideAuxiliaryActions;
     private int widePostsParentWidth;
     private boolean widePostsEmbeddedProfileAvatar;
+    private final RectF widePostsAvatarBounds = new RectF();
+    private boolean widePostsAvatarPressed;
     private boolean hasNewLineForTime;
 
     public int layoutWidth;
@@ -5080,6 +5093,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             result = checkAdminMotionEvent(event);
         }
         if (!result) {
+            result = checkWidePostsProfileMotionEvent(event);
+        }
+        if (!result) {
             result = checkNameMotionEvent(event);
         }
         if (!result) {
@@ -6874,7 +6890,11 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             messageObject.setWidePostsTextWidth(groupedMessages == null ? getWidePostsContentWidth(messageObject, null, bottomNear) : 0);
         } else {
             messageObject.setWidePostsTextWidth(0);
-        }        AyuFilter.syncMaskedSpoilerRevealState(messageObject, groupedMessages);
+        }
+        if (!widePostsEmbeddedProfileAvatar) {
+            widePostsAvatarBounds.setEmpty();
+        }
+        AyuFilter.syncMaskedSpoilerRevealState(messageObject, groupedMessages);
         if (messageObject != null && messageObject.replyMessageObject != null) {
             AyuFilter.syncMaskedSpoilerRevealState(messageObject.replyMessageObject, null);
         }
@@ -13929,6 +13949,75 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return Math.max(dp(120), (getWidePostsBubbleTargetRight(messageObject) - dp(WidePosts.isTextMessage(messageObject) ? 10 : 4)) - dp(8));
     }
 
+    /** Points the avatar receiver at the author shown in the embedded wide-post header. */
+    private void setWidePostsProfileAvatar() {
+        MessageObject messageObject = getPrimaryMessageObject();
+        if (messageObject == null) {
+            return;
+        }
+        long dialogId = WidePosts.getEmbeddedProfileDialogId(messageObject);
+        if (dialogId > 0) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+            if (user != null) {
+                avatarDrawable.setInfo(currentAccount, user);
+                avatarImage.setForUserOrChat(user, avatarDrawable, null, LiteMode.isEnabled(LiteMode.FLAGS_CHAT), VectorAvatarThumbDrawable.TYPE_SMALL, false);
+            }
+        } else if (dialogId < 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            if (chat != null) {
+                avatarDrawable.setInfo(currentAccount, chat);
+                avatarImage.setForUserOrChat(chat, avatarDrawable, null, LiteMode.isEnabled(LiteMode.FLAGS_CHAT), VectorAvatarThumbDrawable.TYPE_SMALL, false);
+            }
+        }
+    }
+
+    private boolean checkWidePostsProfileMotionEvent(MotionEvent event) {
+        if (!widePostsEmbeddedProfileAvatar || !drawNameAvatar) {
+            widePostsAvatarPressed = false;
+            return false;
+        }
+        final int action = event.getAction();
+        if (action == MotionEvent.ACTION_DOWN) {
+            widePostsAvatarPressed = widePostsAvatarBounds.width() > 0
+                    && widePostsAvatarBounds.contains(getEventX(event), getEventY(event));
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            final boolean pressed = widePostsAvatarPressed && action == MotionEvent.ACTION_UP;
+            widePostsAvatarPressed = false;
+            if (pressed && didPressWidePostsProfileAvatar()) {
+                return true;
+            }
+            return false;
+        }
+        return widePostsAvatarPressed;
+    }
+
+    private boolean didPressWidePostsProfileAvatar() {
+        if (delegate == null) {
+            return false;
+        }
+        MessageObject messageObject = getPrimaryMessageObject();
+        if (messageObject == null) {
+            return false;
+        }
+        long dialogId = WidePosts.getEmbeddedProfileDialogId(messageObject);
+        if (dialogId > 0) {
+            TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(dialogId);
+            if (user == null) {
+                return false;
+            }
+            delegate.didPressUserAvatar(this, user, lastTouchX, lastTouchY, false);
+            return true;
+        } else if (dialogId < 0) {
+            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-dialogId);
+            if (chat == null) {
+                return false;
+            }
+            delegate.didPressChannelAvatar(this, chat, 0, lastTouchX, lastTouchY, false);
+            return true;
+        }
+        return false;
+    }
+
     private boolean isWidePostsImageMessage() {
         return widePosts && drawPhotoImage && currentMessageObject != null && currentMessagesGroup == null
                 && (WidePosts.isExpandableMedia(currentMessageObject)
@@ -19282,6 +19371,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (!hasPsaHint && (needAuthorName || viaBot || viaGuestBot)) {
             drawNameLayout = true;
             drawNameAvatar = !messageObject.isOutOwner() && (isForum || isMonoForum) && isSideMenuEnabled && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0) && !(messageObject.type == MessageObject.TYPE_ROUND_VIDEO || messageObject.type == MessageObject.TYPE_STICKER || messageObject.type == MessageObject.TYPE_ANIMATED_STICKER);
+            if (widePostsEmbeddedProfileAvatar && !messageObject.isOutOwner()) {
+                drawNameAvatar = true;
+            }
             nameWidth = getMaxNameWidth();
             if (nameWidth < 0) {
                 nameWidth = dp(100);
@@ -22677,6 +22769,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 avatarImage.setImageCoords(avatarX, ny + dp(13) * (1.0f - scale), dp(26) * scale, dp(26) * scale);
                 avatarImage.setAlpha(avatarAlpha);
                 avatarImage.draw(canvas);
+                if (widePostsEmbeddedProfileAvatar) {
+                    widePostsAvatarBounds.set(avatarX, ny + dp(13) * (1.0f - scale), avatarX + dp(26) * scale, ny + dp(13) * (1.0f - scale) + dp(26) * scale);
+                }
                 avatarImage.setImageCoords(wasX, wasY, wasWidth, wasHeight);
                 avatarImage.setAlpha(wasAlpha);
                 avatarImage.setVisible(wasVisible, false);
