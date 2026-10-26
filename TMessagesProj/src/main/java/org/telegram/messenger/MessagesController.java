@@ -753,7 +753,7 @@ public class MessagesController extends BaseController implements NotificationCe
     public int[][] stargiftsCraftAttributesPermilles;
     public String aiComposeStyles;
     public boolean aiEditorAvailable() {
-        return !NaConfig.INSTANCE.getHideAiEditor().Bool();
+        return true;
     }
 
     private final SharedPreferences notificationsPreferences;
