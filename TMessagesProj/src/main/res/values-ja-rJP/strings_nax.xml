@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="XChannel">Nagram X チャンネル</string>
     <string name="EnableSaveDeletedMessages">削除済みメッセージを保存</string>
@@ -363,6 +363,7 @@
     <string name="PluginDependencyPreparing">プラグインの依存関係を準備中…</string>
     <string name="PluginDependencyResolving">%1$s を解決中…</string>
     <string name="PluginDependencySourceUnsupported">依存関係 %1$s は選択されたバージョン範囲でソース配布のみ提供しています。このクライアントは純粋な Python wheel のみサポートします。</string>
+    <string name="PluginDependencyPythonUnsupported">依存関係 %1$s は Python %2$s を必要としますが、このクライアントは Python 3.11 で動作します。</string>
     <string name="PluginDisableError">%1$s を無効化できませんでした。</string>
     <string name="PluginEnableError">%1$s を有効化できませんでした。</string>
     <string name="PluginEngineNotEnabled">プラグインエンジンが無効です。%1$s のプラグイン設定を開きますか？</string>
