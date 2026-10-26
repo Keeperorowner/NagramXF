@@ -48838,20 +48838,9 @@ public class ChatActivity extends BaseFragment implements
                         return Boolean.TRUE;
                     },
                     null,
-                    chatActivityEnterView != null && currentChat != null && ChatObject.canSendMessages(currentChat) ? (prompt, response) -> {
-                        if (TextUtils.isEmpty(response)) return;
-                        if (AiConfig.insertAsQuote) {
-                            chatActivityEnterView.getEditField().setText(response);
-                            chatActivityEnterView.getEditField().append("\n");
-                            int start = AiConfig.showResponseOnly ? 0 : prompt.length() + 4;
-                            int end = chatActivityEnterView.getEditText().length() - 1;
-                            org.telegram.ui.Components.QuoteSpan.putQuoteToEditable(chatActivityEnterView.getEditText(), start, end, true);
-                        } else {
-                            chatActivityEnterView.getEditField().setText(response);
-                        }
-                        chatActivityEnterView.getEditField().setSelection(chatActivityEnterView.getEditField().length());
-                        chatActivityEnterView.openKeyboard();
-                    } : null);
+                    chatActivityEnterView != null && currentChat != null && ChatObject.canSendMessages(currentChat)
+                            ? (prompt, response, rich) -> chatActivityEnterView.insertAiResponse(prompt, response, rich)
+                            : null);
         }).show();
     }
 
