@@ -489,6 +489,8 @@
     <string name="PluginDependencyNativeUnsupported">Залежність %1$s надає лише нативні пакети (native wheels) у вибраному діапазоні версій. Цей клієнт наразі підтримує лише pure-Python wheels.</string>
     <string name="PluginDependencySourceUnsupported">Залежність %1$s надає лише вихідні коди у вибраному діапазоні версій. Цей клієнт наразі підтримує лише pure-Python wheels.</string>
     <string name="PluginDependencyPythonUnsupported">Залежність %1$s потребує Python %2$s, але цей клієнт працює на Python 3.11.</string>
+    <string name="PluginsSettingsTranslate">Перекласти налаштування</string>
+    <string name="PluginsSettingsShowOriginal">Показати оригінал</string>
     <string name="PluginsSafeMode">Безпечний режим плагінів</string>
     <string name="PluginsSafeModeInfo">Плагіни були вимкнені після збою. Ви можете вийти з безпечного режиму та перезапустити механізм.</string>
     <string name="PluginsSafeModeInfoManual">Безпечний режим плагінів увімкнено вручну. Вимкніть безпечний режим, щоб знову завантажити плагіни.</string>

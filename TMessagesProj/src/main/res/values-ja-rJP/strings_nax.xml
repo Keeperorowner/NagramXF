@@ -364,6 +364,8 @@
     <string name="PluginDependencyResolving">%1$s を解決中…</string>
     <string name="PluginDependencySourceUnsupported">依存関係 %1$s は選択されたバージョン範囲でソース配布のみ提供しています。このクライアントは純粋な Python wheel のみサポートします。</string>
     <string name="PluginDependencyPythonUnsupported">依存関係 %1$s は Python %2$s を必要としますが、このクライアントは Python 3.11 で動作します。</string>
+    <string name="PluginsSettingsTranslate">設定を翻訳</string>
+    <string name="PluginsSettingsShowOriginal">原文を表示</string>
     <string name="PluginDisableError">%1$s を無効化できませんでした。</string>
     <string name="PluginEnableError">%1$s を有効化できませんでした。</string>
     <string name="PluginEngineNotEnabled">プラグインエンジンが無効です。%1$s のプラグイン設定を開きますか？</string>

@@ -368,6 +368,8 @@
     <string name="PluginDependencyResolving">Разрешение зависимостей %1$s…</string>
     <string name="PluginDependencySourceUnsupported">Зависимость %1$s предоставляет только исходный код в выбранном диапазоне версий. Этот клиент поддерживает только pure-Python wheel.</string>
     <string name="PluginDependencyPythonUnsupported">Зависимость %1$s требует Python %2$s, но этот клиент работает на Python 3.11.</string>
+    <string name="PluginsSettingsTranslate">Перевести настройки</string>
+    <string name="PluginsSettingsShowOriginal">Показать оригинал</string>
     <string name="PluginDisableError">Не удалось отключить %1$s.</string>
     <string name="PluginEnableError">Не удалось включить %1$s.</string>
     <string name="PluginEngineNotEnabled">Включите **Систему плагинов**, чтобы открыть настройки %1$s.</string>
