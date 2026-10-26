@@ -1,3 +1,4 @@
+
 /*
  * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
@@ -38673,6 +38674,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private int commentLoadingGuid;
+    private WidePosts.CommentsPostAuthorLoader widePostsCommentsLoader;
     private int commentMessagesLoadingGuid;
     private int commentRequestId;
     private int commentMessagesRequestId;
@@ -38724,6 +38726,11 @@ public class ChatActivity extends BaseFragment implements
                 args.putInt("unread_count", discussionMessage.unread_count);
                 args.putBoolean("historyPreloaded", historyFinal != null);
                 ChatActivity chatActivity = new ChatActivity(args);
+                WidePosts.CommentsPostAuthorLoader loader = widePostsCommentsLoader;
+                widePostsCommentsLoader = null;
+                if (loader != null) {
+                    loader.setMessages(arrayList, chatActivity);
+                }
                 chatActivity.setThreadMessages(arrayList, originalChat, req.msg_id, discussionMessage.read_inbox_max_id, discussionMessage.read_outbox_max_id, null);
                 if (highlightMsgId != 0) {
                     chatActivity.highlightMessageId = highlightMsgId;
@@ -38838,6 +38845,16 @@ public class ChatActivity extends BaseFragment implements
             chatListView.invalidateViews();
         }
         final int guid1 = ++commentLoadingGuid;
+        final WidePosts.CommentsPostAuthorLoader commentsLoader =
+                originalMessage == null && NaConfig.INSTANCE.getWidePostsInChannels().Bool() && ChatObject.isChannelAndNotMegaGroup(chat)
+                        ? new WidePosts.CommentsPostAuthorLoader(currentAccount, chat) : null;
+        widePostsCommentsLoader = commentsLoader;
+        if (commentsLoader != null) {
+            int loaderRequestId = commentsLoader.load(messageId, () -> guid1 != commentLoadingGuid);
+            if (loaderRequestId >= 0) {
+                getConnectionsManager().bindRequestToGuid(loaderRequestId, classGuid);
+            }
+        }
         commentRequestId = getConnectionsManager().sendRequest(req, (response, error) -> {
             Runnable runnable = () -> {
                 if (guid1 != commentLoadingGuid) {

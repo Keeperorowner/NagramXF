@@ -808,7 +808,7 @@ object NaConfig {
         addConfig(
             "WidePostsInFeed",
             ConfigItem.configTypeBool,
-            true
+            false
         )
     val widePostsInChannels =
         addConfig(
