@@ -1263,6 +1263,11 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             if (instance != null) {
                 instance.put("initialized", false);
                 instance.put("enabled", false);
+                try {
+                    instance.callAttr("_cleanup");
+                } catch (Throwable t) {
+                    FileLog.e("Error during SDK cleanup for " + pluginId, t);
+                }
             }
             deleteStaleBytecode(pluginId);
             refreshImportCaches(pluginId, getPluginsController().pluginsDir);

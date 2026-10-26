@@ -367,8 +367,24 @@ class BasePlugin:
         return []
 
     # logging
+    @property
+    def logger(self):
+        """Logger tagged ``plugin.<id>``, with levels, location prefixes and handlers."""
+        from log_utils import _plugin_logger, get_logger
+
+        return _plugin_logger(self.id) if self.id else get_logger()
+
     def log(self, message):
         _log("[%s] %s" % (self.id, message))
+
+    def _cleanup(self):
+        """Release per-plugin SDK state; the host calls this when the plugin unloads."""
+        try:
+            from log_utils import _reset_plugin_logger
+
+            _reset_plugin_logger(self.id)
+        except Exception:
+            pass
 
     # client
     def client(self, account=None):
