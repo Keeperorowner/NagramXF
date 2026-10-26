@@ -45,6 +45,7 @@ public class Client {
     private static final int MAX_HISTORY_CHARS = 24000;
 
     private final Service serviceOverride;
+    private final Float temperatureOverride;
     private final Role roleOverride;
     private final AtomicBoolean isGenerating = new AtomicBoolean(false);
     private final ConcurrentHashMap<String, ExecutorService> activeRequests = new ConcurrentHashMap<>();
@@ -53,6 +54,7 @@ public class Client {
     private Client(Builder builder) {
         this.serviceOverride = builder.serviceOverride;
         this.roleOverride = builder.roleOverride;
+        this.temperatureOverride = builder.temperatureOverride;
     }
 
     private Service getSelectedService() {
@@ -203,7 +205,7 @@ public class Client {
             json.put("messages", messages);
             json.put("stream", stream);
             if (LlmModelUtil.supportsTemperature(model)) {
-                json.put("temperature", AiConfig.temperature / 10.0f);
+                json.put("temperature", temperatureOverride != null ? temperatureOverride : AiConfig.temperature / 10.0f);
             }
             json.put("max_tokens", 4096);
             if (!service.isReasoningEnabled()) {
@@ -414,9 +416,15 @@ public class Client {
     public static class Builder {
         private Service serviceOverride;
         private Role roleOverride;
+        private Float temperatureOverride;
 
         public Builder serviceOverride(Service service) {
             this.serviceOverride = service;
+            return this;
+        }
+
+        public Builder temperatureOverride(float temperature) {
+            this.temperatureOverride = temperature;
             return this;
         }
 
