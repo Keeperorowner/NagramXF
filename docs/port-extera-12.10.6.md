@@ -272,6 +272,17 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 - `normal` flavor 的桩类需随新静态成员同步（否则 normal 包编译失败）；
 - SDK 验签启用后，未签名的远端包会被拒 → 发布侧必须先改造，否则断更。
 
+### 3.8 实施进展（canary）
+
+| 提交 | 内容 |
+|---|---|
+| 07a7676aeb | 新增 `log_utils` SDK 模块（`Logger`/`LogLevel`/`LogRecord`/`get_logger`/`dump`/`timed`/handlers，logcat 分片与 `plugin.<id>` 标签），`BasePlugin.logger` 与卸载时 `_cleanup`，SDK 版本 1.4.6.7 → 1.4.7.7 |
+| 45a15ce413 | pip 依赖解析：按 wheel tag（python/abi/platform）判定纯 Python 兼容性，按 PyPI `requires_python` 过滤（新增 `PluginDependencyPythonUnsupported` 文案，7 locale） |
+
+已核对无需改动（与官方文档一致）：`extera_utils.classes` 的 `Base/java_subclass/joverride/joverload/jmethod/jMVELmethod/jMVELoverride/jclassbuilder/jfield/jgetmethod/jsetmethod/jconstructor/jpreconstructor`、`ui.settings` 的 `Header/Divider/Switch/Selector/Input/Text/EditText/Custom/SimpleSettingFactory`、`extera_utils.text_formatting.parse_text`（含 `TLEntityType`/`RawEntity`）、`file_utils.FilesController`（含 `FileInfo`/`ExtensionAlreadyRegistered` 等异常）、`ui.bulletin.BulletinHelper.show_error/show_info/...`、`base_plugin.hook_filters/fn_hook_filters`、`Plugin` 的 `app_version`/`min_version`/`sdk_version` 三套兼容判定、`PluginsWatchdog` 已是 per-thread + 5s 冻结（不是报告里的 1s 全表扫描）。
+
+按计划**暂缓**：`SdkSignature` 更新验签（必须先有发布侧离线签名，否则现有 SDK 更新通道会被全部拒绝）、插件设置在线翻译（`PluginSettingsTranslation`/`TranslatableText`/`PluginTranslateButton`）、`RequiredPluginCell` 依赖插件逐项安装、`PythonSdkUpdateAlert`、`HookFilter` 的 typeId 化与 `executeGenericHook` 重构（纯性能/维护）。
+
 ---
 
 ## 4. 建议排期与验收
@@ -323,6 +334,7 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 | b768d4d910 | 宽版 header 作者头像绘制 + 点击打开作者资料 |
 | a5970f2096 | AI 回答按 Markdown 解析为富草稿插入（不支持富消息时回落纯文本） |
 | 72b0de9715 | Retry/Edit 仅在本次回答已存历史时才回滚该轮，避免误删旧轮 |
+| 62c8abf262 | AI 设置里「消息历史」重名：开关改名为「保存历史」并带说明（新增 `AIChatSaveHistory`，7 locale） |
 | df24ffb0a6 | 宽版帖不参与多选位移/不画多选圆圈/不为隐藏的分享按钮留命中区 |
 | 7fc0609282 | WidePostsInFeed 默认开启（与 extera 默认一致） |
 | 75d6cc7099 | 修正宽版气泡宽度公式（13.1.1 的 backgroundDrawableRight 是宽度而非右缘，原写法会逐次膨胀） |
