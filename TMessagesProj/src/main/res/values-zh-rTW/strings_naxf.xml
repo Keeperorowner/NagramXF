@@ -246,6 +246,7 @@
     <string name="AIChatUseLlmProvider">與 AI 翻譯共用服務商</string>
     <string name="AIChatRoles">角色</string>
     <string name="AIChatMessageHistory">訊息歷史</string>
+    <string name="AIChatSaveHistory">儲存歷史</string>
     <string name="AIChatHistoryInfo">啟用後，AI 將記住對話中的先前訊息。</string>
     <string name="AIChatOther">其他</string>
     <string name="AIChatResponseStreaming">串流回應</string>
@@ -378,4 +379,5 @@
     <string name="AIFeaturesSummaries">摘要</string>
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服務翻譯、改寫和校對草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服務生成長訊息和貼文的摘要</string>
+    <string name="AIChatHistoryEmpty">還沒有儲存的對話</string>
 </resources>

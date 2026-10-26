@@ -232,6 +232,7 @@
     <string name="AIChatUseLlmProvider">Провайдер ИИ-переводчика</string>
     <string name="AIChatRoles">Роли</string>
     <string name="AIChatMessageHistory">История сообщений</string>
+    <string name="AIChatSaveHistory">Сохранять историю</string>
     <string name="AIChatHistoryInfo">Если включено, ИИ будет помнить предыдущие сообщения в диалоге.</string>
     <string name="AIChatOther">Прочее</string>
     <string name="AIChatResponseStreaming">Потоковый ответ</string>
@@ -377,4 +378,5 @@
     <string name="AIFeaturesSummaries">Сводки</string>
     <string name="AIReplaceTelegramEditorInfo">Перевод, переписывание и вычитка черновиков через ваш AI-сервис</string>
     <string name="AIReplaceTelegramSummariesInfo">Краткое изложение длинных сообщений и постов через ваш AI-сервис</string>
+    <string name="AIChatHistoryEmpty">Сохранённых сообщений пока нет</string>
 </resources>
