@@ -347,6 +347,18 @@ public class PipController {
             }
             issue.hasWheel = true;
             String filename = file.get("filename").getAsString();
+            String requiresPython = file.has("requires_python") && !file.get("requires_python").isJsonNull()
+                    ? file.get("requires_python").getAsString() : null;
+            if (!pythonVersionSatisfies(requiresPython)) {
+                issue.hasIncompatiblePython = true;
+                if (TextUtils.isEmpty(issue.requiredPython)) {
+                    issue.requiredPython = requiresPython;
+                }
+                if (TextUtils.isEmpty(issue.exampleFilename)) {
+                    issue.exampleFilename = filename;
+                }
+                continue;
+            }
             if (!isSupportedWheel(filename)) {
                 issue.hasOnlyNativeOrPlatformWheel = true;
                 if (TextUtils.isEmpty(issue.exampleFilename)) {
@@ -373,13 +385,77 @@ public class PipController {
         return new WheelSelection(null, issue.isMeaningful() ? issue : null);
     }
 
+    /**
+     * True when a wheel file name is pure Python and therefore importable by the embedded
+     * interpreter: the python tag must cover 3.11, the ABI tag must be {@code none} or
+     * {@code abi3}, and the platform tag must be {@code any}.
+     */
     private boolean isSupportedWheel(String filename) {
         if (TextUtils.isEmpty(filename)) {
             return false;
         }
         String lower = filename.toLowerCase(Locale.US);
-        return lower.endsWith(".whl")
-                && (lower.contains("py3-none-any") || lower.contains("py2.py3-none-any") || lower.contains("py311-none-any"));
+        if (!lower.endsWith(".whl")) {
+            return false;
+        }
+        String[] parts = lower.substring(0, lower.length() - 4).split("-");
+        if (parts.length < 5) {
+            return false;
+        }
+        String pythonTag = parts[parts.length - 3];
+        String abiTag = parts[parts.length - 2];
+        String platformTag = parts[parts.length - 1];
+        return isSupportedPythonTag(pythonTag)
+                && ("none".equals(abiTag) || "abi3".equals(abiTag))
+                && "any".equals(platformTag);
+    }
+
+    /** True when the python tag of a wheel covers the running 3.11 interpreter. */
+    private boolean isSupportedPythonTag(String tag) {
+        for (String part : tag.split("\\.")) {
+            if ("py3".equals(part) || "py311".equals(part) || "cp311".equals(part)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** True when the embedded interpreter (3.11) satisfies a PEP 440 ``requires_python`` spec. */
+    private boolean pythonVersionSatisfies(String requiresPython) {
+        if (TextUtils.isEmpty(requiresPython)) {
+            return true;
+        }
+        return checkVersionSatisfies(ENV_PYTHON_VERSION, parseSpecs(requiresPython));
+    }
+
+    /** Parse a PEP 440 specifier list such as ``>=3.8,<4`` (``~=`` expands to a range). */
+    private List<VersionSpec> parseSpecs(String specsPart) {
+        ArrayList<VersionSpec> specs = new ArrayList<>();
+        if (TextUtils.isEmpty(specsPart)) {
+            return specs;
+        }
+        for (String part : specsPart.split(",")) {
+            String piece = part.trim();
+            if (piece.isEmpty()) {
+                continue;
+            }
+            Matcher matcher = SPEC_PATTERN.matcher(piece);
+            if (!matcher.find()) {
+                continue;
+            }
+            String op = matcher.group(1);
+            String version = matcher.group(2).trim();
+            if ("~=".equals(op)) {
+                specs.add(new VersionSpec(">=", version));
+                String upper = compatibleUpperBound(version);
+                if (!TextUtils.isEmpty(upper)) {
+                    specs.add(new VersionSpec("<", upper));
+                }
+            } else {
+                specs.add(new VersionSpec(op, version));
+            }
+        }
+        return specs;
     }
 
     private void downloadAndExtract(String name, String version, WheelFile wheel, InstallerDelegate delegate) throws Exception {
@@ -528,29 +604,7 @@ public class PipController {
         if (specsPart.startsWith("(") && specsPart.endsWith(")")) {
             specsPart = specsPart.substring(1, specsPart.length() - 1).trim();
         }
-        ArrayList<VersionSpec> specs = new ArrayList<>();
-        if (!TextUtils.isEmpty(specsPart)) {
-            for (String part : specsPart.split(",")) {
-                String piece = part.trim();
-                if (piece.isEmpty()) {
-                    continue;
-                }
-                Matcher matcher = SPEC_PATTERN.matcher(piece);
-                if (matcher.find()) {
-                    String op = matcher.group(1);
-                    String version = matcher.group(2).trim();
-                    if ("~=".equals(op)) {
-                        specs.add(new VersionSpec(">=", version));
-                        String upper = compatibleUpperBound(version);
-                        if (!TextUtils.isEmpty(upper)) {
-                            specs.add(new VersionSpec("<", upper));
-                        }
-                    } else {
-                        specs.add(new VersionSpec(op, version));
-                    }
-                }
-            }
-        }
+        ArrayList<VersionSpec> specs = new ArrayList<>(parseSpecs(specsPart));
         return new Requirement(normalizePackageName(name), specs, raw);
     }
 
@@ -729,6 +783,10 @@ public class PipController {
 
     private String buildUnsupportedRequirementMessage(Requirement requirement, UnsupportedWheelIssue issue) {
         String displayName = requirement.raw != null ? requirement.raw : requirement.name;
+        if (issue.hasIncompatiblePython) {
+            return LocaleController.formatString(R.string.PluginDependencyPythonUnsupported, displayName,
+                    issue.requiredPython != null ? issue.requiredPython : ENV_PYTHON_VERSION);
+        }
         if (issue.hasOnlyNativeOrPlatformWheel) {
             return LocaleController.formatString(R.string.PluginDependencyNativeUnsupported, displayName);
         }
@@ -1004,10 +1062,12 @@ public class PipController {
         boolean hasWheel;
         boolean hasOnlyNativeOrPlatformWheel;
         boolean hasSourceDistribution;
+        boolean hasIncompatiblePython;
+        String requiredPython;
         String exampleFilename;
 
         boolean isMeaningful() {
-            return hasWheel || hasSourceDistribution;
+            return hasWheel || hasSourceDistribution || hasIncompatiblePython;
         }
 
         UnsupportedWheelIssue withVersion(String version) {
