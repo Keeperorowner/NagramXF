@@ -26,6 +26,7 @@ import com.exteragram.messenger.plugins.models.SettingItem;
 import com.exteragram.messenger.plugins.models.SwitchSetting;
 import com.exteragram.messenger.plugins.models.TextSetting;
 import com.exteragram.messenger.plugins.ui.components.PluginEditTextCell;
+import com.exteragram.messenger.plugins.ui.components.TranslatableText;
 import com.exteragram.messenger.preferences.utils.SettingsRegistry;
 import com.exteragram.messenger.utils.system.VibratorUtils;
 import com.exteragram.messenger.utils.text.LocaleUtils;
@@ -60,9 +61,12 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PluginSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
+    private static final int TRANSLATE_ROW_ID = 0x7E5A0001;
+
     private final Plugin plugin;
     private final String customTitle;
     private final PyObject createSubFragmentCallback;
+    private final PluginSettingsTranslation translation;
     private List<SettingItem> settingItems;
     private String settingsLinkPrefix;
     private String targetSettingName;
@@ -90,7 +94,18 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         this.settingItems = items;
         this.createSubFragmentCallback = createSubFragmentCallback;
         this.targetSettingName = targetSetting;
+        this.translation = PluginSettingsTranslation.of(plugin != null ? plugin.getId() : "");
     }
+
+    /** Re-renders the page whenever translations arrive or the translate mode is toggled. */
+    private final PluginSettingsTranslation.Listener translationListener = new PluginSettingsTranslation.Listener() {
+        @Override
+        public void onTranslationChanged(boolean failed) {
+            if (listView != null && listView.adapter != null) {
+                listView.adapter.update(true);
+            }
+        }
+    };
 
     public PluginSettingsActivity setSettingsLinkPrefix(String settingsLinkPrefix) {
         this.settingsLinkPrefix = settingsLinkPrefix;
@@ -108,6 +123,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
     public void onFragmentDestroy() {
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginSettingsRegistered);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginSettingsUnregistered);
+        translation.removeListener(translationListener);
         super.onFragmentDestroy();
     }
 
@@ -234,6 +250,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
             }
         });
         listView.setSections(true);
+        translation.addListener(translationListener);
         listView.setClipToPadding(false);
         listView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight + AndroidUtilities.dp(12));
         actionBar.setAdaptiveBackground(listView);
@@ -304,6 +321,19 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
             return;
         }
 
+        final ArrayList<String> texts = new ArrayList<>();
+        if (createSubFragmentCallback == null) {
+            final UItem translateRow = UItem.asButton(0, LocaleController.getString(translation.getEnabled()
+                    ? R.string.PluginsSettingsShowOriginal : R.string.PluginsSettingsTranslate));
+            translateRow.id = TRANSLATE_ROW_ID;
+            translateRow.accent = true;
+            items.add(translateRow);
+        }
+        for (SettingItem definition : definitions) {
+            collectTranslatableTexts(definition, texts);
+        }
+        translation.check(texts);
+
         boolean foundTarget = false;
         for (SettingItem item : definitions) {
             if (item == null) {
@@ -329,6 +359,30 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         }
     }
 
+    /** Collects the human-readable texts of a settings item for translation. */
+    private void collectTranslatableTexts(SettingItem item, ArrayList<String> out) {
+        if (item instanceof HeaderSetting) {
+            out.add(((HeaderSetting) item).text);
+        } else if (item instanceof SwitchSetting) {
+            out.add(((SwitchSetting) item).text);
+            out.add(((SwitchSetting) item).subtext);
+        } else if (item instanceof InputSetting) {
+            out.add(((InputSetting) item).text);
+        } else if (item instanceof SelectorSetting) {
+            out.add(((SelectorSetting) item).text);
+        } else if (item instanceof TextSetting) {
+            out.add(((TextSetting) item).text);
+        }
+    }
+
+    /** Wraps a settings text so it follows the plugin's translation state when rendered. */
+    private CharSequence translatable(CharSequence text) {
+        if (text == null || TextUtils.isEmpty(text) || plugin == null) {
+            return text;
+        }
+        return new TranslatableText(plugin.getId(), text);
+    }
+
     private UItem createItem(SettingItem item, int iconRes) {
         try {
             switch (item.type) {
@@ -344,7 +398,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                     if (setting.text == null) {
                         return null;
                     }
-                    UItem uiItem = UItem.asHeader(setting.text);
+                    UItem uiItem = UItem.asHeader(translatable(setting.text));
                     uiItem.object2 = item;
                     return uiItem;
                 }
@@ -354,7 +408,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                         return null;
                     }
                     boolean checked = PluginsController.getInstance().getPluginSettingBoolean(plugin.getId(), setting.key, setting.defaultValue);
-                    UItem uiItem = UItem.asCheck(0, setting.text, setting.subtext, setting.subtext != null);
+                    UItem uiItem = UItem.asCheck(0, translatable(setting.text), translatable(setting.subtext), setting.subtext != null);
                     uiItem.setChecked(checked);
                     uiItem.object = setting.key;
                     uiItem.object2 = setting;
@@ -369,7 +423,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                         return null;
                     }
                     String value = PluginsController.getInstance().getPluginSettingString(plugin.getId(), setting.key, setting.defaultValue);
-                    UItem uiItem = UItem.asButton(0, setting.text, value);
+                    UItem uiItem = UItem.asButton(0, translatable(setting.text), value);
                     uiItem.object = setting.key;
                     uiItem.object2 = setting;
                     if (iconRes != 0) {
@@ -387,7 +441,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                         value = Math.max(0, Math.min(setting.defaultValue, setting.items.length - 1));
                         PluginsController.getInstance().setPluginSetting(plugin.getId(), setting.key, value);
                     }
-                    UItem uiItem = UItem.asButton(0, setting.text, setting.items[value]);
+                    UItem uiItem = UItem.asButton(0, translatable(setting.text), translatable(setting.items[value]));
                     uiItem.texts = setting.items;
                     uiItem.intValue = value;
                     uiItem.object = setting.key;
@@ -399,7 +453,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                 }
                 case PluginsConstants.Settings.TYPE_TEXT: {
                     TextSetting setting = (TextSetting) item;
-                    UItem uiItem = UItem.asButton(0, setting.text);
+                    UItem uiItem = UItem.asButton(0, translatable(setting.text));
                     uiItem.accent = setting.accent;
                     uiItem.red = setting.red;
                     uiItem.object2 = setting;
@@ -457,6 +511,13 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
     }
 
     private void onClick(final UItem item, View view, int position, float x, float y) {
+        if (item != null && item.id == TRANSLATE_ROW_ID) {
+            translation.setEnabled(!translation.getEnabled());
+            if (listView != null && listView.adapter != null) {
+                listView.adapter.update(true);
+            }
+            return;
+        }
         if (item == null || plugin == null) {
             return;
         }
