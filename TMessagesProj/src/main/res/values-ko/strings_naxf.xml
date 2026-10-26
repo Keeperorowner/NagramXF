@@ -297,4 +297,9 @@
     <string name="HideFeedTab">피드 탭 숨기기</string>
     <string name="WidePostsInFeed">피드의 와이드 게시물</string>
     <string name="WidePostsInChannels">채널의 와이드 게시물</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">편집기</string>
+    <string name="AIFeaturesSummaries">요약</string>
+    <string name="AIReplaceTelegramEditorInfo">자신의 AI 서비스로 초안을 번역, 재작성, 교정합니다</string>
+    <string name="AIReplaceTelegramSummariesInfo">자신의 AI 서비스로 긴 메시지와 게시물을 요약합니다</string>
 </resources>

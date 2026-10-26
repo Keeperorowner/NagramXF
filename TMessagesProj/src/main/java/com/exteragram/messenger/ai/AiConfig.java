@@ -39,6 +39,9 @@ public abstract class AiConfig {
     public static final ConfigItem insertAsQuoteConfig = new ConfigItem("aiChat_insertAsQuote", ConfigItem.configTypeBool, true);
     public static final ConfigItem temperatureConfig = new ConfigItem("aiChat_temperature", ConfigItem.configTypeInt, 10);
 
+
+
+
     public static boolean saveHistory;
     public static boolean useLlmProvider;
     public static boolean responseStreaming;

@@ -303,4 +303,9 @@
     <string name="HideFeedTab">Hide Feed Tab</string>
     <string name="WidePostsInFeed">Wide Posts in Feed</string>
     <string name="WidePostsInChannels">Wide Posts in Channels</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">Editor</string>
+    <string name="AIFeaturesSummaries">Summaries</string>
+    <string name="AIReplaceTelegramEditorInfo">Translate, restyle and proofread drafts with your AI service</string>
+    <string name="AIReplaceTelegramSummariesInfo">Summarize long messages and posts with your AI service</string>
 </resources>

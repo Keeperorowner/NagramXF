@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.exteragram.messenger.ai.AiConfig;
+import xyz.nextalone.nagram.NaConfig;
 import com.exteragram.messenger.ai.AiController;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -62,6 +63,10 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell showResponseOnlyRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.showResponseOnlyConfig, null, getString(R.string.AIChatShowResponseOnly)));
     private final AbstractConfigCell insertAsQuoteRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.insertAsQuoteConfig, null, getString(R.string.AIChatInsertAsQuote)));
 
+    private final AbstractConfigCell dividerTelegramAi = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell headerTelegramAi = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIReplaceTelegram)));
+    private final AbstractConfigCell replaceEditorRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getReplaceTelegramAiEditor(), getString(R.string.AIReplaceTelegramEditorInfo), getString(R.string.AIFeaturesEditor)));
+    private final AbstractConfigCell replaceSummariesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getReplaceTelegramAiSummaries(), getString(R.string.AIReplaceTelegramSummariesInfo), getString(R.string.AIFeaturesSummaries)));
     public AiPreferencesActivity() {
         addRowsToMap(cellGroup);
     }

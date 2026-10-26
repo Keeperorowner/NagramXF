@@ -287,4 +287,9 @@
     <string name="HideFeedTab">隐藏信息流标签页</string>
     <string name="WidePostsInFeed">信息流中的宽版帖子</string>
     <string name="WidePostsInChannels">频道聊天中的宽版帖子</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">编辑器</string>
+    <string name="AIFeaturesSummaries">摘要</string>
+    <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服务翻译、改写和校对草稿</string>
+    <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服务生成长消息和帖子的摘要</string>
 </resources>

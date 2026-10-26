@@ -26,6 +26,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
+import com.exteragram.messenger.ai.TelegramAiReplacement;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ReplacementSpan;
@@ -1245,6 +1246,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
     private int requestId = -1;
 
     private boolean loading;
+    private Runnable aiReplacementCancel;
     private TLRPC.TL_messages_composeMessageWithAI[] lastRequest = new TLRPC.TL_messages_composeMessageWithAI[3];
     private TLRPC.TL_messages_composeRichMessageWithAI[] lastRequestRich = new TLRPC.TL_messages_composeRichMessageWithAI[3];
     private void request() {
@@ -1326,7 +1328,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             fixedText = loadingText;
         }
 
-        requestId = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread, (res, err) -> {
+        final Utilities.Callback2<TLRPC.TL_composedMessageWithAI, TLRPC.TL_error> handleResult = (res, err) -> {
             requestId = -1;
 
             loading = false;
@@ -1377,7 +1379,20 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             }
 
             adapter.update(true);
-        });
+        };
+        if (TelegramAiReplacement.replacesEditor(currentAccount)) {
+            aiReplacementCancel = TelegramAiReplacement.compose(req, styleTabs.getSelectedTone(), fromText.text,
+                    result -> AndroidUtilities.runOnUIThread(() -> handleResult.run(result, null)),
+                    (code, errorText) -> AndroidUtilities.runOnUIThread(() -> {
+                        final TLRPC.TL_error error = new TLRPC.TL_error();
+                        error.code = code;
+                        error.text = errorText;
+                        handleResult.run(null, error);
+                    }));
+        } else {
+            requestId = ConnectionsManager.getInstance(currentAccount).sendRequestTyped(req, AndroidUtilities::runOnUIThread,
+                    (res, err) -> handleResult.run((TLRPC.TL_composedMessageWithAI) res, err));
+        }
 
         adapter.update(true);
     }
