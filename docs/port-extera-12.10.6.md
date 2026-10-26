@@ -280,6 +280,7 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 | 45a15ce413 | pip 依赖解析：按 wheel tag（python/abi/platform）判定纯 Python 兼容性，按 PyPI `requires_python` 过滤（新增 `PluginDependencyPythonUnsupported` 文案，7 locale） |
 | 83dd082a80 | 插件设置在线翻译：`PluginSettingsTranslation`（按插件单例、缓存 + pending/failed、目标语言变更失效、后台逐条翻译后回调）+ `TranslatableText`（渲染时解析译文）+ 设置页顶部「翻译设置 / 显示原文」开关（`PluginsSettingsTranslate`/`PluginsSettingsShowOriginal`，7 locale） |
 | c8ee5df050 | SDK 更新验签：`utils/SdkSignature`（payload `extera-pysdk|<version>|<abi>|<sha256>`，ECDSA P-256/SHA-256，base64 DER 签名；`PUBLIC_KEY_BASE64` 为空即关闭校验）+ `PythonSdkUpdateInfo.signature` 解析（`signature=` 行）+ 下载落盘前校验 + `Tools/sign-plugin-sdk.ps1`（签名/导出公钥，已用 openssl + JVM 双向验证） |
+| 6d1b23f644 | 修插件包 staging/release 构建失败：MVEL 的 JSR-223 桥引用 `javax.script.*`，R8 报 Missing class（canary 只建 normal flavor，此前没暴露）；`proguard-plugin-rules.pro` 补 `-keep class org.mvel2.**`（HookFilter 的 MVEL 表达式在运行时按类名生成字节码）与 `-dontwarn javax.script.**`，本地 `minifyPluginStagingWithR8` 已通过 |
 
 已核对无需改动（与官方文档一致）：`extera_utils.classes` 的 `Base/java_subclass/joverride/joverload/jmethod/jMVELmethod/jMVELoverride/jclassbuilder/jfield/jgetmethod/jsetmethod/jconstructor/jpreconstructor`、`ui.settings` 的 `Header/Divider/Switch/Selector/Input/Text/EditText/Custom/SimpleSettingFactory`、`extera_utils.text_formatting.parse_text`（含 `TLEntityType`/`RawEntity`）、`file_utils.FilesController`（含 `FileInfo`/`ExtensionAlreadyRegistered` 等异常）、`ui.bulletin.BulletinHelper.show_error/show_info/...`、`base_plugin.hook_filters/fn_hook_filters`、`Plugin` 的 `app_version`/`min_version`/`sdk_version` 三套兼容判定、`PluginsWatchdog` 已是 per-thread + 5s 冻结（不是报告里的 1s 全表扫描）。
 
@@ -297,6 +298,16 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 消失的 89 个拆解：**37 个是我改动导致匿名内部类编号变化**（`PluginSettingsActivity$18$1` 这类，插件不会引用）；**16 个是包移动/构建生成**（`org.telegram.messenger.CodeHighlighting*` → `org.telegram.utils.code.highlight.CodeHighlighting*`，`R`/`R$*` 由 aapt 生成不在 javac 产物里）；**其余约 36 个是上游 13.1.1 自身的删除/改名**：`org.telegram.ui.QrActivity*`、`org.telegram.messenger.voip.VoIPController*`、`DispatchQueueMainThreadSync*`、`DownloadController$DownloadingDocumentEntry`、`NotificationCenter$ObserversGroup$Observer`、`PasscodeView$FingerprintDialog`、`ProfileGiftsContainer$SelectGiftsBottomSheet`、`TL_bots$botVerification`（13.1.1 改名 `BotVerification`）等。**本次改动没有删除任何插件可引用的类。**
 
 官方元数据规范（`/docs/plugin-class`）只定义 `__id__`/`__name__`/`__description__`/`__author__`/`__version__`/`__icon__`/`__app_version__`/`__sdk_version__`/`__requirements__`，**没有「依赖其它插件」的键**，所以 `RequiredPluginCell` 属于 extera 自家商店安装流，不是插件 API 的一部分，我方按需跳过。`__requirements__`、`__app_version__` 的运算符与 `__min_version__` 兼容（视作 `__app_version__ = ">=..."`）我方解析器均已支持。
+
+**权威结果（plugin-staging APK，dex 级）**：修好插件包 R8（见 `6d1b23f644`）后，dev 的 staging workflow 成功产出 `NagramXF-v13.1.1-6d1b23f(1252)-plugin-arm64-v8a.apk`（110.2 MB），用 `apkanalyzer dex packages --defined-only` 重导类表（57.4 MB，277013 个类，基线 12.10.1 为 249320），并以新表重跑 `reflint.py`：
+
+| 指标 | 12.10.1 基线 | 13.1.1 现状 |
+|---|---|---|
+| 有缺失类引用的插件 | 16 | **16** |
+| 新增受影响插件 | — | **0** |
+| 新增缺失引用 | — | 1 处：`ui_tweaks` → `org.telegram.messenger.CodeHighlighting`（13.1.1 已移到 `org.telegram.utils.code.highlight.CodeHighlighting`） |
+
+结论：合并与本次改动没有造成「新必挂」，PARTIAL 数量不变；唯一新增失效引用来自上游包移动，且落在本来就 PARTIAL 的 `ui_tweaks` 里（需插件作者改类名，或后续加兼容转发类）。新类表已覆盖 `D:\tg_scraper\app_classes_raw.txt`，旧表备份为 `app_classes_raw.12.10.1.bak.txt` / `missing_refs.12.10.1.json`。
 
 权威重导仍需 CI 产物：`dev` 触发的 staging workflow 会产出 `plugin-staging` APK，届时用 `apkanalyzer dex packages --defined-only <apk> > D:\tg_scraper\app_classes_raw.txt` 再跑 `sync.ps1` 的 `final_list` 阶段核对 `BANNED_RUNTIME`（`extera_rpc`/`details_deeplink`/`altylib`/`reExtera`/`floating_rounds`）。
 
