@@ -296,6 +296,8 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 
 消失的 89 个拆解：**37 个是我改动导致匿名内部类编号变化**（`PluginSettingsActivity$18$1` 这类，插件不会引用）；**16 个是包移动/构建生成**（`org.telegram.messenger.CodeHighlighting*` → `org.telegram.utils.code.highlight.CodeHighlighting*`，`R`/`R$*` 由 aapt 生成不在 javac 产物里）；**其余约 36 个是上游 13.1.1 自身的删除/改名**：`org.telegram.ui.QrActivity*`、`org.telegram.messenger.voip.VoIPController*`、`DispatchQueueMainThreadSync*`、`DownloadController$DownloadingDocumentEntry`、`NotificationCenter$ObserversGroup$Observer`、`PasscodeView$FingerprintDialog`、`ProfileGiftsContainer$SelectGiftsBottomSheet`、`TL_bots$botVerification`（13.1.1 改名 `BotVerification`）等。**本次改动没有删除任何插件可引用的类。**
 
+官方元数据规范（`/docs/plugin-class`）只定义 `__id__`/`__name__`/`__description__`/`__author__`/`__version__`/`__icon__`/`__app_version__`/`__sdk_version__`/`__requirements__`，**没有「依赖其它插件」的键**，所以 `RequiredPluginCell` 属于 extera 自家商店安装流，不是插件 API 的一部分，我方按需跳过。`__requirements__`、`__app_version__` 的运算符与 `__min_version__` 兼容（视作 `__app_version__ = ">=..."`）我方解析器均已支持。
+
 权威重导仍需 CI 产物：`dev` 触发的 staging workflow 会产出 `plugin-staging` APK，届时用 `apkanalyzer dex packages --defined-only <apk> > D:\tg_scraper\app_classes_raw.txt` 再跑 `sync.ps1` 的 `final_list` 阶段核对 `BANNED_RUNTIME`（`extera_rpc`/`details_deeplink`/`altylib`/`reExtera`/`floating_rounds`）。
 
 按计划**暂缓**：`SdkSignature` 更新验签（必须先有发布侧离线签名，否则现有 SDK 更新通道会被全部拒绝）；`RequiredPluginCell`/`RequiredPluginInfo` 依赖插件逐项安装（缺插件清单里「requires 插件」的元数据规范与下载源，无法凭猜测实现）；`PythonSdkUpdateAlert`（`PluginsInfoActivity` 已有完整 Python SDK 分区：自动更新/beta/检查/恢复/状态，弹窗冗余）；`HookFilter` 的 typeId 化与 `executeGenericHook` 重构（纯性能/维护）。
