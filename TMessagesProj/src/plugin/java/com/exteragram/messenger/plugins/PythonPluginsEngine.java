@@ -33,6 +33,7 @@ import com.exteragram.messenger.plugins.ui.PluginSettingsActivity;
 import com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet;
 import com.exteragram.messenger.plugins.ui.components.PluginFileViewer;
 import com.exteragram.messenger.plugins.utils.PyObjectUtils;
+import com.exteragram.messenger.plugins.utils.SdkSignature;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -2466,6 +2467,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         private static final java.util.regex.Pattern PYTHON_SDK_APP_VERSION_CODE_PATTERN =
                 java.util.regex.Pattern.compile("^app_version_code(>=|<=|==)(.+)$");
 
+        private static PythonSdkUpdateInfo lastUpdateInfo;
         private static long lastCheckUpdateTime = 0L;
         private static int downloadObserverTag;
         private static boolean isLoading;
@@ -2499,6 +2501,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             public String appVersionCode;
             public String appVersionCodeOperator;
             public String abi;
+            public String signature;
 
             public PythonSdkUpdateInfo() {
                 clear();
@@ -2516,6 +2519,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 appVersionCodeOperator = null;
                 document = null;
                 abi = null;
+                signature = null;
             }
 
             public boolean canInstall() {
@@ -2563,6 +2567,14 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
             public void setAbi(String abi) {
                 this.abi = abi;
+            }
+
+            public String getSignature() {
+                return signature;
+            }
+
+            public void setSignature(String signature) {
+                this.signature = signature;
             }
         }
 
@@ -2786,6 +2798,8 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                                 updateInfo.version = value;
                             } else if ("abi".equals(key)) {
                                 updateInfo.setAbi(value);
+                            } else if ("signature".equals(key)) {
+                                updateInfo.setSignature(value);
                             } else if ("can_not_skip".equals(key)) {
                                 updateInfo.can_not_skip = Boolean.parseBoolean(value);
                             }
@@ -2813,6 +2827,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 return null;
             }
             updateInfo.available = updateInfo.document != null && !TextUtils.isEmpty(updateInfo.version);
+            lastUpdateInfo = updateInfo;
             return updateInfo;
         }
 
@@ -2893,6 +2908,10 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 File pathToAttach = FileLoader.getInstance(UserConfig.selectedAccount).getPathToAttach(document);
                 if (pathToAttach == null || !pathToAttach.exists()) {
                     throw new IOException("Downloaded Python SDK archive is missing");
+                }
+                PythonSdkUpdateInfo updateInfo = lastUpdateInfo;
+                if (!SdkSignature.verify(updateInfo != null ? updateInfo.version : null, updateInfo != null ? updateInfo.abi : null, pathToAttach, updateInfo != null ? updateInfo.signature : null)) {
+                    throw new IOException("Python SDK archive failed signature verification");
                 }
                 copyFile(pathToAttach, updateFile);
                 if (autoRestartEngine) {
