@@ -278,10 +278,12 @@ ECDSA P-256 校验下载的 SDK 包：`payload = "extera-pysdk|" + version + "|"
 |---|---|
 | 07a7676aeb | 新增 `log_utils` SDK 模块（`Logger`/`LogLevel`/`LogRecord`/`get_logger`/`dump`/`timed`/handlers，logcat 分片与 `plugin.<id>` 标签），`BasePlugin.logger` 与卸载时 `_cleanup`，SDK 版本 1.4.6.7 → 1.4.7.7 |
 | 45a15ce413 | pip 依赖解析：按 wheel tag（python/abi/platform）判定纯 Python 兼容性，按 PyPI `requires_python` 过滤（新增 `PluginDependencyPythonUnsupported` 文案，7 locale） |
+| 83dd082a80 | 插件设置在线翻译：`PluginSettingsTranslation`（按插件单例、缓存 + pending/failed、目标语言变更失效、后台逐条翻译后回调）+ `TranslatableText`（渲染时解析译文）+ 设置页顶部「翻译设置 / 显示原文」开关（`PluginsSettingsTranslate`/`PluginsSettingsShowOriginal`，7 locale） |
+| bd43d957f3 | 设置文案翻译在 LLM 翻译器下强制回落到 Telegram 翻译，避免烧 token |
 
 已核对无需改动（与官方文档一致）：`extera_utils.classes` 的 `Base/java_subclass/joverride/joverload/jmethod/jMVELmethod/jMVELoverride/jclassbuilder/jfield/jgetmethod/jsetmethod/jconstructor/jpreconstructor`、`ui.settings` 的 `Header/Divider/Switch/Selector/Input/Text/EditText/Custom/SimpleSettingFactory`、`extera_utils.text_formatting.parse_text`（含 `TLEntityType`/`RawEntity`）、`file_utils.FilesController`（含 `FileInfo`/`ExtensionAlreadyRegistered` 等异常）、`ui.bulletin.BulletinHelper.show_error/show_info/...`、`base_plugin.hook_filters/fn_hook_filters`、`Plugin` 的 `app_version`/`min_version`/`sdk_version` 三套兼容判定、`PluginsWatchdog` 已是 per-thread + 5s 冻结（不是报告里的 1s 全表扫描）。
 
-按计划**暂缓**：`SdkSignature` 更新验签（必须先有发布侧离线签名，否则现有 SDK 更新通道会被全部拒绝）、插件设置在线翻译（`PluginSettingsTranslation`/`TranslatableText`/`PluginTranslateButton`）、`RequiredPluginCell` 依赖插件逐项安装、`PythonSdkUpdateAlert`、`HookFilter` 的 typeId 化与 `executeGenericHook` 重构（纯性能/维护）。
+按计划**暂缓**：`SdkSignature` 更新验签（必须先有发布侧离线签名，否则现有 SDK 更新通道会被全部拒绝）；`RequiredPluginCell`/`RequiredPluginInfo` 依赖插件逐项安装（缺插件清单里「requires 插件」的元数据规范与下载源，无法凭猜测实现）；`PythonSdkUpdateAlert`（`PluginsInfoActivity` 已有完整 Python SDK 分区：自动更新/beta/检查/恢复/状态，弹窗冗余）；`HookFilter` 的 typeId 化与 `executeGenericHook` 重构（纯性能/维护）。
 
 ---
 
