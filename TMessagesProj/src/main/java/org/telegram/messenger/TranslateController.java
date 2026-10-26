@@ -5,6 +5,7 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.content.Context;
 import android.content.res.Resources;
 import android.icu.text.Collator;
+import com.exteragram.messenger.ai.TelegramAiReplacement;
 import android.text.TextUtils;
 import android.util.LongSparseArray;
 import android.util.Pair;
@@ -1024,6 +1025,23 @@ public class TranslateController extends BaseController {
 
         loadingSummarizations.add(id);
 
+        if (TelegramAiReplacement.replacesSummaries(currentAccount)) {
+            final String sourceText = message.messageOwner != null && message.messageOwner.message != null
+                    ? message.messageOwner.message : message.messageText != null ? message.messageText.toString() : null;
+            if (TextUtils.isEmpty(sourceText)) {
+                loadingSummarizations.remove(id);
+                callback.run(null);
+                return;
+            }
+            TelegramAiReplacement.summarize(language, sourceText, result -> {
+                loadingSummarizations.remove(id);
+                callback.run(result);
+            }, (code, errorMessage) -> {
+                loadingSummarizations.remove(id);
+                callback.run(null);
+            });
+            return;
+        }
         final TLRPC.TL_messages_summarizeText req = new TLRPC.TL_messages_summarizeText();
         req.peer = MessagesController.getInstance(currentAccount).getInputPeer(message.getDialogId());
         req.id = message.getId();

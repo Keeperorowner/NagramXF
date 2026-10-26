@@ -804,6 +804,18 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val replaceTelegramAiEditor =
+        addConfig(
+            "ReplaceTelegramAiEditor",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val replaceTelegramAiSummaries =
+        addConfig(
+            "ReplaceTelegramAiSummaries",
+            ConfigItem.configTypeBool,
+            true
+        )
     val widePostsInFeed =
         addConfig(
             "WidePostsInFeed",

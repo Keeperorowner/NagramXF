@@ -303,4 +303,9 @@
     <string name="HideFeedTab">Приховати вкладку стрічка</string>
     <string name="WidePostsInFeed">Широкі пости у стрічці</string>
     <string name="WidePostsInChannels">Широкі пости в каналах</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">Редактор</string>
+    <string name="AIFeaturesSummaries">Підсумки</string>
+    <string name="AIReplaceTelegramEditorInfo">Переклад, переписування та вичитування чернеток через ваш AI-сервіс</string>
+    <string name="AIReplaceTelegramSummariesInfo">Стислий виклад довгих повідомлень і постів через ваш AI-сервіс</string>
 </resources>

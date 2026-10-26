@@ -372,4 +372,9 @@
     <string name="HideFeedTab">フィードタブを非表示</string>
     <string name="WidePostsInFeed">フィードのワイド投稿</string>
     <string name="WidePostsInChannels">チャンネルのワイド投稿</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">エディター</string>
+    <string name="AIFeaturesSummaries">要約</string>
+    <string name="AIReplaceTelegramEditorInfo">自分の AI サービスで下書きを翻訳・書き換え・校正します</string>
+    <string name="AIReplaceTelegramSummariesInfo">自分の AI サービスで長いメッセージや投稿を要約します</string>
 </resources>

@@ -18,6 +18,7 @@ import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextPaint;
+import com.exteragram.messenger.ai.TelegramAiReplacement;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
 import android.text.style.URLSpan;
@@ -336,7 +337,7 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
             req.peer = reqPeer;
             req.id.add(reqMessageId);
             req.to_lang = normalizeLanguage(lang);
-            reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
+        reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
                 AndroidUtilities.runOnUIThread(() -> {
                     reqId = null;
                     if (res instanceof TLRPC.TL_messages_translatedRichMessage &&
@@ -411,6 +412,29 @@ public class TranslateAlert2 extends BottomSheet implements NotificationCenter.N
 //            req.from_lang = fromLanguage;
 //        }
         req.to_lang = normalizeLanguage(lang);
+        if (reqPeer == null && textWithEntities != null && TelegramAiReplacement.replacesSummaries(currentAccount)) {
+            TelegramAiReplacement.translate(textWithEntities.text, lang, result -> AndroidUtilities.runOnUIThread(() -> {
+                reqId = null;
+                firstTranslation = false;
+                TLRPC.TL_textWithEntities text = preprocess(textWithEntities, result);
+                CharSequence translated = SpannableStringBuilder.valueOf(text.text);
+                MessageObject.addEntitiesToText(translated, text.entities, false, true, false, false);
+                translated = preprocessText(translated);
+                textView.setText(translated);
+                adapter.updateMainView(textViewContainer);
+            }), (code, message) -> AndroidUtilities.runOnUIThread(() -> {
+                reqId = null;
+                if (firstTranslation) {
+                    dismiss();
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.getString(R.string.TranslationFailedAlert2));
+                } else {
+                    BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createErrorBulletin(LocaleController.getString(R.string.TranslationFailedAlert2)).show();
+                    headerView.toLanguageTextView.setText(languageName(toLanguage = prevToLanguage));
+                    adapter.updateMainView(textViewContainer);
+                }
+            }));
+            return;
+        }
         reqId = ConnectionsManager.getInstance(currentAccount).sendRequest(req, (res, err) -> {
             AndroidUtilities.runOnUIThread(() -> {
                 reqId = null;

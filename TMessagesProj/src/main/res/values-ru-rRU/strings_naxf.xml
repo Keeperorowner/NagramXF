@@ -372,4 +372,9 @@
     <string name="HideFeedTab">Скрыть вкладку ленты</string>
     <string name="WidePostsInFeed">Широкие посты в ленте</string>
     <string name="WidePostsInChannels">Широкие посты в каналах</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">Редактор</string>
+    <string name="AIFeaturesSummaries">Сводки</string>
+    <string name="AIReplaceTelegramEditorInfo">Перевод, переписывание и вычитка черновиков через ваш AI-сервис</string>
+    <string name="AIReplaceTelegramSummariesInfo">Краткое изложение длинных сообщений и постов через ваш AI-сервис</string>
 </resources>
