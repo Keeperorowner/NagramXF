@@ -44,9 +44,6 @@
     <string name="RegexFiltersHideOnlyMatchedAbout">僅將正則匹配到的內容以劇透遮罩隱藏，而不是遮罩整條訊息。</string>
     <string name="UseSystemAiService">使用系統 AI 服務</string>
     <string name="UseSystemAiServiceDesc">目前僅支援 HyperOS 與 ColorOS</string>
-    <string name="HideAiEditor">隱藏 AI 編輯器</string>
-    <string name="HideAiSummary">隱藏 AI 摘要</string>
-    <string name="AiHideHeader">隱藏 AI 功能</string>
     <string name="RegexFiltersListEmpty">還沒有過濾器，點擊 + 新增一個。</string>
     <string name="RegexFiltersShadowBanEmpty">還沒有靜默封鎖對象，點擊 + 新增一個。</string>
     <string name="RegexFiltersFilterEnabled">啟用過濾器</string>
@@ -374,4 +371,6 @@
     <string name="FeedShownChannels">顯示的頻道</string>
     <string name="FeedUnreadCounter">未讀貼文計數</string>
     <string name="HideFeedTab">隱藏資訊流標籤頁</string>
+    <string name="WidePostsInFeed">資訊流中的寬版貼文</string>
+    <string name="WidePostsInChannels">頻道聊天中的寬版貼文</string>
 </resources>

@@ -60,9 +60,6 @@
     <string name="RegexFiltersShadowBannedGroup">Group</string>
     <string name="UseSystemAiService">Use System Ai Service</string>
     <string name="UseSystemAiServiceDesc">Only support HyperOS and ColorOS</string>
-    <string name="HideAiEditor">Hide AI Editor</string>
-    <string name="HideAiSummary">Hide AI Summary</string>
-    <string name="AiHideHeader">Hide AI Features</string>
     <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">Deleted Mark</string>
     <string name="DeletedMarkNothing">Nothing</string>
@@ -304,4 +301,6 @@
     <string name="FeedShownChannels">Shown in feed</string>
     <string name="FeedUnreadCounter">Unread Post Counter</string>
     <string name="HideFeedTab">Hide Feed Tab</string>
+    <string name="WidePostsInFeed">Wide Posts in Feed</string>
+    <string name="WidePostsInChannels">Wide Posts in Channels</string>
 </resources>

@@ -42,9 +42,6 @@
     <string name="RegexFiltersHideOnlyMatchedAbout">仅将正则匹配到的内容以剧透遮罩隐藏，而不是遮罩整条消息。</string>
     <string name="UseSystemAiService">使用系统 AI 服务</string>
     <string name="UseSystemAiServiceDesc">当前仅支持 HyperOS 和 ColorOS</string>
-    <string name="HideAiEditor">隐藏 AI 编辑器</string>
-    <string name="HideAiSummary">隐藏 AI 摘要</string>
-    <string name="AiHideHeader">隐藏 AI 功能</string>
     <string name="RegexFiltersListEmpty">还没有过滤器，点击 + 添加一个。</string>
     <string name="RegexFiltersShadowBanEmpty">还没有静默屏蔽对象，点击 + 添加一个。</string>
     <string name="RegexFiltersFilterEnabled">启用过滤器</string>
@@ -288,4 +285,6 @@
     <string name="FeedShownChannels">显示的频道</string>
     <string name="FeedUnreadCounter">未读帖子计数</string>
     <string name="HideFeedTab">隐藏信息流标签页</string>
+    <string name="WidePostsInFeed">信息流中的宽版帖子</string>
+    <string name="WidePostsInChannels">频道聊天中的宽版帖子</string>
 </resources>

@@ -6,6 +6,8 @@ import android.view.View;
 import android.widget.EditText;
 
 import com.exteragram.messenger.ExteraConfig;
+
+import xyz.nextalone.nagram.NaConfig;
 import com.exteragram.messenger.feed.FeedChannelActions;
 import com.exteragram.messenger.feed.FeedConfig;
 import com.exteragram.messenger.feed.FeedController;
@@ -40,6 +42,7 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
     private static final int ID_BOTTOM_TAB = 1073741822;
     private static final int ID_UNREAD_COUNTER = 1073741820;
     private static final int ID_INCLUDE_ARCHIVED = 1073741823;
+    private static final int ID_WIDE_POSTS = 1073741821;
     private static final Comparator<TLRPC.Chat> BY_TITLE = Comparator.comparing(chat -> {
         String title = chat.title;
         return title == null ? "" : title.toLowerCase();
@@ -183,6 +186,7 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
             items.add(UItem.asCheck(ID_UNREAD_COUNTER, LocaleController.getString(R.string.FeedUnreadCounter)).setChecked(ExteraConfig.getShowFeedUnreadCounter()));
             items.add(UItem.asCheck(ID_INCLUDE_ARCHIVED, LocaleController.getString(R.string.FeedIncludeArchived)).setChecked(feedConfig.getIncludeArchived()));
             items.add(UItem.asShadow(LocaleController.getString(R.string.FeedIncludeArchivedInfo)));
+            items.add(UItem.asCheck(ID_WIDE_POSTS, LocaleController.getString(R.string.WidePostsInFeed)).setChecked(NaConfig.INSTANCE.getWidePostsInFeed().Bool()));
         }
         ArrayList<UItem> shown = new ArrayList<>();
         ArrayList<UItem> hidden = new ArrayList<>();
@@ -229,6 +233,11 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
         } else if (id == ID_UNREAD_COUNTER) {
             toggleBooleanSettingAndRefresh(item, value -> {
                 ExteraConfig.setShowFeedUnreadCounter(value);
+                NotificationCenter.getInstance(FeedChannelsActivity.this.currentAccount).postNotificationNameOnUIThread(NotificationCenter.updateInterfaces, 0);
+            });
+        } else if (id == ID_WIDE_POSTS) {
+            toggleBooleanSettingAndRefresh(item, value -> {
+                NaConfig.INSTANCE.getWidePostsInFeed().setConfigBool(value);
                 NotificationCenter.getInstance(FeedChannelsActivity.this.currentAccount).postNotificationNameOnUIThread(NotificationCenter.updateInterfaces, 0);
             });
         } else if (id == ID_INCLUDE_ARCHIVED) {

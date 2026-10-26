@@ -60,9 +60,6 @@
     <string name="RegexFiltersShadowBannedGroup">Група</string>
     <string name="UseSystemAiService">Системний ШІ-сервіс</string>
     <string name="UseSystemAiServiceDesc">Підтримується лише на HyperOS та ColorOS</string>
-    <string name="HideAiEditor">Приховати ШІ-редактор</string>
-    <string name="HideAiSummary">Приховати ШІ-підсумок</string>
-    <string name="AiHideHeader">Приховати функції ШІ</string>
     <string name="AyuGramMenu" translatable="false">AyuGram</string>
     <string name="DeletedMarkText">Мітка видаленого</string>
     <string name="DeletedMarkNothing">Нічого</string>
@@ -304,4 +301,6 @@
     <string name="FeedShownChannels">Показуються у стрічці</string>
     <string name="FeedUnreadCounter">Лічильник непрочитаних постів</string>
     <string name="HideFeedTab">Приховати вкладку стрічка</string>
+    <string name="WidePostsInFeed">Широкі пости у стрічці</string>
+    <string name="WidePostsInChannels">Широкі пости в каналах</string>
 </resources>

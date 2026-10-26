@@ -295,9 +295,6 @@
     <string name="AIError502Info">サーバーが一時的に利用できません。</string>
     <string name="AIError503">サービス利用不可</string>
     <string name="AIError503Info">サービスが過負荷です。後で再試行してください。</string>
-    <string name="HideAiEditor">AIエディタを非表示</string>
-    <string name="HideAiSummary">AI要約を非表示</string>
-    <string name="AiHideHeader">AI機能を非表示</string>
     <string name="TabStyleStroke">タブインジケーターの縁取り</string>
     <string name="BuiltInFolders">ビルトインフォルダー</string>
     <string name="BuiltInFoldersInfo">ビルトインフォルダーはこのデバイス上で作成され、Telegram には同期されません。名前とアイコンは変更できません。</string>
@@ -373,4 +370,6 @@
     <string name="FeedShownChannels">フィードに表示中</string>
     <string name="FeedUnreadCounter">未読投稿カウンター</string>
     <string name="HideFeedTab">フィードタブを非表示</string>
+    <string name="WidePostsInFeed">フィードのワイド投稿</string>
+    <string name="WidePostsInChannels">チャンネルのワイド投稿</string>
 </resources>

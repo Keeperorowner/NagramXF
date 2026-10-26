@@ -58,9 +58,6 @@
     <string name="RegexFiltersShadowBannedGroup">그룹</string>
     <string name="UseSystemAiService">시스템 AI 서비스 사용</string>
     <string name="UseSystemAiServiceDesc">HyperOS와 ColorOS만 지원합니다.</string>
-    <string name="HideAiEditor">AI 편집기 숨기기</string>
-    <string name="HideAiSummary">AI 요약 숨기기</string>
-    <string name="AiHideHeader">AI 기능 숨기기</string>
     <string name="DeletedMarkText">삭제 표시</string>
     <string name="DeletedMarkNothing">표시 안 함</string>
     <string name="DeletedMarkTrashBin">휴지통</string>
@@ -298,4 +295,6 @@
     <string name="FeedShownChannels">피드에 표시 중</string>
     <string name="FeedUnreadCounter">읽지 않은 게시물 카운터</string>
     <string name="HideFeedTab">피드 탭 숨기기</string>
+    <string name="WidePostsInFeed">피드의 와이드 게시물</string>
+    <string name="WidePostsInChannels">채널의 와이드 게시물</string>
 </resources>

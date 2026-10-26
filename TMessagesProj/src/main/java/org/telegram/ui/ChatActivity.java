@@ -148,6 +148,7 @@ import com.exteragram.messenger.feed.FeedChatIntegration;
 import com.exteragram.messenger.feed.FeedChannelActions;
 import com.exteragram.messenger.feed.FeedController;
 import com.exteragram.messenger.feed.FeedMessageUtils;
+import com.exteragram.messenger.utils.chats.WidePosts;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.messages.AyuMessagesController;
@@ -42701,7 +42702,7 @@ public class ChatActivity extends BaseFragment implements
         public void didPressSummarize(ChatMessageCell cell, boolean byReply) {
             final MessageObject msg = cell.getMessageObject();
             final boolean opening = msg == null || msg.messageOwner == null || !msg.messageOwner.summarizedOpen;
-            if (!TranslateController.isSummarizable(msg) || (opening && NaConfig.INSTANCE.getHideAiSummary().Bool())) {
+            if (!TranslateController.isSummarizable(msg)) {
                 return;
             }
             msg.messageOwner.summarizedOpen = !msg.messageOwner.summarizedOpen;
@@ -47639,6 +47640,22 @@ public class ChatActivity extends BaseFragment implements
 
     public boolean isFeedSearch() {
         return chatMode == MODE_SEARCH && searchType == 4;
+    }
+
+    /** Whether messages of this screen are rendered as wide channel posts. */
+    public boolean isWidePostsScreen() {
+        return WidePosts.isEnabledFor(isFeedSearch(),
+                isFeedSearch()
+                        || ChatObject.isChannelAndNotMegaGroup(currentChat)
+                        || (chatMode == MODE_SEARCH && (searchType == 2 || searchType == 3)));
+    }
+
+    /** Re-binds the visible comment cells after their post author signature was resolved. */
+    public void updateWidePostsCommentsAuthor(ArrayList<MessageObject> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+        updateVisibleRows();
     }
 
     public int getBulletinTopOffset() {
