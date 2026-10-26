@@ -43,7 +43,8 @@ import com.exteragram.messenger.ai.AiConfig;
 import com.exteragram.messenger.ai.AiController;
 import com.exteragram.messenger.ai.data.Service;
 import com.exteragram.messenger.ai.network.Client;
-import com.exteragram.messenger.ai.network.GenerationCallback;
+import com.exteragram.messenger.ai.network.backend.BackendRequest;
+import com.exteragram.messenger.ai.network.backend.BackendSink;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -440,7 +441,9 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         if (AiController.getInstance().getSelected().isReasoningEnabled() && AiConfig.responseStreaming) {
             showThinking();
         }
-        currentRequestId = client.getResponse(prompt, useHistory, AiConfig.responseStreaming, imagePath, new GenerationCallback() {
+        final float temperature = AiConfig.temperature / 20.0f * AiController.getBackend().getMaxTemperature();
+        currentRequestId = AiController.getBackend().execute(new BackendRequest(
+                AiController.getInstance().getSelected(), null, prompt, imagePath, useHistory, AiConfig.responseStreaming, temperature), new BackendSink() {
             @Override
             public void onThinking() {
                 showThinking();
