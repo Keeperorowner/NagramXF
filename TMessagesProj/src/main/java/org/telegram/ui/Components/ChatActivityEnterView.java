@@ -5556,17 +5556,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (keyboardVisible) closeKeyboard();
                 else if (isPopupShowing()) hidePopup(false);
                 Client aiClient = new Client.Builder().build();
-                ResponseAlert.showAlert(parentFragment, aiClient, getEditField().getText().toString(), AiConfig.saveHistory, false, null, () -> {}, (prompt, response) -> {
-                    if (TextUtils.isEmpty(response)) return;
-                    if (AiConfig.insertAsQuote) {
-                        getEditField().setText(response + "\n");
-                        QuoteSpan.putQuoteToEditable(getEditText(), AiConfig.showResponseOnly ? 0 : prompt.length() + 4, getEditText().length() - 1, true);
-                    } else {
-                        getEditField().setText(response);
-                    }
-                    getEditField().setSelection(getEditField().length());
-                    openKeyboard();
-                }).setDimBehind(true);
+                ResponseAlert.showAlert(parentFragment, aiClient, getEditField().getText().toString(), AiConfig.saveHistory, false, null, () -> {}, (prompt, response, rich) ->
+                        insertAiResponse(prompt, response, rich)).setDimBehind(true);
             }));
             if (LlmConfig.isLLMTranslatorAvailable()) {
                 long chatId = ChatsHelper.getChatId();
@@ -12200,6 +12191,67 @@ if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             );
         }
         setRichDraftPreview(null);
+    }
+
+    /**
+     * Inserts an AI answer into the composer. An answer that parses as rich text becomes a rich
+     * draft when the account can post rich messages, so headings, lists and code keep their
+     * formatting; otherwise the plain text is typed into the input field.
+     */
+    public void insertAiResponse(String prompt, CharSequence response, TL_iv.RichMessage rich) {
+        if (messageEditText == null || TextUtils.isEmpty(response)) {
+            return;
+        }
+        if (rich != null && richDraftPreview != null) {
+            final MessagesController messagesController = MessagesController.getInstance(currentAccount);
+            if (messagesController.richEditorAvailable() && messagesController.richEditorAllowed()) {
+                final TL_iv.RichMessage draft = buildAiRichDraft(prompt, rich);
+                if (draft != null) {
+                    saveRichDraft(draft);
+                    openKeyboard();
+                    return;
+                }
+            }
+        }
+        if (AiConfig.insertAsQuote) {
+            final SpannableStringBuilder quoted = new SpannableStringBuilder(response);
+            quoted.append("\n");
+            getEditField().setText(quoted);
+            QuoteSpan.putQuoteToEditable(getEditText(), AiConfig.showResponseOnly ? 0 : prompt.length() + 4, getEditText().length() - 1, true);
+        } else {
+            getEditField().setText(response);
+        }
+        getEditField().setSelection(getEditField().length());
+        openKeyboard();
+    }
+
+    /** Wraps an AI answer into a rich draft, adding the prompt prefix and the quote container. */
+    private TL_iv.RichMessage buildAiRichDraft(String prompt, TL_iv.RichMessage answer) {
+        final ArrayList<TL_iv.PageBlock> blocks = new ArrayList<>();
+        if (!AiConfig.showResponseOnly && !TextUtils.isEmpty(prompt)) {
+            final TL_iv.textPlain text = new TL_iv.textPlain();
+            text.text = "→ " + prompt;
+            final TL_iv.pageBlockParagraph paragraph = new TL_iv.pageBlockParagraph();
+            paragraph.text = text;
+            blocks.add(paragraph);
+        }
+        blocks.addAll(answer.blocks);
+        if (blocks.isEmpty()) {
+            return null;
+        }
+        final TL_iv.RichMessage draft = new TL_iv.RichMessage();
+        draft.rtl = answer.rtl;
+        if (AiConfig.insertAsQuote) {
+            final TL_iv.pageBlockBlockquoteBlocks quote = new TL_iv.pageBlockBlockquoteBlocks();
+            quote.blocks.addAll(blocks);
+            quote.caption = new TL_iv.textEmpty();
+            draft.blocks.add(quote);
+        } else {
+            draft.blocks.addAll(blocks);
+        }
+        draft.photos.addAll(answer.photos);
+        draft.documents.addAll(answer.documents);
+        return draft;
     }
 
     public void saveRichDraft(TL_iv.RichMessage rich) {

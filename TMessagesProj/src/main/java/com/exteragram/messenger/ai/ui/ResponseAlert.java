@@ -48,6 +48,7 @@ import com.exteragram.messenger.ai.network.backend.BackendSink;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LinkifyPort;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
@@ -55,6 +56,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.messenger.XiaomiUtilities;
+import org.telegram.tgnet.tl.TL_iv;
+import org.telegram.ui.Components.MarkdownParser;
 import org.telegram.messenger.utils.DrawableUtils;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
@@ -107,7 +110,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
     private final LoadingTextView loadingTextView;
     private final ButtonWithCounterView mainButton;
     private final Markwon markwon;
-    private Utilities.Callback2<String, CharSequence> onInsertPress;
+    private Utilities.Callback3<String, CharSequence, TL_iv.RichMessage> onInsertPress;
     private Utilities.CallbackReturn<URLSpan, Boolean> onLinkPress;
     private String prompt;
     private final AnimatedFloat sheetTopAnimated;
@@ -261,13 +264,13 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
 
     public static ResponseAlert showAlert(BaseFragment fragment, Client client, String prompt, boolean useHistory, boolean noForwards,
                                           Utilities.CallbackReturn<URLSpan, Boolean> onLinkPress, Runnable onDismiss,
-                                          Utilities.Callback2<String, CharSequence> onInsertPress) {
+                                          Utilities.Callback3<String, CharSequence, TL_iv.RichMessage> onInsertPress) {
         return showAlert(fragment, client, prompt, null, useHistory, noForwards, onLinkPress, onDismiss, onInsertPress);
     }
 
     public static ResponseAlert showAlert(BaseFragment fragment, Client client, String prompt, String imagePath, boolean useHistory, boolean noForwards,
                                           Utilities.CallbackReturn<URLSpan, Boolean> onLinkPress, final Runnable onDismiss,
-                                          Utilities.Callback2<String, CharSequence> onInsertPress) {
+                                          Utilities.Callback3<String, CharSequence, TL_iv.RichMessage> onInsertPress) {
         ResponseAlert alert = new ResponseAlert(fragment.getContext(), client, prompt, imagePath, useHistory, fragment.getResourceProvider()) {
             @Override
             public void dismiss() {
@@ -335,6 +338,29 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         } catch (Exception ignored) {
         }
         return replaceLinks(replaceMarkdownLinks(text));
+    }
+
+    /**
+     * Parses an answer as markdown so the composer can keep its formatting when it is inserted.
+     * Returns null when the answer has no renderable blocks.
+     */
+    private TL_iv.RichMessage buildRichMessage(CharSequence response) {
+        if (TextUtils.isEmpty(response)) {
+            return null;
+        }
+        try {
+            ArrayList<TL_iv.PageBlock> blocks = new ArrayList<>();
+            MarkdownParser.parse(response.toString(), blocks);
+            if (blocks.isEmpty()) {
+                return null;
+            }
+            TL_iv.RichMessage rich = new TL_iv.RichMessage();
+            rich.blocks = blocks;
+            return rich;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
     }
 
     private CharSequence replaceMarkdownLinks(CharSequence text) {
@@ -543,7 +569,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         this.onLinkPress = onLinkPress;
     }
 
-    private void setOnInsertPress(Utilities.Callback2<String, CharSequence> onInsertPress) {
+    private void setOnInsertPress(Utilities.Callback3<String, CharSequence, TL_iv.RichMessage> onInsertPress) {
         this.onInsertPress = onInsertPress;
     }
 
@@ -739,7 +765,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             insertButton.setVisibility(GONE);
             insertButton.setOnClickListener(v -> {
                 if (onInsertPress != null) {
-                    onInsertPress.run(prompt, formatResponse(currentResponse));
+                    onInsertPress.run(prompt, formatResponse(currentResponse), buildRichMessage(currentResponse));
                 }
                 dismiss();
             });
