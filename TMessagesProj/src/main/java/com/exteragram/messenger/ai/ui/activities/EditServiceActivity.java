@@ -297,6 +297,13 @@ public class EditServiceActivity extends BaseFragment {
             @Override
             public void onError(int code, String message) {
                 testButton.setLoading(false);
+                if (code == 400) {
+                    if (modelFieldContainer != null) AndroidUtilities.shakeView(modelFieldContainer);
+                } else if (code == 401 || code == 403) {
+                    if (keyFieldContainer != null) AndroidUtilities.shakeView(keyFieldContainer);
+                } else if (code == 404) {
+                    if (urlFieldContainer != null) AndroidUtilities.shakeView(urlFieldContainer);
+                }
                 AiController.showErrorBulletin(EditServiceActivity.this, code);
             }
         });
