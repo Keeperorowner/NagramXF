@@ -200,6 +200,7 @@ public final class SettingsBackupHelper {
                 AyuGhostPreferences.ghostReadExceptionPrefix,
                 AyuGhostPreferences.ghostTypingExceptionPrefix,
                 AyuSavePreferences.saveExclusionPrefix,
+                "ayuSaveExclusions",
                 LocalNameHelper.chatNameOverridePrefix,
                 LocalNameHelper.userNameOverridePrefix,
                 DialogConfig.customForumTabPrefix,

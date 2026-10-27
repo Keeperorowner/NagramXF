@@ -66,6 +66,7 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellCustom;
 import tw.nekomimi.nekogram.config.cell.ConfigCellDivider;
 import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck;
+import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import xyz.nextalone.nagram.NaConfig;
@@ -95,6 +96,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell saveReadDateRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveReadDate()));
     private final AbstractConfigCell enableSaveDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveDeletedMessages()));
     private final AbstractConfigCell enableSaveEditsHistoryRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveEditsHistory()));
+    private final AbstractConfigCell saveExclusionsRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AyuSaveExclusions", null, R.drawable.msg_discuss, true, () -> presentFragment(new AyuSaveExclusionsActivity())));
     private final AbstractConfigCell saveDeletedMessageForBotsUserRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser()));
     private final AbstractConfigCell saveDeletedMessageInBotChatRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBot()));
     private final AbstractConfigCell dividerAttachmentsSection = cellGroup.appendCell(new ConfigCellDivider());

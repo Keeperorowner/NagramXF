@@ -15,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.radolyn.ayugram.AyuSaveExclusions;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 import com.radolyn.ayugram.ui.AyuViewDeleted;
@@ -71,6 +72,7 @@ public class AyuGramMenuPopupWrapper {
     private ActionBarMenuSubItem ghostTypingItem;
     private ActionBarMenuSubItem saveDefaultItem;
     private ActionBarMenuSubItem saveExclusionItem;
+    private ActionBarMenuSubItem saveAlwaysItem;
     private ActionBarMenuSubItem regexDefaultItem;
     private ActionBarMenuSubItem regexExclusionItem;
 
@@ -366,12 +368,17 @@ public class AyuGramMenuPopupWrapper {
         options.setOrientation(LinearLayout.VERTICAL);
         saveDefaultItem = addItem(options, 0, LocaleController.getString(R.string.Default), true);
         saveDefaultItem.setOnClickListener(v -> {
-            AyuSavePreferences.setSaveDeletedExclusion(chatId, false);
+            AyuSaveExclusions.setChatSavingType(chatId, AyuSaveExclusions.TYPE_DEFAULT);
             updateSaveItems();
         });
-        saveExclusionItem = addItem(options, 0, LocaleController.getString(R.string.SaveDeletedExcluded), true);
+        saveAlwaysItem = addItem(options, 0, LocaleController.getString(R.string.AyuSaveExclusionsAlways), true);
+        saveAlwaysItem.setOnClickListener(v -> {
+            AyuSaveExclusions.setChatSavingType(chatId, AyuSaveExclusions.TYPE_ALWAYS);
+            updateSaveItems();
+        });
+        saveExclusionItem = addItem(options, 0, LocaleController.getString(R.string.AyuSaveExclusionsNever), true);
         saveExclusionItem.setOnClickListener(v -> {
-            AyuSavePreferences.setSaveDeletedExclusion(chatId, true);
+            AyuSaveExclusions.setChatSavingType(chatId, AyuSaveExclusions.TYPE_NEVER);
             updateSaveItems();
         });
         updateSaveItems();
@@ -379,9 +386,10 @@ public class AyuGramMenuPopupWrapper {
     }
 
     private void updateSaveItems() {
-        boolean excluded = AyuSavePreferences.getSaveDeletedExclusion(chatId);
-        saveDefaultItem.setChecked(!excluded);
-        saveExclusionItem.setChecked(excluded);
+        int type = AyuSaveExclusions.getChatSavingType(chatId);
+        saveDefaultItem.setChecked(type == AyuSaveExclusions.TYPE_DEFAULT);
+        saveAlwaysItem.setChecked(type == AyuSaveExclusions.TYPE_ALWAYS);
+        saveExclusionItem.setChecked(type == AyuSaveExclusions.TYPE_NEVER);
     }
 
     private LinearLayout buildRegexOptions() {
