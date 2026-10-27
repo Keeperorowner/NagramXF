@@ -19,6 +19,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 
+import com.radolyn.ayugram.AyuSaveExclusions;
+
 import me.vkryl.core.BitwiseUtils;
 
 import tw.nekomimi.nekogram.NekoConfig;
@@ -32,8 +34,6 @@ import xyz.nextalone.nagram.NaConfig;
 public class AyuSavePreferences {
     private static final long USER_LOOKUP_TIMEOUT_MS = 1000L;
     public static final String saveExclusionPrefix = "saveDeletedExclusion_";
-    public static ConcurrentHashMap<Long, Boolean> saveDeletedExclusions = new ConcurrentHashMap<>();
-    public static boolean isSaveDeletedExclusionsLoaded = false;
     private final TLRPC.Message message;
     private final int accountId;
     private final long userId;
@@ -132,33 +132,25 @@ public class AyuSavePreferences {
         if (!NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
             return false;
         }
-
-        if (getSaveDeletedExclusion(dialogId)) {
+        // 会话规则（显式包含/排除、按类别、整体白名单）先决定是否保存。
+        if (!AyuSaveExclusions.isSavingAllowedFor(accountId, dialogId, userId)) {
             return false;
         }
-
-        // 发送者判断与机器人会话判断都必须通过，不能因为命中发送者缓存就短路后面的判断。
-        boolean senderAllowed = true;
+        // 发送者是机器人时，仍要服从「机器人消息」开关。
         if (userId != 0) {
-            if (getSaveDeletedExclusion(userId)) {
+            TLRPC.User fromUser = getCachedOrStoredUser(accountId, userId);
+            if (fromUser != null && fromUser.bot && !NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().Bool()) {
                 return false;
             }
-            TLRPC.User fromUser = getCachedOrStoredUser(accountId, userId);
-            if (fromUser != null && fromUser.bot) {
-                senderAllowed = NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().Bool();
+        }
+        // 在机器人会话里保存，服从「机器人会话」开关。
+        if (DialogObject.isUserDialog(dialogId)) {
+            TLRPC.User dialogUser = getCachedOrStoredUser(accountId, dialogId);
+            if (dialogUser != null && dialogUser.bot && !NaConfig.INSTANCE.getSaveDeletedMessageForBot().Bool()) {
+                return false;
             }
         }
-        if (!senderAllowed) {
-            return false;
-        }
-
-        if (!DialogObject.isUserDialog(dialogId)) return true;
-        var user = getCachedOrStoredUser(accountId, dialogId);
-        if (user == null) {
-            return true;
-        }
-
-        return !user.bot || NaConfig.INSTANCE.getSaveDeletedMessageForBot().Bool();
+        return true;
     }
 
     /**
@@ -198,35 +190,18 @@ public class AyuSavePreferences {
         return stored[0];
     }
 
+    /** Sets the explicit rule for one chat; kept for the chat menu and backup restore. */
     public static void setSaveDeletedExclusion(long chatId, boolean value) {
-        saveDeletedExclusions.put(Math.abs(chatId), value);
-        NekoConfig.getPreferences().edit().putBoolean(saveExclusionPrefix + Math.abs(chatId), value).apply();
+        AyuSaveExclusions.setChatSavingType(chatId, value ? AyuSaveExclusions.TYPE_NEVER : AyuSaveExclusions.TYPE_DEFAULT);
     }
 
     public static boolean getSaveDeletedExclusion(long chatId) {
-        if (isSaveDeletedExclusionsLoaded) {
-            return Boolean.TRUE.equals(saveDeletedExclusions.getOrDefault(Math.abs(chatId), false));
-        } else {
-            return saveDeletedExclusions.computeIfAbsent(Math.abs(chatId), k -> NekoConfig.getPreferences().getBoolean(saveExclusionPrefix + Math.abs(chatId), false));
-        }
+        return AyuSaveExclusions.getChatSavingType(chatId) == AyuSaveExclusions.TYPE_NEVER;
     }
 
+    /** Loads the exclusion rules; triggers the one-time migration of the old per-chat booleans. */
     public static void loadAllExclusions() {
-        Utilities.stageQueue.postRunnable(() -> {
-            Map<String, ?> allEntries = NekoConfig.getPreferences().getAll();
-            for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-                if (entry.getKey().startsWith(saveExclusionPrefix)) {
-                    try {
-                        long chatId = Long.parseLong(entry.getKey().substring(saveExclusionPrefix.length()));
-                        if (entry.getValue() instanceof Boolean) {
-                            saveDeletedExclusions.put(chatId, (Boolean) entry.getValue());
-                        }
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-            isSaveDeletedExclusionsLoaded = true;
-        });
+        Utilities.stageQueue.postRunnable(AyuSaveExclusions::isWhitelist);
     }
 
     public TLRPC.Message getMessage() {
