@@ -334,6 +334,8 @@
     <string name="DeviceAccount">デバイス</string>
     <string name="ApiKeyNotSet">API キーが設定されていません。</string>
     <string name="SaveLocalLastSeen">最終接続時間を保存</string>
+    <string name="AyuRelativeLastSeen">相対的な最終オンライン</string>
+    <string name="AyuLastSeenAgo">%1$s前</string>
     <string name="CopyVideoFrame">フレームをコピー</string>
     <string name="SetLocalName">表示名を変更</string>
     <string name="DeleteChatForBothSides">デフォルトで「相手側も削除」を使用</string>

@@ -336,6 +336,8 @@
     <string name="DeviceAccount">Устройство</string>
     <string name="ApiKeyNotSet">Ключ API не настроен.</string>
     <string name="SaveLocalLastSeen">Сохранять дату последнего посещения</string>
+    <string name="AyuRelativeLastSeen">Относительное «был(а) в сети»</string>
+    <string name="AyuLastSeenAgo">%1$s назад</string>
     <string name="CopyVideoFrame">Копировать кадр</string>
     <string name="SetLocalName">Установить локальное имя</string>
     <string name="DeleteChatForBothSides">Использовать «Также удалить для» по умолчанию</string>

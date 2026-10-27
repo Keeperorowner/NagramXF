@@ -336,6 +336,8 @@
     <string name="DeviceAccount">裝置</string>
     <string name="ApiKeyNotSet">尚未設定 API 金鑰。</string>
     <string name="SaveLocalLastSeen">儲存最後上線時間</string>
+    <string name="AyuRelativeLastSeen">相對最後上線</string>
+    <string name="AyuLastSeenAgo">%1$s前</string>
     <string name="CopyVideoFrame">複製影格</string>
     <string name="SetLocalName">設定備註</string>
     <string name="DeleteChatForBothSides">預設使用“同時為對方刪除”</string>

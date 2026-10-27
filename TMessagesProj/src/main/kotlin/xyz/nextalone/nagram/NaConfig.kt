@@ -884,6 +884,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val relativeLastSeen =
+        addConfig(
+            "RelativeLastSeen",
+            ConfigItem.configTypeBool,
+            false
+        )
     val saveReadDate =
         addConfig(
             "SaveReadDate",

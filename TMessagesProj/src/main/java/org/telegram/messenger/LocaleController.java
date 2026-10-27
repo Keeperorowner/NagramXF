@@ -68,6 +68,7 @@ import java.util.TimeZone;
 
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.shamsicalendar.PersianDate;
+import xyz.nextalone.nagram.NaConfig;
 import com.radolyn.ayugram.utils.LastSeenHelper;
 
 public class LocaleController {
@@ -3023,10 +3024,45 @@ public class LocaleController {
                 } else {
                     int savedLastSeen = LastSeenHelper.getLastSeen(user.id);
                     int effectiveLastSeen = Math.max(user.status.expires, savedLastSeen);
+                    if (NaConfig.INSTANCE.getRelativeLastSeen().Bool()) {
+                        String relative = formatRelativeLastSeen(effectiveLastSeen);
+                        if (relative != null) {
+                            return relative;
+                        }
+                    }
                     return formatDateOnline(effectiveLastSeen, madeShorter);
                 }
             }
         }
+    }
+
+    /**
+     * "5 minutes ago" style text for a saved last-seen timestamp; null when the timestamp is not
+     * usable so the caller falls back to the absolute date.
+     */
+    private static String formatRelativeLastSeen(int timestamp) {
+        final int now = ConnectionsManager.getInstance(UserConfig.selectedAccount).getCurrentTime();
+        if (timestamp <= 0 || now <= 0 || timestamp > now + 60) {
+            return null;
+        }
+        final int delta = now - timestamp;
+        final String unit;
+        if (delta < 60) {
+            unit = formatPluralString("Seconds", Math.max(1, delta));
+        } else if (delta < 3600) {
+            unit = formatPluralString("Minutes", delta / 60);
+        } else if (delta < 86400) {
+            unit = formatPluralString("Hours", delta / 3600);
+        } else if (delta < 604800) {
+            unit = formatPluralString("Days", delta / 86400);
+        } else if (delta < 2592000) {
+            unit = formatPluralString("Weeks", delta / 604800);
+        } else if (delta < 31536000) {
+            unit = formatPluralString("Months", delta / 2592000);
+        } else {
+            unit = formatPluralString("Years", delta / 31536000);
+        }
+        return formatString(R.string.AyuLastSeenAgo, unit);
     }
 
     private String escapeString(String str) {

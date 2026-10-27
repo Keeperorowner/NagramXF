@@ -93,6 +93,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
 
     private final AbstractConfigCell headerSpySettings = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AyuSpySettings)));
     private final AbstractConfigCell saveLastSeenRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveLocalLastSeen()));
+    private final AbstractConfigCell relativeLastSeenRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRelativeLastSeen(), null, getString(R.string.AyuRelativeLastSeen)));
     private final AbstractConfigCell saveReadDateRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveReadDate()));
     private final AbstractConfigCell enableSaveDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveDeletedMessages()));
     private final AbstractConfigCell enableSaveEditsHistoryRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveEditsHistory()));
