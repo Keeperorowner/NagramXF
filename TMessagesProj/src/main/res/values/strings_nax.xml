@@ -361,6 +361,8 @@
     <string name="DeviceAccount">Device</string>
     <string name="ApiKeyNotSet">API Key is not configured.</string>
     <string name="SaveLocalLastSeen">Save Last Seen Date</string>
+    <string name="AyuRelativeLastSeen">Relative Last Seen</string>
+    <string name="AyuLastSeenAgo">%1$s ago</string>
     <string name="CopyVideoFrame">Copy Frame</string>
     <string name="SetLocalName">Set Local Name</string>
     <string name="DeleteChatForBothSides">Use \"Also delete for\" by Default</string>
