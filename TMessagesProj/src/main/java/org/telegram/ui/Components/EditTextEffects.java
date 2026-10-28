@@ -28,6 +28,7 @@ import org.telegram.ui.Components.spoilers.SpoilersClickDetector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Stack;
 
 public class EditTextEffects extends EditText {
@@ -289,9 +290,16 @@ public class EditTextEffects extends EditText {
     }
 
     private static Boolean allowHackingTextCanvasCache;
+    /** ColorOS 17's editor can stop drawing through the proxy Canvas after a background transition. */
+    static boolean requiresNativeTextCanvas(int sdk, String manufacturer) {
+        if (sdk < 37 || manufacturer == null) return false;
+        String vendor = manufacturer.toLowerCase(Locale.ROOT);
+        return vendor.contains("oneplus") || vendor.contains("oppo") || vendor.contains("realme");
+    }
     public static boolean allowHackingTextCanvas() {
         if (allowHackingTextCanvasCache == null) {
-            allowHackingTextCanvasCache = Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH && (
+            allowHackingTextCanvasCache = Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH
+            && !requiresNativeTextCanvas(Build.VERSION.SDK_INT, Build.MANUFACTURER) && (
                 Build.MANUFACTURER == null ||
                 !Build.MANUFACTURER.toLowerCase().contains("honor") &&
                 !Build.MANUFACTURER.toLowerCase().contains("huawei") &&
