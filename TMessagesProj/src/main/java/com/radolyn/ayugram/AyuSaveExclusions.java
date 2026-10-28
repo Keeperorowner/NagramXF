@@ -1,6 +1,6 @@
 package com.radolyn.ayugram;
 
-import android.text.TextUtils;
+import android.content.SharedPreferences;
 
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
@@ -45,7 +45,8 @@ public final class AyuSaveExclusions {
     private static final String KEY_NEVER = "ayuSaveExclusionsNever";
     private static final String KEY_ALWAYS_FLAGS = "ayuSaveExclusionsAlwaysFlags";
     private static final String KEY_NEVER_FLAGS = "ayuSaveExclusionsNeverFlags";
-    private static final String KEY_MIGRATED = "ayuSaveExclusionsMigrated";
+    private static final String KEY_MIGRATED_UNSIGNED = "ayuSaveExclusionsMigrated";
+    private static final String KEY_MIGRATED = "ayuSaveExclusionsMigratedSigned";
     private static final String LEGACY_PREFIX = "saveDeletedExclusion_";
 
     private AyuSaveExclusions() {
@@ -64,8 +65,7 @@ public final class AyuSaveExclusions {
     /** Ids explicitly saved ({@code always}) or skipped ({@code always == false}). */
     public static Set<String> getIds(boolean always) {
         ensureMigrated();
-        Set<String> stored = NekoConfig.getPreferences().getStringSet(always ? KEY_ALWAYS : KEY_NEVER, null);
-        return stored == null ? new HashSet<>() : new HashSet<>(stored);
+        return getStoredIds(NekoConfig.getPreferences(), always ? KEY_ALWAYS : KEY_NEVER);
     }
 
     public static void setIds(boolean always, Set<String> ids) {
@@ -216,31 +216,48 @@ public final class AyuSaveExclusions {
     }
 
     /** Moves the old per-chat booleans into the excluded set once. */
-    private static void ensureMigrated() {
-        if (NekoConfig.getPreferences().getBoolean(KEY_MIGRATED, false)) {
+    private static synchronized void ensureMigrated() {
+        SharedPreferences preferences = NekoConfig.getPreferences();
+        if (preferences.getBoolean(KEY_MIGRATED, false)) {
             return;
         }
-        Set<String> never = new HashSet<>();
-        Set<String> stored = NekoConfig.getPreferences().getStringSet(KEY_NEVER, null);
-        if (stored != null) {
-            never.addAll(stored);
-        }
-        for (Map.Entry<String, ?> entry : NekoConfig.getPreferences().getAll().entrySet()) {
-            String key = entry.getKey();
-            if (key == null || !key.startsWith(LEGACY_PREFIX) || !(entry.getValue() instanceof Boolean)) {
-                continue;
-            }
-            if (!(Boolean) entry.getValue()) {
-                continue;
-            }
-            String id = key.substring(LEGACY_PREFIX.length());
-            if (!TextUtils.isEmpty(id)) {
-                never.add(id);
-            }
-        }
-        NekoConfig.getPreferences().edit()
+        Set<String> never = getStoredIds(preferences, KEY_NEVER);
+        addLegacyIds(preferences.getAll(), never, getStoredIds(preferences, KEY_ALWAYS), preferences.getBoolean(KEY_MIGRATED_UNSIGNED, false));
+        preferences.edit()
                 .putStringSet(KEY_NEVER, never)
                 .putBoolean(KEY_MIGRATED, true)
                 .apply();
+    }
+
+    private static Set<String> getStoredIds(SharedPreferences preferences, String key) {
+        Set<String> stored = preferences.getStringSet(key, null);
+        return stored == null ? new HashSet<>() : new HashSet<>(stored);
+    }
+
+    /**
+     * Legacy keys held Math.abs(dialogId), so one entry covers both the user and the chat. The first
+     * migration stored only the unsigned id: on repair one the user has since removed stays removed.
+     */
+    static void addLegacyIds(Map<String, ?> preferences, Set<String> never, Set<String> always, boolean repair) {
+        for (Map.Entry<String, ?> entry : preferences.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || !key.startsWith(LEGACY_PREFIX) || !Boolean.TRUE.equals(entry.getValue())) {
+                continue;
+            }
+            long id;
+            try {
+                id = Long.parseLong(key.substring(LEGACY_PREFIX.length()));
+            } catch (NumberFormatException e) {
+                continue;
+            }
+            if (repair && !never.contains(String.valueOf(id))) {
+                continue;
+            }
+            for (String dialogId : new String[]{String.valueOf(id), String.valueOf(-id)}) {
+                if (!always.contains(dialogId)) {
+                    never.add(dialogId);
+                }
+            }
+        }
     }
 }
