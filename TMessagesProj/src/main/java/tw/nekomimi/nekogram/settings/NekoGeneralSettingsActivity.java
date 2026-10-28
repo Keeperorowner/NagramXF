@@ -10,6 +10,8 @@ import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.View;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
@@ -142,8 +144,10 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
             getString(R.string.PushServiceTypeFCM),
             getString(R.string.PushServiceTypeUnified),
             getString(R.string.PushServiceTypeMicroG),
+            getString(R.string.PushServiceTypeUnifiedFcm),
     }, null));
     private final AbstractConfigCell pushServiceTypeUnifiedGatewayRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getPushServiceTypeUnifiedGateway(), UnifiedPushService.UP_GATEWAY_DEFAULT, null, (input) -> input.isEmpty() ? (String) NaConfig.INSTANCE.getPushServiceTypeUnifiedGateway().defaultValue : input));
+    private final AbstractConfigCell pushServiceTypeUnifiedFcmVapidKeyRow = cellGroup.appendCell(new ConfigCellTextInput(null, NaConfig.INSTANCE.getPushServiceTypeUnifiedFcmVapidKey(), UnifiedPushService.UP_FCM_VAPID_DEFAULT, null, (input) -> input.isEmpty() ? (String) NaConfig.INSTANCE.getPushServiceTypeUnifiedFcmVapidKey().defaultValue : input));
     private final AbstractConfigCell pushServiceTypeInAppDialogRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getPushServiceTypeInAppDialog()));
     private final AbstractConfigCell disableNotificationBubblesRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.disableNotificationBubbles));
     private final AbstractConfigCell dividerNotifications = cellGroup.appendCell(new ConfigCellDivider());
@@ -204,7 +208,7 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
             } else if (key.equals(NaConfig.INSTANCE.getPushServiceTypeInAppDialog().getKey())) {
                 ApplicationLoader.applicationContext.stopService(new Intent(ApplicationLoader.applicationContext, NotificationsService.class));
                 ApplicationLoader.startPushService();
-            } else if (key.equals(NaConfig.INSTANCE.getPushServiceTypeUnifiedGateway().getKey())) {
+            } else if (key.equals(NaConfig.INSTANCE.getPushServiceTypeUnifiedGateway().getKey()) || key.equals(NaConfig.INSTANCE.getPushServiceTypeUnifiedFcmVapidKey().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getDisableCrashlyticsCollection().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
@@ -237,7 +241,13 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
                     num
             );
         }
-        txt += "\n\n" + LocaleController.formatString(R.string.UnifiedPushCurrentEndpoint, SharedConfig.pushString);
+        // The Web Push token also carries its auth secret
+        String endpoint = SharedConfig.pushString;
+        try {
+            endpoint = new JSONObject(endpoint).optString("endpoint", endpoint);
+        } catch (JSONException ignored) {
+        }
+        txt += "\n\n" + LocaleController.formatString(R.string.UnifiedPushCurrentEndpoint, endpoint);
 
         showDialog(new AlertDialog.Builder(getParentActivity())
                 .setTitle(getString(R.string.PushServiceTypeUnified))
@@ -249,7 +259,7 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
     @Override
     protected boolean onItemLongClick(View view, int position, float x, float y) {
         AbstractConfigCell a = cellGroup.rows.get(position);
-        if (a == pushServiceTypeUnifiedGatewayRow) {
+        if (a == pushServiceTypeUnifiedGatewayRow || a == pushServiceTypeUnifiedFcmVapidKeyRow) {
             ItemOptions options = makeLongClickOptions(view);
             options.add(R.drawable.msg_stats, getString(R.string.Statistics), this::showUnifiedPushStatistics);
             addDefaultLongClickOptions(options, "general", position);
@@ -307,13 +317,17 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
 
     private void checkPushServiceTypeRows() {
         boolean useInApp = NaConfig.INSTANCE.getPushServiceType().Int() == 0;
-        boolean useUnified = NaConfig.INSTANCE.getPushServiceType().Int() == 2;
+        boolean useUnifiedFcm = NaConfig.INSTANCE.getPushServiceType().Int() == 4;
+        boolean useUnified = NaConfig.INSTANCE.getPushServiceType().Int() == 2 || useUnifiedFcm;
         if (listAdapter == null) {
             if (!useInApp) {
                 cellGroup.rows.remove(pushServiceTypeInAppDialogRow);
             }
             if (!useUnified) {
                 cellGroup.rows.remove(pushServiceTypeUnifiedGatewayRow);
+            }
+            if (!useUnifiedFcm) {
+                cellGroup.rows.remove(pushServiceTypeUnifiedFcmVapidKeyRow);
             }
             return;
         }
@@ -340,6 +354,19 @@ public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
             int rowIndex = cellGroup.rows.indexOf(pushServiceTypeUnifiedGatewayRow);
             if (rowIndex != -1) {
                 cellGroup.rows.remove(pushServiceTypeUnifiedGatewayRow);
+                listAdapter.notifyItemRemoved(rowIndex);
+            }
+        }
+        if (useUnifiedFcm) {
+            final int index = cellGroup.rows.indexOf(pushServiceTypeUnifiedGatewayRow);
+            if (!cellGroup.rows.contains(pushServiceTypeUnifiedFcmVapidKeyRow)) {
+                cellGroup.rows.add(index + 1, pushServiceTypeUnifiedFcmVapidKeyRow);
+                listAdapter.notifyItemInserted(index + 1);
+            }
+        } else {
+            int rowIndex = cellGroup.rows.indexOf(pushServiceTypeUnifiedFcmVapidKeyRow);
+            if (rowIndex != -1) {
+                cellGroup.rows.remove(pushServiceTypeUnifiedFcmVapidKeyRow);
                 listAdapter.notifyItemRemoved(rowIndex);
             }
         }
