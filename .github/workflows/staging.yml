@@ -22,7 +22,7 @@ permissions:
 jobs:
   build:
     name: Gradle Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
       CCACHE_HARDLINK: "true"
@@ -96,7 +96,7 @@ jobs:
 #  upload:
 #    name: Upload staging
 #    if: github.event.inputs.upload != 'y' && !contains(github.event.head_commit.message, '[skip upload]')
-#    runs-on: ubuntu-latest
+#    runs-on: ubuntu-24.04
 #    needs:
 #      - build
 #    steps:
