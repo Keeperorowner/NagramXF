@@ -137,11 +137,13 @@ public class AyuSaveExclusionsSheet extends BottomSheet {
         entries.clear();
         entries.add(new Entry(TYPE_INFO, 0, 0, getString(R.string.AyuSaveExclusionsPickInfo)));
         for (int flag : new int[]{
-                AyuSaveExclusions.FLAG_BOT_CHAT,
-                AyuSaveExclusions.FLAG_BOT_USER,
                 AyuSaveExclusions.FLAG_USER,
-                AyuSaveExclusions.FLAG_GROUPS,
-                AyuSaveExclusions.FLAG_CHANNELS,
+                AyuSaveExclusions.FLAG_BOT_USER,
+                AyuSaveExclusions.FLAG_BOT_CHAT,
+                AyuSaveExclusions.FLAG_PRIVATE_GROUP,
+                AyuSaveExclusions.FLAG_PUBLIC_GROUP,
+                AyuSaveExclusions.FLAG_PRIVATE_CHANNEL,
+                AyuSaveExclusions.FLAG_PUBLIC_CHANNEL,
                 AyuSaveExclusions.FLAG_SECRET}) {
             entries.add(new Entry(TYPE_CATEGORY, flag, 0, categoryTitle(flag)));
         }
@@ -163,16 +165,20 @@ public class AyuSaveExclusionsSheet extends BottomSheet {
 
     private CharSequence categoryTitle(int flag) {
         switch (flag) {
-            case AyuSaveExclusions.FLAG_BOT_CHAT:
-                return getString(R.string.AyuSaveExclusionsBotChats);
-            case AyuSaveExclusions.FLAG_BOT_USER:
-                return getString(R.string.AyuSaveExclusionsBotUsers);
             case AyuSaveExclusions.FLAG_USER:
                 return getString(R.string.AyuSaveExclusionsUsers);
-            case AyuSaveExclusions.FLAG_GROUPS:
-                return getString(R.string.AyuSaveExclusionsGroups);
-            case AyuSaveExclusions.FLAG_CHANNELS:
-                return getString(R.string.AyuSaveExclusionsChannels);
+            case AyuSaveExclusions.FLAG_BOT_USER:
+                return getString(R.string.AyuSaveExclusionsBotUsers);
+            case AyuSaveExclusions.FLAG_BOT_CHAT:
+                return getString(R.string.AyuSaveExclusionsBotsInGroups);
+            case AyuSaveExclusions.FLAG_PRIVATE_GROUP:
+                return getString(R.string.AyuSaveExclusionsPrivateGroups);
+            case AyuSaveExclusions.FLAG_PUBLIC_GROUP:
+                return getString(R.string.AyuSaveExclusionsPublicGroups);
+            case AyuSaveExclusions.FLAG_PRIVATE_CHANNEL:
+                return getString(R.string.AyuSaveExclusionsPrivateChannels);
+            case AyuSaveExclusions.FLAG_PUBLIC_CHANNEL:
+                return getString(R.string.AyuSaveExclusionsPublicChannels);
             default:
                 return getString(R.string.AyuSaveExclusionsSecret);
         }

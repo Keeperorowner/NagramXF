@@ -26,10 +26,15 @@
     <string name="AyuSaveExclusionsCategories">分类</string>
     <string name="AyuSaveExclusionsBotChats">机器人会话</string>
     <string name="AyuSaveExclusionsBotUsers">机器人账号</string>
-    <string name="AyuSaveExclusionsUsers">用户</string>
+    <string name="AyuSaveExclusionsUsers">私聊</string>
     <string name="AyuSaveExclusionsGroups">群组</string>
     <string name="AyuSaveExclusionsChannels">频道</string>
     <string name="AyuSaveExclusionsSecret">私密会话</string>
+    <string name="AyuSaveExclusionsBotsInGroups">群组中的机器人</string>
+    <string name="AyuSaveExclusionsPrivateGroups">私密群组</string>
+    <string name="AyuSaveExclusionsPublicGroups">公开群组</string>
+    <string name="AyuSaveExclusionsPrivateChannels">私密频道</string>
+    <string name="AyuSaveExclusionsPublicChannels">公开频道</string>
     <string name="AyuSaveExclusionsCount">列表中的会话</string>
     <string name="AyuSaveExclusionsCountValue">%1$d 个会话</string>
     <string name="AyuSaveExclusionsReset">重置列表</string>

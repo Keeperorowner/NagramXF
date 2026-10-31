@@ -25,10 +25,15 @@
     <string name="AyuSaveExclusionsCategories">カテゴリ</string>
     <string name="AyuSaveExclusionsBotChats">ボットチャット</string>
     <string name="AyuSaveExclusionsBotUsers">ボットユーザー</string>
-    <string name="AyuSaveExclusionsUsers">ユーザー</string>
+    <string name="AyuSaveExclusionsUsers">プライベートチャット</string>
     <string name="AyuSaveExclusionsGroups">グループ</string>
     <string name="AyuSaveExclusionsChannels">チャンネル</string>
     <string name="AyuSaveExclusionsSecret">秘密チャット</string>
+    <string name="AyuSaveExclusionsBotsInGroups">グループ内のボット</string>
+    <string name="AyuSaveExclusionsPrivateGroups">プライベートグループ</string>
+    <string name="AyuSaveExclusionsPublicGroups">公開グループ</string>
+    <string name="AyuSaveExclusionsPrivateChannels">プライベートチャンネル</string>
+    <string name="AyuSaveExclusionsPublicChannels">公開チャンネル</string>
     <string name="AyuSaveExclusionsCount">リスト内のチャット</string>
     <string name="AyuSaveExclusionsCountValue">%1$d 件のチャット</string>
     <string name="AyuSaveExclusionsReset">リストをリセット</string>

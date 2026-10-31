@@ -28,10 +28,15 @@
     <string name="AyuSaveExclusionsCategories">분류</string>
     <string name="AyuSaveExclusionsBotChats">봇 채팅</string>
     <string name="AyuSaveExclusionsBotUsers">봇 사용자</string>
-    <string name="AyuSaveExclusionsUsers">사용자</string>
+    <string name="AyuSaveExclusionsUsers">개인 채팅</string>
     <string name="AyuSaveExclusionsGroups">그룹</string>
     <string name="AyuSaveExclusionsChannels">채널</string>
     <string name="AyuSaveExclusionsSecret">비밀 채팅</string>
+    <string name="AyuSaveExclusionsBotsInGroups">그룹 내 봇</string>
+    <string name="AyuSaveExclusionsPrivateGroups">비공개 그룹</string>
+    <string name="AyuSaveExclusionsPublicGroups">공개 그룹</string>
+    <string name="AyuSaveExclusionsPrivateChannels">비공개 채널</string>
+    <string name="AyuSaveExclusionsPublicChannels">공개 채널</string>
     <string name="AyuSaveExclusionsCount">목록의 채팅</string>
     <string name="AyuSaveExclusionsCountValue">채팅 %1$d개</string>
     <string name="AyuSaveExclusionsReset">목록 초기화</string>
