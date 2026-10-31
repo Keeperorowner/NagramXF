@@ -25,6 +25,10 @@
     <string name="AyuSaveExclusionsNeverList">제외하는 채팅</string>
     <string name="AyuSaveExclusionsAddChats">채팅 추가</string>
     <string name="AyuSaveExclusionsPickInfo">분류 단위로도, 개별 채팅으로도 선택할 수 있습니다. 체크한 채팅이 이 목록에 들어갑니다.</string>
+    <string name="AyuGhostExclusions">예외</string>
+    <string name="AyuGhostExclusionsRead">읽음 예외</string>
+    <string name="AyuGhostExclusionsTyping">입력 예외</string>
+    <string name="AyuGhostExclusionsInfo">체크한 채팅은 Ghost Mode 전체 설정과 관계없이 이 종류의 알림을 보냅니다.</string>
     <string name="AyuSaveExclusionsCategories">분류</string>
     <string name="AyuSaveExclusionsBotChats">봇 채팅</string>
     <string name="AyuSaveExclusionsBotUsers">봇 사용자</string>

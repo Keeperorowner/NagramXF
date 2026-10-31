@@ -244,6 +244,7 @@
     <string name="TabStyleStroke">Контур індикатора вкладок</string>
     <!-- AyuGram feature-gap completion -->
     <string name="SuggestGhostModeBeforeViewingStory">Попереджати перед переглядом історій</string>
+    <string name="SuggestGhostModeBeforeViewingStoryDescription">Показує запит перед відкриттям історії з пропозицією увімкнути режим привида.</string>
     <string name="SuggestGhostModeBeforeStoryTitle">Режим привида</string>
     <string name="SuggestGhostModeBeforeStoryMessage">Перегляд цієї історії розкриє ваш онлайн-статус. Увімкнути режим привида?</string>
     <string name="SuggestGhostModeBeforeStoryEnable">Увімкнути</string>

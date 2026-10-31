@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.radolyn.ayugram.utils.AyuGhostUtils;
+import com.radolyn.ayugram.utils.AyuState;
 
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
@@ -197,19 +198,22 @@ public abstract class AyuGhostConfig {
     }
 
     public static void applyGhostModeSideEffects(int account, boolean enabled) {
-        if (account < 0) {
-            return;
-        }
+        // 全局模式（-1）也要生效：按当前选中账号处理，否则单账号下切换完全没有反应。
+        final int targetAccount = account >= 0 ? account : UserConfig.selectedAccount;
         if (enabled) {
-            if (isSendOfflinePacketAfterOnline(account) && !isSendOfflinePacketAfterOnlineLocked(account)) {
-                AyuWorker.setOnline(account, true);
+            if (isSendOfflinePacketAfterOnline(targetAccount) && !isSendOfflinePacketAfterOnlineLocked(targetAccount)) {
+                AyuWorker.setOnline(targetAccount, true);
             }
-            AyuGhostUtils.performStatusRequest(account, true);
+            AyuGhostUtils.performStatusRequest(targetAccount, true);
         } else {
-            AyuWorker.clearOnline(account);
-            AyuGhostUtils.performStatusRequest(account, false);
+            AyuWorker.clearOnline(targetAccount);
+            // 只有允许发送在线包时才切回在线，否则保持隐身。
+            if (isSendOnlinePackets(targetAccount)) {
+                AyuGhostUtils.performStatusRequest(targetAccount, false);
+            }
         }
-        NotificationCenter.getInstance(account)
+        AyuState.resetGhostMode();
+        NotificationCenter.getInstance(targetAccount)
                 .postNotificationName(NotificationCenter.mainUserInfoChanged);
     }
 

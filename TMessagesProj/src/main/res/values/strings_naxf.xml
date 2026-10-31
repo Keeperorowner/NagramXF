@@ -244,6 +244,7 @@
     <string name="TabStyleStroke">Tab Indicator Stroke</string>
     <!-- AyuGram feature-gap completion -->
     <string name="SuggestGhostModeBeforeViewingStory">Suggest ghost mode before viewing stories</string>
+    <string name="SuggestGhostModeBeforeViewingStoryDescription">Displays an alert before opening a story, suggesting you enable Ghost Mode.</string>
     <string name="SuggestGhostModeBeforeStoryTitle">Ghost mode</string>
     <string name="SuggestGhostModeBeforeStoryMessage">Viewing this story will reveal your online status. Enable ghost mode first?</string>
     <string name="SuggestGhostModeBeforeStoryEnable">Enable ghost mode</string>

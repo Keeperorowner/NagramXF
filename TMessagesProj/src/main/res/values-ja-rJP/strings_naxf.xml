@@ -324,6 +324,7 @@
     <string name="AyuStatsLastSeen">オンライン記録</string>
     <string name="AyuMomentsCustomHeader">カスタム</string>
     <string name="SuggestGhostModeBeforeViewingStory">ストーリーを見る前にゴーストモードを提案</string>
+    <string name="SuggestGhostModeBeforeViewingStoryDescription">ストーリーを開く前に、ゴーストモードを有効にするか確認します。</string>
     <string name="SuggestGhostModeBeforeStoryTitle">ゴーストモード</string>
     <string name="SuggestGhostModeBeforeStoryMessage">このストーリーを見ると、オンライン状態が相手に知られます。先にゴーストモードを有効にしますか？</string>
     <string name="SuggestGhostModeBeforeStoryEnable">ゴーストモードを有効にする</string>

@@ -49,6 +49,12 @@ public class AyuState {
         automaticallyScheduled.resetAfter = resetAfter;
     }
 
+    /** 切换幽灵模式后清掉一次性状态，避免残留"自动定时发送"。 */
+    public static void resetGhostMode() {
+        setAutomaticallyScheduled(false, -1);
+        setAllowReadPacket(false, -1);
+    }
+
     public static boolean getAutomaticallyScheduled() {
         return automaticallyScheduled.process();
     }

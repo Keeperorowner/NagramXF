@@ -26,6 +26,10 @@
     <string name="AyuSaveExclusionsNeverList">Виключені чати</string>
     <string name="AyuSaveExclusionsAddChats">Додати чати</string>
     <string name="AyuSaveExclusionsPickInfo">Можна вибрати цілі категорії або окремі чати. Позначені чати входять до цього списку.</string>
+    <string name="AyuGhostExclusions">Винятки</string>
+    <string name="AyuGhostExclusionsRead">Винятки прочитання</string>
+    <string name="AyuGhostExclusionsTyping">Винятки набору</string>
+    <string name="AyuGhostExclusionsInfo">Позначені чати ігнорують загальний перемикач Ghost Mode для цього типу повідомлень.</string>
     <string name="AyuSaveExclusionsCategories">Категорії</string>
     <string name="AyuSaveExclusionsBotChats">Чати з ботами</string>
     <string name="AyuSaveExclusionsBotUsers">Боти</string>
