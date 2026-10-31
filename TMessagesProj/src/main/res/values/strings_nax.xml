@@ -21,6 +21,11 @@
     <string name="AyuSaveExclusionsModeNever">Never save, except included</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">Always save</string>
     <string name="AyuSaveExclusionsModeNeverShort">Only selected</string>
+    <string name="AyuSaveExclusionsHeader">List</string>
+    <string name="AyuSaveExclusionsAlwaysList">Always saved chats</string>
+    <string name="AyuSaveExclusionsNeverList">Excluded chats</string>
+    <string name="AyuSaveExclusionsAddChats">Add chats</string>
+    <string name="AyuSaveExclusionsPickInfo">Pick whole categories or single chats. Checked chats belong to this list.</string>
     <string name="AyuSaveExclusionsCategories">Categories</string>
     <string name="AyuSaveExclusionsBotChats">Bot chats</string>
     <string name="AyuSaveExclusionsBotUsers">Bot users</string>

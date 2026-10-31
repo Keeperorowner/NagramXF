@@ -17,6 +17,11 @@
     <string name="AyuSaveExclusionsModeNever">僅儲存所選，其餘不儲存</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">全部儲存</string>
     <string name="AyuSaveExclusionsModeNeverShort">僅儲存所選</string>
+    <string name="AyuSaveExclusionsHeader">名單</string>
+    <string name="AyuSaveExclusionsAlwaysList">一律儲存的會話</string>
+    <string name="AyuSaveExclusionsNeverList">排除的會話</string>
+    <string name="AyuSaveExclusionsAddChats">新增會話</string>
+    <string name="AyuSaveExclusionsPickInfo">可以按分類選擇，也可以逐個勾選會話；勾選的會話屬於這個名單。</string>
     <string name="AyuSaveExclusionsCategories">分類</string>
     <string name="AyuSaveExclusionsBotChats">機器人會話</string>
     <string name="AyuSaveExclusionsBotUsers">機器人帳號</string>

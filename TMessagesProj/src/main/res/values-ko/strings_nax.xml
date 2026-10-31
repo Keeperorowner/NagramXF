@@ -20,6 +20,11 @@
     <string name="AyuSaveExclusionsModeNever">선택한 곳 외에는 저장 안 함</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">항상 저장</string>
     <string name="AyuSaveExclusionsModeNeverShort">선택만</string>
+    <string name="AyuSaveExclusionsHeader">목록</string>
+    <string name="AyuSaveExclusionsAlwaysList">항상 저장하는 채팅</string>
+    <string name="AyuSaveExclusionsNeverList">제외하는 채팅</string>
+    <string name="AyuSaveExclusionsAddChats">채팅 추가</string>
+    <string name="AyuSaveExclusionsPickInfo">분류 단위로도, 개별 채팅으로도 선택할 수 있습니다. 체크한 채팅이 이 목록에 들어갑니다.</string>
     <string name="AyuSaveExclusionsCategories">분류</string>
     <string name="AyuSaveExclusionsBotChats">봇 채팅</string>
     <string name="AyuSaveExclusionsBotUsers">봇 사용자</string>
