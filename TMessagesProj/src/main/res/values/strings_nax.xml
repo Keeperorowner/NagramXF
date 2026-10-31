@@ -377,6 +377,8 @@
     <string name="DeviceAccount">Device</string>
     <string name="ApiKeyNotSet">API Key is not configured.</string>
     <string name="SaveLocalLastSeen">Save Last Seen Date</string>
+    <string name="SpySaveLocalOnlineDescription">Saves the last online date for users with hidden online status based on their actions. You will be able to see very approximately when they were last online.</string>
+    <string name="SpySaveReadMarksDescription">Locally saves data about reading messages. This will be shown if Telegram does not provide a read date.</string>
     <string name="AyuRelativeLastSeen">Relative Last Seen</string>
     <string name="AyuLastSeenAgo">%1$s ago</string>
     <string name="CopyVideoFrame">Copy Frame</string>

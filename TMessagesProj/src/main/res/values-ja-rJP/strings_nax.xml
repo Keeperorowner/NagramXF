@@ -350,6 +350,8 @@
     <string name="DeviceAccount">デバイス</string>
     <string name="ApiKeyNotSet">API キーが設定されていません。</string>
     <string name="SaveLocalLastSeen">最終接続時間を保存</string>
+    <string name="SpySaveLocalOnlineDescription">オンライン状態を隠しているユーザーの最終オンライン日時を、行動から記録します。おおよその時刻しか分かりません。</string>
+    <string name="SpySaveReadMarksDescription">メッセージの既読情報を端末に保存します。Telegram が既読日時を提供しない場合に表示されます。</string>
     <string name="AyuRelativeLastSeen">相対的な最終オンライン</string>
     <string name="AyuLastSeenAgo">%1$s前</string>
     <string name="CopyVideoFrame">フレームをコピー</string>

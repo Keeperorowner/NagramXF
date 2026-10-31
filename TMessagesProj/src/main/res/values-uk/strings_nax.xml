@@ -377,6 +377,8 @@
     <string name="DeviceAccount">Пристрій</string>
     <string name="ApiKeyNotSet">API-ключ не налаштовано.</string>
     <string name="SaveLocalLastSeen">Зберігати локальний час останнього візиту</string>
+    <string name="SpySaveLocalOnlineDescription">Зберігає час останнього візиту користувачів зі прихованим статусом за їхніми діями. Точний час побачити не вдасться.</string>
+    <string name="SpySaveReadMarksDescription">Локально зберігає дані про прочитання повідомлень. Показується, якщо Telegram не передав час прочитання.</string>
     <string name="AyuRelativeLastSeen">Відносний «був(ла) у мережі»</string>
     <string name="AyuLastSeenAgo">%1$s тому</string>
     <string name="CopyVideoFrame">Копіювати кадр</string>

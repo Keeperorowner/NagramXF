@@ -352,6 +352,8 @@
     <string name="DeviceAccount">裝置</string>
     <string name="ApiKeyNotSet">尚未設定 API 金鑰。</string>
     <string name="SaveLocalLastSeen">儲存最後上線時間</string>
+    <string name="SpySaveLocalOnlineDescription">對隱藏上線狀態的使用者，依其行為記錄最後上線時間；只能非常粗略判斷對方何時上線。</string>
+    <string name="SpySaveReadMarksDescription">本地記錄訊息的閱讀時間；當 Telegram 不提供已讀時間時會顯示它。</string>
     <string name="AyuRelativeLastSeen">相對最後上線</string>
     <string name="AyuLastSeenAgo">%1$s前</string>
     <string name="CopyVideoFrame">複製影格</string>
