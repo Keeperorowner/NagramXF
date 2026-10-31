@@ -21,6 +21,10 @@
     <string name="AyuSaveExclusionsAlwaysList">常に保存するチャット</string>
     <string name="AyuSaveExclusionsNeverList">除外するチャット</string>
     <string name="AyuSaveExclusionsAddChats">チャットを追加</string>
+    <string name="AyuGhostExclusions">例外</string>
+    <string name="AyuGhostExclusionsRead">既読の例外</string>
+    <string name="AyuGhostExclusionsTyping">入力の例外</string>
+    <string name="AyuGhostExclusionsInfo">チェックしたチャットは Ghost Mode の全体設定を無視して、この種類の通知を送信します。</string>
     <string name="AyuSaveExclusionsCategories">カテゴリ</string>
     <string name="AyuSaveExclusionsBotChats">ボットチャット</string>
     <string name="AyuSaveExclusionsBotUsers">ボットユーザー</string>

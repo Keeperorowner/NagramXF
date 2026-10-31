@@ -297,6 +297,7 @@
 
     <!-- AyuGram feature-gap completion -->
     <string name="SuggestGhostModeBeforeViewingStory">Предупреждать перед просмотром историй</string>
+    <string name="SuggestGhostModeBeforeViewingStoryDescription">Показывает запрос перед открытием истории с предложением включить режим призрака.</string>
     <string name="SuggestGhostModeBeforeStoryTitle">Режим «Призрака»</string>
     <string name="SuggestGhostModeBeforeStoryMessage">Просмотр этой истории покажет ваш онлайн-статус. Включить режим «Призрака»?</string>
     <string name="SuggestGhostModeBeforeStoryEnable">Включить</string>

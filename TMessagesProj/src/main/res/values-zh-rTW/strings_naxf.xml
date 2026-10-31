@@ -310,6 +310,7 @@
     <string name="AIError503Info">服務超載，請稍後再試。</string>
     <string name="TabStyleStroke">分頁指示器描邊</string>
     <string name="SuggestGhostModeBeforeViewingStory">查看 Story 前提示開啟幽靈模式</string>
+    <string name="SuggestGhostModeBeforeViewingStoryDescription">開啟 Story 前先彈窗，提示開啟幽靈模式。</string>
     <string name="SuggestGhostModeBeforeStoryTitle">幽靈模式</string>
     <string name="SuggestGhostModeBeforeStoryMessage">查看此 Story 會暴露你的線上狀態。是否先開啟幽靈模式？</string>
     <string name="SuggestGhostModeBeforeStoryEnable">開啟幽靈模式</string>
