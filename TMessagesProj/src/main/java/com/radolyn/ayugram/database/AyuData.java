@@ -10,6 +10,7 @@
 package com.radolyn.ayugram.database;
 
 import androidx.room.Room;
+import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SimpleSQLiteQuery;
 import androidx.sqlite.db.SupportSQLiteDatabase;
@@ -250,12 +251,14 @@ public class AyuData {
         if (allowDestructiveMigrationOnDowngrade) {
             return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                     .allowMainThreadQueries()
+                    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                     .fallbackToDestructiveMigrationOnDowngrade()
                     .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35)
                     .build();
         }
         return Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, AyuConstants.AYU_DATABASE)
                 .allowMainThreadQueries()
+                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33, MIGRATION_33_34, MIGRATION_34_35)
                 .build();
     }
@@ -544,7 +547,13 @@ public class AyuData {
         return first == 0x50 && second == 0x4b && third == 0x03 && fourth == 0x04;
     }
 
+    /**
+     * 从 zip 备份里取出数据库主文件与日志文件。其他客户端可能给主库换名字，所以主库缺失时会退而取
+     * 最大的非 -wal / -shm 条目，再按本项目的库名落盘。
+     */
     private static void extractDatabaseBackup(InputStream inputStream, File targetDir, String databaseName) throws IOException {
+        File fallbackFile = null;
+        long fallbackSize = -1L;
         try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
             ZipEntry entry;
             while ((entry = zipInputStream.getNextEntry()) != null) {
@@ -554,9 +563,25 @@ public class AyuData {
                 }
 
                 String entryName = new File(entry.getName()).getName();
-                if (!databaseName.equals(entryName)
-                        && !(databaseName + "-wal").equals(entryName)
-                        && !(databaseName + "-shm").equals(entryName)) {
+                boolean known = databaseName.equals(entryName)
+                        || (databaseName + "-wal").equals(entryName)
+                        || (databaseName + "-shm").equals(entryName);
+                if (!known) {
+                    if (!entryName.endsWith("-wal") && !entryName.endsWith("-shm")) {
+                        File candidate = new File(targetDir, "import-candidate-" + entryName);
+                        copyStreamToFile(zipInputStream, candidate);
+                        if (candidate.length() > fallbackSize) {
+                            if (fallbackFile != null) {
+                                //noinspection ResultOfMethodCallIgnored
+                                fallbackFile.delete();
+                            }
+                            fallbackSize = candidate.length();
+                            fallbackFile = candidate;
+                        } else {
+                            //noinspection ResultOfMethodCallIgnored
+                            candidate.delete();
+                        }
+                    }
                     zipInputStream.closeEntry();
                     continue;
                 }
@@ -565,6 +590,15 @@ public class AyuData {
                 copyStreamToFile(zipInputStream, outFile);
                 zipInputStream.closeEntry();
             }
+        }
+        File dbFile = new File(targetDir, databaseName);
+        if (!dbFile.exists() && fallbackFile != null && fallbackFile.exists()) {
+            if (!fallbackFile.renameTo(dbFile)) {
+                throw new IOException("Unable to place the imported database file");
+            }
+        } else if (fallbackFile != null && fallbackFile.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            fallbackFile.delete();
         }
     }
 
