@@ -42,7 +42,6 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
 
     private final CellGroup cellGroup = new CellGroup(this);
 
-    private final AbstractConfigCell headerRow = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AyuSaveExclusions)));
     private final AbstractConfigCell infoRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell modeRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsMode", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
 
@@ -186,10 +185,6 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
         return (AyuSaveExclusions.getFlags(always) & flag) != 0;
     }
 
-    private String countText() {
-        return LocaleController.formatString(R.string.AyuSaveExclusionsCountValue,
-                AyuSaveExclusions.getIds(editingAlwaysList()).size());
-    }
 
     private class ListAdapter extends BaseListAdapter {
 
@@ -213,7 +208,7 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
                 cell.setTextAndValue(getString(R.string.AyuSaveExclusionsMode),
                         getString(AyuSaveExclusions.isWhitelist()
-                                ? R.string.AyuSaveExclusionsModeNever : R.string.AyuSaveExclusionsModeAlways), true);
+                                ? R.string.AyuSaveExclusionsModeNeverShort : R.string.AyuSaveExclusionsModeAlwaysShort), true);
             } else if (row == botChatsRow) {
                 ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsBotChats), isChecked(AyuSaveExclusions.FLAG_BOT_CHAT), true);
             } else if (row == botUsersRow) {
@@ -227,7 +222,7 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
             } else if (row == secretRow) {
                 ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsSecret), isChecked(AyuSaveExclusions.FLAG_SECRET), true);
             } else if (row == countRow) {
-                ((TextSettingsCell) holder.itemView).setTextAndValue(getString(R.string.AyuSaveExclusionsCount), countText(), true);
+                ((TextSettingsCell) holder.itemView).setTextAndValue(getString(R.string.AyuSaveExclusionsCount), String.valueOf(AyuSaveExclusions.getIds(editingAlwaysList()).size()), true);
             } else if (row == resetRow) {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
                 cell.setText(getString(R.string.AyuSaveExclusionsReset), false);

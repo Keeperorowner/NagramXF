@@ -19,6 +19,8 @@
     <string name="AyuSaveExclusionsMode">Mode</string>
     <string name="AyuSaveExclusionsModeAlways">Always save, except excluded</string>
     <string name="AyuSaveExclusionsModeNever">Never save, except included</string>
+    <string name="AyuSaveExclusionsModeAlwaysShort">Always save</string>
+    <string name="AyuSaveExclusionsModeNeverShort">Only selected</string>
     <string name="AyuSaveExclusionsCategories">Categories</string>
     <string name="AyuSaveExclusionsBotChats">Bot chats</string>
     <string name="AyuSaveExclusionsBotUsers">Bot users</string>
