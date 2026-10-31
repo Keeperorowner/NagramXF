@@ -21,6 +21,10 @@
     <string name="AyuSaveExclusionsAlwaysList">一律儲存的會話</string>
     <string name="AyuSaveExclusionsNeverList">排除的會話</string>
     <string name="AyuSaveExclusionsAddChats">新增會話</string>
+    <string name="AyuGhostExclusions">例外</string>
+    <string name="AyuGhostExclusionsRead">讀取例外</string>
+    <string name="AyuGhostExclusionsTyping">輸入例外</string>
+    <string name="AyuGhostExclusionsInfo">勾選的會話不受 Ghost Mode 全域開關影響，會照常傳送這類回執。</string>
     <string name="AyuSaveExclusionsCategories">分類</string>
     <string name="AyuSaveExclusionsBotChats">機器人會話</string>
     <string name="AyuSaveExclusionsBotUsers">機器人帳號</string>
