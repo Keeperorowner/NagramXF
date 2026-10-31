@@ -232,6 +232,7 @@
     <string name="AIError503Info">服务过载，请稍后重试。</string>
     <string name="TabStyleStroke">标签指示器描边</string>
     <string name="SuggestGhostModeBeforeViewingStory">查看 Story 前提示开启幽灵模式</string>
+    <string name="SuggestGhostModeBeforeViewingStoryDescription">打开 Story 前先弹窗，提示开启幽灵模式。</string>
     <string name="SuggestGhostModeBeforeStoryTitle">幽灵模式</string>
     <string name="SuggestGhostModeBeforeStoryMessage">查看此 Story 会暴露你的在线状态。是否先开启幽灵模式？</string>
     <string name="SuggestGhostModeBeforeStoryEnable">开启幽灵模式</string>

@@ -23,6 +23,10 @@
     <string name="AyuSaveExclusionsNeverList">排除的会话</string>
     <string name="AyuSaveExclusionsAddChats">添加会话</string>
     <string name="AyuSaveExclusionsPickInfo">可以按类别选择，也可以逐个勾选会话；勾选的会话属于这个名单。</string>
+    <string name="AyuGhostExclusions">例外</string>
+    <string name="AyuGhostExclusionsRead">读取例外</string>
+    <string name="AyuGhostExclusionsTyping">输入例外</string>
+    <string name="AyuGhostExclusionsInfo">勾选的会话不受 Ghost Mode 全局开关影响，会照常发送这类回执。</string>
     <string name="AyuSaveExclusionsCategories">分类</string>
     <string name="AyuSaveExclusionsBotChats">机器人会话</string>
     <string name="AyuSaveExclusionsBotUsers">机器人账号</string>
