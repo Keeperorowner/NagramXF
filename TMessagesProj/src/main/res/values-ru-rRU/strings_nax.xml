@@ -25,10 +25,15 @@
     <string name="AyuSaveExclusionsCategories">Категории</string>
     <string name="AyuSaveExclusionsBotChats">Чаты с ботами</string>
     <string name="AyuSaveExclusionsBotUsers">Боты</string>
-    <string name="AyuSaveExclusionsUsers">Пользователи</string>
+    <string name="AyuSaveExclusionsUsers">Личные чаты</string>
     <string name="AyuSaveExclusionsGroups">Группы</string>
     <string name="AyuSaveExclusionsChannels">Каналы</string>
     <string name="AyuSaveExclusionsSecret">Секретные чаты</string>
+    <string name="AyuSaveExclusionsBotsInGroups">Боты в группах</string>
+    <string name="AyuSaveExclusionsPrivateGroups">Частные группы</string>
+    <string name="AyuSaveExclusionsPublicGroups">Публичные группы</string>
+    <string name="AyuSaveExclusionsPrivateChannels">Частные каналы</string>
+    <string name="AyuSaveExclusionsPublicChannels">Публичные каналы</string>
     <string name="AyuSaveExclusionsCount">Чатов в списке</string>
     <string name="AyuSaveExclusionsCountValue">Чатов: %1$d</string>
     <string name="AyuSaveExclusionsReset">Сбросить список</string>

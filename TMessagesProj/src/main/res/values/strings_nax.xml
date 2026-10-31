@@ -29,10 +29,15 @@
     <string name="AyuSaveExclusionsCategories">Categories</string>
     <string name="AyuSaveExclusionsBotChats">Bot chats</string>
     <string name="AyuSaveExclusionsBotUsers">Bot users</string>
-    <string name="AyuSaveExclusionsUsers">Users</string>
+    <string name="AyuSaveExclusionsUsers">Private chats</string>
     <string name="AyuSaveExclusionsGroups">Groups</string>
     <string name="AyuSaveExclusionsChannels">Channels</string>
     <string name="AyuSaveExclusionsSecret">Secret chats</string>
+    <string name="AyuSaveExclusionsBotsInGroups">Bots in groups</string>
+    <string name="AyuSaveExclusionsPrivateGroups">Private groups</string>
+    <string name="AyuSaveExclusionsPublicGroups">Public groups</string>
+    <string name="AyuSaveExclusionsPrivateChannels">Private channels</string>
+    <string name="AyuSaveExclusionsPublicChannels">Public channels</string>
     <string name="AyuSaveExclusionsCount">Chats in list</string>
     <string name="AyuSaveExclusionsCountValue">%1$d chats</string>
     <string name="AyuSaveExclusionsReset">Reset list</string>

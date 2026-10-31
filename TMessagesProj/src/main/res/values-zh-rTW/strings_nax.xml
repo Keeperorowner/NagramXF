@@ -25,10 +25,15 @@
     <string name="AyuSaveExclusionsCategories">分類</string>
     <string name="AyuSaveExclusionsBotChats">機器人會話</string>
     <string name="AyuSaveExclusionsBotUsers">機器人帳號</string>
-    <string name="AyuSaveExclusionsUsers">使用者</string>
+    <string name="AyuSaveExclusionsUsers">私聊</string>
     <string name="AyuSaveExclusionsGroups">群組</string>
     <string name="AyuSaveExclusionsChannels">頻道</string>
     <string name="AyuSaveExclusionsSecret">私密會話</string>
+    <string name="AyuSaveExclusionsBotsInGroups">群組中的機器人</string>
+    <string name="AyuSaveExclusionsPrivateGroups">私密群組</string>
+    <string name="AyuSaveExclusionsPublicGroups">公開群組</string>
+    <string name="AyuSaveExclusionsPrivateChannels">私密頻道</string>
+    <string name="AyuSaveExclusionsPublicChannels">公開頻道</string>
     <string name="AyuSaveExclusionsCount">清單中的會話</string>
     <string name="AyuSaveExclusionsCountValue">%1$d 個會話</string>
     <string name="AyuSaveExclusionsReset">重設清單</string>

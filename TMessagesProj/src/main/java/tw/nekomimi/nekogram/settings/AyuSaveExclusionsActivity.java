@@ -156,20 +156,26 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
         final int flags = AyuSaveExclusions.getFlags(always);
         final Set<String> ids = AyuSaveExclusions.getIds(always);
         final List<String> categories = new ArrayList<>();
-        if ((flags & AyuSaveExclusions.FLAG_BOT_CHAT) != 0) {
-            categories.add(getString(R.string.AyuSaveExclusionsBotChats));
+        if ((flags & AyuSaveExclusions.FLAG_USER) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsUsers));
         }
         if ((flags & AyuSaveExclusions.FLAG_BOT_USER) != 0) {
             categories.add(getString(R.string.AyuSaveExclusionsBotUsers));
         }
-        if ((flags & AyuSaveExclusions.FLAG_USER) != 0) {
-            categories.add(getString(R.string.AyuSaveExclusionsUsers));
+        if ((flags & AyuSaveExclusions.FLAG_BOT_CHAT) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsBotsInGroups));
         }
-        if ((flags & AyuSaveExclusions.FLAG_GROUPS) != 0) {
-            categories.add(getString(R.string.AyuSaveExclusionsGroups));
+        if ((flags & AyuSaveExclusions.FLAG_PRIVATE_GROUP) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsPrivateGroups));
         }
-        if ((flags & AyuSaveExclusions.FLAG_CHANNELS) != 0) {
-            categories.add(getString(R.string.AyuSaveExclusionsChannels));
+        if ((flags & AyuSaveExclusions.FLAG_PUBLIC_GROUP) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsPublicGroups));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_PRIVATE_CHANNEL) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsPrivateChannels));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_PUBLIC_CHANNEL) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsPublicChannels));
         }
         if ((flags & AyuSaveExclusions.FLAG_SECRET) != 0) {
             categories.add(getString(R.string.AyuSaveExclusionsSecret));
