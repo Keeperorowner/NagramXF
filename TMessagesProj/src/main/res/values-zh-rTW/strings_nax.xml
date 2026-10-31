@@ -15,6 +15,8 @@
     <string name="AyuSaveExclusionsMode">模式</string>
     <string name="AyuSaveExclusionsModeAlways">全部儲存，僅排除所選</string>
     <string name="AyuSaveExclusionsModeNever">僅儲存所選，其餘不儲存</string>
+    <string name="AyuSaveExclusionsModeAlwaysShort">全部儲存</string>
+    <string name="AyuSaveExclusionsModeNeverShort">僅儲存所選</string>
     <string name="AyuSaveExclusionsCategories">分類</string>
     <string name="AyuSaveExclusionsBotChats">機器人會話</string>
     <string name="AyuSaveExclusionsBotUsers">機器人帳號</string>

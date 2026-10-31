@@ -24,6 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.radolyn.ayugram.AyuConstants;
+import com.radolyn.ayugram.AyuSaveExclusions;
 import com.radolyn.ayugram.database.AyuData;
 import com.radolyn.ayugram.database.AyuDatabaseMerger;
 import com.radolyn.ayugram.messages.AyuMessagesController;
@@ -97,7 +98,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell saveReadDateRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveReadDate()));
     private final AbstractConfigCell enableSaveDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveDeletedMessages()));
     private final AbstractConfigCell enableSaveEditsHistoryRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveEditsHistory()));
-    private final AbstractConfigCell saveExclusionsRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AyuSaveExclusions", null, R.drawable.msg_discuss, true, () -> presentFragment(new AyuSaveExclusionsActivity())));
+    private final AbstractConfigCell saveExclusionsRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusions", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true, R.string.AyuSaveExclusions));
     private final AbstractConfigCell saveDeletedMessageForBotsUserRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser()));
     private final AbstractConfigCell saveDeletedMessageInBotChatRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBot()));
     private final AbstractConfigCell dividerAttachmentsSection = cellGroup.appendCell(new ConfigCellDivider());
@@ -184,6 +185,10 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
 
     @Override
     protected void onCustomCellClick(View view, int position, float x, float y) {
+        if (position == cellGroup.rows.indexOf(saveExclusionsRow)) {
+            presentFragment(new AyuSaveExclusionsActivity());
+            return;
+        }
         if (position == cellGroup.rows.indexOf(saveAttachmentsRow)) {
             if (isSwitchTap(view, x)) {
                 NaConfig.INSTANCE.getMessageSavingSaveMedia().toggleConfigBool();
@@ -1060,6 +1065,9 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
             } else if (row == statsLastSeenRow) {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
                 cell.setTextAndValue(getString(R.string.AyuStatsLastSeen), formatStat(statsLastSeen), false);
+            } else if (row == saveExclusionsRow) {
+                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
+                cell.setTextAndValue(getString(R.string.AyuSaveExclusions), getString(AyuSaveExclusions.isWhitelist() ? R.string.AyuSaveExclusionsModeNeverShort : R.string.AyuSaveExclusionsModeAlwaysShort), true);
             }
         }
     }
