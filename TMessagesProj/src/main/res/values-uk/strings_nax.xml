@@ -19,6 +19,8 @@
     <string name="AyuSaveExclusionsMode">Режим</string>
     <string name="AyuSaveExclusionsModeAlways">Зберігати всюди, крім виключених</string>
     <string name="AyuSaveExclusionsModeNever">Зберігати лише у вибраних</string>
+    <string name="AyuSaveExclusionsModeAlwaysShort">Усюди</string>
+    <string name="AyuSaveExclusionsModeNeverShort">Лише вибрані</string>
     <string name="AyuSaveExclusionsCategories">Категорії</string>
     <string name="AyuSaveExclusionsBotChats">Чати з ботами</string>
     <string name="AyuSaveExclusionsBotUsers">Боти</string>

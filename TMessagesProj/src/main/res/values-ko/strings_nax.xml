@@ -18,6 +18,8 @@
     <string name="AyuSaveExclusionsMode">모드</string>
     <string name="AyuSaveExclusionsModeAlways">제외한 곳 외에는 모두 저장</string>
     <string name="AyuSaveExclusionsModeNever">선택한 곳 외에는 저장 안 함</string>
+    <string name="AyuSaveExclusionsModeAlwaysShort">항상 저장</string>
+    <string name="AyuSaveExclusionsModeNeverShort">선택만</string>
     <string name="AyuSaveExclusionsCategories">분류</string>
     <string name="AyuSaveExclusionsBotChats">봇 채팅</string>
     <string name="AyuSaveExclusionsBotUsers">봇 사용자</string>

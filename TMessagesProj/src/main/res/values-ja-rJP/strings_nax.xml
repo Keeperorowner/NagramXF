@@ -15,6 +15,8 @@
     <string name="AyuSaveExclusionsMode">モード</string>
     <string name="AyuSaveExclusionsModeAlways">除外した以外はすべて保存</string>
     <string name="AyuSaveExclusionsModeNever">選択した以外は保存しない</string>
+    <string name="AyuSaveExclusionsModeAlwaysShort">常に保存</string>
+    <string name="AyuSaveExclusionsModeNeverShort">選択のみ</string>
     <string name="AyuSaveExclusionsCategories">カテゴリ</string>
     <string name="AyuSaveExclusionsBotChats">ボットチャット</string>
     <string name="AyuSaveExclusionsBotUsers">ボットユーザー</string>

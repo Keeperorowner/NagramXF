@@ -26,3 +26,7 @@ __pycache__/
 
 # local build logs
 build_*.log
+
+# local apk snapshots and jvm crash dumps
+_apk-archive-*/
+hs_err_pid*.log

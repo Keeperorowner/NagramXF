@@ -16,6 +16,8 @@
     <string name="AyuSaveExclusionsMode">模式</string>
     <string name="AyuSaveExclusionsModeAlways">全部保存，仅排除所选</string>
     <string name="AyuSaveExclusionsModeNever">仅保存所选，其余不保存</string>
+    <string name="AyuSaveExclusionsModeAlwaysShort">全部保存</string>
+    <string name="AyuSaveExclusionsModeNeverShort">仅保存所选</string>
     <string name="AyuSaveExclusionsCategories">分类</string>
     <string name="AyuSaveExclusionsBotChats">机器人会话</string>
     <string name="AyuSaveExclusionsBotUsers">机器人账号</string>
