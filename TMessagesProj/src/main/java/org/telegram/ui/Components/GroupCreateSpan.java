@@ -258,6 +258,25 @@ public class GroupCreateSpan extends View {
         NotificationCenter.listenEmojiLoading(this);
     }
 
+    /**
+     * Builds a span for a chat kind: the title carries a category avatar instead of a peer photo, so
+     * callers can offer "whole category" choices next to real chats.
+     */
+    public static GroupCreateSpan createCategorySpan(Context context, CharSequence title, int avatarType, int colorKey, Theme.ResourcesProvider resourcesProvider) {
+        ContactsController.Contact contact = new ContactsController.Contact();
+        contact.contact_id = title == null ? 0 : title.toString().hashCode();
+        contact.first_name = title == null ? "" : title.toString();
+        GroupCreateSpan span = new GroupCreateSpan(context, null, contact, resourcesProvider);
+        if (avatarType != 0) {
+            span.avatarDrawable.setAvatarType(avatarType);
+        }
+        if (colorKey != 0) {
+            span.avatarDrawable.setColor(Theme.getColor(colorKey, resourcesProvider));
+        }
+        span.updateColors();
+        return span;
+    }
+
     public void updateColors() {
         int color = avatarDrawable.getColor();
         int back = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.05f);
