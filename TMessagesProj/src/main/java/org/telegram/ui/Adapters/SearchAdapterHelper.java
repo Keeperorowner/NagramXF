@@ -101,6 +101,11 @@ public class SearchAdapterHelper {
         allResultsAreGlobal = allAsGlobal;
     }
 
+    public SearchAdapterHelper(boolean allAsGlobal, int account) {
+        this(allAsGlobal);
+        currentAccount = account;
+    }
+
     public void setAllowGlobalResults(boolean value) {
         allowGlobalResults = value;
     }
