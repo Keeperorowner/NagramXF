@@ -357,6 +357,8 @@
     <string name="DeviceAccount">设备</string>
     <string name="ApiKeyNotSet">API 密钥未配置。</string>
     <string name="SaveLocalLastSeen">保存最后上线时间</string>
+    <string name="SpySaveLocalOnlineDescription">对隐藏在线状态的用户，根据其行为记录最后在线时间；只能非常粗略地判断对方何时在线。</string>
+    <string name="SpySaveReadMarksDescription">本地记录消息的阅读时间；当 Telegram 不提供已读时间时会显示它。</string>
     <string name="AyuRelativeLastSeen">相对最后在线</string>
     <string name="AyuLastSeenAgo">%1$s前</string>
     <string name="CopyVideoFrame">复制帧</string>
