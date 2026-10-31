@@ -12,15 +12,18 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.radolyn.ayugram.AyuSaveExclusions;
 
-import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.RadioCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Components.RecyclerListView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import tw.nekomimi.nekogram.config.CellGroup;
 import tw.nekomimi.nekogram.config.cell.AbstractConfigCell;
@@ -31,9 +34,9 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellHeader;
 /**
  * Rules that decide where deleted messages and edit history are kept.
  *
- * <p>The page switches between "save everywhere except the excluded chats" and "save only in the
- * included chats", exposes the chat categories that are saved or skipped by default, and shows how
- * many chats carry an explicit rule. Individual chats are marked from the chat's menu.
+ * <p>Two radio rows pick the mode: save everywhere except the listed chats, or save only in the
+ * listed chats. The list row summarises the current selection and opens a picker where whole chat
+ * categories and individual chats are chosen.
  */
 @SuppressLint("RtlHardcoded")
 public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
@@ -43,19 +46,12 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
     private final CellGroup cellGroup = new CellGroup(this);
 
     private final AbstractConfigCell infoRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsInfo", CellGroup.ITEM_TYPE_TEXT, false));
-    private final AbstractConfigCell modeRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsMode", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
-
-    private final AbstractConfigCell dividerCategories = cellGroup.appendCell(new ConfigCellDivider());
-    private final AbstractConfigCell headerCategories = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AyuSaveExclusionsCategories)));
-    private final AbstractConfigCell botChatsRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveBotChats", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
-    private final AbstractConfigCell botUsersRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveBotUsers", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
-    private final AbstractConfigCell usersRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveUsers", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
-    private final AbstractConfigCell groupsRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveGroups", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
-    private final AbstractConfigCell channelsRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveChannels", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
-    private final AbstractConfigCell secretRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveSecret", CellGroup.ITEM_TYPE_TEXT_CHECK, true));
+    private final AbstractConfigCell modeAllRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveModeAll", ConfigCellCustom.CUSTOM_ITEM_AyuSaveModeAll, true));
+    private final AbstractConfigCell modeSelectedRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveModeSelected", ConfigCellCustom.CUSTOM_ITEM_AyuSaveModeSelected, true));
 
     private final AbstractConfigCell dividerList = cellGroup.appendCell(new ConfigCellDivider());
-    private final AbstractConfigCell countRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsCount", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    private final AbstractConfigCell headerList = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AyuSaveExclusionsHeader)));
+    private final AbstractConfigCell listRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsList", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell resetRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusionsReset", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, false));
 
     public AyuSaveExclusionsActivity() {
@@ -103,32 +99,16 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
 
     @Override
     protected void onCustomCellClick(View view, int position, float x, float y) {
-        if (position == cellGroup.rows.indexOf(modeRow)) {
-            showModeDialog();
+        if (position == cellGroup.rows.indexOf(modeAllRow)) {
+            setWhitelist(false);
             return;
         }
-        if (position == cellGroup.rows.indexOf(botChatsRow)) {
-            toggleFlag(AyuSaveExclusions.FLAG_BOT_CHAT);
+        if (position == cellGroup.rows.indexOf(modeSelectedRow)) {
+            setWhitelist(true);
             return;
         }
-        if (position == cellGroup.rows.indexOf(botUsersRow)) {
-            toggleFlag(AyuSaveExclusions.FLAG_BOT_USER);
-            return;
-        }
-        if (position == cellGroup.rows.indexOf(usersRow)) {
-            toggleFlag(AyuSaveExclusions.FLAG_USER);
-            return;
-        }
-        if (position == cellGroup.rows.indexOf(groupsRow)) {
-            toggleFlag(AyuSaveExclusions.FLAG_GROUPS);
-            return;
-        }
-        if (position == cellGroup.rows.indexOf(channelsRow)) {
-            toggleFlag(AyuSaveExclusions.FLAG_CHANNELS);
-            return;
-        }
-        if (position == cellGroup.rows.indexOf(secretRow)) {
-            toggleFlag(AyuSaveExclusions.FLAG_SECRET);
+        if (position == cellGroup.rows.indexOf(listRow)) {
+            new AyuSaveExclusionsSheet(getParentActivity(), editingAlwaysList(), this::notifyChanged).show();
             return;
         }
         if (position == cellGroup.rows.indexOf(resetRow)) {
@@ -138,27 +118,17 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
         super.onCustomCellClick(view, position, x, y);
     }
 
-    /** True when the list that the switches edit is the "always save" one. */
+    /** The picker edits the included list in "only selected" mode, otherwise the excluded one. */
     private boolean editingAlwaysList() {
         return AyuSaveExclusions.isWhitelist();
     }
 
-    private void toggleFlag(int flag) {
-        boolean always = editingAlwaysList();
-        AyuSaveExclusions.setFlag(always, flag, (AyuSaveExclusions.getFlags(always) & flag) == 0);
+    private void setWhitelist(boolean whitelist) {
+        if (AyuSaveExclusions.isWhitelist() == whitelist) {
+            return;
+        }
+        AyuSaveExclusions.setWhitelist(whitelist);
         notifyChanged();
-    }
-
-    private void showModeDialog() {
-        String[] items = new String[]{
-                getString(R.string.AyuSaveExclusionsModeAlways),
-                getString(R.string.AyuSaveExclusionsModeNever)
-        };
-        showSingleChoiceDialog(getParentActivity(), getString(R.string.AyuSaveExclusions), items,
-                AyuSaveExclusions.isWhitelist() ? 1 : 0, getResourceProvider(), which -> {
-                    AyuSaveExclusions.setWhitelist(which == 1);
-                    notifyChanged();
-                });
     }
 
     private void showResetDialog() {
@@ -180,11 +150,41 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
         }
     }
 
-    private boolean isChecked(int flag) {
-        boolean always = editingAlwaysList();
-        return (AyuSaveExclusions.getFlags(always) & flag) != 0;
+    /** Short summary of the active list: categories first, then the number of picked chats. */
+    private CharSequence listValue() {
+        final boolean always = editingAlwaysList();
+        final int flags = AyuSaveExclusions.getFlags(always);
+        final Set<String> ids = AyuSaveExclusions.getIds(always);
+        final List<String> categories = new ArrayList<>();
+        if ((flags & AyuSaveExclusions.FLAG_BOT_CHAT) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsBotChats));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_BOT_USER) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsBotUsers));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_USER) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsUsers));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_GROUPS) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsGroups));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_CHANNELS) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsChannels));
+        }
+        if ((flags & AyuSaveExclusions.FLAG_SECRET) != 0) {
+            categories.add(getString(R.string.AyuSaveExclusionsSecret));
+        }
+        if (categories.isEmpty() && ids.isEmpty()) {
+            return getString(R.string.AyuSaveExclusionsAddChats);
+        }
+        if (categories.isEmpty()) {
+            return LocaleController.formatPluralString("Chats", ids.size());
+        }
+        if (categories.size() == 1 && ids.isEmpty()) {
+            return categories.get(0);
+        }
+        return categories.get(0) + " +" + (categories.size() - 1 + ids.size());
     }
-
 
     private class ListAdapter extends BaseListAdapter {
 
@@ -194,6 +194,10 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
 
         @Override
         protected View onCreateCustomViewHolder(@NonNull ViewGroup parent, int viewType) {
+            if (viewType == ConfigCellCustom.CUSTOM_ITEM_AyuSaveModeAll
+                    || viewType == ConfigCellCustom.CUSTOM_ITEM_AyuSaveModeSelected) {
+                return new RadioCell(mContext, resourceProvider);
+            }
             return null;
         }
 
@@ -201,28 +205,19 @@ public class AyuSaveExclusionsActivity extends BaseNekoXSettingsActivity {
         protected void onBindCustomViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             AbstractConfigCell row = cellGroup.rows.get(position);
             if (row == infoRow) {
-                TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                cell.setText(getString(AyuSaveExclusions.isWhitelist()
+                ((TextInfoPrivacyCell) holder.itemView).setText(getString(AyuSaveExclusions.isWhitelist()
                         ? R.string.AyuSaveExclusionsInfoNever : R.string.AyuSaveExclusionsInfoAlways));
-            } else if (row == modeRow) {
-                TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                cell.setTextAndValue(getString(R.string.AyuSaveExclusionsMode),
+            } else if (row == modeAllRow) {
+                ((RadioCell) holder.itemView).setText(getString(R.string.AyuSaveExclusionsModeAlways),
+                        !AyuSaveExclusions.isWhitelist(), true);
+            } else if (row == modeSelectedRow) {
+                ((RadioCell) holder.itemView).setText(getString(R.string.AyuSaveExclusionsModeNever),
+                        AyuSaveExclusions.isWhitelist(), true);
+            } else if (row == listRow) {
+                ((TextSettingsCell) holder.itemView).setTextAndValue(
                         getString(AyuSaveExclusions.isWhitelist()
-                                ? R.string.AyuSaveExclusionsModeNeverShort : R.string.AyuSaveExclusionsModeAlwaysShort), true);
-            } else if (row == botChatsRow) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsBotChats), isChecked(AyuSaveExclusions.FLAG_BOT_CHAT), true);
-            } else if (row == botUsersRow) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsBotUsers), isChecked(AyuSaveExclusions.FLAG_BOT_USER), true);
-            } else if (row == usersRow) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsUsers), isChecked(AyuSaveExclusions.FLAG_USER), true);
-            } else if (row == groupsRow) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsGroups), isChecked(AyuSaveExclusions.FLAG_GROUPS), true);
-            } else if (row == channelsRow) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsChannels), isChecked(AyuSaveExclusions.FLAG_CHANNELS), true);
-            } else if (row == secretRow) {
-                ((TextCheckCell) holder.itemView).setTextAndCheck(getString(R.string.AyuSaveExclusionsSecret), isChecked(AyuSaveExclusions.FLAG_SECRET), true);
-            } else if (row == countRow) {
-                ((TextSettingsCell) holder.itemView).setTextAndValue(getString(R.string.AyuSaveExclusionsCount), String.valueOf(AyuSaveExclusions.getIds(editingAlwaysList()).size()), true);
+                                ? R.string.AyuSaveExclusionsAlwaysList : R.string.AyuSaveExclusionsNeverList),
+                        listValue(), true);
             } else if (row == resetRow) {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
                 cell.setText(getString(R.string.AyuSaveExclusionsReset), false);

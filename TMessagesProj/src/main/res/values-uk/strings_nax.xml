@@ -21,6 +21,11 @@
     <string name="AyuSaveExclusionsModeNever">Зберігати лише у вибраних</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">Усюди</string>
     <string name="AyuSaveExclusionsModeNeverShort">Лише вибрані</string>
+    <string name="AyuSaveExclusionsHeader">Список</string>
+    <string name="AyuSaveExclusionsAlwaysList">Чати з постійним збереженням</string>
+    <string name="AyuSaveExclusionsNeverList">Виключені чати</string>
+    <string name="AyuSaveExclusionsAddChats">Додати чати</string>
+    <string name="AyuSaveExclusionsPickInfo">Можна вибрати цілі категорії або окремі чати. Позначені чати входять до цього списку.</string>
     <string name="AyuSaveExclusionsCategories">Категорії</string>
     <string name="AyuSaveExclusionsBotChats">Чати з ботами</string>
     <string name="AyuSaveExclusionsBotUsers">Боти</string>

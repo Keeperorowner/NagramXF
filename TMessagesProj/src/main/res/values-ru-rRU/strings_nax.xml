@@ -17,6 +17,11 @@
     <string name="AyuSaveExclusionsModeNever">Сохранять только в выбранных</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">Везде</string>
     <string name="AyuSaveExclusionsModeNeverShort">Только выбранные</string>
+    <string name="AyuSaveExclusionsHeader">Список</string>
+    <string name="AyuSaveExclusionsAlwaysList">Чаты с постоянным сохранением</string>
+    <string name="AyuSaveExclusionsNeverList">Исключённые чаты</string>
+    <string name="AyuSaveExclusionsAddChats">Добавить чаты</string>
+    <string name="AyuSaveExclusionsPickInfo">Можно выбрать целые категории или отдельные чаты. Отмеченные чаты входят в этот список.</string>
     <string name="AyuSaveExclusionsCategories">Категории</string>
     <string name="AyuSaveExclusionsBotChats">Чаты с ботами</string>
     <string name="AyuSaveExclusionsBotUsers">Боты</string>

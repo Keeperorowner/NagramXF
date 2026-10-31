@@ -17,6 +17,11 @@
     <string name="AyuSaveExclusionsModeNever">選択した以外は保存しない</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">常に保存</string>
     <string name="AyuSaveExclusionsModeNeverShort">選択のみ</string>
+    <string name="AyuSaveExclusionsHeader">リスト</string>
+    <string name="AyuSaveExclusionsAlwaysList">常に保存するチャット</string>
+    <string name="AyuSaveExclusionsNeverList">除外するチャット</string>
+    <string name="AyuSaveExclusionsAddChats">チャットを追加</string>
+    <string name="AyuSaveExclusionsPickInfo">カテゴリ単位でも個別でも選べます。チェックしたチャットがこのリストに入ります。</string>
     <string name="AyuSaveExclusionsCategories">カテゴリ</string>
     <string name="AyuSaveExclusionsBotChats">ボットチャット</string>
     <string name="AyuSaveExclusionsBotUsers">ボットユーザー</string>
