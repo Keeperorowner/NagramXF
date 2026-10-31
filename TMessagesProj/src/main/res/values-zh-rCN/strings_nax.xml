@@ -18,6 +18,11 @@
     <string name="AyuSaveExclusionsModeNever">仅保存所选，其余不保存</string>
     <string name="AyuSaveExclusionsModeAlwaysShort">全部保存</string>
     <string name="AyuSaveExclusionsModeNeverShort">仅保存所选</string>
+    <string name="AyuSaveExclusionsHeader">名单</string>
+    <string name="AyuSaveExclusionsAlwaysList">始终保存的会话</string>
+    <string name="AyuSaveExclusionsNeverList">排除的会话</string>
+    <string name="AyuSaveExclusionsAddChats">添加会话</string>
+    <string name="AyuSaveExclusionsPickInfo">可以按类别选择，也可以逐个勾选会话；勾选的会话属于这个名单。</string>
     <string name="AyuSaveExclusionsCategories">分类</string>
     <string name="AyuSaveExclusionsBotChats">机器人会话</string>
     <string name="AyuSaveExclusionsBotUsers">机器人账号</string>
