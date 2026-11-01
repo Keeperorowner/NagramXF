@@ -1557,6 +1557,9 @@ object NaConfig {
             ConfigItem.configTypeString,
             ""
         )
+    // 0: Chat Completions (legacy default), 1: Audio Transcriptions.
+    val transcribeProviderOpenAiApiType =
+        addConfig("TranscribeProviderOpenAiApiType", ConfigItem.configTypeInt, 0)
     val transcribeProviderOpenAiApiBase =
         addConfig(
             "TranscribeProviderOpenAiApiBase",

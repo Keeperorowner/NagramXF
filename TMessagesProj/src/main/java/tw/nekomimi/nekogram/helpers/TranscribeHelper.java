@@ -31,6 +31,7 @@ import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.RadioColorCell;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 
@@ -262,6 +263,25 @@ public class TranscribeHelper {
         var ll = new LinearLayout(context);
         ll.setOrientation(LinearLayout.VERTICAL);
 
+        final int[] apiType = {NaConfig.INSTANCE.getTranscribeProviderOpenAiApiType().Int() == 1 ? 1 : 0};
+        var apiChoices = new RadioColorCell[2];
+        String[] apiNames = {"Chat Completions", "Audio Transcriptions"};
+        for (int i = 0; i < apiChoices.length; i++) {
+            final int selected = i;
+            var cell = new RadioColorCell(context);
+            cell.setCheckColor(Theme.getColor(Theme.key_radioBackground, resourcesProvider),
+                    Theme.getColor(Theme.key_dialogRadioBackgroundChecked, resourcesProvider));
+            cell.setTextAndValue(apiNames[i], apiType[0] == i);
+            cell.setOnClickListener(v -> {
+                apiType[0] = selected;
+                for (int j = 0; j < apiChoices.length; j++) {
+                    apiChoices[j].setChecked(j == selected, true);
+                }
+            });
+            apiChoices[i] = cell;
+            ll.addView(cell);
+        }
+
         var editTextApiBase = createAndSetupEditText(
                 context,
                 resourcesProvider,
@@ -315,6 +335,7 @@ public class TranscribeHelper {
                 var apiKey = editTextApiKey.getText();
                 var prompt = editTextPrompt.getText();
 
+                NaConfig.INSTANCE.getTranscribeProviderOpenAiApiType().setConfigInt(apiType[0]);
                 NaConfig.INSTANCE.getTranscribeProviderOpenAiApiBase().setConfigString(apiBase == null ? "" : apiBase.toString());
                 NaConfig.INSTANCE.getTranscribeProviderOpenAiModel().setConfigString(model == null ? "" : model.toString());
                 NaConfig.INSTANCE.getTranscribeProviderOpenAiApiKey().setConfigString(apiKey == null ? "" : apiKey.toString());
@@ -552,14 +573,20 @@ public class TranscribeHelper {
         }
 
         final String finalPrompt = TextUtils.isEmpty(customPrompt) ? OPENAI_COMPATIBLE_DEFAULT_PROMPT : customPrompt;
-        final String endpointUrl = apiBaseUrl.trim().replaceAll("(/chat/completions)?/*$", "") + "/chat/completions";
+        final boolean transcriptions = NaConfig.INSTANCE.getTranscribeProviderOpenAiApiType().Int() == 1;
 
         executorService.submit(() -> {
             String audioPathToUse;
             String audioFormatForApi = "wav"; // mp3 or wav
 
+            File extractedAudio = null;
             try {
-                if (video) {
+                String endpointUrl = OpenAiTranscriptionApi.endpoint(apiBaseUrl, transcriptions);
+                if (video && transcriptions) {
+                    extractedAudio = File.createTempFile("transcribe-", ".m4a", new File(path).getParentFile());
+                    extractAudio(path, extractedAudio.getAbsolutePath());
+                    audioPathToUse = extractedAudio.getAbsolutePath();
+                } else if (video) {
                     var audioFile = new File(path + ".m4a");
                     try {
                         extractAudio(path, audioFile.getAbsolutePath());
@@ -574,6 +601,10 @@ public class TranscribeHelper {
                 File audioFile = new File(audioPathToUse);
                 if (!audioFile.exists()) {
                     throw new IOException("Audio file not found: " + audioPathToUse);
+                }
+                if (transcriptions) {
+                    requestAudioTranscription(audioFile, video, endpointUrl, model, apiKey, callback);
+                    return;
                 }
                 byte[] audioBytes = Files.readAllBytes(audioFile.toPath());
                 String base64Audio = Base64.encodeToString(audioBytes, Base64.NO_WRAP);
@@ -625,8 +656,32 @@ public class TranscribeHelper {
             } catch (Exception e) {
                 FileLog.e("OpenAI compatible transcription error", e);
                 callback.accept(null, e);
+            } finally {
+                if (extractedAudio != null && !extractedAudio.delete()) {
+                    extractedAudio.deleteOnExit();
+                }
             }
         });
+    }
+
+    private static void requestAudioTranscription(File audioFile, boolean video, String endpoint,
+                                                  String model, String apiKey,
+                                                  BiConsumer<String, Exception> callback) throws IOException {
+        Request request = new Request.Builder()
+                .url(endpoint)
+                .header("Authorization", "Bearer " + apiKey)
+                .post(OpenAiTranscriptionApi.body(audioFile, video, model))
+                .build();
+        try (Response response = getOkHttpClient().newCall(request).execute()) {
+            if (response.body() == null) {
+                throw new IOException("Audio Transcriptions API returned an empty body");
+            }
+            String body = response.body().string();
+            if (!response.isSuccessful()) {
+                throw new IOException("Audio Transcriptions API request failed: " + response.code() + "\n" + body);
+            }
+            callback.accept(OpenAiTranscriptionApi.text(body), null);
+        }
     }
 
     private static OpenAiChatRequest.Message getUserMessage(String base64Audio, String audioFormatForApi, String finalPrompt) {
