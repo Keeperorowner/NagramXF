@@ -265,7 +265,7 @@
     <string name="MainTabsForceOpenChatsDesc">When enabled, the search button always opens chat search. When disabled, it opens context search for the current screen (e.g., Settings or Contacts).</string>
     <string name="TranscribeProviderOpenAI">OpenAI-Compatible API</string>
     <string name="OpenAiApiCredentialsDialog">Configure OpenAI-compatible API. You can refer to this **documentation**.\n</string>
-    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
+    <string name="OpenAiApiBaseUrlHint">API URL (base, /chat/completions or /audio/transcriptions)</string>
     <string name="OpenAiCredentialsNotSet">API credentials are not configured.</string>
     <string name="ApiNotSupportedOnAndroidVersion">This API provider is not supported on your Android version (requires Android 8.0+).</string>
     <string name="AppIconTelegramOriginal">Classic</string>

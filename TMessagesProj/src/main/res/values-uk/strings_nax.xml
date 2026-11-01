@@ -265,7 +265,7 @@
     <string name="MainTabsForceOpenChatsDesc">Якщо увімкнено, кнопка пошуку завжди відкриває пошук по чатах. Якщо вимкнено — контекстний пошук для поточного розділу.</string>
     <string name="TranscribeProviderOpenAI">OpenAI-сумісний API</string>
     <string name="OpenAiApiCredentialsDialog">Налаштуйте OpenAI-сумісний API. Ви можете звернутися до офіційної **документації.**\n</string>
-    <string name="OpenAiApiBaseUrlHint">URL API ([…]/chat/completions)</string>
+    <string name="OpenAiApiBaseUrlHint">URL API (базовий, /chat/completions або /audio/transcriptions)</string>
     <string name="OpenAiCredentialsNotSet">Облікові дані API не налаштовано.</string>
     <string name="ApiNotSupportedOnAndroidVersion">Цей постачальник API не підтримується для вашої версії Android (потрібен Android 8.0+).</string>
     <string name="AppIconTelegramOriginal">Оригінал</string>
