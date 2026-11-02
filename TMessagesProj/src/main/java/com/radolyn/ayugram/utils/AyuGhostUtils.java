@@ -200,7 +200,7 @@ public class AyuGhostUtils {
             }
             if (block) {
                 FileLog.d("GhostMode: Blocking read status request and sending fake response.");
-                sendFakeReadResponse(onCompleteOrig);
+                sendFakeReadResponse(object, onCompleteOrig);
                 return InterceptResult.Blocked(onCompleteOrig);
             }
         }
@@ -355,10 +355,23 @@ public class AyuGhostUtils {
         return null;
     }
 
-    private static void sendFakeReadResponse(RequestDelegate onCompleteOrig) {
-        var fakeRes = new TLRPC.TL_messages_affectedMessages();
-        fakeRes.pts = -1;
-        fakeRes.pts_count = 0;
+    private static void sendFakeReadResponse(TLObject object, RequestDelegate onCompleteOrig) {
+        final TLObject fakeRes;
+        if (object instanceof TLRPC.TL_messages_getMessagesViews) {
+            // The view counter casts the response to messages.messageViews, so the fake reply has
+            // to match that type; empty vectors make the caller skip every message.
+            fakeRes = new TLRPC.TL_messages_messageViews();
+        } else if (object instanceof TLRPC.TL_channels_readMessageContents
+                || object instanceof TLRPC.TL_channels_readHistory
+                || object instanceof TLRPC.TL_messages_readEncryptedHistory
+                || object instanceof TLRPC.TL_messages_markDialogUnread) {
+            fakeRes = new TLRPC.TL_boolTrue();
+        } else {
+            var affected = new TLRPC.TL_messages_affectedMessages();
+            affected.pts = -1;
+            affected.pts_count = 0;
+            fakeRes = affected;
+        }
         Utilities.stageQueue.postRunnable(() -> {
             try {
                 if (onCompleteOrig != null) {
