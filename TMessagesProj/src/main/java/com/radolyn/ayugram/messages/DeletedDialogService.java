@@ -31,11 +31,13 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import xyz.nextalone.nagram.NaConfig;
@@ -78,6 +80,12 @@ public class DeletedDialogService {
         HashMap<Long, Integer> dates = dialogSortDates.get(account);
         Integer date = dates != null ? dates.get(dialogId) : null;
         return date != null ? date : 0;
+    }
+
+    /** 当前排序快照中带有已删除消息日期的会话 */
+    public Set<Long> getBumpedDialogIds(int account) {
+        HashMap<Long, Integer> dates = dialogSortDates.get(account);
+        return dates != null ? dates.keySet() : Collections.emptySet();
     }
 
     public int getLastTopicDeletedDate(int account, long dialogId, long topicId) {

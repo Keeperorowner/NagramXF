@@ -10300,6 +10300,15 @@ public class MessagesController extends BaseController implements NotificationCe
             if (dialogsCount > 0) {
                 TLRPC.Dialog dialog = allDialogs.get(dialogsCount - 1);
                 long minDate = DialogObject.getLastMessageOrDraftDate(dialog, mediaDataController.getDraft(dialog.id, 0));
+                // --- AyuGram: bumped dialogs sort above their real date, so the last dialog is not necessarily the oldest loaded one
+                if (DeletedDialogService.isBumpDialogsEnabled()) {
+                    for (long bumpedId : AyuMessagesController.getInstance().getDeletedDialogService().getBumpedDialogIds(currentAccount)) {
+                        TLRPC.Dialog bumped = dialogs_dict.get(bumpedId);
+                        if (bumped != null && !bumped.pinned) {
+                            minDate = Math.min(minDate, DialogObject.getLastMessageOrDraftDate(bumped, mediaDataController.getDraft(bumped.id, 0)));
+                        }
+                    }
+                }
                 if (draftMessage.date < minDate) {
                     return;
                 }

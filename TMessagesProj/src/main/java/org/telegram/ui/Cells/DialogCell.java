@@ -3355,8 +3355,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         }
                         if (com.radolyn.ayugram.messages.DeletedDialogService.isBumpDialogsEnabled()) {
                             MessageObject bumpPreview = com.radolyn.ayugram.messages.AyuMessagesController.getInstance().getDeletedDialogService().getLastBumpMessage(currentAccount, dialog.id);
-                            if (bumpPreview != null && (message == null || bumpPreview.messageOwner.date > message.messageOwner.date)
-                                    && !AyuFilter.shouldHideFilteredMessage(bumpPreview, null)) {
+                            if (bumpPreview != null && (message == null || bumpPreview.messageOwner.date > message.messageOwner.date
+                                    || bumpPreview.messageOwner.date == message.messageOwner.date && com.radolyn.ayugram.utils.AyuMessageUtils.isNewerMessage(bumpPreview, message))
+                                    && !AyuFilter.shouldHideFilteredMessage(bumpPreview, null)
+                                    && !(AyuFilter.shouldHideIgnoredBlockedMessages() && ChatObject.isMegagroup(MessagesController.getInstance(currentAccount).getChat(-dialog.id))
+                                            && AyuFilter.isIgnoredBlockedMessage(bumpPreview))) {
                                 // the dialog is sorted by this deleted message, so preview it as well
                                 message = bumpPreview;
                                 groupMessages = null;

@@ -184,6 +184,10 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
                 checkSaveBotMsgRows();
             } else if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())
                     || key.equals(NaConfig.INSTANCE.getBumpDialogsWithDeletedMessages().getKey())) {
+                if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())
+                        && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+                    reloadDeletedMessages();
+                }
                 resortDialogs();
             }
             if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())
@@ -999,6 +1003,16 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
             }
         }
         addRowsToMap(cellGroup);
+    }
+
+    /** The cache is not loaded at startup while saving is off, so load it now; the load resorts dialogs when done. */
+    private void reloadDeletedMessages() {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                final int account = a;
+                Utilities.globalQueue.postRunnable(() -> AyuMessagesController.getInstance().getDeletedDialogService().reloadLastMessages(account));
+            }
+        }
     }
 
     private void resortDialogs() {
