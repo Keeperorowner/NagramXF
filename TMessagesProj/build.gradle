@@ -620,7 +620,8 @@ dependencies {
     // add for emoji
     implementation 'com.jaredrummler:truetypeparser-light:1.0.0'
     // add for UnifiedPush
-    implementation 'org.unifiedpush.android:connector:3.3.2'
+    implementation 'org.unifiedpush.android:connector:3.3.5'
+    implementation 'org.unifiedpush.android:embedded-fcm-distributor:3.1.0'
     // add for save deleted messages
     implementation 'androidx.room:room-runtime:2.8.4'
     annotationProcessor 'androidx.room:room-compiler:2.8.4'
