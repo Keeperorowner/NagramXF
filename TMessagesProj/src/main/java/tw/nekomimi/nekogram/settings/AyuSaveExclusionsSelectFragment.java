@@ -165,6 +165,7 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment {
         listView.setVerticalScrollBarEnabled(false);
         listView.setPadding(0, 0, 0, AndroidUtilities.dp(72));
         listView.setClipToPadding(false);
+        listView.setOnItemClickListener((view, position) -> onItemClicked(position));
         content.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
 
         FragmentFloatingButton doneButton = new FragmentFloatingButton(context, resourceProvider);
@@ -185,6 +186,20 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment {
         ArrayList<TLRPC.Dialog> folderDialogs = MessagesController.getInstance(currentAccount).getDialogs(0);
         if (folderDialogs != null) {
             dialogs.addAll(folderDialogs);
+        }
+    }
+
+    /** Route every row tap through the RecyclerListView item-click path, like the rest of the app. */
+    private void onItemClicked(int position) {
+        if (position < 0 || position >= items.size()) {
+            return;
+        }
+        Item item = items.get(position);
+        if (item.type == TYPE_CATEGORY) {
+            flags |= item.flag;
+            rebuild();
+        } else if (item.type == TYPE_CHAT) {
+            toggleChat(item.dialogId);
         }
     }
 
@@ -212,6 +227,15 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment {
             return true;
         }
         return super.onBackPressed(invoked);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Peers referenced by the dialog list may still be loading from storage on a cold start;
+        // reload once on resume so chats that had no title when the page opened appear.
+        loadDialogs();
+        rebuild();
     }
 
     private void rebuild() {
@@ -360,7 +384,9 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment {
             } else if (viewType == TYPE_CATEGORY) {
                 view = new TextSettingsCell(mContext, resourceProvider);
             } else {
-                view = new TextCheckCell(mContext, resourceProvider);
+                TextCheckCell cell = new TextCheckCell(mContext, resourceProvider);
+                cell.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourceProvider), Theme.RIPPLE_MASK_ROUNDRECT_6DP, AndroidUtilities.dp(6)));
+                view = cell;
             }
             return new RecyclerListView.Holder(view);
         }
@@ -374,14 +400,9 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment {
                 TextSettingsCell cell = (TextSettingsCell) holder.itemView;
                 cell.setText(item.title, true);
                 cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourceProvider));
-                cell.setOnClickListener(v -> {
-                    flags |= item.flag;
-                    rebuild();
-                });
             } else {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;
                 cell.setTextAndCheck(item.title, ids.contains(String.valueOf(item.dialogId)), true);
-                cell.setOnClickListener(v -> toggleChat(item.dialogId));
             }
         }
 
