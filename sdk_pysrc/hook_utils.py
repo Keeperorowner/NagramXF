@@ -13,12 +13,12 @@ from android_utils import log
 
 
 def find_class(class_name):
-    """Return a Java ``Class`` for *class_name*, or ``None`` if not found.
+    """Return the Java class named *class_name*, or ``None`` if it is missing.
 
-    Chaquopy's ``jclass`` returns a Python *type* (JavaClass) which only exposes
-    the class's own members, not ``java.lang.Class`` instance methods such as
-    ``getDeclaredMethod``.  Call ``getClass()`` so callers receive the actual
-    ``java.lang.Class`` object.
+    The result is the class object itself, so it can be used as a
+    ``dynamic_proxy`` base and reached for static members. ``java.lang.Class``
+    methods (``getDeclaredField`` and friends) are available through
+    ``getClass()``.
     """
     if not class_name:
         return None
@@ -29,13 +29,29 @@ def find_class(class_name):
         elapsed = (time.perf_counter() - start) * 1000.0
         if elapsed > 50.0:
             log("find_class(%s) took %.1fms" % (class_name, elapsed))
-        return cls.getClass()
+        return cls
+    except Exception:
+        return None
+
+
+def _as_class_object(clazz):
+    """Return a ``java.lang.Class`` for a class object or a Class instance."""
+    if clazz is None:
+        return None
+    try:
+        if hasattr(clazz, "getDeclaredField"):
+            return clazz
+    except Exception:
+        pass
+    try:
+        return clazz.getClass()
     except Exception:
         return None
 
 
 def _find_field(clazz, field_name):
     """Walk the class hierarchy looking for a declared field."""
+    clazz = _as_class_object(clazz)
     if clazz is None or not field_name:
         return None
     current = clazz
