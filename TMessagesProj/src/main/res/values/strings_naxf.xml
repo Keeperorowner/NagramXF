@@ -311,4 +311,6 @@
     <string name="AIReplaceTelegramEditorInfo">Translate, restyle and proofread drafts with your AI service</string>
     <string name="AIReplaceTelegramSummariesInfo">Summarize long messages and posts with your AI service</string>
     <string name="AIChatHistoryEmpty">No saved messages yet</string>
+    <string name="BumpDialogsWithDeletedMessages">Bump Chats With Deleted Messages</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">Sort the chat list by saved deleted messages as if they were never deleted, and show them in the chat preview</string>
 </resources>

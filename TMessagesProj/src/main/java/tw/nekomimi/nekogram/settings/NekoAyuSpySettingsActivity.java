@@ -36,6 +36,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -99,6 +100,7 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell saveReadDateRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveReadDate()));
     private final AbstractConfigCell saveReadDateInfoRow = cellGroup.appendCell(new ConfigCellCustom("SaveReadDateInfo", CellGroup.ITEM_TYPE_TEXT, false));
     private final AbstractConfigCell enableSaveDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveDeletedMessages()));
+    private final AbstractConfigCell bumpDialogsWithDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getBumpDialogsWithDeletedMessages(), getString(R.string.BumpDialogsWithDeletedMessagesDesc)));
     private final AbstractConfigCell enableSaveEditsHistoryRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveEditsHistory()));
     private final AbstractConfigCell saveExclusionsRow = cellGroup.appendCell(new ConfigCellCustom("AyuSaveExclusions", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true, R.string.AyuSaveExclusions));
     private final AbstractConfigCell saveDeletedMessageForBotsUserRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser()));
@@ -180,6 +182,13 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
             if (key.equals(NaConfig.INSTANCE.getSaveDeletedMessageForBotUser().getKey())) {
                 checkSaveBotMsgRows();
+            } else if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())
+                    || key.equals(NaConfig.INSTANCE.getBumpDialogsWithDeletedMessages().getKey())) {
+                if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())
+                        && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) {
+                    reloadDeletedMessages();
+                }
+                resortDialogs();
             }
             if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())
                     || key.equals(NaConfig.INSTANCE.getEnableSaveEditsHistory().getKey())) {
@@ -994,6 +1003,24 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
             }
         }
         addRowsToMap(cellGroup);
+    }
+
+    /** The cache is not loaded at startup while saving is off, so load it now; the load resorts dialogs when done. */
+    private void reloadDeletedMessages() {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                final int account = a;
+                Utilities.globalQueue.postRunnable(() -> AyuMessagesController.getInstance().getDeletedDialogService().reloadLastMessages(account));
+            }
+        }
+    }
+
+    private void resortDialogs() {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                AyuMessagesController.getInstance().getDeletedDialogService().resortDialogs(a, true);
+            }
+        }
     }
 
     private void checkSaveBotMsgRows() {

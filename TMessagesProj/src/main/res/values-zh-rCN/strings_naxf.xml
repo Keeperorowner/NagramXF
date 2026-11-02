@@ -295,4 +295,6 @@
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服务翻译、改写和校对草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服务生成长消息和帖子的摘要</string>
     <string name="AIChatHistoryEmpty">还没有保存的对话</string>
+    <string name="BumpDialogsWithDeletedMessages">按已删除消息排序会话</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">将已保存的已删除消息视为未被删除，参与会话列表排序并显示在会话预览中</string>
 </resources>

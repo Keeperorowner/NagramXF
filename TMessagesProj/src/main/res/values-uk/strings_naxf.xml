@@ -311,4 +311,6 @@
     <string name="AIReplaceTelegramEditorInfo">Переклад, переписування та вичитування чернеток через ваш AI-сервіс</string>
     <string name="AIReplaceTelegramSummariesInfo">Стислий виклад довгих повідомлень і постів через ваш AI-сервіс</string>
     <string name="AIChatHistoryEmpty">Збережених повідомлень ще немає</string>
+    <string name="BumpDialogsWithDeletedMessages">Піднімати чати з видаленими повідомленнями</string>
+    <string name="BumpDialogsWithDeletedMessagesDesc">Сортувати список чатів за збереженими видаленими повідомленнями, ніби їх не видаляли, і показувати їх у превʼю чату</string>
 </resources>
