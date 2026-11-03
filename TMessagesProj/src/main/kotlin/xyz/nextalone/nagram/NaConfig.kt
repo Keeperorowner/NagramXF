@@ -161,6 +161,36 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val sendMenuWithoutSound =
+        addConfig(
+            "SendMenuWithoutSound",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val sendMenuWhenOnline =
+        addConfig(
+            "SendMenuWhenOnline",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val sendMenuSchedule =
+        addConfig(
+            "SendMenuSchedule",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val sendMenuTranslate =
+        addConfig(
+            "SendMenuTranslate",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val sendMenuLinkPreview =
+        addConfig(
+            "SendMenuLinkPreview",
+            ConfigItem.configTypeBool,
+            true
+        )
     val doubleTapAction =
         addConfig(
             "DoubleTapAction",

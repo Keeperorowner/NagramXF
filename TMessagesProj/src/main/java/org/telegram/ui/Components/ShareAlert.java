@@ -141,6 +141,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import tw.nekomimi.nekogram.NekoConfig;
+import tw.nekomimi.nekogram.helpers.ForwardCaptionRules;
 import com.radolyn.ayugram.controllers.AyuGhostController;
 import xyz.nextalone.nagram.NaConfig;
 
@@ -2281,11 +2282,19 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     }
 
     private boolean showSendersName = true;
+    /** Coupled Hide Caption / Sender Name choice; rebuilt fresh on every menu open. */
+    private ForwardCaptionRules.State hideState = new ForwardCaptionRules.State();
+    private int scheduleDate;
+    private int scheduleRepeatPeriod;
     private ActionBarPopupWindow sendPopupWindow;
     private boolean onSendLongClick(View view) {
         if (parentActivity == null) {
             return false;
         }
+        // Reset the name/caption choice on every menu open (matches the stock
+        // sender-name reset; Hide Caption must return to "shown" per sheet).
+        hideState = new ForwardCaptionRules.State();
+        showSendersName = true;
         LinearLayout layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
         if (sendingMessageObjects != null) {
@@ -2323,23 +2332,62 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
             sendPopupLayout1.addView(showSendersNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
             showSendersNameView.setTextAndIcon(false ? LocaleController.getString(R.string.ShowSenderNames) : LocaleController.getString(R.string.ShowSendersName), 0);
-            showSendersNameView.setChecked(showSendersName = true);
+            showSendersNameView.setChecked(!hideState.hideName);
 
-            ActionBarMenuSubItem hideSendersNameView = new ActionBarMenuSubItem(getContext(), true, false, true, resourcesProvider);
+            boolean hasCaption = false;
+            for (int i = 0; i < sendingMessageObjects.size(); i++) {
+                MessageObject forwarded = sendingMessageObjects.get(i);
+                if (forwarded != null && !TextUtils.isEmpty(forwarded.caption)) {
+                    hasCaption = true;
+                    break;
+                }
+            }
+
+            // When the Hide Caption row follows, it closes this card, so
+            // "Hide Sender Name" loses its rounded bottom corner.
+            ActionBarMenuSubItem hideSendersNameView = new ActionBarMenuSubItem(getContext(), true, false, !hasCaption, resourcesProvider);
             if (darkTheme) {
                 hideSendersNameView.setTextColor(getThemedColor(Theme.key_voipgroup_nameText));
             }
             sendPopupLayout1.addView(hideSendersNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
             hideSendersNameView.setTextAndIcon(false ? LocaleController.getString(R.string.HideSenderNames) : LocaleController.getString(R.string.HideSendersName), 0);
-            hideSendersNameView.setChecked(!showSendersName);
+            hideSendersNameView.setChecked(hideState.hideName);
+
+            final ActionBarMenuSubItem hideCaptionView;
+            if (hasCaption) {
+                hideCaptionView = new ActionBarMenuSubItem(getContext(), true, false, true, resourcesProvider);
+                if (darkTheme) {
+                    hideCaptionView.setTextColor(getThemedColor(Theme.key_voipgroup_nameText));
+                }
+                sendPopupLayout1.addView(hideCaptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+                hideCaptionView.setTextAndIcon(LocaleController.getString(R.string.HideCaption), 0);
+                hideCaptionView.setChecked(hideState.hideCaption);
+            } else {
+                hideCaptionView = null;
+            }
+
+            final Runnable applyHideState = () -> {
+                showSendersName = !hideState.hideName;
+                showSendersNameView.setChecked(!hideState.hideName);
+                hideSendersNameView.setChecked(hideState.hideName);
+                if (hideCaptionView != null) {
+                    hideCaptionView.setChecked(hideState.hideCaption);
+                }
+            };
             showSendersNameView.setOnClickListener(e -> {
-                showSendersNameView.setChecked(showSendersName = true);
-                hideSendersNameView.setChecked(!showSendersName);
+                ForwardCaptionRules.chooseHideName(hideState, false);
+                applyHideState.run();
             });
             hideSendersNameView.setOnClickListener(e -> {
-                showSendersNameView.setChecked(showSendersName = false);
-                hideSendersNameView.setChecked(!showSendersName);
+                ForwardCaptionRules.chooseHideName(hideState, true);
+                applyHideState.run();
             });
+            if (hideCaptionView != null) {
+                hideCaptionView.setOnClickListener(e -> {
+                    ForwardCaptionRules.toggleHideCaption(hideState);
+                    applyHideState.run();
+                });
+            }
             sendPopupLayout1.setupRadialSelectors(getThemedColor(Theme.key_dialogButtonSelector));
 
             layout.addView(sendPopupLayout1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, -8));
@@ -2388,6 +2436,50 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
             sendInternal(sendWithoutSoundNax);
         });
+        if (storyItem == null) {
+            boolean onlyMyself = !selectedDialogs.isEmpty();
+            boolean canSchedule = true;
+            for (int i = 0; i < selectedDialogs.size(); ++i) {
+                final long did = selectedDialogs.keyAt(i);
+                if (onlyMyself && did != UserConfig.getInstance(currentAccount).clientUserId) {
+                    onlyMyself = false;
+                }
+                if (DialogObject.isEncryptedDialog(did)) {
+                    canSchedule = false;
+                }
+                TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-did);
+                if (chat != null && !ChatObject.canWriteToChat(chat)) {
+                    canSchedule = false;
+                }
+            }
+            if (canSchedule) {
+                final boolean setReminder = onlyMyself;
+                ActionBarMenuSubItem scheduleView = new ActionBarMenuSubItem(getContext(), true, true, resourcesProvider);
+                if (darkTheme) {
+                    scheduleView.setTextColor(getThemedColor(Theme.key_voipgroup_nameText));
+                    scheduleView.setIconColor(getThemedColor(Theme.key_windowBackgroundWhiteHintText));
+                }
+                scheduleView.setTextAndIcon(LocaleController.getString(setReminder ? R.string.SetReminder : R.string.ScheduleMessage), R.drawable.msg_calendar2);
+                scheduleView.setMinimumWidth(dp(196));
+                scheduleView.setOnClickListener(v -> {
+                    if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
+                        sendPopupWindow.dismiss();
+                    }
+                    AlertsCreator.createScheduleDatePickerDialog(parentActivity, setReminder ? UserConfig.getInstance(currentAccount).clientUserId : -1, new AlertsCreator.ScheduleDatePickerDelegate() {
+                        @Override
+                        public void didSelectDate(boolean notify, int pickedDate, int pickedRepeatPeriod) {
+                            scheduleDate = pickedDate;
+                            scheduleRepeatPeriod = pickedRepeatPeriod;
+                            sendInternal(notify);
+                            // Consume the pick: a later plain send must not reuse it.
+                            scheduleDate = 0;
+                            scheduleRepeatPeriod = 0;
+                        }
+                    }, resourcesProvider);
+                });
+                sendPopupLayout2.addView(scheduleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+            }
+        }
         ActionBarMenuSubItem sendMessage = new ActionBarMenuSubItem(getContext(), true, true, resourcesProvider);
         if (darkTheme) {
             sendMessage.setTextColor(getThemedColor(Theme.key_voipgroup_nameText));
@@ -2537,18 +2629,18 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                     int result = 0;
                     if (NekoConfig.sendCommentAfterForward.Bool()) {
                         // send fwd message before comment.
-                        result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, replyTopMsg, video_timestamp, price == null ? 0 : price);
+                        result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName, hideState.hideCaption, withSound, scheduleDate, scheduleRepeatPeriod, replyTopMsg, video_timestamp, price == null ? 0 : price, monoForumPeerId, null);
                     }
                     // send comment message
                     if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                        SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, 0, null, false);
+                        SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                         params.payStars = price == null ? 0 : price;
                         params.monoForumPeer = monoForumPeerId;
                         SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
                     }
                     if (!NekoConfig.sendCommentAfterForward.Bool()) {
                         // send fwd message after comment.
-                        result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName,false, withSound, 0, 0, replyTopMsg, video_timestamp, price == null ? 0 : price, monoForumPeerId, null);
+                        result = SendMessagesHelper.getInstance(currentAccount).sendMessage(sendingMessageObjects, key, !showSendersName, hideState.hideCaption, withSound, scheduleDate, scheduleRepeatPeriod, replyTopMsg, video_timestamp, price == null ? 0 : price, monoForumPeerId, null);
                     }
                     if (result != 0) {
                         removeKeys.add(key);
@@ -2591,15 +2683,15 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         SendMessagesHelper.SendMessageParams params;
                         if (storyItem == null) {
                             if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                                params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, 0, null, false);
+                                params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                             } else {
-                                params = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, 0, null, false);
+                                params = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                             }
                         } else {
                             if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null) {
-                                SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0].toString(), key, null, replyTopMsg, null, true, null, null, null, withSound, 0, 0, null, false));
+                                SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(text[0].toString(), key, null, replyTopMsg, null, true, null, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false));
                             }
-                            params = SendMessagesHelper.SendMessageParams.of(null, key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, 0, null, false);
+                            params = SendMessagesHelper.SendMessageParams.of(null, key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                             params.sendingStory = storyItem;
                         }
                         params.payStars = price == null ? 0 : price;
@@ -2617,20 +2709,20 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                         MessageObject replyTopMsg = topic != null && !isMonoForum ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
                         // send fwd message before comment.
                         if (NekoConfig.sendCommentAfterForward.Bool()) {
-                            SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, 0, null, false);
+                            SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                             params2.payStars = price == null ? 0 : price;
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(params2);
                         }
                         // send comment message
                         if (frameLayout2.getTag() != null && commentTextView.length() > 0) {
-                            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, 0, null, false);
+                            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0] == null ? null : text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                             params.payStars = price == null ? 0 : price;
                             params.monoForumPeer = monoForumPeerId;
                             SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
                         }
                         // send fwd message after comment.
                         if (!NekoConfig.sendCommentAfterForward.Bool()) {
-                            SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, 0, 0, null, false);
+                            SendMessagesHelper.SendMessageParams params2 = SendMessagesHelper.SendMessageParams.of(sendingText[num], key, replyTopMsg, replyTopMsg, null, true, null, null, null, withSound, scheduleDate, scheduleRepeatPeriod, null, false);
                             params2.payStars = price == null ? 0 : price;
                             params2.monoForumPeer = monoForumPeerId;SendMessagesHelper.getInstance(currentAccount).sendMessage(params2);
                         }

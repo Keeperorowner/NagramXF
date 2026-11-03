@@ -478,6 +478,13 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         });
         builder.create().show();
     }));
+    private final AbstractConfigCell sendMenuRow = cellGroup.appendCell(createConfigMenuCell("SendMenu", R.string.SendMenu, R.drawable.msg_send, new ArrayList<>() {{
+                add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getSendMenuWithoutSound(), getString(R.string.SendWithoutSound), R.drawable.input_notify_off));
+                add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getSendMenuWhenOnline(), getString(R.string.SendWhenOnline), R.drawable.msg_online));
+                add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getSendMenuSchedule(), getString(R.string.ScheduleMessage), R.drawable.msg_calendar2));
+                add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getSendMenuTranslate(), getString(R.string.TranslateMessage), R.drawable.ic_translate));
+                add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getSendMenuLinkPreview(), getString(R.string.LinkPreview), R.drawable.msg_link));
+            }}));
     private final AbstractConfigCell dividerMenuAndButtons = cellGroup.appendCell(new ConfigCellDivider());
 
     // Interactions

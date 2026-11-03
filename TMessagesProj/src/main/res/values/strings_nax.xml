@@ -171,6 +171,7 @@
     <string name="SaveToChatSubfolder">Save Attachments by Chat Name</string>
     <string name="MessageColoredBackground">Colorful Message Backgrounds</string>
     <string name="ChatMenu">Chat Menu</string>
+    <string name="SendMenu">Send Menu</string>
     <string name="MediaViewerMenu">Media Viewer Menu</string>
     <string name="MenuAndButtons">Menu and Buttons</string>
     <string name="SettingsNax">Settings</string>

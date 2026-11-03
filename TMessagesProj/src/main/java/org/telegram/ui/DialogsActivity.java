@@ -301,6 +301,7 @@ import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.JoinOfficialChannelHelper;
 import tw.nekomimi.nekogram.ChatHistoryActivity;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
+import tw.nekomimi.nekogram.helpers.ForwardCaptionRules;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.settings.MainTabsCustomizeActivity;
@@ -717,6 +718,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public int scheduleDate;
     public int scheduleRepeatPeriod;
     public boolean forceDocument;
+    /** Whether the message being forwarded carries a media caption (drives the Hide Caption row). */
+    private boolean forwardHasCaption;
+    /**
+     * Auto-hide memory for the Hide Caption / Sender Name coupling. Static so a
+     * nested forward picker (e.g. drilling into a community) shares it with its
+     * parent; every read is preceded by a fresh write within a forward session
+     * (the ChatActivity statics reset per forward), so no cross-session leak.
+     */
+    private static boolean captionAutoHidName;
 
     private int canReadCount;
     private int canPinCount;
@@ -2925,6 +2935,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             initialDialogsType = arguments.getInt("dialogsType", DIALOGS_TYPE_DEFAULT);
             isQuote = arguments.getBoolean("quote", false);
             isReplyTo = arguments.getBoolean("reply_to", false);
+            forwardHasCaption = arguments.getBoolean("hasCaption", false);
+            if (parentForwardDialogFragment == null && ChatActivity.noForwardQuote) {
+                // Top-level forward picker entered with the sender name already
+                // hidden: any auto-hide memory belongs to a previous forward
+                // session and must not restore the name on caption uncheck.
+                // Nested community pickers (parentForwardDialogFragment != null)
+                // inherit their parent's memory instead.
+                captionAutoHidName = false;
+            }
             replyMessageAuthor = arguments.getLong("reply_to_author", 0L);
             forwardOriginalChannel = arguments.getLong("forward_into_channel", 0L);
             selectAlertString = arguments.getString("selectAlertString");
@@ -12440,30 +12459,60 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             delegate.didSelectDialogs(DialogsActivity.this, topicKeys, commentView.getFieldText(), false, notify, scheduleDate, scheduleRepeatPeriod, null);
         });
 
+        final ForwardCaptionRules.State hideState = new ForwardCaptionRules.State();
+        hideState.hideName = ChatActivity.noForwardQuote;
+        hideState.hideCaption = ChatActivity.noForwardCaption;
+        hideState.captionAutoHidName = captionAutoHidName;
+
         ActionBarMenuSubItem showSendersNameView = new ActionBarMenuSubItem(parentActivity, true, true, false, resourcesProvider);
         showSendersNameView.setTextAndIcon(LocaleController.getString("ShowSendersName", R.string.ShowSendersName), 0);
-        showSendersNameView.setChecked(!ChatActivity.noForwardQuote);
+        showSendersNameView.setChecked(!hideState.hideName);
 
-        ActionBarMenuSubItem hideSendersNameView = new ActionBarMenuSubItem(parentActivity, true, false, true, resourcesProvider);
+        // When the Hide Caption row follows, it closes this card, so "Hide Sender Name"
+        // loses its rounded bottom corner.
+        ActionBarMenuSubItem hideSendersNameView = new ActionBarMenuSubItem(parentActivity, true, false, !forwardHasCaption, resourcesProvider);
         hideSendersNameView.setTextAndIcon(LocaleController.getString("HideSendersName", R.string.HideSendersName), 0);
-        hideSendersNameView.setChecked(ChatActivity.noForwardQuote);
-        showSendersNameView.setOnClickListener(e -> {
-            if (ChatActivity.noForwardQuote) {
-                ChatActivity.noForwardQuote = false;
-                showSendersNameView.setChecked(true);
-                hideSendersNameView.setChecked(false);
+        hideSendersNameView.setChecked(hideState.hideName);
+
+        final ActionBarMenuSubItem hideCaptionView;
+        if (forwardHasCaption) {
+            hideCaptionView = new ActionBarMenuSubItem(parentActivity, true, false, true, resourcesProvider);
+            hideCaptionView.setTextAndIcon(LocaleController.getString(R.string.HideCaption), 0);
+            hideCaptionView.setChecked(hideState.hideCaption);
+        } else {
+            hideCaptionView = null;
+        }
+
+        final Runnable applyHideState = () -> {
+            ChatActivity.noForwardQuote = hideState.hideName;
+            ChatActivity.noForwardCaption = hideState.hideCaption;
+            captionAutoHidName = hideState.captionAutoHidName;
+            showSendersNameView.setChecked(!hideState.hideName);
+            hideSendersNameView.setChecked(hideState.hideName);
+            if (hideCaptionView != null) {
+                hideCaptionView.setChecked(hideState.hideCaption);
             }
+        };
+        showSendersNameView.setOnClickListener(e -> {
+            ForwardCaptionRules.chooseHideName(hideState, false);
+            applyHideState.run();
         });
         hideSendersNameView.setOnClickListener(e -> {
-            if (!ChatActivity.noForwardQuote) {
-                ChatActivity.noForwardQuote = true;
-                showSendersNameView.setChecked(false);
-                hideSendersNameView.setChecked(true);
-            }
+            ForwardCaptionRules.chooseHideName(hideState, true);
+            applyHideState.run();
         });
+        if (hideCaptionView != null) {
+            hideCaptionView.setOnClickListener(e -> {
+                ForwardCaptionRules.toggleHideCaption(hideState);
+                applyHideState.run();
+            });
+        }
 
         sendPopupLayout2.addView(showSendersNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
         sendPopupLayout2.addView(hideSendersNameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+        if (hideCaptionView != null) {
+            sendPopupLayout2.addView(hideCaptionView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
+        }
 
         boolean onlyMyself = !selectedDialogs.isEmpty();
         boolean canSchedule = true;
