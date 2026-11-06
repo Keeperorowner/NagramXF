@@ -119,7 +119,7 @@ class BulletinHelper:
                 if f is not None:
                     runnable = R(on_click) if on_click else None
                     f.createSimpleBulletin(int(icon_res_id), str(text), str(button_text),
-                                           runnable, int(duration)).show()
+                                           int(duration), runnable).show()
             except Exception as e:
                 log("BulletinHelper.show_with_button: %s" % e)
         run_on_ui_thread(_do)
