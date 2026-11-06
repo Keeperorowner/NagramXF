@@ -101,11 +101,32 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
     private final PluginSettingsTranslation.Listener translationListener = new PluginSettingsTranslation.Listener() {
         @Override
         public void onTranslationChanged(boolean failed) {
-            if (listView != null && listView.adapter != null) {
-                listView.adapter.update(true);
-            }
+            refreshSettingsRows();
         }
     };
+
+    /** Coalesces refreshes so a burst of arriving translations rebuilds the list once. */
+    private final Runnable refreshRowsRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (listView == null || listView.adapter == null) {
+                return;
+            }
+            if (listView.isComputingLayout()) {
+                listView.postDelayed(this, 32);
+                return;
+            }
+            listView.adapter.update(true);
+        }
+    };
+
+    private void refreshSettingsRows() {
+        if (listView == null) {
+            return;
+        }
+        listView.removeCallbacks(refreshRowsRunnable);
+        listView.postDelayed(refreshRowsRunnable, 32);
+    }
 
     public PluginSettingsActivity setSettingsLinkPrefix(String settingsLinkPrefix) {
         this.settingsLinkPrefix = settingsLinkPrefix;
@@ -124,6 +145,9 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginSettingsRegistered);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginSettingsUnregistered);
         translation.removeListener(translationListener);
+        if (listView != null) {
+            listView.removeCallbacks(refreshRowsRunnable);
+        }
         super.onFragmentDestroy();
     }
 
@@ -513,9 +537,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
     private void onClick(final UItem item, View view, int position, float x, float y) {
         if (item != null && item.id == TRANSLATE_ROW_ID) {
             translation.setEnabled(!translation.getEnabled());
-            if (listView != null && listView.adapter != null) {
-                listView.adapter.update(true);
-            }
+            refreshSettingsRows();
             return;
         }
         if (item == null || plugin == null) {

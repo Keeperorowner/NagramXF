@@ -78,12 +78,17 @@ class AlertDialogBuilder:
     BUTTON_NEUTRAL = -3
 
     def __init__(self, context, progress_style=ALERT_TYPE_MESSAGE, resources_provider=None):
+        self._context = context
         if resources_provider is not None:
             self._builder = AlertDialog.Builder(context, resources_provider)
         else:
             self._builder = AlertDialog.Builder(context)
         self._dialog = None
         self._progress_style = progress_style
+        self._red_buttons = set()
+        self._cancelable = None
+        self._canceled_on_touch_outside = None
+        self._progress = None
 
     # content
     def set_title(self, title):
@@ -123,10 +128,13 @@ class AlertDialogBuilder:
         return self
 
     def make_button_red(self, button_type):
-        try:
-            self._builder.makeButtonRed(int(button_type))
-        except Exception:
-            pass
+        button_type = int(button_type)
+        self._red_buttons.add(button_type)
+        if self._dialog is not None:
+            try:
+                self._dialog.makeRed(button_type)
+            except Exception as e:
+                log("AlertDialog make_button_red error: %s" % e)
         return self
 
     # behaviour
@@ -154,9 +162,16 @@ class AlertDialogBuilder:
 
     def set_top_drawable(self, drawable, background_color):
         try:
-            self._builder.setTopDrawable(drawable, background_color)
+            self._builder.setTopImage(drawable, background_color)
         except Exception as e:
             log("AlertDialog set_top_drawable error: %s" % e)
+        return self
+
+    def set_top_animation_is_new(self, is_new):
+        try:
+            self._builder.setTopAnimationIsNew(bool(is_new))
+        except Exception as e:
+            log("AlertDialog set_top_animation_is_new error: %s" % e)
         return self
 
     def set_top_animation(self, res_id, size, auto_repeat, background_color, layer_colors=None):
@@ -182,25 +197,28 @@ class AlertDialogBuilder:
 
     def set_blurred_background(self, blur, blur_behind_if_possible=True):
         try:
-            self._builder.setBlurredBackground(bool(blur), bool(blur_behind_if_possible))
+            self._builder.setBlurredBackground(bool(blur))
         except Exception as e:
             log("AlertDialog set_blurred_background error: %s" % e)
         return self
 
     def set_cancelable(self, cancelable):
+        self._cancelable = bool(cancelable)
         if self._dialog is not None:
-            self._dialog.setCancelable(bool(cancelable))
+            self._dialog.setCancelable(self._cancelable)
         return self
 
     def set_canceled_on_touch_outside(self, cancel):
+        self._canceled_on_touch_outside = bool(cancel)
         if self._dialog is not None:
-            self._dialog.setCanceledOnTouchOutside(bool(cancel))
+            self._dialog.setCanceledOnTouchOutside(self._canceled_on_touch_outside)
         return self
 
     def set_progress(self, progress):
+        self._progress = int(progress)
         if self._dialog is not None:
             try:
-                self._dialog.setProgress(int(progress))
+                self._dialog.setProgress(self._progress)
             except Exception:
                 pass
         return self
@@ -209,6 +227,20 @@ class AlertDialogBuilder:
     def create(self):
         if self._dialog is None:
             self._dialog = self._builder.create()
+            for button_type in self._red_buttons:
+                try:
+                    self._dialog.makeRed(button_type)
+                except Exception as e:
+                    log("AlertDialog makeRed error: %s" % e)
+            if self._cancelable is not None:
+                self._dialog.setCancelable(self._cancelable)
+            if self._canceled_on_touch_outside is not None:
+                self._dialog.setCanceledOnTouchOutside(self._canceled_on_touch_outside)
+            if self._progress is not None:
+                try:
+                    self._dialog.setProgress(self._progress)
+                except Exception:
+                    pass
         return self
 
     def show(self):
@@ -224,6 +256,9 @@ class AlertDialogBuilder:
     def get_dialog(self):
         self.create()
         return self._dialog
+
+    def get_context(self):
+        return self._context
 
     def get_button(self, button_type):
         self.create()

@@ -232,3 +232,15 @@ class SimpleSettingFactory:
         link_alias = kwargs.get("link_alias")
         factory_args = list(args) if args else None
         return Custom(factory=self.instance.java, factory_args=factory_args, link_alias=link_alias)
+
+    def release(self):
+        """Drops the Java proxy and the callbacks bound to it."""
+        self.create_view = None
+        self.bind_view = None
+        self.create_item = None
+        self.on_click = None
+        self.on_long_click = None
+        self.attached_view = None
+        self.equals = None
+        self.content_equals = None
+        self.instance = _FactoryInstance(self)
