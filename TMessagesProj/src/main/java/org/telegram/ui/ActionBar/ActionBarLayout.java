@@ -2889,7 +2889,7 @@ public class ActionBarLayout extends FrameLayout implements INavigationLayout, F
         if (!inPreviewMode && !transitionAnimationPreviewMode) {
             return;
         }
-        if (transitionAnimationInProgress) {
+        if (transitionAnimationInProgress && onCloseAnimationEndRunnable != null) {
             return;
         }
         if (delayedOpenAnimationRunnable != null) {

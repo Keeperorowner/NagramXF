@@ -635,9 +635,17 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
         final int[] messageCount = {messages != null ? messages.size() : 0};
 
         if (participantMessageCounts != null && participantMessageCountsLoaded) {
-            deleteAll.forEachSelected((o, i) -> {
-                messageCount[0] += participantMessageCounts[i];
-            });
+            if (isSingleUsersMode) {
+                if (restrictUserDeleteAllMessages) {
+                    for (int count : participantMessageCounts) {
+                        messageCount[0] += count;
+                    }
+                }
+            } else {
+                deleteAll.forEachSelected((o, i) -> {
+                    messageCount[0] += participantMessageCounts[i];
+                });
+            }
         }
 
         return LocaleController.formatPluralString("DeleteOptionsTitle", messageCount[0]);
@@ -1083,7 +1091,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
                     onRestrictionsChanged();
                 } else if (item.id == OPTION_DELETE_MESSAGES) {
                     restrictUserDeleteAllMessages = !restrictUserDeleteAllMessages;
-                    updateTitleAnimated();
+                    onDeleteAllChanged();
                 } else if (item.id == OPTION_DELETE_REACTIONS) {
                     restrictUserDeleteAllReactions = !restrictUserDeleteAllReactions;
                     updateTitleAnimated();
@@ -1134,7 +1142,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
             saveScrollPosition();
             adapter.update(true);
             applyScrolledPosition(true);
-            updateTitleAnimated();
+            onDeleteAllChanged();
         } else if (item.viewType == VIEW_TYPE_SHADOW_COLLAPSE_BUTTON) {
             restrict = !restrict;
             banOrRestrict.setFilter(restrict ? restrictFilter : banFilter);

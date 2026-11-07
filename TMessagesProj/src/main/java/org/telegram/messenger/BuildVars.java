@@ -42,6 +42,7 @@ public class BuildVars {
 
     // works only on official app ids, disable on your forks
     public static boolean SUPPORTS_PASSKEYS = Build.VERSION.SDK_INT >= 34;
+    public static boolean SUPPORTS_FPNV = true;
 
     static {
         APP_ID = BuildConfig.APP_ID;

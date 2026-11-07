@@ -887,7 +887,6 @@ public class PollCreateActivity extends BaseFragment implements NotificationCent
             }
         }
     }
-        int count = listView.getChildCount();
 
     private void showQuizHint() {
         for (int a = answerStartRow; a < answerStartRow + answersCount; a++) {
