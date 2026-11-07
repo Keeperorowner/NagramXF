@@ -274,7 +274,7 @@ public class DrawerLayoutContainer extends FrameLayout {
     }
 
     public void openStatusSelect() {
-        
+
     }
 
     public void closeDrawer() {

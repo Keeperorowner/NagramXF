@@ -39,7 +39,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
+import org.telegram.utils.glass.source.GlassSourceColor;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.SearchTabsAndFiltersLayout;
@@ -68,7 +68,7 @@ public class ChatHistorySearchActivity extends BaseFragment {
     private ViewPagerFixed.TabsView tabsView;
     private SearchTabsAndFiltersLayout tabsContainer;
     private BlurredBackgroundDrawable tabsContainerBackground;
-    private final BlurredBackgroundSourceColor tabsBackgroundSourceColor = new BlurredBackgroundSourceColor();
+    private final GlassSourceColor tabsBackgroundSourceColor = new GlassSourceColor();
     private final BlurredBackgroundDrawableViewFactory tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceColor);
     private int savedCurrentTab = 0;
     private boolean isOpeningChat = false;

@@ -68,7 +68,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SizeNotifierFrameLayout;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
+import org.telegram.utils.glass.source.GlassSourceColor;
 import org.telegram.ui.Components.chat.layouts.ChatActivitySideControlsButtonsLayout;
 import org.telegram.ui.Components.inset.WindowInsetsStateHolder;
 
@@ -449,7 +449,7 @@ public class AyuViewDeleted extends NekoDelegateFragment {
         emptyView.setPadding(dp(20), dp(4), dp(20), dp(6));
         frameLayout.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
-        BlurredBackgroundSourceColor pagedownSourceColor = new BlurredBackgroundSourceColor();
+        GlassSourceColor pagedownSourceColor = new GlassSourceColor();
         pagedownSourceColor.setColor(Color.TRANSPARENT);
         BlurredBackgroundDrawableViewFactory pagedownBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(pagedownSourceColor);
         BlurredBackgroundColorProviderThemed pagedownColorProvider = new BlurredBackgroundColorProviderThemed(getResourceProvider(), Theme.key_chat_messagePanelBackground);

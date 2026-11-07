@@ -93,6 +93,7 @@ import org.telegram.ui.ActionBar.AdjustPanLayoutHelper;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.BubbleActivity;
 import org.telegram.ui.Cells.ChatActionCell;
 import org.telegram.ui.Cells.ChatMessageCell;
@@ -157,6 +158,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.HashSet;
 
 import tw.nekomimi.nekogram.NekoConfig;
 
@@ -375,6 +377,11 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
             @Override
             public Paint getPaint(String paintKey) {
                 return resourcesProvider.getPaint(paintKey);
+            }
+
+            @Override
+            public boolean isDark() {
+                return true;
             }
 
             private ColorFilter animatedEmojiColorFilter;
@@ -1768,7 +1775,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
         drawTab = new TextView(context);
         drawTab.setText(getString(R.string.PhotoEditorDraw).toUpperCase());
-        drawTab.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(drawTab, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         drawTab.setPadding(0, dp(8), 0, dp(8));
         drawTab.setTextColor(Color.WHITE);
         drawTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -1786,7 +1793,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
         stickerTab = new TextView(context);
         stickerTab.setText(getString(R.string.PhotoEditorSticker).toUpperCase());
-        stickerTab.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(stickerTab, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         stickerTab.setPadding(0, dp(8), 0, dp(8));
         stickerTab.setOnClickListener(v -> openStickersView());
         stickerTab.setTextColor(Color.WHITE);
@@ -1799,7 +1806,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
         textTab = new TextView(context);
         textTab.setText(getString(R.string.PhotoEditorText).toUpperCase());
-        textTab.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
+        ThemeBind.selectorBackground(textTab, Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
         textTab.setPadding(0, dp(8), 0, dp(8));
         textTab.setTextColor(Color.WHITE);
         textTab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -2616,6 +2623,27 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
     @Override
     public void updateColors() {
         toolsPaint.setColor(0xff191919);
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_actionBarDefaultSubmenuBackground);
+        colors.add(Theme.key_dialogBackground);
+        colors.add(Theme.key_dialogTextBlack);
+        colors.add(Theme.key_dialogTextGray3);
+        colors.add(Theme.key_chat_emojiPanelBackground);
+        colors.add(Theme.key_chat_emojiPanelShadowLine);
+        colors.add(Theme.key_chat_emojiBottomPanelIcon);
+        colors.add(Theme.key_chat_emojiPanelBackspace);
+        colors.add(Theme.key_chat_emojiPanelIcon);
+        colors.add(Theme.key_windowBackgroundWhiteBlackText);
+        colors.add(Theme.key_featuredStickers_addedIcon);
+        colors.add(Theme.key_profile_tabSelectedText);
+        colors.add(Theme.key_profile_tabText);
+        colors.add(Theme.key_profile_tabSelectedLine);
+        colors.add(Theme.key_profile_tabSelector);
+        colors.add(Theme.key_chat_emojiSearchIcon);
+        colors.add(Theme.key_chat_emojiSearchBackground);
+        colors.add(Theme.key_windowBackgroundGray);
     }
 
     private boolean forceChanges;
@@ -3824,23 +3852,23 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
             imageView = new ImageView(context);
             imageView.setScaleType(ImageView.ScaleType.CENTER);
-            imageView.setColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.colorFilter(imageView, Theme.key_actionBarDefaultSubmenuItem, PaintView.this.resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             imagesView.addView(imageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
             image2View = new ImageView(context);
             image2View.setScaleType(ImageView.ScaleType.CENTER);
-            image2View.setColorFilter(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.colorFilter(image2View, Theme.key_actionBarDefaultSubmenuItem, PaintView.this.resourcesProvider, PorterDuff.Mode.SRC_ATOP);
             image2View.setVisibility(View.GONE);
             imagesView.addView(image2View, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
             textView = new TextView(context);
-            textView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+            ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, PaintView.this.resourcesProvider);
             textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
             addView(textView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL, 0, 0, 16, 0));
 
             checkView = new ImageView(context);
             checkView.setImageResource(R.drawable.msg_text_check);
             checkView.setScaleType(ImageView.ScaleType.CENTER);
-            checkView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_radioBackgroundChecked), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(checkView, Theme.key_radioBackgroundChecked, PaintView.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
             checkView.setVisibility(View.GONE);
             addView(checkView, LayoutHelper.createLinear(50, LayoutHelper.MATCH_PARENT));
         }
@@ -4035,7 +4063,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
             if (!(entityView instanceof MessageEntityView)) {
                 TextView deleteView = new TextView(getContext());
-                deleteView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(deleteView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 deleteView.setGravity(Gravity.CENTER_VERTICAL);
                 deleteView.setLines(1);
                 deleteView.setSingleLine();
@@ -4061,7 +4089,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
             if (entityView instanceof TextPaintView) {
                 TextView editView = new TextView(getContext());
-                editView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(editView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 editView.setGravity(Gravity.CENTER_VERTICAL);
                 editView.setLines(1);
                 editView.setSingleLine();
@@ -4168,7 +4196,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
             if (entitiesView.indexOfChild(entityView) != entitiesView.getChildCount() - 1 && !(entityView instanceof ReactionWidgetEntityView)) {
                 TextView bringToFrontView = new TextView(getContext());
-                bringToFrontView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(bringToFrontView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 bringToFrontView.setLines(1);
                 bringToFrontView.setSingleLine();
                 bringToFrontView.setEllipsize(TextUtils.TruncateAt.END);
@@ -4187,7 +4215,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
                 parent.addView(bringToFrontView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 44));
             } else if (!(entityView instanceof PhotoView) && !(entityView instanceof MessageEntityView) && !(entityView instanceof RoundView) && !(entityView instanceof LocationView) && !(entityView instanceof WeatherView) && !(entityView instanceof LinkView) && !(entityView instanceof ReactionWidgetEntityView)) {
                 TextView duplicateView = new TextView(getContext());
-                duplicateView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+                ThemeBind.textColor(duplicateView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 duplicateView.setLines(1);
                 duplicateView.setSingleLine();
                 duplicateView.setEllipsize(TextUtils.TruncateAt.END);
@@ -4209,12 +4237,12 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
             for (int i = 0; i < parent.getChildCount(); ++i) {
                 View child = parent.getChildAt(i);
-                child.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector),
+                ThemeBind.selectorBackground(child, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector),
                     i == 0 ? 8 : 0,
                     i == parent.getChildCount() - 1 ? 8 : 0,
                     i == parent.getChildCount() - 1 ? 8 : 0,
                     i == 0 ? 8 : 0
-                ));
+                ), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
             }
 
             popupLayout.addView(parent);
@@ -4228,7 +4256,7 @@ public class PaintView extends SizeNotifierFrameLayoutPhoto implements IPhotoPai
 
     private TextView createActionLayoutButton(int tag, String title) {
         TextView textView = new TextView(getContext());
-        textView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem));
+        ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
         textView.setGravity(Gravity.CENTER_VERTICAL);
         textView.setLines(1);
         textView.setSingleLine();

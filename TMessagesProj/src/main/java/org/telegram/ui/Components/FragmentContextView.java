@@ -90,6 +90,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuSlider;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.conference.message.GroupCallMessageCell;
 import org.telegram.ui.Components.voip.CellFlickerDrawable;
@@ -110,7 +111,7 @@ import me.vkryl.core.lambda.Destroyable;
 
 import tw.nekomimi.nekogram.NekoConfig;
 
-public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, VoIPService.StateListener, GroupCallMessagesController.CallMessageListener  {
+public class FragmentContextView extends FrameLayout implements NotificationCenter.NotificationCenterDelegate, VoIPService.StateListener, GroupCallMessagesController.CallMessageListener, Theme.Colorable  {
     public final static int STYLE_NOT_SET = -1,
             STYLE_AUDIO_PLAYER = 0,
             STYLE_CONNECTING_GROUP_CALL = 1,
@@ -415,7 +416,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
         playButton = new ImageView(context);
         playButton.setScaleType(ImageView.ScaleType.CENTER);
-        playButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_inappPlayerPlayPause), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(playButton, Theme.key_inappPlayerPlayPause, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         playButton.setImageDrawable(playPauseDrawable = new PlayPauseDrawable(16));
         playButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerPlayPause) & 0x19ffffff, 1, dp(14)));
         addView(playButton, LayoutHelper.createFrame(36, 36, Gravity.TOP | Gravity.LEFT));
@@ -433,7 +434,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         importingImageView.setScaleType(ImageView.ScaleType.CENTER);
         importingImageView.setAutoRepeat(true);
         importingImageView.setAnimation(R.raw.import_progress, 30, 30);
-        importingImageView.setBackground(Theme.createCircleDrawable(dp(22), getThemedColor(Theme.key_inappPlayerPlayPause)));
+        ThemeBind.fillBackground(importingImageView, Theme.createCircleDrawable(dp(22), getThemedColor(Theme.key_inappPlayerPlayPause)), ThemeBind.of(Theme.key_inappPlayerPlayPause), resourcesProvider);
         addView(importingImageView, LayoutHelper.createFrame(22, 22, Gravity.TOP | Gravity.LEFT, 7, 7, 0, 0));
 
         titleTextView = new AudioPlayerAlert.ClippingTextViewSwitcher(context) {
@@ -452,12 +453,12 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 } else if (currentStyle == STYLE_INACTIVE_GROUP_CALL) {
                     textView.setGravity(Gravity.TOP | Gravity.LEFT);
-                    textView.setTextColor(getThemedColor(Theme.key_inappPlayerPerformer));
+                    ThemeBind.textColor(textView, Theme.key_inappPlayerPerformer, FragmentContextView.this.resourcesProvider);
                     textView.setTypeface(AndroidUtilities.bold());
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
                 } else if (currentStyle == STYLE_CONNECTING_GROUP_CALL || currentStyle == STYLE_ACTIVE_GROUP_CALL) {
                     textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-                    textView.setTextColor(getThemedColor(Theme.key_returnToCallText));
+                    ThemeBind.textColor(textView, Theme.key_returnToCallText, FragmentContextView.this.resourcesProvider);
                     textView.setTypeface(AndroidUtilities.bold());
                     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 }
@@ -476,7 +477,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setGravity(Gravity.LEFT);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-                textView.setTextColor(getThemedColor(Theme.key_inappPlayerClose));
+                ThemeBind.textColor(textView, Theme.key_inappPlayerClose, FragmentContextView.this.resourcesProvider);
                 return textView;
             }
         };
@@ -530,8 +531,8 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
         };
         joinButton.setText(getString(R.string.VoipChatJoin));
-        joinButton.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
-        joinButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(16), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)));
+        ThemeBind.textColor(joinButton, Theme.key_featuredStickers_buttonText, resourcesProvider);
+        ThemeBind.selectorBackground(joinButton, Theme.createSimpleSelectorRoundRectDrawable(dp(16), getThemedColor(Theme.key_featuredStickers_addButton), getThemedColor(Theme.key_featuredStickers_addButtonPressed)), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.of(Theme.key_featuredStickers_addButtonPressed), resourcesProvider);
         joinButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         joinButton.setTypeface(AndroidUtilities.bold());
         joinButton.setGravity(Gravity.CENTER);
@@ -545,7 +546,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         silentButton = new FrameLayout(context);
         silentButtonImage = new ImageView(context);
         silentButtonImage.setImageResource(R.drawable.msg_mute);
-        silentButtonImage.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_inappPlayerClose), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(silentButtonImage, Theme.key_inappPlayerClose, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         silentButton.addView(silentButtonImage, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
         silentButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, dp(14)));
         silentButton.setContentDescription(getString(R.string.Unmute));
@@ -662,7 +663,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 info.setText(isMuted ? getString(R.string.VoipUnmute) : getString(R.string.VoipMute));
             }
         };
-        muteButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_returnToCallText), PorterDuff.Mode.SRC_IN));
+        ThemeBind.colorFilter(muteButton, Theme.key_returnToCallText, resourcesProvider, PorterDuff.Mode.SRC_IN);
         muteButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, dp(14)));
         muteButton.setAnimation(muteDrawable);
         muteButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -702,7 +703,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
 
         closeButton = new ImageView(context);
         closeButton.setImageResource(R.drawable.miniplayer_close);
-        closeButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_inappPlayerClose), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(closeButton, Theme.key_inappPlayerClose, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         closeButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_inappPlayerClose) & 0x19ffffff, 1, dp(14)));
         closeButton.setScaleType(ImageView.ScaleType.CENTER);
         addView(closeButton, LayoutHelper.createFrame(36, 36, Gravity.RIGHT | Gravity.TOP, 0, 0, 4, 0));
@@ -737,7 +738,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 builder.show();
                 TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                 if (button != null) {
-                    button.setTextColor(getThemedColor(Theme.key_text_RedBold));
+                    ThemeBind.textColor(button, Theme.key_text_RedBold, resourcesProvider);
                 }
             } else {
                 MediaController.getInstance().cleanupPlayer(true, true);
@@ -861,6 +862,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             return;
         }
         playbackSpeedButton = new ActionBarMenuItem(getContext(), null, 0, getThemedColor(Theme.key_dialogTextBlack), resourcesProvider);
+        if (playbackSpeedButton.getIconView() != null) {
+            ThemeBind.colorFilter(playbackSpeedButton.getIconView(), Theme.key_dialogTextBlack, resourcesProvider, PorterDuff.Mode.SRC_IN);
+        }
         playbackSpeedButton.setAdditionalYOffset(dp(24 + 6));
         playbackSpeedButton.setLongClickEnabled(false);
         playbackSpeedButton.setVisibility(GONE);
@@ -920,7 +924,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         playbackSpeedButton.setOnLongClickListener(view -> {
             final float speed = MediaController.getInstance().getPlaybackSpeed(isMusic);
             speedSlider.setSpeed(speed, false);
-            speedSlider.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider));
+            ThemeBind.backgroundColor(speedSlider, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
             speedSlider.invalidateBlur(fragment instanceof ChatActivity);
             playbackSpeedButton.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
             playbackSpeedButton.updateColor();
@@ -1007,21 +1011,40 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         speedSlider.setSpeed(currentPlaybackSpeed, animated);
     }
 
+    private android.graphics.drawable.Drawable lastSpeedButtonBackground;
+    private PorterDuffColorFilter playButtonFilter, closeButtonFilter;
+    private int playButtonFilterColor, closeButtonFilterColor, lastSpeedButtonColor;
+
     public void updateColors() {
+        capsuleBlobDrawable.updateColors();  // final field, initialized before the constructor body
         float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(isMusic);
         final int color = getThemedColor(!equals(currentPlaybackSpeed, 1.0f) ? Theme.key_featuredStickers_addButtonPressed : Theme.key_inappPlayerClose);
         if (speedIcon != null) {
             speedIcon.setColor(color);
         }
+        // also runs on every theme frame (Theme.Colorable): recolor in place, allocate only when a color changed
         if (playbackSpeedButton != null) {
-            playbackSpeedButton.setBackground(Theme.createSelectorDrawable(color & 0x19ffffff, 1, dp(14)));
+            final android.graphics.drawable.Drawable background = playbackSpeedButton.getBackground();
+            if (background == null || background != lastSpeedButtonBackground) {
+                playbackSpeedButton.setBackground(lastSpeedButtonBackground = Theme.createSelectorDrawable(color & 0x19ffffff, 1, dp(14)));
+                lastSpeedButtonColor = color;
+            } else if (color != lastSpeedButtonColor) {
+                lastSpeedButtonColor = color;
+                Theme.setSelectorDrawableColor(background, color & 0x19ffffff, true);
+            }
         }
 
         if (playButton != null) {
-            playButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_inappPlayerPlayPause), PorterDuff.Mode.MULTIPLY));
+            final int playColor = getThemedColor(Theme.key_inappPlayerPlayPause);
+            if (playButtonFilter == null || playColor != playButtonFilterColor) {
+                playButton.setColorFilter(playButtonFilter = new PorterDuffColorFilter(playButtonFilterColor = playColor, PorterDuff.Mode.MULTIPLY));
+            }
         }
         if (closeButton != null) {
-            closeButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_inappPlayerClose), PorterDuff.Mode.MULTIPLY));
+            final int closeColor = getThemedColor(Theme.key_inappPlayerClose);
+            if (closeButtonFilter == null || closeColor != closeButtonFilterColor) {
+                closeButton.setColorFilter(closeButtonFilter = new PorterDuffColorFilter(closeButtonFilterColor = closeColor, PorterDuff.Mode.MULTIPLY));
+            }
         }
         if (subtitleTextView != null) {
             for (int i = 0; i < 2; i++) {
@@ -1214,7 +1237,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     continue;
                 }
                 textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-                textView.setTextColor(getThemedColor(Theme.key_returnToCallText));
+                ThemeBind.textColor(textView, Theme.key_returnToCallText, resourcesProvider);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             }
@@ -1231,7 +1254,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     continue;
                 }
                 textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-                textView.setTextColor(getThemedColor(Theme.key_inappPlayerTitle));
+                ThemeBind.textColor(textView, Theme.key_inappPlayerTitle, resourcesProvider);
                 textView.setTypeface(Typeface.DEFAULT);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             }
@@ -1269,7 +1292,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     continue;
                 }
                 textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-                textView.setTextColor(getThemedColor(Theme.key_inappPlayerTitle));
+                ThemeBind.textColor(textView, Theme.key_inappPlayerTitle, resourcesProvider);
                 textView.setTypeface(Typeface.DEFAULT);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             }
@@ -1305,7 +1328,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     continue;
                 }
                 textView.setGravity(Gravity.TOP | Gravity.LEFT);
-                textView.setTextColor(getThemedColor(Theme.key_inappPlayerPerformer));
+                ThemeBind.textColor(textView, Theme.key_inappPlayerPerformer, resourcesProvider);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             }
@@ -1370,7 +1393,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     continue;
                 }
                 textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-                textView.setTextColor(getThemedColor(Theme.key_returnToCallText));
+                ThemeBind.textColor(textView, Theme.key_returnToCallText, resourcesProvider);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             }

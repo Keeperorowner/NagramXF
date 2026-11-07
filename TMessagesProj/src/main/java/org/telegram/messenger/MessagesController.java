@@ -574,8 +574,6 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean smsjobsStickyNotificationEnabled;
     public boolean collectDeviceStats;
     public boolean showFiltersTooltip;
-    public String venueSearchBot;
-    public String storyVenueSearchBot;
     public String gifSearchBot;
     public String imageSearchBot;
     public String dcDomainName;
@@ -1720,8 +1718,6 @@ public class MessagesController extends BaseController implements NotificationCe
         promoPsaMessage = mainPreferences.getString("promo_psa_message", null);
         promoPsaType = mainPreferences.getString("promo_psa_type", null);
         proxyDialogAddress = mainPreferences.getString("proxyDialogAddress", null);
-        venueSearchBot = mainPreferences.getString("venueSearchBot", "foursquare");
-        storyVenueSearchBot = mainPreferences.getString("storyVenueSearchBot", "foursquare");
         gifSearchBot = mainPreferences.getString("gifSearchBot", "gif");
         imageSearchBot = mainPreferences.getString("imageSearchBot", "pic");
         blockedCountry = mainPreferences.getBoolean("blockedCountry", false);
@@ -4206,17 +4202,6 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                     break;
                 }
-                case "stories_venue_search_username": {
-                    if (value.value instanceof TLRPC.TL_jsonString) {
-                        TLRPC.TL_jsonString str = (TLRPC.TL_jsonString) value.value;
-                        if (!TextUtils.equals(storyVenueSearchBot, str.value)) {
-                            storyVenueSearchBot = str.value;
-                            editor.putString("storyVenueSearchBot", storyVenueSearchBot);
-                            changed = true;
-                        }
-                    }
-                    break;
-                }
                 case "authorization_autoconfirm_period": {
                     if (value.value instanceof TLRPC.TL_jsonNumber) {
                         TLRPC.TL_jsonNumber num = (TLRPC.TL_jsonNumber) value.value;
@@ -5853,9 +5838,6 @@ public class MessagesController extends BaseController implements NotificationCe
             maxMessageLength = config.message_length_max;
             maxCaptionLength = config.caption_length_max;
             preloadFeaturedStickers = config.preload_featured_stickers;
-            if (config.venue_search_username != null) {
-                venueSearchBot = config.venue_search_username;
-            }
             if (config.gif_search_username != null) {
                 gifSearchBot = config.gif_search_username;
             }
@@ -5948,7 +5930,6 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             editor.putBoolean("canRevokePmInbox", canRevokePmInbox);
             editor.putBoolean("blockedCountry", blockedCountry);
-            editor.putString("venueSearchBot", venueSearchBot);
             editor.putString("gifSearchBot", gifSearchBot);
             editor.putString("imageSearchBot", imageSearchBot);
             editor.putString("dcDomainName2", dcDomainName);
@@ -7245,7 +7226,7 @@ public class MessagesController extends BaseController implements NotificationCe
                         } else {
                             oldChat.flags = oldChat.flags & ~1073741824;
                         }
-                        getNotificationCenter().postNotificationName(NotificationCenter.chatSwitchedForum, chat.id, chat.forum, chat.forum_tabs);
+                        getNotificationCenter().postNotificationName(NotificationCenter.chatSwitchedForum, chat.id, chat.forum, chat.forum_tabs, chat.forum_sidebar);
                     }
                 }
             } else {
@@ -7331,7 +7312,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
         if (oldChat != null && oldChat.forum != chat.forum) {
             AndroidUtilities.runOnUIThread(() -> {
-                getNotificationCenter().postNotificationName(NotificationCenter.chatSwitchedForum, chat.id, chat.forum, chat.forum_tabs);
+                getNotificationCenter().postNotificationName(NotificationCenter.chatSwitchedForum, chat.id, chat.forum, chat.forum_tabs, chat.forum_sidebar);
             });
         }
         if (oldChat != null && oldChat.collapsed_in_dialogs != chat.collapsed_in_dialogs) {
@@ -15267,7 +15248,7 @@ public class MessagesController extends BaseController implements NotificationCe
         }
 
         final long monoForumPeerId;
-        if (getMessagesStorage().isMonoForum(dialogId)) {
+        if (threadId != 0 && isMonoForum(dialogId)) {
             monoForumPeerId = threadId;
         } else {
             monoForumPeerId = 0;
@@ -15924,18 +15905,19 @@ public class MessagesController extends BaseController implements NotificationCe
         getNotificationCenter().postNotificationName(NotificationCenter.updateAllMessages, -chatId);
     }
 
-    public void toggleChannelForum(long chatId, boolean enabled, boolean tabsEnabled) {
+    public void toggleChannelForum(long chatId, boolean enabled, boolean tabsEnabled, boolean sidebarEnabled) {
         TLRPC.TL_channels_toggleForum req = new TLRPC.TL_channels_toggleForum();
         req.channel = getInputChannel(chatId);
         req.enabled = enabled;
         req.tabs = tabsEnabled;
+        req.sidebar = sidebarEnabled;
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response != null) {
                 processUpdates((TLRPC.Updates) response, false);
                 AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_CHAT));
             }
         }, ConnectionsManager.RequestFlagInvokeAfter);
-        getNotificationCenter().postNotificationName(NotificationCenter.chatSwitchedForum, chatId, enabled, tabsEnabled);
+        getNotificationCenter().postNotificationName(NotificationCenter.chatSwitchedForum, chatId, enabled, tabsEnabled, sidebarEnabled);
     }
 
     public void toggleChannelInvitesHistory(long chatId, boolean enabled) {
@@ -18224,7 +18206,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private int getUpdateType(TLRPC.Update update) {
         if (update instanceof TL_update.TL_updateNewMessage || update instanceof TL_update.TL_updateReadMessagesContents || update instanceof TL_update.TL_updateReadHistoryInbox ||
                 update instanceof TL_update.TL_updateReadHistoryOutbox || update instanceof TL_update.TL_updateDeleteMessages || update instanceof TL_update.TL_updateWebPage ||
-                update instanceof TL_update.TL_updateEditMessage || update instanceof TL_update.TL_updateFolderPeers || update instanceof TL_update.TL_updatePinnedMessages) {
+                update instanceof TL_update.TL_updateEditMessage || update instanceof TL_update.TL_updateFolderPeers || update instanceof TL_update.TL_updatePinnedMessages ||
+                update instanceof TL_update.TL_updateMessageWidgetData) {
             return 0;
         } else if (update instanceof TL_update.TL_updateNewEncryptedMessage) {
             return 1;
@@ -18267,6 +18250,8 @@ public class MessagesController extends BaseController implements NotificationCe
             return ((TL_update.TL_updatePinnedChannelMessages) update).pts;
         } else if (update instanceof TL_update.TL_updatePinnedMessages) {
             return ((TL_update.TL_updatePinnedMessages) update).pts;
+        } else if (update instanceof TL_update.TL_updateMessageWidgetData) {
+            return ((TL_update.TL_updateMessageWidgetData) update).pts;
         } else {
             return 0;
         }
@@ -18301,6 +18286,8 @@ public class MessagesController extends BaseController implements NotificationCe
             return ((TL_update.TL_updatePinnedChannelMessages) update).pts_count;
         } else if (update instanceof TL_update.TL_updatePinnedMessages) {
             return ((TL_update.TL_updatePinnedMessages) update).pts_count;
+        } else if (update instanceof TL_update.TL_updateMessageWidgetData) {
+            return ((TL_update.TL_updateMessageWidgetData) update).pts_count;
         } else {
             return 0;
         }
@@ -19891,7 +19878,8 @@ public class MessagesController extends BaseController implements NotificationCe
                 FileLog.d("TL_updateReadChannelInbox " + dialogId + "  new unread = " + update.still_unread_count + " max id = " + update.max_id + " from get diff " + fromGetDifference);
             } else if (
                 baseUpdate instanceof TL_update.TL_updatePinnedForumTopic ||
-                baseUpdate instanceof TL_update.TL_updatePinnedForumTopics
+                baseUpdate instanceof TL_update.TL_updatePinnedForumTopics ||
+                baseUpdate instanceof TL_update.TL_updateEditForumTopic
             ) {
                 if (updatesOnMainThread == null) {
                     updatesOnMainThread = new ArrayList<>();
@@ -20102,6 +20090,13 @@ public class MessagesController extends BaseController implements NotificationCe
             } else if (baseUpdate instanceof TL_update.TL_updatePinnedMessages) {
                 TL_update.TL_updatePinnedMessages update = (TL_update.TL_updatePinnedMessages) baseUpdate;
                 getMessagesStorage().updatePinnedMessages(MessageObject.getPeerId(update.peer), update.messages, update.pinned, -1, 0, false, null);
+            } else if (baseUpdate instanceof TL_update.TL_updateMessageWidgetData) {
+                // The bot edited a widget's state (widget-sandbox docs/sdk-v1.md §5.11): kept with the message, given
+                // to the live widget.
+                TL_update.TL_updateMessageWidgetData update = (TL_update.TL_updateMessageWidgetData) baseUpdate;
+                long dialogId = MessageObject.getPeerId(update.peer);
+                getMessagesStorage().updateMessageWidgetData(dialogId, update.msg_id, update.public_data, update.public_data_hash, update.chat_data);
+                AndroidUtilities.runOnUIThread(() -> org.telegram.utils.twidget.WidgetMedia.onDataEdited(currentAccount, dialogId, update.msg_id, update.public_data, update.public_data_hash, update.chat_data));
             } else if (baseUpdate instanceof TL_update.TL_updateGroupCallConnection) {
 
             } else if (baseUpdate instanceof TL_update.TL_updateLangPack) {
@@ -21031,6 +21026,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         } else {
                             getTopicsController().reloadTopics(-dialogId, false);
                         }
+                    } else if (baseUpdate instanceof TL_update.TL_updateEditForumTopic) {
+                        TL_update.TL_updateEditForumTopic update = (TL_update.TL_updateEditForumTopic) baseUpdate;
+                        getTopicsController().onTopicEditedServerSide(DialogObject.getPeerDialogId(update.peer), update);
                     } else if (baseUpdate instanceof TL_update.TL_updatePhoneCallSignalingData) {
                         TL_update.TL_updatePhoneCallSignalingData data = (TL_update.TL_updatePhoneCallSignalingData) baseUpdate;
                         VoIPService svc = VoIPService.getSharedInstance();
@@ -23249,7 +23247,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if ("sensitive".equals(reason.reason)) continue;
             if (
                 "all".equals(reason.platform) ||
-                "android".equals(reason.platform) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
+                ("android".equals(reason.platform) || "android-ios".equals(reason.platform) || "ios-android".equals(reason.platform)) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
                 "android-all".equals(reason.platform)
             ) {
                 return reason.text;
@@ -23267,7 +23265,7 @@ public class MessagesController extends BaseController implements NotificationCe
             if (ignoreRestrictionReasons != null && ignoreRestrictionReasons.contains(reason.reason)) continue;
             if (
                 "all".equals(reason.platform) ||
-                "android".equals(reason.platform) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
+                ("android".equals(reason.platform) || "android-ios".equals(reason.platform) || "ios-android".equals(reason.platform)) && (!ApplicationLoader.isStandaloneBuild() && !BuildVars.isBetaApp() || BuildVars.DEBUG_PRIVATE_VERSION) ||
                 "android-all".equals(reason.platform)
             ) {
                 if ("sensitive".equals(reason.reason)) return true;

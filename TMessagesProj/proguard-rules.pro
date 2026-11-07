@@ -17,10 +17,7 @@
 -keep class com.android.dx.** { *; }
 -keep class org.telegram.messenger.BuildVars { *; }
 -keep class org.telegram.messenger.BuildConfig { *; }
-# Subpackages were previously enumerated one by one with a single '*', which left
-# browser/utils/pip/car/audioinfo/chromecast/ringtone/wallpaper unprotected. Plugins
-# reach these reflectively (e.g. find_class("org.telegram.messenger.browser.Browser")),
-# so keep the whole tree like org.telegram.ui.** and org.telegram.tgnet.** above.
+# Plugins resolve messenger classes and members reflectively across all subpackages.
 -keep class org.telegram.messenger.** { *; }
 -keep class org.telegram.SQLite.** { *; }
 -keep class org.telegram.tgnet.ConnectionsManager { *; }
@@ -60,6 +57,10 @@
 -keep class com.google.android.exoplayer2.upstream.RawResourceDataSource {
   public static android.net.Uri buildRawResourceUri(int);
 }
+
+# Widget sandbox methods are registered by JNI and called by native workers.
+-keep class org.telegram.utils.twidget.WidgetSandboxNative { *; }
+-keep class org.telegram.utils.twidget.WidgetSandboxBackend { *; }
 
 # Methods accessed via reflection in DefaultExtractorsFactory
 -dontnote com.google.android.exoplayer2.ext.flac.FlacLibrary

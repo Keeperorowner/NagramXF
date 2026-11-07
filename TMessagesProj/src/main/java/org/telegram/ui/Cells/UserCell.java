@@ -8,6 +8,7 @@
 
 package org.telegram.ui.Cells;
 
+import org.telegram.messenger.FileLog;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
@@ -47,6 +48,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BackupImageView;
@@ -62,6 +64,7 @@ import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.NotificationsSettingsActivity;
 import org.telegram.ui.Stories.StoriesListPlaceProvider;
 import org.telegram.ui.Stories.StoriesUtilities;
+import java.util.HashSet;
 
 import tw.nekomimi.nekogram.NekoConfig;
 
@@ -149,7 +152,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         if (needAddButton) {
             addButton = new TextView(context);
             addButton.setGravity(Gravity.CENTER);
-            addButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            ThemeBind.textColor(addButton, Theme.key_featuredStickers_buttonText, resourcesProvider);
             addButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
             addButton.setTypeface(AndroidUtilities.bold());
             addButton.setBackground(Theme.AdaptiveRipple.filledRectByKey(Theme.key_featuredStickers_addButton, 14));
@@ -192,7 +195,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         setClipChildren(false);
 
         nameTextView = new SimpleTextView(context);
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         nameTextView.setTypeface(AndroidUtilities.bold());
         nameTextView.setTextSize(16);
         nameTextView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP);
@@ -208,7 +211,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
         imageView = new ImageView(context);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+        ThemeBind.colorFilter(imageView, Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(LayoutParams.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 0 : 16, 0, LocaleController.isRTL ? 16 : 0, 0));
 
@@ -225,7 +228,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             checkBox3 = new ImageView(context);
             checkBox3.setScaleType(ImageView.ScaleType.CENTER);
             checkBox3.setImageResource(R.drawable.account_check);
-            checkBox3.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(checkBox3, Theme.key_featuredStickers_addButton, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             checkBox3.setVisibility(View.GONE);
             addView(checkBox3, LayoutHelper.createFrame(24, 24, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 10 + padding : 0, 0, LocaleController.isRTL ? 0 : 10 + padding, 0));
         }
@@ -234,7 +237,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             adminTextView = new TextView(context);
             ScaleStateListAnimator.apply(adminTextView, .05f, 1.2f);
             adminTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-            adminTextView.setTextColor(Theme.getColor(Theme.key_profile_creatorIcon, resourcesProvider));
+            ThemeBind.textColor(adminTextView, Theme.key_profile_creatorIcon, resourcesProvider);
             adminTextView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
             addView(adminTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, LocaleController.isRTL ? 23 : 0, 10, LocaleController.isRTL ? 0 : 23, 0));
         }
@@ -292,28 +295,29 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
         }
         this.isAdmin = isAdmin;
         this.isOwner = isOwner;
-        final int color;
+        final int colorKey;
         if (isOwner) {
-            color = Theme.getColor(Theme.key_chat_tagCreator, resourcesProvider);
+            colorKey = Theme.key_chat_tagCreator;
         } else if (isAdmin) {
-            color = Theme.getColor(Theme.key_chat_tagAdmin, resourcesProvider);
+            colorKey = Theme.key_chat_tagAdmin;
         } else if (canAddTag && TextUtils.isEmpty(role)) {
-            color = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+            colorKey = Theme.key_featuredStickers_addButton;
         } else {
-            color = Theme.getColor(Theme.key_chat_inAdminText, resourcesProvider);
+            colorKey = Theme.key_chat_inAdminText;
         }
-        adminTextView.setTextColor(color);
+        final int color = Theme.getColor(colorKey, resourcesProvider);
+        ThemeBind.textColor(adminTextView, colorKey, resourcesProvider);
         if (isAdmin || isOwner) {
             adminTextView.setText(role);
             adminTextView.setPadding(dp(6), dp(0.66f), dp(6), dp(1));
             adminTextView.setTranslationX(dp(6));
-            adminTextView.setBackground(Theme.createRoundRectDrawable(dp(32), Theme.multAlpha(color, .12f)));
+            ThemeBind.fillBackground(adminTextView, Theme.createRoundRectDrawable(dp(32), Theme.multAlpha(color, .12f)), ThemeBind.multAlpha(colorKey, .12f), resourcesProvider);
             adminTextView.setOnClickListener(onClick);
         } else if (canAddTag && TextUtils.isEmpty(role)) {
             adminTextView.setText(getString(R.string.AddTag));
             adminTextView.setPadding(dp(6), dp(0.66f), dp(6), dp(1));
             adminTextView.setTranslationX(dp(6));
-            adminTextView.setBackground(Theme.createRadSelectorDrawable(Theme.multAlpha(color, .12f), dp(32), dp(32)));
+            ThemeBind.selectorBackground(adminTextView, Theme.createRadSelectorDrawable(Theme.multAlpha(color, .12f), dp(32), dp(32)), null, ThemeBind.multAlpha(colorKey, .12f), resourcesProvider);
             adminTextView.setOnClickListener(onClick);
         } else {
             adminTextView.setText(role);
@@ -517,7 +521,18 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
             MeasureSpec.makeMeasureSpec(dp(callCellStyle ? 56 : 58) + (needDivider ? 1 : 0), MeasureSpec.EXACTLY));
     }
 
+    private boolean customStatusColors;
+
+    private void refreshStatusColors() {
+        if (customStatusColors) {
+            return;
+        }
+        statusColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
+        statusOnlineColor = Theme.getColor(Theme.key_telegram_color_text, resourcesProvider);
+    }
+
     public void setStatusColors(int color, int onlineColor) {
+        customStatusColors = true;
         statusColor = color;
         statusOnlineColor = onlineColor;
     }
@@ -708,7 +723,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                             canvas.restore();
                         }
                     };
-                    premiumDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.drawableColorFilter(this, premiumDrawable, Theme.key_chats_verifiedBackground, resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 }
                 nameTextView.setRightDrawable(premiumDrawable);
             }
@@ -766,10 +781,10 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 ? org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(46.0f, false, hasStories, true)
                 : org.telegram.messenger.AvatarCornerHelper.getAvatarRoundRadius(46.0f, currentChat != null && currentChat.forum, hasStories));
 
-        nameTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
         if (mutualView != null) {
             mutualView.setVisibility(currentUser != null && currentUser.mutual_contact ? VISIBLE : GONE);
         }
+        ThemeBind.textColor(nameTextView, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
     }
 
     @Override
@@ -785,6 +800,34 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
 
     @Override
     public void updateColors() {
+        try {
+            // recolor in place (a full update(0) re-bind every theme frame is too heavy)
+            final int oldStatusColor = statusColor, oldStatusOnlineColor = statusOnlineColor;
+            refreshStatusColors();
+            if (statusTextView != null) {
+                final int current = statusTextView.getTextColor();
+                if (current == oldStatusOnlineColor && oldStatusOnlineColor != oldStatusColor) {
+                    statusTextView.setTextColor(statusOnlineColor);
+                } else if (current == oldStatusColor) {
+                    statusTextView.setTextColor(statusColor);
+                }
+            }
+            if (avatarImageView != null) {
+                avatarImageView.invalidate();
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(Theme.key_windowBackgroundWhiteGrayText);
+        colors.add(Theme.key_telegram_color_text);
+        colors.add(Theme.key_windowBackgroundWhite);
+        colors.add(Theme.key_checkboxCheck);
+        colors.add(Theme.key_chat_tagCreator);
+        colors.add(Theme.key_chat_tagAdmin);
+        colors.add(Theme.key_chat_inAdminText);
     }
 
     public void setSelfAsSavedMessages(boolean value) {
@@ -851,7 +894,7 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+        NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         emojiStatus.attach();
         botVerification.attach();
     }
@@ -931,8 +974,8 @@ public class UserCell extends FrameLayout implements NotificationCenter.Notifica
                 closeView.setScaleType(ImageView.ScaleType.CENTER);
                 ScaleStateListAnimator.apply(closeView);
                 closeView.setImageResource(R.drawable.ic_close_white);
-                closeView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider), PorterDuff.Mode.SRC_IN));
-                closeView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_AUTO));
+                ThemeBind.colorFilter(closeView, Theme.key_windowBackgroundWhiteGrayText3, resourcesProvider, PorterDuff.Mode.SRC_IN);
+                ThemeBind.selectorBackground(closeView, Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, resourcesProvider), Theme.RIPPLE_MASK_CIRCLE_AUTO), null, ThemeBind.of(Theme.key_listSelector), resourcesProvider);
                 addView(closeView, LayoutHelper.createFrame(30, 30, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, LocaleController.isRTL ? 14 : 0, 0, LocaleController.isRTL ? 0 : 14, 0));
             }
             closeView.setOnClickListener(onClick);

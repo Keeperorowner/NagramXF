@@ -20,6 +20,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Components.AnimationProperties;
 import org.telegram.ui.Components.CheckBox2;
 import org.telegram.ui.Components.CubicBezierInterpolator;
@@ -70,7 +71,7 @@ public class TextCheckbox2Cell extends FrameLayout {
 
         textView = new TextView(context);
         textView.setTypeface(AndroidUtilities.regular());
-        textView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText));
+        ThemeBind.textColor(textView, dialog ? Theme.key_dialogTextBlack : Theme.key_windowBackgroundWhiteBlackText);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         textView.setLines(1);
         textView.setMaxLines(1);
@@ -81,7 +82,7 @@ public class TextCheckbox2Cell extends FrameLayout {
 
         valueTextView = new TextView(context);
         valueTextView.setTypeface(AndroidUtilities.regular());
-        valueTextView.setTextColor(Theme.getColor(dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayText2));
+        ThemeBind.textColor(valueTextView, dialog ? Theme.key_dialogIcon : Theme.key_windowBackgroundWhiteGrayText2);
         valueTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         valueTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
         valueTextView.setLines(1);
@@ -134,7 +135,7 @@ public class TextCheckbox2Cell extends FrameLayout {
     }
 
     public void setColors(int key, int switchKey, int switchKeyChecked, int switchThumb, int switchThumbChecked) {
-        textView.setTextColor(Theme.getColor(key));
+        ThemeBind.textColor(textView, key);
 //        checkbox.setColors(switchKey, switchKeyChecked, switchThumb, switchThumbChecked);
         textView.setTag(key);
     }

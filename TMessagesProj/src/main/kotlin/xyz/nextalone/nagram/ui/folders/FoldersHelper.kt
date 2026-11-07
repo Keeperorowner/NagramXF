@@ -116,8 +116,8 @@ object FoldersHelper {
     ) {
         val additionalList = AndroidUtilities.dp(48f)
         val mainTabBottom =
-            fragmentView.measuredHeight - navigationBarHeight - AndroidUtilities.dp(DialogsActivity.MAIN_TABS_MARGIN.toFloat())
-        val mainTabTop = mainTabBottom - AndroidUtilities.dp(DialogsActivity.MAIN_TABS_HEIGHT.toFloat())
+            fragmentView.measuredHeight - navigationBarHeight - AndroidUtilities.dp(tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsMargin().toFloat())
+        val mainTabTop = mainTabBottom - AndroidUtilities.dp(tw.nekomimi.nekogram.helpers.MainTabsHelper.getMainTabsHeight().toFloat())
 
         val topPanelHeight =
             if (topPanelLayout != null && topPanelLayout.visibility == View.VISIBLE) {

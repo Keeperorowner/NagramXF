@@ -53,6 +53,7 @@ import org.telegram.ui.Stories.recorder.HintView2;
 import tw.nekomimi.nekogram.NekoConfig;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements Theme.Colorable {
 
@@ -672,7 +673,15 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
         }
 //        selectorDrawable.setColor(processColor(Theme.getColor(tabLineColorKey, resourcesProvider)));
         selectorDrawable.setColor(Theme.multAlpha(processColor(Theme.getColor(activeTextColorKey, resourcesProvider)), .15f));
+        if (backgroundDrawable != null) {
+            // glass background is drawn manually (not the view background), so the theme dispatcher does not reach it
+            backgroundDrawable.updateColors();
+        }
         invalidate();
+    }
+    @Override
+    public void addColorKeys(HashSet<Integer> colors) {
+        colors.add(activeTextColorKey);
     }
 
     public int getCurrentTabId() {

@@ -571,7 +571,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     }
 
     @Override
-    public org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode getGlassSource() {
+    public org.telegram.utils.glass.source.GlassSourceRenderNode getGlassSource() {
         ChatActivity chatActivity;
         ChatActivityContainer container = this.chatContainer;
         if (container == null || (chatActivity = container.chatActivity) == null) {

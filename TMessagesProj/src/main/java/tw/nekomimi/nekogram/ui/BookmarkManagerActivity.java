@@ -62,8 +62,8 @@ import org.telegram.ui.Components.blur3.ViewGroupPartRenderer;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceColor;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSourceRenderNode;
+import org.telegram.utils.glass.source.GlassSourceColor;
+import org.telegram.utils.glass.source.GlassSourceRenderNode;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.SearchTabsAndFiltersLayout;
 
@@ -116,9 +116,9 @@ public class BookmarkManagerActivity extends BaseFragment {
     private int startedTrackingX;
     private int startedTrackingY;
     private VelocityTracker velocityTracker;
-    private final BlurredBackgroundSourceColor tabsBackgroundSourceColor;
-    private final BlurredBackgroundSourceRenderNode tabsBackgroundSourceFrosted;
-    private final BlurredBackgroundSourceRenderNode tabsBackgroundSourceGlass;
+    private final GlassSourceColor tabsBackgroundSourceColor;
+    private final GlassSourceRenderNode tabsBackgroundSourceFrosted;
+    private final GlassSourceRenderNode tabsBackgroundSourceGlass;
     private final BlurredBackgroundDrawableViewFactory tabsBackgroundDrawableFactory;
     private ViewPositionWatcher tabsViewPositionWatcher;
     private int bottomInset;
@@ -148,21 +148,21 @@ public class BookmarkManagerActivity extends BaseFragment {
     public BookmarkManagerActivity() {
         super();
 
-        tabsBackgroundSourceColor = new BlurredBackgroundSourceColor();
+        tabsBackgroundSourceColor = new GlassSourceColor();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
-            tabsBackgroundSourceFrosted = new BlurredBackgroundSourceRenderNode(tabsBackgroundSourceColor);
+            tabsBackgroundSourceFrosted = new GlassSourceRenderNode(tabsBackgroundSourceColor);
             tabsBackgroundSourceFrosted.setScrollableNoiseSuppressor(scrollableViewNoiseSuppressor, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
             tabsBackgroundSourceFrosted.setUnderSource(tabsBackgroundSourceColor);
 
             if (LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS)) {
-                tabsBackgroundSourceGlass = new BlurredBackgroundSourceRenderNode(tabsBackgroundSourceColor);
+                tabsBackgroundSourceGlass = new GlassSourceRenderNode(tabsBackgroundSourceColor);
                 tabsBackgroundSourceGlass.setScrollableNoiseSuppressor(scrollableViewNoiseSuppressor, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
                 tabsBackgroundSourceGlass.setUnderSource(tabsBackgroundSourceColor);
-                tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceGlass);
+                tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceGlass, tabsBackgroundSourceFrosted, tabsBackgroundSourceColor);
             } else {
                 tabsBackgroundSourceGlass = null;
-                tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceFrosted);
+                tabsBackgroundDrawableFactory = new BlurredBackgroundDrawableViewFactory(tabsBackgroundSourceFrosted, tabsBackgroundSourceFrosted, tabsBackgroundSourceColor);
             }
             tabsBackgroundDrawableFactory.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
         } else {

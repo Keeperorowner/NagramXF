@@ -45,7 +45,12 @@ import tw.nekomimi.nekogram.NekoConfig;
 import xyz.nextalone.nagram.NaConfig;
 import me.vkryl.android.animator.BoolAnimator;
 
-public class Switch extends View {
+public class Switch extends View implements Theme.Colorable {
+
+    @Override
+    public void updateColors() {
+        colorSet = 0; // the ripple color is re-read from the theme on the next press
+    }
     private final BoolAnimator animatorIconVisibility = new BoolAnimator(this, CubicBezierInterpolator.EASE_OUT_QUINT, 380L, true);
 
     public static final int SWITCH_STYLE_DEFAULT = 0;

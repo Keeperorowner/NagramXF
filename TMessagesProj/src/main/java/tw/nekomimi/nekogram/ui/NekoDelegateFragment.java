@@ -42,6 +42,7 @@ import org.telegram.tgnet.tl.TL_keyboard;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.Cells.ChatMessageCell;
+import org.telegram.ui.Cells.ChatMessageTransitionParams;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.RecyclerListView;
@@ -927,7 +928,7 @@ public abstract class NekoDelegateFragment extends BaseFragment implements Notif
     }
 
     private void animateCellChange(@NonNull ChatMessageCell messageCell) {
-        ChatMessageCell.TransitionParams params = messageCell.getTransitionParams();
+        ChatMessageTransitionParams params = messageCell.getTransitionParams();
         if (!params.supportChangeAnimation()) {
             return;
         }

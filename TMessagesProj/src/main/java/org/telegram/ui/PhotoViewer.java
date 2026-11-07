@@ -226,6 +226,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.PhotoPickerPhotoCell;
 import org.telegram.ui.Cells.TextSelectionHelper;
@@ -315,10 +316,8 @@ import org.telegram.ui.Components.blur3.Blur3HashImpl;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableRenderNode;
-import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawableSource;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
-import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
+import org.telegram.utils.glass.source.GlassSource;
 import org.telegram.ui.Components.blur3.utils.Blur3Utils;
 import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.spoilers.SpoilersTextView;
@@ -707,7 +706,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         @Override
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
-            NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+            NotificationCenter.getGlobalInstance().addWeakObserver(this, NotificationCenter.emojiLoaded);
         }
 
         @Override
@@ -906,9 +905,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private int videoWidth, videoHeight;
     private float inlineOutAnimationProgress;
 
-    private BlurredBackgroundSource blurredBackgroundSource;
+    private GlassSource blurredBackgroundSource;
+
+    private interface GlassSourceWithDrawables extends GlassSource, BlurredBackgroundDrawableViewFactory.DrawableOwner {
+    }
     private BlurredBackgroundDrawableViewFactory iBlur3FactoryFrostedLiquidGlass;
-    private ReferenceList<BlurredBackgroundDrawableRenderNode> iBlur3BlurredDrawables = new ReferenceList<>();
+    private ReferenceList<BlurredBackgroundDrawable> iBlur3BlurredDrawables = new ReferenceList<>();
     private ReferenceList<View> glassAttachedViews;
 
     public BlurringShader.BlurManager blurManager;
@@ -4841,22 +4843,18 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         blurManager = new BlurringShader.BlurManager(containerView);
         blurManager.padding = 1;
 
-        blurredBackgroundSource = new BlurredBackgroundSource() {
+        blurredBackgroundSource = new GlassSourceWithDrawables() {
             private final BlurringShader.StoryBlurDrawer blur = new BlurringShader.StoryBlurDrawer(blurManager, containerView, BlurringShader.StoryBlurDrawer.BLUR_TYPE_BACKGROUND);
 
             @Override
             public BlurredBackgroundDrawable createDrawable() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    BlurredBackgroundDrawableRenderNode d = new BlurredBackgroundDrawableRenderNode(this);
-                    iBlur3BlurredDrawables.add(d);
-                    return d;
-                } else {
-                    return new BlurredBackgroundDrawableSource(this);
-                }
+                final BlurredBackgroundDrawable d = new BlurredBackgroundDrawable(this);
+                iBlur3BlurredDrawables.add(d);
+                return d;
             }
 
             @Override
-            public void draw(Canvas canvas, float left, float top, float right, float bottom) {
+            public void draw(@NonNull Canvas canvas, float left, float top, float right, float bottom) {
                 canvas.save();
                 canvas.clipRect(left, top, right, bottom);
                 drawCaptionBlur(canvas, blur, 0xFF262626, 0x33000000, false, true, true);
@@ -4867,7 +4865,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         glassAttachedViews = new ReferenceList<>();
         iBlur3BlurredDrawables = new ReferenceList<>();
         iBlur3FactoryFrostedLiquidGlass = new BlurredBackgroundDrawableViewFactory(blurredBackgroundSource);
-        // iBlur3FactoryFrostedLiquidGlass.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
+        // iBlur3FactoryFrostedLiquidGlass.setLiquidGlassEffectAllowed(true);
         iBlur3FactoryFrostedLiquidGlass.setSourceRootView(new ViewPositionWatcher(containerView), containerView);
         iBlur3FactoryFrostedLiquidGlass.setLinkedViewsRef(glassAttachedViews);
 
@@ -5163,7 +5161,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         dialog.show();
                         View neutralButton = dialog.getButton(Dialog.BUTTON_NEUTRAL);
                         if (neutralButton instanceof TextView) {
-                            ((TextView) neutralButton).setTextColor(getThemedColor(Theme.key_text_RedBold));
+                            ThemeBind.textColor((TextView) neutralButton, Theme.key_text_RedBold, PhotoViewer.this.resourcesProvider);
                             neutralButton.setBackground(Theme.getRoundRectSelectorDrawable(getThemedColor(Theme.key_text_RedBold)));
                             if (dialog.getButtonsLayout() instanceof LinearLayout && ((LinearLayout) dialog.getButtonsLayout()).getOrientation() == LinearLayout.VERTICAL) {
                                 neutralButton.bringToFront();
@@ -5348,7 +5346,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         dialog.show();
                         View neutralButton = dialog.getButton(Dialog.BUTTON_NEUTRAL);
                         if (neutralButton instanceof TextView) {
-                            ((TextView) neutralButton).setTextColor(getThemedColor(Theme.key_text_RedBold));
+                            ThemeBind.textColor((TextView) neutralButton, Theme.key_text_RedBold, PhotoViewer.this.resourcesProvider);
                             neutralButton.setBackground(Theme.getRoundRectSelectorDrawable(getThemedColor(Theme.key_text_RedBold)));
                             if (dialog.getButtonsLayout() instanceof LinearLayout && ((LinearLayout) dialog.getButtonsLayout()).getOrientation() == LinearLayout.VERTICAL) {
                                 neutralButton.bringToFront();
@@ -5615,7 +5613,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     showAlertDialog(builder);
                     TextView button = (TextView) alertDialog.getButton(DialogInterface.BUTTON_POSITIVE);
                     if (button != null) {
-                        button.setTextColor(getThemedColor(Theme.key_text_RedBold));
+                        ThemeBind.textColor(button, Theme.key_text_RedBold, PhotoViewer.this.resourcesProvider);
                     }
                 } else if (id == gallery_menu_share || id == gallery_menu_share2) {
                     onSharePressed();
@@ -6313,7 +6311,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         qualityPicker.updateSelectedCount(0, false);
         qualityPicker.setTranslationY(dp(120));
         qualityPicker.doneButton.setText(getString("Done", R.string.Done).toUpperCase());
-        qualityPicker.doneButton.setTextColor(getThemedColor(Theme.key_chat_editMediaButton));
+        ThemeBind.textColor(qualityPicker.doneButton, Theme.key_chat_editMediaButton, resourcesProvider);
         containerView.addView(qualityPicker, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.LEFT));
         qualityPicker.cancelButton.setOnClickListener(view -> {
             selectedCompression = previousCompression;
@@ -6485,8 +6483,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
 
         doneButtonFullWidth = new TextView(containerView.getContext());
-        doneButtonFullWidth.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
-        doneButtonFullWidth.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.selectorBackground(doneButtonFullWidth, Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.adaptiveRipple(Theme.key_featuredStickers_addButton), resourcesProvider);
+        ThemeBind.textColor(doneButtonFullWidth, Theme.key_featuredStickers_buttonText, resourcesProvider);
         doneButtonFullWidth.setEllipsize(TextUtils.TruncateAt.END);
         doneButtonFullWidth.setGravity(Gravity.CENTER);
         doneButtonFullWidth.setLines(1);
@@ -8097,8 +8095,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             containerView.addView(playButtonAccessibilityOverlay, LayoutHelper.createFrame(64, 64, Gravity.CENTER));
         }
 
-        doneButtonFullWidth.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
-        doneButtonFullWidth.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        ThemeBind.selectorBackground(doneButtonFullWidth, Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6), ThemeBind.of(Theme.key_featuredStickers_addButton), ThemeBind.adaptiveRipple(Theme.key_featuredStickers_addButton), resourcesProvider);
+        ThemeBind.textColor(doneButtonFullWidth, Theme.key_featuredStickers_buttonText, resourcesProvider);
 
         textSelectionHelper.allowScrollPrentRelative = true;
         textSelectionHelper.useMovingOffset = false;
@@ -8164,8 +8162,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public void invalidateAllGlassAttachedViews() {
-        if (iBlur3BlurredDrawables != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            for (BlurredBackgroundDrawableRenderNode d : iBlur3BlurredDrawables) {
+        if (iBlur3BlurredDrawables != null) {
+            for (BlurredBackgroundDrawable d : iBlur3BlurredDrawables) {
                 d.invalidateDisplayList();
             }
         }
@@ -9646,7 +9644,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     return;
                 }
                 if (photoCropView.mirror()) {
-                    mirrorItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
+                    ThemeBind.colorFilter(mirrorItem, Theme.key_chat_editMediaButton, PhotoViewer.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
                 } else {
                     mirrorItem.setColorFilter(null);
                 }
@@ -9760,7 +9758,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 photoCropView.wheelView.setRotated(false);
                 if (Math.abs(diff) > 0) {
                     if (photoCropView.rotate(diff)) {
-                        rotateItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
+                        ThemeBind.colorFilter(rotateItem, Theme.key_chat_editMediaButton, PhotoViewer.this.resourcesProvider, PorterDuff.Mode.MULTIPLY);
                     } else {
                         rotateItem.setColorFilter(null);
                     }
@@ -12143,17 +12141,17 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (currentEditMode == EDIT_MODE_CROP) {
             entry.isCropped = true;
             if (entry.isCropped) {
-                cropItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
+                ThemeBind.colorFilter(cropItem, Theme.key_chat_editMediaButton, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             } else {
                 cropItem.setColorFilter(null);
             }
         } else if (currentEditMode == EDIT_MODE_FILTER) {
             entry.isFiltered = true;
-            tuneItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
+            ThemeBind.colorFilter(tuneItem, Theme.key_chat_editMediaButton, resourcesProvider, PorterDuff.Mode.MULTIPLY);
         } else if (currentEditMode == EDIT_MODE_PAINT) {
             if (hasChanged) {
                 entry.isPainted = true;
-                paintItem.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_editMediaButton), PorterDuff.Mode.MULTIPLY));
+                ThemeBind.colorFilter(paintItem, Theme.key_chat_editMediaButton, resourcesProvider, PorterDuff.Mode.MULTIPLY);
             } else if (sendPhotoType == SELECT_TYPE_STICKER) {
                 entry.isPainted = true;
             }
@@ -12756,7 +12754,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             photoCropView.onAppear();
 
             editorDoneLayout.doneButton.setText(getString(R.string.Crop));
-            editorDoneLayout.doneButton.setTextColor(getThemedColor(Theme.key_chat_editMediaButton));
+            ThemeBind.textColor(editorDoneLayout.doneButton, Theme.key_chat_editMediaButton, resourcesProvider);
 
             changeModeAnimation = new AnimatorSet();
             ArrayList<Animator> arrayList = new ArrayList<>();
@@ -19362,6 +19360,16 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         return AndroidUtilities.isInPictureInPictureMode(parentActivity);
     }
 
+    public void onStop() {
+        // the app went to the background without picture-in-picture: the video must not keep playing there
+        if (AndroidUtilities.isInPictureInPictureMode(parentActivity)) {
+            return;
+        }
+        if (videoPlayer != null ? isPlaying : photoViewerWebView != null && photoViewerWebView.isControllable() && photoViewerWebView.isPlaying()) {
+            pauseVideoOrWeb();
+        }
+    }
+
     public boolean isVisible() {
         return isVisible && placeProvider != null;
     }
@@ -23676,13 +23684,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             if (currentMessageObject.sponsoredUrl != null && !TextUtils.equals(AndroidUtilities.getHostAuthority(currentMessageObject.sponsoredUrl), MessagesController.getInstance(currentAccount).linkPrefix)) {
                 TextView textView = new TextView(activityContext);
-                textView.setTextColor(Theme.getColor(Theme.key_chat_messageLinkIn, resourcesProvider));
+                ThemeBind.textColor(textView, Theme.key_chat_messageLinkIn, resourcesProvider);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                 textView.setMaxWidth(AndroidUtilities.dp(300));
                 Uri uri = Uri.parse(currentMessageObject.sponsoredUrl);
                 textView.setText(Browser.replaceHostname(uri, Browser.IDN_toUnicode(uri.getHost()), null));
-                textView.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, currentMessageObject.sponsoredAdditionalInfo == null ? 6 : 0));
+                ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, currentMessageObject.sponsoredAdditionalInfo == null ? 6 : 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider);
                 textView.setOnClickListener(e -> {
                     if (currentMessageObject == null) {
                         return;
@@ -23707,12 +23715,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             if (currentMessageObject.sponsoredInfo != null) {
                 TextView textView = new TextView(activityContext);
-                textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                 textView.setMaxWidth(AndroidUtilities.dp(300));
                 textView.setText(currentMessageObject.sponsoredInfo);
-                textView.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, currentMessageObject.sponsoredAdditionalInfo == null ? 6 : 0));
+                ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, currentMessageObject.sponsoredAdditionalInfo == null ? 6 : 0), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider);
                 textView.setOnClickListener(e -> {
                     if (AndroidUtilities.addToClipboard(currentMessageObject.sponsoredInfo)) {
                         BulletinFactory.of(Bulletin.BulletinWindow.make(activityContext), resourcesProvider).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
@@ -23723,12 +23731,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
             if (currentMessageObject.sponsoredAdditionalInfo != null) {
                 TextView textView = new TextView(activityContext);
-                textView.setTextColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider));
+                ThemeBind.textColor(textView, Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
                 textView.setMaxWidth(AndroidUtilities.dp(300));
                 textView.setText(currentMessageObject.sponsoredAdditionalInfo);
-                textView.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, 6));
+                ThemeBind.selectorBackground(textView, Theme.createRadSelectorDrawable(getThemedColor(Theme.key_dialogButtonSelector), 0, 6), null, ThemeBind.of(Theme.key_dialogButtonSelector), resourcesProvider);
                 textView.setOnClickListener(e -> {
                     if (AndroidUtilities.addToClipboard(currentMessageObject.sponsoredAdditionalInfo)) {
                         BulletinFactory.of(Bulletin.BulletinWindow.make(activityContext), resourcesProvider).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
@@ -23741,7 +23749,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 View section = sections.get(i);
                 if (i > 0) {
                     FrameLayout separator = new FrameLayout(activityContext);
-                    separator.setBackgroundColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+                    ThemeBind.backgroundColor(separator, Theme.key_divider, resourcesProvider);
                     LinearLayout.LayoutParams params = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1);
                     params.height = 1;
                     info.addView(separator, params);

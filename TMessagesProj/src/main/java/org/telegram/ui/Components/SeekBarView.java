@@ -44,6 +44,7 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.FiltersView;
 import org.telegram.ui.DialogsActivity;
 
@@ -52,7 +53,25 @@ import java.util.Collections;
 
 import xyz.nextalone.nagram.NaConfig;
 
-public class SeekBarView extends FrameLayout {
+public class SeekBarView extends FrameLayout implements Theme.Colorable {
+
+    private int themedOuterColor;
+
+    @Override
+    public void updateColors() {
+        try {
+            if (outerPaint1 != null && outerPaint1.getColor() == themedOuterColor) {
+                final int color = getThemedColor(Theme.key_player_progress);
+                if (color != themedOuterColor) {
+                    themedOuterColor = color;
+                    setOuterColor(color);
+                    invalidate();
+                }
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
 
     public static final int SLIDER_STYLE_DEFAULT = 0;
     public static final int SLIDER_STYLE_MODERN = 1;
@@ -122,7 +141,7 @@ public class SeekBarView extends FrameLayout {
         innerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         outerPaint1 = new Paint(Paint.ANTI_ALIAS_FLAG);
-        outerPaint1.setColor(getThemedColor(Theme.key_player_progress));
+        outerPaint1.setColor(themedOuterColor = getThemedColor(Theme.key_player_progress));
 
         selectorWidth = AndroidUtilities.dp(32);
         thumbSize = AndroidUtilities.dp(24);
@@ -138,7 +157,7 @@ public class SeekBarView extends FrameLayout {
             @Override
             protected TextView createTextView() {
                 final TextView textView = new MarqueeTextView(context);
-                textView.setTextColor(getThemedColor(Theme.key_player_time));
+                ThemeBind.textColor(textView, Theme.key_player_time, SeekBarView.this.resourcesProvider);
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
                 textView.setEllipsize(TextUtils.TruncateAt.END);
                 textView.setSingleLine(true);

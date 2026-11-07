@@ -2,10 +2,6 @@ package org.telegram.messenger;
 
 import android.app.Activity;
 
-// import com.google.android.gms.tasks.OnSuccessListener;
-// import com.google.android.recaptcha.Recaptcha;
-// import com.google.android.recaptcha.RecaptchaAction;
-// import com.google.android.recaptcha.RecaptchaTasksClient;
 
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.LaunchActivity;
