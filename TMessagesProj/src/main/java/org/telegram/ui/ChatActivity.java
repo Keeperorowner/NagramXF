@@ -12092,6 +12092,7 @@ public class ChatActivity extends BaseFragment implements
                     noForwardCaption = messagePreviewParams.hideCaption;
                     int hasPoll = 0;
                     boolean hasInvoice = false;
+                    boolean hasCaption = false;
                     if (messagePreviewParams.forwardMessages != null) {
                         for (int a = 0, N = messagePreviewParams.forwardMessages.messages.size(); a < N; a++) {
                             MessageObject messageObject = messagePreviewParams.forwardMessages.messages.get(a);
@@ -12104,6 +12105,9 @@ public class ChatActivity extends BaseFragment implements
                             } else if (messageObject.isInvoice()) {
                                 hasInvoice = true;
                             }
+                            if (!TextUtils.isEmpty(messageObject.caption)) {
+                                hasCaption = true;
+                            }
                             selectedMessagesIds[0].put(messageObject.getId(), messageObject);
                         }
                     }
@@ -12111,6 +12115,7 @@ public class ChatActivity extends BaseFragment implements
                     args.putBoolean("onlySelect", true);
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     args.putBoolean("quote", !forward);
+                    args.putBoolean("hasCaption", forward && hasCaption);
                     final boolean reply = !forward && messagePreviewParams.replyMessage != null && !messagePreviewParams.replyMessage.messages.isEmpty() && messagePreviewParams.quote == null;
                     args.putBoolean("reply_to", reply);
                     if (reply) {
@@ -13505,6 +13510,17 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
         }
+        // Separate scan: the poll loop above stops early on a public poll and
+        // must not cut caption detection short for the rest of the selection.
+        boolean selectedHasCaption = false;
+        for (int a = 0; a < 2 && !selectedHasCaption; a++) {
+            for (int b = 0; b < selectedMessagesIds[a].size(); b++) {
+                MessageObject messageObject = selectedMessagesIds[a].valueAt(b);
+                if (messageObject != null && !TextUtils.isEmpty(messageObject.caption)) {
+                    selectedHasCaption = true;
+                }
+            }
+        }
         if (selectionReactionsOverlay != null && selectionReactionsOverlay.isVisible()) {
             selectionReactionsOverlay.setHiddenByScroll(true);
         }
@@ -13514,6 +13530,7 @@ public class ChatActivity extends BaseFragment implements
         args.putInt("messagesCount", canForwardMessagesCount);
         args.putInt("hasPoll", hasPoll);
         args.putBoolean("hasInvoice", hasInvoice);
+        args.putBoolean("hasCaption", selectedHasCaption);
         args.putBoolean("canSelectTopics", true);
         DialogsActivity fragment = new DialogsActivity(args);
         fragment.setDelegate(ChatActivity.this);
@@ -35992,6 +36009,20 @@ public class ChatActivity extends BaseFragment implements
                 args.putBoolean("onlySelect", true);
                 args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                 args.putInt("messagesCount", 1);
+                MessageObject captionSource = forwardingMessageGroup != null && forwardingMessageGroup.captionMessage != null ? forwardingMessageGroup.captionMessage : forwardingMessage;
+                boolean forwardedHasCaption = captionSource != null && !TextUtils.isEmpty(captionSource.caption);
+                if (!forwardedHasCaption && forwardingMessageGroup != null && forwardingMessageGroup.messages != null) {
+                    // GroupedMessages.calculate() can clear captionMessage for multi-caption
+                    // groups, so scan the whole group for any droppable caption.
+                    for (int i = 0; i < forwardingMessageGroup.messages.size(); i++) {
+                        MessageObject groupMessage = forwardingMessageGroup.messages.get(i);
+                        if (groupMessage != null && !TextUtils.isEmpty(groupMessage.caption)) {
+                            forwardedHasCaption = true;
+                            break;
+                        }
+                    }
+                }
+                args.putBoolean("hasCaption", forwardedHasCaption);
                 args.putInt("hasPoll", forwardingMessage.isTodo() ? 3 : forwardingMessage.isPoll() ? (forwardingMessage.isPublicPoll() ? 2 : 1) : 0);
                 if (ChatObject.isMonoForum(currentChat) && ChatObject.canManageMonoForum(currentAccount, currentChat) && currentChat.linked_monoforum_id != 0) {
                     args.putLong("forward_into_channel", -currentChat.linked_monoforum_id);

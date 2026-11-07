@@ -238,6 +238,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import kotlin.Unit;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
+import tw.nekomimi.nekogram.helpers.SendMenuGate;
 import tw.nekomimi.nekogram.llm.LlmConfig;
 import tw.nekomimi.nekogram.utils.AndroidUtil;
 import tw.nekomimi.nekogram.utils.StringUtils;
@@ -5215,6 +5216,9 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     private ActionBarMenuSubItem actionScheduleButton;
+    private ActionBarMenuSubItem sendWithoutSoundButton;
+    private ActionBarMenuSubItem preSendTranslateButton;
+    private ActionBarMenuSubItem forwardWhenOnlineButton;
     private boolean onSendLongClick(View view) {
         if (isInScheduleMode() || parentFragment != null && parentFragment.getChatMode() == ChatActivity.MODE_QUICK_REPLIES || animatorEphemeralMessageVisibility.getValue()) {
             return false;
@@ -5275,20 +5279,20 @@ public class ChatActivityEnterView extends FrameLayout implements
                     sendPopupLayout.addView(actionScheduleButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT));
                     SharedConfig.removeScheduledHint();
                     if (!self && dialog_id > 0) {
-                        sendWhenOnlineButton = new ActionBarMenuSubItem(getContext(), true, !sendWithoutSoundButtonValue, resourcesProvider);
-                        sendWhenOnlineButton.setTextAndIcon(LocaleController.getString(R.string.SendWhenOnline), R.drawable.msg_online);
-                        sendWhenOnlineButton.setMinimumWidth(dp(196));
-                        sendWhenOnlineButton.setOnClickListener(v -> {
+                        forwardWhenOnlineButton = new ActionBarMenuSubItem(getContext(), true, !sendWithoutSoundButtonValue, resourcesProvider);
+                        forwardWhenOnlineButton.setTextAndIcon(LocaleController.getString(R.string.SendWhenOnline), R.drawable.msg_online);
+                        forwardWhenOnlineButton.setMinimumWidth(dp(196));
+                        forwardWhenOnlineButton.setOnClickListener(v -> {
                             if (sendPopupWindow != null && sendPopupWindow.isShowing()) {
                                 sendPopupWindow.dismiss();
                             }
                             sendMessageInternal(true, 0x7FFFFFFE, 0, 0, true);
                         });
-                        sendPopupLayout.addView(sendWhenOnlineButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT));
+                        sendPopupLayout.addView(forwardWhenOnlineButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT));
                     }
                 }
                 if (sendWithoutSoundButtonValue) {
-                    ActionBarMenuSubItem sendWithoutSoundButton = new ActionBarMenuSubItem(getContext(), !scheduleButtonValue, true, resourcesProvider);
+                    sendWithoutSoundButton = new ActionBarMenuSubItem(getContext(), !scheduleButtonValue, true, resourcesProvider);
                     sendWithoutSoundButton.setTextAndIcon(sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off);
                     sendWithoutSoundButton.setMinimumWidth(dp(196));
                     sendWithoutSoundButton.setOnClickListener(v -> {
@@ -5300,7 +5304,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     sendPopupLayout.addView(sendWithoutSoundButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT));
                 }
                 if (messageEditText != null && messageEditText.getText().length() > 0) {
-                    ActionBarMenuSubItem preSendTranslateButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
+                    preSendTranslateButton = new ActionBarMenuSubItem(getContext(), false, false, resourcesProvider);
                     long chatId = ChatsHelper.getChatId();
                     String languageText = Translator.getInputTranslateLangForChat(chatId).toUpperCase();
                     preSendTranslateButton.setTextAndIcon(LocaleController.getString(R.string.TranslateMessage) + " (" + languageText + ")", R.drawable.ic_translate);
@@ -5363,17 +5367,34 @@ public class ChatActivityEnterView extends FrameLayout implements
                     delegate.onSendLongClick();
                 }
             }
+            // Config toggles are re-read on every show so N-Settings changes apply without
+            // reopening the chat; stock context conditions are recomputed to match (the build
+            // block above only ran once).
+            final boolean fwdSelf = parentFragment != null && UserObject.isUserSelf(parentFragment.getCurrentUser());
+            final boolean fwdCanSchedule = parentFragment != null && parentFragment.canScheduleMessage();
+
             if (actionScheduleButton != null) {
-                actionScheduleButton.setVisibility(voiceOnce ? View.GONE : View.VISIBLE);
+                boolean scheduleVisible = !voiceOnce && SendMenuGate.showSchedule(NaConfig.INSTANCE.getSendMenuSchedule().Bool(), fwdCanSchedule);
+                actionScheduleButton.setVisibility(scheduleVisible ? View.VISIBLE : View.GONE);
             }
 
-            if (sendWhenOnlineButton != null) {
+            if (sendWithoutSoundButton != null) {
+                boolean soundEligible = !(fwdSelf || slowModeTimer > 0 && !isInScheduleMode());
+                boolean soundVisible = SendMenuGate.showWithoutSound(NaConfig.INSTANCE.getSendMenuWithoutSound().Bool(), soundEligible);
+                sendWithoutSoundButton.setVisibility(soundVisible ? View.VISIBLE : View.GONE);
+            }
+
+            if (preSendTranslateButton != null) {
+                boolean hasText = messageEditText != null && messageEditText.getText().length() > 0;
+                boolean translateVisible = SendMenuGate.showTranslate(NaConfig.INSTANCE.getSendMenuTranslate().Bool(), hasText);
+                preSendTranslateButton.setVisibility(translateVisible ? View.VISIBLE : View.GONE);
+            }
+
+            if (forwardWhenOnlineButton != null) {
                 TLRPC.User user = parentFragment == null ? null : parentFragment.getCurrentUser();
-                if (user != null && !user.bot && !(user.status instanceof TLRPC.TL_userStatusEmpty) && !(user.status instanceof TLRPC.TL_userStatusOnline) && !(user.status instanceof TLRPC.TL_userStatusRecently) && !(user.status instanceof TLRPC.TL_userStatusLastMonth) && !(user.status instanceof TLRPC.TL_userStatusLastWeek)) {
-                    sendWhenOnlineButton.setVisibility(VISIBLE);
-                } else {
-                    sendWhenOnlineButton.setVisibility(GONE);
-                }
+                boolean userAway = user != null && !user.bot && !(user.status instanceof TLRPC.TL_userStatusEmpty) && !(user.status instanceof TLRPC.TL_userStatusOnline) && !(user.status instanceof TLRPC.TL_userStatusRecently) && !(user.status instanceof TLRPC.TL_userStatusLastMonth) && !(user.status instanceof TLRPC.TL_userStatusLastWeek);
+                boolean whenOnlineVisible = SendMenuGate.showWhenOnline(NaConfig.INSTANCE.getSendMenuWhenOnline().Bool(), fwdCanSchedule, fwdSelf, dialog_id > 0, userAway);
+                forwardWhenOnlineButton.setVisibility(whenOnlineVisible ? View.VISIBLE : View.GONE);
             }
             sendPopupLayout.measure(MeasureSpec.makeMeasureSpec(dp(1000), MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(1000), MeasureSpec.AT_MOST));
             sendPopupWindow.setFocusable(true);
@@ -5597,7 +5618,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         final boolean self = parentFragment != null && UserObject.isUserSelf(parentFragment.getCurrentUser());
         boolean scheduleButtonValue = parentFragment != null && parentFragment.canScheduleMessage();
         boolean sendWithoutSoundButtonValue = !(self || slowModeTimer > 0 && !isInScheduleMode());
-        if (scheduleButtonValue) {
+        if (SendMenuGate.showSchedule(NaConfig.INSTANCE.getSendMenuSchedule().Bool(), scheduleButtonValue)) {
             options.add(R.drawable.msg_calendar2, getString(self ? R.string.SetReminder : R.string.ScheduleMessage), () -> {
                 AlertsCreator.createScheduleDatePickerDialog(parentActivity, parentFragment.getDialogId(), new AlertsCreator.ScheduleDatePickerDelegate() {
                     @Override
@@ -5610,17 +5631,24 @@ public class ChatActivityEnterView extends FrameLayout implements
                     }
                 }, resourcesProvider);
             });
+        }
 
-            if (!self && dialog_id > 0) {
-                options.add(R.drawable.msg_online, getString(R.string.SendWhenOnline), () -> {
-                    sendMessageInternal(true, 0x7FFFFFFE, 0, 0, true);
-                    if (messageSendPreview != null) {
-                        messageSendPreview.dismiss(false);
-                        messageSendPreview = null;
-                    }
-                });
-                sendWhenOnlineButton = options.getLast();
-            }
+        TLRPC.User whenOnlineRecipient = parentFragment == null ? null : parentFragment.getCurrentUser();
+        boolean whenOnlineRecipientAway = whenOnlineRecipient != null && !whenOnlineRecipient.bot
+                && !(whenOnlineRecipient.status instanceof TLRPC.TL_userStatusEmpty)
+                && !(whenOnlineRecipient.status instanceof TLRPC.TL_userStatusOnline)
+                && !(whenOnlineRecipient.status instanceof TLRPC.TL_userStatusRecently)
+                && !(whenOnlineRecipient.status instanceof TLRPC.TL_userStatusLastMonth)
+                && !(whenOnlineRecipient.status instanceof TLRPC.TL_userStatusLastWeek);
+        if (SendMenuGate.showWhenOnline(NaConfig.INSTANCE.getSendMenuWhenOnline().Bool(), scheduleButtonValue, self, dialog_id > 0, whenOnlineRecipientAway)) {
+            options.add(R.drawable.msg_online, getString(R.string.SendWhenOnline), () -> {
+                sendMessageInternal(true, 0x7FFFFFFE, 0, 0, true);
+                if (messageSendPreview != null) {
+                    messageSendPreview.dismiss(false);
+                    messageSendPreview = null;
+                }
+            });
+            sendWhenOnlineButton = options.getLast();
         }
 
         if (parentFragment != null && delegate != null && ChatObject.isMonoForum(parentFragment.getCurrentChat())) {
@@ -5653,7 +5681,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             ;*/
         }
 
-        if (sendWithoutSoundButtonValue) {
+        if (SendMenuGate.showWithoutSound(NaConfig.INSTANCE.getSendMenuWithoutSound().Bool(), sendWithoutSoundButtonValue)) {
             options.add(sendWithoutSoundNax ? R.drawable.input_notify_on : R.drawable.input_notify_off, sendWithoutSoundNax ? getString(R.string.SendWithSound) : getString(R.string.SendWithoutSound), () -> {
                 sentFromPreview = System.currentTimeMillis();
                 final boolean shownDialog = sendMessageInternal(sendWithoutSoundNax, 0, 0, 0, true);
@@ -5712,35 +5740,37 @@ public class ChatActivityEnterView extends FrameLayout implements
                 });
             }
 
-            long chatId = ChatsHelper.getChatId();
-            Locale targetLocale = Translator.getInputTranslateLangLocaleForChat(chatId);
-            options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, getString(R.string.TranslateMessage), () -> {
-                translateComment(Translator.getInputTranslateLangLocaleForChat(chatId));
-                if (messageSendPreview != null) {
-                    messageSendPreview.dismiss(false);
-                    messageSendPreview = null;
-                }
-            });
-            ActionBarMenuSubItem translateItem = options.getLast();
-            translateItem.setSubtext(targetLocale.getDisplayName(LocaleController.getInstance().currentLocale));
-            translateItem.setRightIcon(R.drawable.msg_arrowright, v -> {
-                Translator.showTargetLangSelect(translateItem, true, (locale) -> {
-                    Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                    translateItem.setSubtext(locale.getDisplayName(LocaleController.getInstance().currentLocale));
-                    return Unit.INSTANCE;
+            if (SendMenuGate.showTranslate(NaConfig.INSTANCE.getSendMenuTranslate().Bool(), messageEditText.getText().length() > 0)) {
+                long chatId = ChatsHelper.getChatId();
+                Locale targetLocale = Translator.getInputTranslateLangLocaleForChat(chatId);
+                options.add(LlmConfig.llmIsDefaultProvider() ? R.drawable.magic_stick : R.drawable.ic_translate, getString(R.string.TranslateMessage), () -> {
+                    translateComment(Translator.getInputTranslateLangLocaleForChat(chatId));
+                    if (messageSendPreview != null) {
+                        messageSendPreview.dismiss(false);
+                        messageSendPreview = null;
+                    }
                 });
-            });
-            translateItem.setOnLongClickListener(v -> {
-                Translator.showTargetLangSelect(translateItem, true, (locale) -> {
-                    Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
-                    translateItem.setSubtext(locale.getDisplayName(LocaleController.getInstance().currentLocale));
-                    return Unit.INSTANCE;
+                ActionBarMenuSubItem translateItem = options.getLast();
+                translateItem.setSubtext(targetLocale.getDisplayName(LocaleController.getInstance().currentLocale));
+                translateItem.setRightIcon(R.drawable.msg_arrowright, v -> {
+                    Translator.showTargetLangSelect(translateItem, true, (locale) -> {
+                        Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
+                        translateItem.setSubtext(locale.getDisplayName(LocaleController.getInstance().currentLocale));
+                        return Unit.INSTANCE;
+                    });
                 });
-                return true;
-            });
+                translateItem.setOnLongClickListener(v -> {
+                    Translator.showTargetLangSelect(translateItem, true, (locale) -> {
+                        Translator.setInputTranslateLangForChat(chatId, TranslatorKt.getLocale2code(locale));
+                        translateItem.setSubtext(locale.getDisplayName(LocaleController.getInstance().currentLocale));
+                        return Unit.INSTANCE;
+                    });
+                    return true;
+                });
+            }
         }
         int disableLinkPreviewStatus = delegate.getDisableLinkPreviewStatus();
-        if (disableLinkPreviewStatus > 0) {
+        if (SendMenuGate.showLinkPreviewToggle(NaConfig.INSTANCE.getSendMenuLinkPreview().Bool(), disableLinkPreviewStatus)) {
             options.add(R.drawable.msg_link, disableLinkPreviewStatus != 1 ?
                     getString(R.string.ChatAttachEnterMenuEnableLinkPreview) :
                     getString(R.string.ChatAttachEnterMenuDisableLinkPreview), () -> {
@@ -5752,15 +5782,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             });
         }
+        if (options.getItemsCount() <= 0) {
+            // Every long-press entry is hidden and nothing else applies: drop the
+            // not-yet-shown preview and consume the long press so it cannot fall
+            // through as a send click.
+            messageSendPreview = null;
+            return true;
+        }
         options.setupSelectors();
         options.fitToContent();
         if (sendWhenOnlineButton != null) {
-            TLRPC.User user = parentFragment == null ? null : parentFragment.getCurrentUser();
-            if (user != null && !user.bot && !(user.status instanceof TLRPC.TL_userStatusEmpty) && !(user.status instanceof TLRPC.TL_userStatusOnline) && !(user.status instanceof TLRPC.TL_userStatusRecently) && !(user.status instanceof TLRPC.TL_userStatusLastMonth) && !(user.status instanceof TLRPC.TL_userStatusLastWeek)) {
-                sendWhenOnlineButton.setVisibility(VISIBLE);
-            } else {
-                sendWhenOnlineButton.setVisibility(GONE);
-            }
+            // Same recipient check as at add time (re-evaluated for stale views).
+            sendWhenOnlineButton.setVisibility(whenOnlineRecipientAway ? VISIBLE : GONE);
         }
         messageSendPreview.setItemOptions(options);
 

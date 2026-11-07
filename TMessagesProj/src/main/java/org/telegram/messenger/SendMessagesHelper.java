@@ -1800,7 +1800,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
     }
 
-    public void processForwardFromMyName(MessageObject messageObject, long did, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
+    public void processForwardFromMyName(MessageObject messageObject, boolean hideCaption, long did, long payStars, long monoForumPeerId, MessageSuggestionParams suggestionParams) {
         if (messageObject == null) {
             return;
         }
@@ -1810,14 +1810,18 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 params = new HashMap<>();
                 params.put("parentObject", "sent_" + messageObject.messageOwner.peer_id.channel_id + "_" + messageObject.getId() + "_" + messageObject.getDialogId() + "_" + messageObject.type + "_" + messageObject.getSize());
             }
+            // The forward chose to hide the original caption: drop it for the
+            // re-sent media (matches drop_media_captions on the normal path).
+            final String mediaCaption = hideCaption ? "" : messageObject.messageOwner.message;
+            final ArrayList<TLRPC.MessageEntity> mediaEntities = hideCaption ? null : messageObject.messageOwner.entities;
             if (messageObject.messageOwner.media.photo instanceof TLRPC.TL_photo) {
-                SendMessagesHelper.SendMessageParams fparams = SendMessagesHelper.SendMessageParams.of((TLRPC.TL_photo) messageObject.messageOwner.media.photo, null, did, messageObject.replyMessageObject, null, messageObject.messageOwner.message, messageObject.messageOwner.entities, null, params, true, 0, 0, messageObject.messageOwner.media.ttl_seconds, messageObject, false);
+                SendMessagesHelper.SendMessageParams fparams = SendMessagesHelper.SendMessageParams.of((TLRPC.TL_photo) messageObject.messageOwner.media.photo, null, did, messageObject.replyMessageObject, null, mediaCaption, mediaEntities, null, params, true, 0, 0, messageObject.messageOwner.media.ttl_seconds, messageObject, false);
                 fparams.payStars = payStars;
                 fparams.monoForumPeer = monoForumPeerId;
                 fparams.suggestionParams = suggestionParams;
                 sendMessage(fparams);
             } else if (messageObject.messageOwner.media.document instanceof TLRPC.TL_document) {
-                SendMessagesHelper.SendMessageParams fparams = SendMessagesHelper.SendMessageParams.of((TLRPC.TL_document) messageObject.messageOwner.media.document, null, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject, null, messageObject.messageOwner.message, messageObject.messageOwner.entities, null, params, true, 0, 0, messageObject.messageOwner.media.ttl_seconds, messageObject, null, false);
+                SendMessagesHelper.SendMessageParams fparams = SendMessagesHelper.SendMessageParams.of((TLRPC.TL_document) messageObject.messageOwner.media.document, null, messageObject.messageOwner.attachPath, did, messageObject.replyMessageObject, null, mediaCaption, mediaEntities, null, params, true, 0, 0, messageObject.messageOwner.media.ttl_seconds, messageObject, null, false);
                 fparams.payStars = payStars;
                 fparams.monoForumPeer = monoForumPeerId;
                 fparams.suggestionParams = suggestionParams;
@@ -1842,7 +1846,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             } else if (!DialogObject.isEncryptedDialog(did)) {
                 ArrayList<MessageObject> arrayList = new ArrayList<>();
                 arrayList.add(messageObject);
-                sendMessage(arrayList, did, true, false, true, 0, 0, null, -1, payStars, monoForumPeerId, suggestionParams);
+                sendMessage(arrayList, did, true, hideCaption, true, 0, 0, null, -1, payStars, monoForumPeerId, suggestionParams);
             }
         } else if (messageObject.messageOwner.message != null) {
             TLRPC.WebPage webPage = null;
@@ -3102,7 +3106,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             }
             if (sendResult == 0) {
                 for (int a = 0; a < messages.size(); a++) {
-                    processForwardFromMyName(messages.get(a), peer, payStars, monoForumPeerId, suggestionParams);
+                    processForwardFromMyName(messages.get(a), hideCaption, peer, payStars, monoForumPeerId, suggestionParams);
                 }
             }
         }
