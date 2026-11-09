@@ -785,7 +785,6 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
         items.add(UItem.asSpace(dp(12)));
         items.add(UItem.asHeader(getString(R.string.DeleteAdditionalActions)));
         fillAction(items, report);
-        fillAction(items, report);
 
         if (isSingleUsersMode) {
             deleteAll.updateTitle();
