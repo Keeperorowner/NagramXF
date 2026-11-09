@@ -266,4 +266,14 @@
     <string name="Donate">후원</string>
     <string name="DonateDesc">Nagram XF가 마음에 드신다면 개발 후원을 고려해 주세요.</string>
     <string name="DonateInfo">이 클라이언트가 마음에 드시나요? **개발 후원하기**</string>
+    <string name="DonateAfdian">Afdian</string>
+    <string name="DonateKoFi">Ko-fi</string>
+    <string name="NekoSettings">N-설정</string>
+    <string name="ProviderDeepLTranslate">DeepL 번역</string>
+    <string name="ProviderGoogleTranslate">Google 번역</string>
+    <string name="ProviderLingocloud">LingoCloud 번역</string>
+    <string name="ProviderMicrosoftTranslator">Bing 번역</string>
+    <string name="ProviderTelegramAPI">Telegram API</string>
+    <string name="ProviderYandexTranslate">Yandex 번역</string>
+    <string name="StickerSizeDialogName">Duang</string>
 </resources>

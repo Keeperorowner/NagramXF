@@ -381,4 +381,6 @@
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服務翻譯、改寫和校對草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服務生成長訊息和貼文的摘要</string>
     <string name="AIChatHistoryEmpty">還沒有儲存的對話</string>
+    <string name="NavigationDrawerProxyPingShort">延遲 %1$d ms</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
 </resources>

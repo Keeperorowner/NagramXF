@@ -295,4 +295,11 @@
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服务翻译、改写和校对草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服务生成长消息和帖子的摘要</string>
     <string name="AIChatHistoryEmpty">还没有保存的对话</string>
+    <string name="LastSeenPillAutoRefresh">自动刷新</string>
+    <string name="NavigationDrawerProxyPingShort">延迟 %1$d ms</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
+    <string name="StickerShape">贴纸形状</string>
+    <string name="StickerShapeRounded">圆角</string>
+    <string name="StickerShapeRoundedMsg">消息</string>
+    <string name="WeatherPickLocationHint">轻触以在地图上选择位置</string>
 </resources>

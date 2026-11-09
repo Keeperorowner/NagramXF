@@ -380,4 +380,7 @@
     <string name="AIReplaceTelegramEditorInfo">自分の AI サービスで下書きを翻訳・書き換え・校正します</string>
     <string name="AIReplaceTelegramSummariesInfo">自分の AI サービスで長いメッセージや投稿を要約します</string>
     <string name="AIChatHistoryEmpty">保存された会話はまだありません</string>
+    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
+    <string name="NavigationDrawerProxyPingShort">ピング %1$d ms</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
 </resources>

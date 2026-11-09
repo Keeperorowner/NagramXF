@@ -305,4 +305,6 @@
     <string name="AIReplaceTelegramEditorInfo">자신의 AI 서비스로 초안을 번역, 재작성, 교정합니다</string>
     <string name="AIReplaceTelegramSummariesInfo">자신의 AI 서비스로 긴 메시지와 게시물을 요약합니다</string>
     <string name="AIChatHistoryEmpty">저장된 대화가 없습니다</string>
+    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
 </resources>
