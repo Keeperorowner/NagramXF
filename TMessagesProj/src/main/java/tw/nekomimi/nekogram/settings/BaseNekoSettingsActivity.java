@@ -12,6 +12,7 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
@@ -96,19 +97,47 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
         return true;
     }
 
+    /**
+     * Screens with the simple glass header return true; the base keeps the classic action bar for
+     * every page that has not been migrated, so a page that has not opted in never touches a null
+     * {@link #simpleActionBar}.
+     */
+    @Override
+    protected boolean useSimpleActionBar() {
+        return false;
+    }
+
     @Override
     public View createView(Context context) {
-        fragmentView = new BlurContentView(context);
+        final boolean simple = useSimpleActionBar();
+        final FrameLayout frameLayout;
+        if (simple) {
+            setHasOwnBackground(true);
+            simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            simpleActionBar.setTitle(getActionBarTitle());
+            simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    }
+                }
+            });
+            frameLayout = new FrameLayout(context);
+        } else {
+            frameLayout = new BlurContentView(context);
+            actionBar.setDrawBlurBackground((SizeNotifierFrameLayout) frameLayout);
+        }
+        fragmentView = frameLayout;
         fragmentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
-        SizeNotifierFrameLayout frameLayout = (SizeNotifierFrameLayout) fragmentView;
-
-        actionBar.setDrawBlurBackground(frameLayout);
 
         listView = new BlurredRecyclerView(context);
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                frameLayout.invalidateBlur();
+                if (!simple) {
+                    ((SizeNotifierFrameLayout) frameLayout).invalidateBlur();
+                }
             }
         });
         listView.additionalClipBottom = dp(200);
@@ -148,9 +177,32 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             return false;
         });
 
-        listView.setSections(true);
-        actionBar.setAdaptiveBackground(listView);
+        if (simple) {
+            // the glass header floats over the list: the sections decoration draws the cards and
+            // the list keeps the paddings set by BaseFragmentSimpleGlass
+            listView.setSections();
+            listView.setSectionsDrawBackground(true);
+        } else {
+            listView.setSections(true);
+            actionBar.setAdaptiveBackground(listView);
+        }
         return fragmentView;
+    }
+
+    /** The list the glass header samples; null while the page keeps the classic action bar. */
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return useSimpleActionBar() ? listView : null;
+    }
+
+    /**
+     * The sectioned list draws the white card of a row on glass screens; a page must not paint an
+     * opaque background over it, or the rounded corners of the section disappear.
+     */
+    protected void applyRowBackground(View view) {
+        if (!useSimpleActionBar()) {
+            view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        }
     }
 
     // @Override
@@ -228,6 +280,10 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
 
     @Override
     public boolean isLightStatusBar() {
+        if (useSimpleActionBar()) {
+            // the glass header floats over the screen background
+            return ColorUtils.calculateLuminance(getThemedColor(Theme.key_windowBackgroundGray)) > 0.7f;
+        }
         if (!hasWhiteActionBar()) return super.isLightStatusBar();
         int color = getThemedColor(Theme.key_windowBackgroundWhite);
         return ColorUtils.calculateLuminance(color) > 0.7f;
@@ -277,8 +333,15 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
 
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
+        if (listView == null) {
+            return;
+        }
         listView.setClipToPadding(false);
+        if (useSimpleActionBar()) {
+            // BaseFragmentSimpleGlass owns the paddings that keep the rows out from under the header
+            return;
+        }
+        listView.setPadding(0, 0, 0, bottom);
     }
 
     private class BlurContentView extends SizeNotifierFrameLayout {
@@ -355,23 +418,23 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_SETTINGS:
                     view = new TextSettingsCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_CHECK:
                     view = new TextCheckCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_HEADER:
                     view = new HeaderCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_NOTIFICATION_CHECK:
                     view = new NotificationsCheckCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_DETAIL_SETTINGS:
                     view = new TextDetailSettingsCell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_INFO_PRIVACY:
                     view = new TextInfoPrivacyCell(mContext, resourcesProvider);
@@ -379,38 +442,38 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     break;
                 case TYPE_TEXT:
                     view = new TextCell(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_CHECKBOX:
                     view = new TextCheckbox2Cell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_RADIO:
                     view = new TextRadioCell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_ACCOUNT:
                     view = new AccountCell(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_EMOJI:
                 case TYPE_EMOJI_SELECTION:
                     view = new EmojiSetCell(mContext, viewType == TYPE_EMOJI_SELECTION);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_CREATION:
                     CreationTextCell creationTextCell = new CreationTextCell(mContext, 70, resourcesProvider);
                     creationTextCell.startPadding = 61;
                     view = creationTextCell;
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_FLICKER:
                     view = new FlickerLoadingView(mContext, resourcesProvider);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_CHECK2:
                     view = new TextCheckCell2(mContext);
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
                 case TYPE_CHECKBOX2:
                     CheckBoxCell checkBoxCell = new CheckBoxCell(mContext, CheckBoxCell.TYPE_CHECK_BOX_ROUND, 21, getResourceProvider());
@@ -418,7 +481,7 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
                     checkBoxCell.getCheckBoxRound().setColor(Theme.key_switch2TrackChecked, Theme.key_radioBackground, Theme.key_checkboxCheck);
                     checkBoxCell.setEnabled(true);
                     view = checkBoxCell;
-                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    applyRowBackground(view);
                     break;
             }
             // noinspection ConstantConditions

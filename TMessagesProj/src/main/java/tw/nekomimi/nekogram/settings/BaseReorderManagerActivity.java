@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.SimpleActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 
@@ -66,9 +67,14 @@ public abstract class BaseReorderManagerActivity extends BaseNekoSettingsActivit
         }
     }
 
-    /** Adds a reset-to-default button to the action-bar menu. */
+    /**
+     * Adds a reset-to-default button to the header menu: the glass pill of the simple header when the
+     * page opts in, the classic action-bar menu otherwise.
+     */
     protected ActionBarMenuItem addResetMenuItem(int menuId) {
-        ActionBarMenuItem item = actionBar.createMenu().addItem(menuId, R.drawable.msg_reset);
+        ActionBarMenuItem item = simpleActionBar != null
+                ? simpleActionBar.createMenu().addItem(menuId, R.drawable.msg_reset)
+                : actionBar.createMenu().addItem(menuId, R.drawable.msg_reset);
         item.setContentDescription(getString(R.string.Reset));
         return item;
     }
@@ -78,9 +84,13 @@ public abstract class BaseReorderManagerActivity extends BaseNekoSettingsActivit
         if (item == null) {
             return;
         }
-        if (!isDefault && item.getVisibility() == View.GONE) {
+        final boolean shown = item.getVisibility() == View.VISIBLE;
+        if (item instanceof SimpleActionBarMenuItem) {
+            // the glass menu animates the item in place and resizes the pill
+            ((SimpleActionBarMenuItem) item).setShown(!isDefault, true);
+        } else if (!isDefault && !shown) {
             AndroidUtilities.updateViewVisibilityAnimated(item, true, 0.5f, true);
-        } else if (isDefault && item.getVisibility() == View.VISIBLE) {
+        } else if (isDefault && shown) {
             AndroidUtilities.updateViewVisibilityAnimated(item, false, 0.5f, true);
         }
     }
