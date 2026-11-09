@@ -33,6 +33,11 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class NekoAboutActivity extends BaseNekoSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private int infoHeaderRow;
     private int versionRow;
     private int updatesRow;

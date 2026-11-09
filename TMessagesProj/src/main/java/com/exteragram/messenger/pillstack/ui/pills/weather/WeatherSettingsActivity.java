@@ -32,6 +32,11 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 public class WeatherSettingsActivity extends BaseNekoSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private static final Gson GSON = new Gson();
 
     private int topViewRow;
