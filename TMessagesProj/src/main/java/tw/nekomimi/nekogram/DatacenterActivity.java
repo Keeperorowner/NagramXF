@@ -40,6 +40,11 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 public class DatacenterActivity extends BaseNekoSettingsActivity implements NotificationCenter.NotificationCenterDelegate {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private final int dcToHighlight;
 
     private int headerRow;
@@ -189,12 +194,12 @@ public class DatacenterActivity extends BaseNekoSettingsActivity implements Noti
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             if (viewType == Integer.MAX_VALUE - 1) {
                 var headerCell = new DatacenterHeaderCell(mContext);
-                headerCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                applyRowBackground(headerCell);
                 headerCell.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(headerCell);
             } else if (viewType == Integer.MAX_VALUE) {
                 var dcCell = new DatacenterCell(mContext);
-                dcCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                applyRowBackground(dcCell);
                 dcCell.setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(dcCell);
             } else {

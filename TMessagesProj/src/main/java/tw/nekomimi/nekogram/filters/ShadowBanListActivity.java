@@ -22,7 +22,7 @@ import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.RecyclerListView;
@@ -38,6 +38,11 @@ import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.FiltersChatCell;
 
 public class ShadowBanListActivity extends BaseNekoSettingsActivity {
+
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
     private final HashSet<Long> resolvingCustomFilteredUsers = new HashSet<>();
     private final HashSet<Long> resolvedCustomFilteredUsers = new HashSet<>();
@@ -78,9 +83,9 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
     @Override
     public View createView(Context context) {
         View view = super.createView(context);
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         menu.addItem(0, R.drawable.msg_add).setContentDescription(getString(R.string.Add));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -494,7 +499,7 @@ public class ShadowBanListActivity extends BaseNekoSettingsActivity {
         public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             if (viewType == TYPE_ACCOUNT) {
                 FiltersChatCell chatCell = new FiltersChatCell(mContext);
-                chatCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                applyRowBackground(chatCell);
                 chatCell.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return new RecyclerListView.Holder(chatCell);
             }

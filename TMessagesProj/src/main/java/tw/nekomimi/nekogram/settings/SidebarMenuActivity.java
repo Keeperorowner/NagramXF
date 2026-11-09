@@ -39,6 +39,11 @@ import xyz.nextalone.nagram.helper.DrawerMenuHelper;
  */
 public class SidebarMenuActivity extends BaseReorderManagerActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private static final int MENU_RESET = 1;
     private static final String KEY_NAV_DRAWER = "navigationDrawerEnabled";
 

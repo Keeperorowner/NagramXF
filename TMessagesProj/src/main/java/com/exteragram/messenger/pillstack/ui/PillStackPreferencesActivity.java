@@ -31,6 +31,11 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 public class PillStackPreferencesActivity extends BaseReorderManagerActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private static final int MENU_RESET = 1;
 
     private int settingsHeaderRow;
