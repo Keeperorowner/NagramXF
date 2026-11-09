@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
@@ -23,6 +23,11 @@ import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 public class RegexSharedFiltersListActivity extends BaseNekoSettingsActivity {
+
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
     private final long exclusionDialogId;
     private int headerRow;
@@ -75,11 +80,11 @@ public class RegexSharedFiltersListActivity extends BaseNekoSettingsActivity {
     public View createView(Context context) {
         View view = super.createView(context);
         if (exclusionDialogId == 0L) {
-            ActionBarMenu menu = actionBar.createMenu();
+            SimpleActionBarMenu menu = simpleActionBar.createMenu();
             var addItem = menu.addItem(0, R.drawable.msg_add);
             addItem.setContentDescription(getString(R.string.Add));
             addItem.setOnClickListener(v -> presentFragment(new RegexFilterEditActivity()));
-            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+            simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
                     if (id == -1) {
