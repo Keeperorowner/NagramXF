@@ -52,6 +52,11 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public boolean onFragmentCreate() {
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginsPySdkInfoChanged);
         return super.onFragmentCreate();

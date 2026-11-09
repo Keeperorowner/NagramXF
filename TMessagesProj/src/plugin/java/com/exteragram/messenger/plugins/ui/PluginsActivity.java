@@ -33,8 +33,9 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -70,6 +71,11 @@ public class PluginsActivity extends BasePreferencesActivity implements Notifica
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(android.content.Context context) {
         View view = super.createView(context);
         listView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight + AndroidUtilities.dp(12));
@@ -82,7 +88,7 @@ public class PluginsActivity extends BasePreferencesActivity implements Notifica
             }
         });
 
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         searchItem = menu.addItem(0, R.drawable.ic_ab_search)
                 .setIsSearchField(true)
                 .setActionBarMenuItemSearchListener(new ActionBarMenuItem.ActionBarMenuItemSearchListener() {
@@ -215,7 +221,11 @@ public class PluginsActivity extends BasePreferencesActivity implements Notifica
     }
 
     private void updateSearchVisibility(boolean animated) {
-        AndroidUtilities.updateViewVisibilityAnimated(searchItem, ExteraConfig.pluginsEngine && !PluginsController.getInstance().plugins.isEmpty(), 0.5f, false, animated);
+        // the glass pill animates the button in place and resizes around it
+        final boolean visible = ExteraConfig.pluginsEngine && !PluginsController.getInstance().plugins.isEmpty();
+        if (searchItem instanceof SimpleActionBarMenuItem) {
+            ((SimpleActionBarMenuItem) searchItem).setShown(visible, animated);
+        }
     }
 
     @Override
@@ -494,7 +504,7 @@ public class PluginsActivity extends BasePreferencesActivity implements Notifica
                             return;
                         }
                         if (searching) {
-                            actionBar.closeSearchField();
+                            simpleActionBar.closeSearchField();
                         }
                         updateSearchVisibility(true);
                         listView.adapter.update(true);
