@@ -47,6 +47,11 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private static final int VIEW_TYPE_PREVIEW = 100;
 
     private ArrayList<MainTabsConfigManager.TabState> tabs = new ArrayList<>();
@@ -265,7 +270,10 @@ public class MainTabsCustomizeActivity extends BaseNekoXSettingsActivity {
 
         public PreviewRowCell(Context context) {
             super(context);
-            setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            if (!useSimpleActionBar()) {
+                // the sectioned list draws the white card itself on glass screens
+                setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            }
 
             PreviewContainer container = new PreviewContainer(context);
             addView(container, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));

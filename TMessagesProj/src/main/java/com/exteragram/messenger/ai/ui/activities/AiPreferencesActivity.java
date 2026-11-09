@@ -43,6 +43,11 @@ import tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity;
 @SuppressWarnings("FieldCanBeLocal")
 public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private ListAdapter listAdapter;
 
     private final CellGroup cellGroup = new CellGroup(this);
