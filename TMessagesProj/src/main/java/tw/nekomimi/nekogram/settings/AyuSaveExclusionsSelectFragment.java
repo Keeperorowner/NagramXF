@@ -59,6 +59,7 @@ import org.telegram.ui.Components.StickerEmptyView;
 import org.telegram.ui.Components.inset.WindowAnimatedInsetsProvider;
 import org.telegram.ui.HeaderShadowView;
 import org.telegram.ui.LaunchActivity;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -210,10 +211,14 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment implements Vie
     }
 
     @Override
-    public ActionBar createActionBar(Context context) {
-        ActionBar bar = super.createActionBar(context);
-        bar.setAddToContainer(false);
-        return bar;
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    /** The list the glass header samples. */
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
     }
 
     @Override
@@ -226,11 +231,10 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment implements Vie
         spanPeers.clear();
         spanNames.clear();
         currentDeletingSpan = null;
-        actionBar.setBackgroundColor(0);
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(getString(always ? R.string.AyuSaveExclusionsAlwaysList : R.string.AyuSaveExclusionsNeverList));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(getString(always ? R.string.AyuSaveExclusionsAlwaysList : R.string.AyuSaveExclusionsNeverList));
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1 && onBackPressed(true)) {
@@ -242,14 +246,14 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment implements Vie
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 maxSize = dp(AndroidUtilities.isTablet() || MeasureSpec.getSize(heightMeasureSpec) > MeasureSpec.getSize(widthMeasureSpec) ? 144 : 56);
-                measureChildWithMargins(actionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
-                int headerHeight = actionBar.getMeasuredHeight();
+                measureChildWithMargins(simpleActionBar, widthMeasureSpec, 0, heightMeasureSpec, 0);
+                int headerHeight = simpleActionBar.getMeasuredHeight();
                 ((MarginLayoutParams) emptyView.getLayoutParams()).topMargin = headerHeight + dp(48);
                 setHeaderMargins(searchField, headerHeight, dp(11));
                 setHeaderMargins(spansContainer, headerHeight, 0);
                 setHeaderMargins(headerShadowView, headerHeight, 0);
                 spansContainer.getLayoutParams().height = maxSize;
-                actionBarBackgroundView.getLayoutParams().height = headerHeight + dp(53) + maxSize;
+                updateHeaderBackground(headerHeight);
                 updateListPadding();
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
@@ -403,16 +407,12 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment implements Vie
         floatingButton.setContentDescription(getString(R.string.Done));
         floatingButton.setOnClickListener(view -> onDonePressed());
         root.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParams());
-        actionBarBackgroundView = new View(context) {
-            @Override
-            protected void onDraw(Canvas canvas) {
-                canvas.drawRect(0, 0, getWidth(), actionBar.getMeasuredHeight() + dp(48) + visibleSelectorHeight(),
-                        Theme.fillingPaint(getThemedColor(Theme.key_windowBackgroundWhite)));
-            }
-        };
+        actionBarBackgroundView = new View(context);
         root.addView(actionBarBackgroundView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.TOP));
-        AndroidUtilities.removeFromParent(actionBar);
-        root.addView(actionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+        // the glass of the header extends under the search field and the chips
+        actionBarBackgroundView.setBackground(getBaseSimpleGlass().createActionBarFadeDrawable(actionBarBackgroundView));
+        AndroidUtilities.removeFromParent(simpleActionBar);
+        root.addView(simpleActionBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
         root.addView(searchField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.TOP, 11, 0, 11, 0));
         root.addView(spansContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, maxSize / AndroidUtilities.density, Gravity.TOP));
         headerShadowView = new HeaderShadowView(context, parentLayout);
@@ -463,9 +463,31 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment implements Vie
         return Math.min(maxSize, Math.round(selectorHeight.getFactor()));
     }
 
+    /**
+     * The glass band behind the header follows the search row and the chips, so it ends exactly where
+     * the list starts and never covers the first row when the chips are collapsed.
+     */
+    private void updateHeaderBackground(int headerHeight) {
+        if (actionBarBackgroundView == null) {
+            return;
+        }
+        final ViewGroup.LayoutParams params = actionBarBackgroundView.getLayoutParams();
+        final int height = headerHeight + dp(48) + visibleSelectorHeight();
+        if (params.height != height) {
+            params.height = height;
+            actionBarBackgroundView.setLayoutParams(params);
+        }
+    }
+
     private void updateListPadding() {
         if (listView != null) {
-            listView.setPadding(insetLeft, actionBar.getMeasuredHeight() + dp(48) + visibleSelectorHeight(), insetRight, navigationBarHeight);
+            // BaseFragmentSimpleGlass pulls the list past both edges with negative margins so content
+            // scrolls under the glass; the page owns the paddings, so it adds that overscan back.
+            final int overscanTop = BaseFragmentSimpleGlass.getOverscan(mSystemInsets.top);
+            final int overscanBottom = BaseFragmentSimpleGlass.getOverscan(mSystemInsets.bottom);
+            listView.setPadding(insetLeft,
+                    simpleActionBar.getMeasuredHeight() + dp(48) + visibleSelectorHeight() + overscanTop,
+                    insetRight, navigationBarHeight + overscanBottom);
         }
         if (emptyView != null) {
             emptyView.setPadding(insetLeft, 0, insetRight, navigationBarHeight);
@@ -509,6 +531,8 @@ public class AyuSaveExclusionsSelectFragment extends BaseFragment implements Vie
         int oldTop = listView.getPaddingTop();
         updateListPadding();
         updateHeaderY();
+        // the chips are animating: keep the glass band on the same edge as the list padding
+        updateHeaderBackground(simpleActionBar != null ? simpleActionBar.getMeasuredHeight() : 0);
         actionBarBackgroundView.invalidate();
         if (oldTop != listView.getPaddingTop() && !headerShadowView.isShadowVisible()) {
             listView.scrollBy(0, oldTop - listView.getPaddingTop());

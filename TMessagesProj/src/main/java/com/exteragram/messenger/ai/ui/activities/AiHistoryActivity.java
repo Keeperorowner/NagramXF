@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -18,10 +19,12 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SectionsScrollView;
 
 import java.util.ArrayList;
 
@@ -35,13 +38,19 @@ public class AiHistoryActivity extends BaseFragment {
 
     private LinearLayout content;
     private TextView emptyView;
+    private SectionsScrollView scrollView;
+
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
     @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(LocaleController.getString(R.string.AIChatMessageHistory));
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(LocaleController.getString(R.string.AIChatMessageHistory));
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -52,20 +61,20 @@ public class AiHistoryActivity extends BaseFragment {
                 }
             }
         });
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         menu.addItem(MENU_CLEAR, R.drawable.msg_delete).setContentDescription(LocaleController.getString(R.string.AIChatHistoryCleared));
 
         fragmentView = new FrameLayout(context);
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
 
-        ScrollView scrollView = new ScrollView(context);
-        scrollView.setFillViewport(true);
-        ((FrameLayout) fragmentView).addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-        content = new LinearLayout(context);
+        content = new SectionsScrollView.SectionsLinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
+
+        scrollView = new SectionsScrollView(context, content, getResourceProvider(), false);
+        scrollView.setFillViewport(true);
         content.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
-        scrollView.addView(content, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        ((FrameLayout) fragmentView).addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        scrollView.addView(content, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         emptyView = new TextView(context);
         emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
@@ -76,6 +85,17 @@ public class AiHistoryActivity extends BaseFragment {
 
         rebuild(context);
         return fragmentView;
+    }
+
+    /** The scrollable history the glass header samples. */
+    @Override
+    protected SectionsScrollView getScrollViewForSimpleGlass() {
+        return scrollView;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
     }
 
     private void rebuild(Context context) {
@@ -121,6 +141,8 @@ public class AiHistoryActivity extends BaseFragment {
         LinearLayout wrapper = new LinearLayout(context);
         wrapper.setOrientation(LinearLayout.VERTICAL);
         wrapper.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+        // the block draws its own rounded bubble: no section card behind it
+        wrapper.setTag(RecyclerListView.TAG_NOT_SECTION);
         wrapper.addView(block, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         return wrapper;
     }

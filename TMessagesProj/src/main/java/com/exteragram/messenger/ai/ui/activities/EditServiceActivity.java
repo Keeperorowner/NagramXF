@@ -4,8 +4,9 @@ import android.content.Context;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
-import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
@@ -24,11 +25,14 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.OutlineTextContainerView;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
@@ -54,6 +58,7 @@ public class EditServiceActivity extends BaseFragment {
     private View doneButton;
     private ButtonWithCounterView testButton;
     private ButtonWithCounterView fetchModelsButton;
+    private SectionsScrollView scrollView;
 
     public EditServiceActivity(int preset) {
         presetIndex = preset;
@@ -80,18 +85,23 @@ public class EditServiceActivity extends BaseFragment {
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
         boolean isCustom = presetIndex == ProviderPresets.PRESET_CUSTOM;
         String presetName = ProviderPresets.PRESET_NAMES[presetIndex];
 
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(currentService != null
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(currentService != null
                 ? LocaleController.getString(R.string.AIChatEditService)
                 : presetName.equals("Custom")
                         ? LocaleController.getString(R.string.AIChatNewService)
                         : presetName);
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -102,19 +112,25 @@ public class EditServiceActivity extends BaseFragment {
             }
         });
 
-        doneButton = actionBar.createMenu().addItemWithWidth(1, R.drawable.ic_ab_done, AndroidUtilities.dp(56));
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
+        doneButton = menu.addItemWithWidth(1, R.drawable.ic_ab_done, AndroidUtilities.dp(56));
         doneButton.setContentDescription(LocaleController.getString(R.string.Done));
 
-        ScrollView scrollView = new ScrollView(context);
-        fragmentView = scrollView;
+        FrameLayout root = new FrameLayout(context);
+        fragmentView = root;
 
-        LinearLayout layout = new LinearLayout(context);
+        SectionsScrollView.SectionsLinearLayout layout = new SectionsScrollView.SectionsLinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(16));
-        scrollView.addView(layout, LayoutHelper.createScroll(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
+
+        scrollView = new SectionsScrollView(context, layout, getResourceProvider());
+        scrollView.setDrawBackground(true);
+        scrollView.setFillViewport(true);
+        root.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        scrollView.addView(layout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         if (isCustom) {
             urlFieldContainer = new OutlineTextContainerView(context);
+        urlFieldContainer.setTag(RecyclerListView.TAG_NOT_SECTION);
             urlFieldContainer.setText(LocaleController.getString(R.string.AIChatServiceURL));
             urlField = createEditText(context);
             urlField.setHint("https://api.example.com/v1");
@@ -126,6 +142,7 @@ public class EditServiceActivity extends BaseFragment {
         }
 
         modelFieldContainer = new OutlineTextContainerView(context);
+        modelFieldContainer.setTag(RecyclerListView.TAG_NOT_SECTION);
         modelFieldContainer.setText(LocaleController.getString(R.string.AIChatServiceModel));
         modelField = createEditText(context);
         modelField.addTextChangedListener(createWatcher());
@@ -135,11 +152,13 @@ public class EditServiceActivity extends BaseFragment {
         layout.addView(modelFieldContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 16, 24, 0));
 
         fetchModelsButton = new ButtonWithCounterView(context, getResourceProvider());
+        fetchModelsButton.setTag(RecyclerListView.TAG_NOT_SECTION);
         fetchModelsButton.setText(LocaleController.getString(R.string.AIChatFetchModels), false);
         fetchModelsButton.setOnClickListener(v -> fetchModels());
         layout.addView(fetchModelsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 24, 12, 24, 0));
 
         keyFieldContainer = new OutlineTextContainerView(context);
+        keyFieldContainer.setTag(RecyclerListView.TAG_NOT_SECTION);
         keyFieldContainer.setText(LocaleController.getString(R.string.AIChatServiceKey));
         keyField = createEditText(context);
         keyField.addTextChangedListener(createWatcher());
@@ -149,6 +168,7 @@ public class EditServiceActivity extends BaseFragment {
         layout.addView(keyFieldContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 24, 16, 24, 0));
 
         testButton = new ButtonWithCounterView(context, getResourceProvider());
+        testButton.setTag(RecyclerListView.TAG_NOT_SECTION);
         testButton.setText(LocaleController.getString(R.string.AIChatTestConnection), false);
         testButton.setOnClickListener(v -> testConnection());
         layout.addView(testButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 24, 24, 24, 0));
@@ -178,6 +198,17 @@ public class EditServiceActivity extends BaseFragment {
         updateDoneButton();
 
         return fragmentView;
+    }
+
+    /** The scrollable form the glass header samples. */
+    @Override
+    protected SectionsScrollView getScrollViewForSimpleGlass() {
+        return scrollView;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
     }
 
     private String getEffectiveUrl() {
