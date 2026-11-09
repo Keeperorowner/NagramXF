@@ -31,6 +31,11 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 public class ServicesActivity extends BaseNekoSettingsActivity implements NotificationCenter.NotificationCenterDelegate {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private static final int VIEW_TYPE_RADIO = 100;
     private static final int VIEW_TYPE_CREATION = 101;
 
@@ -179,7 +184,7 @@ public class ServicesActivity extends BaseNekoSettingsActivity implements Notifi
             if (viewType == VIEW_TYPE_CREATION) {
                 CreationTextCell cell = new CreationTextCell(mContext, 70, null);
                 cell.startPadding = 61;
-                cell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                applyRowBackground(cell);
                 view = cell;
             } else if (viewType == VIEW_TYPE_RADIO) {
                 RadioColorCell cell = new RadioColorCell(mContext);

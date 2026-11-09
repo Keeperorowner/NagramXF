@@ -42,6 +42,11 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private boolean passcodeSet;
 
     private int showInSettingsRow;
