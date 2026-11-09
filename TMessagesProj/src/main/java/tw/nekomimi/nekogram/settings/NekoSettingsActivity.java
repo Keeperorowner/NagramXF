@@ -39,9 +39,9 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.BasePermissionsActivity;
@@ -123,10 +123,15 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
     }
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     public View createView(Context context) {
         View view = super.createView(context);
 
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         menu.addItem(MENU_SEARCH, R.drawable.ic_ab_search, resourcesProvider);
         overflowItem = menu.addItem(MENU_OVERFLOW, R.drawable.ic_ab_other, resourcesProvider);
         overflowItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
@@ -140,7 +145,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         overflowItem.setOnClickListener(v -> showOverflowMenu());
         overflowItem.setLongClickEnabled(false);
 
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
