@@ -27,7 +27,8 @@ public class AyuSaveExclusionsActivity extends BasePreferencesActivity {
     @Override
     public View createView(Context context) {
         View view = super.createView(context);
-        actionBar.setTitle(null);
+        // the large title scrolls away: the header shows it only once the top view is out of sight
+        setHeaderTitle(null);
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
@@ -38,12 +39,26 @@ public class AyuSaveExclusionsActivity extends BasePreferencesActivity {
         return view;
     }
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    /** The header of the page: the glass bar of the simple header, the old action bar otherwise. */
+    private void setHeaderTitle(CharSequence title) {
+        if (simpleActionBar != null) {
+            simpleActionBar.setTitle(title);
+        } else if (actionBar != null) {
+            actionBar.setTitle(title);
+        }
+    }
+
     private void updateHeaderTitle() {
-        if (listView == null || actionBar == null) {
+        if (listView == null) {
             return;
         }
         boolean topVisible = listView.layoutManager.findFirstVisibleItemPosition() <= 0;
-        actionBar.setTitle(topVisible ? null : getTitle());
+        setHeaderTitle(topVisible ? null : getTitle());
     }
 
     @Override
@@ -135,8 +150,10 @@ public class AyuSaveExclusionsActivity extends BasePreferencesActivity {
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
         if (listView != null) {
-            listView.setPadding(left, 0, right, bottom);
             listView.setClipToPadding(false);
+            if (!useSimpleActionBar()) {
+                listView.setPadding(left, 0, right, bottom);
+            }
         }
     }
 
