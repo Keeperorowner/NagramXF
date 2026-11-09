@@ -54,6 +54,11 @@ import xyz.nextalone.nagram.NaConfig;
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private ListAdapter listAdapter;
     private AvatarCornersPreviewCell avatarCornersPreviewCell;
     private FabShapePreviewCell fabShapePreviewCell;

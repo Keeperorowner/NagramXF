@@ -44,6 +44,11 @@ import xyz.nextalone.nagram.NaConfig;
 @SuppressWarnings("unused")
 public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private ListAdapter listAdapter;
 
     @Override

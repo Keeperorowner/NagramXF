@@ -76,6 +76,11 @@ import xyz.nextalone.nagram.NaConfig;
 @SuppressWarnings("unused")
 public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private static final int REQUEST_CODE_ATTACHMENT_FOLDER = 6969;
     private static final int REQUEST_CODE_IMPORT_DATABASE = 6970;
     private static final int REQUEST_CODE_EXPORT_DATABASE = 6971;
@@ -266,7 +271,10 @@ public class NekoAyuSpySettingsActivity extends BaseNekoXSettingsActivity {
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = super.getThemeDescriptions();
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextCell.class, SlideChooseView.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        if (!useSimpleActionBar()) {
+            // the glass list draws the row card itself, a white cell background would cover its corners
+            themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{TextCell.class, SlideChooseView.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        }
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"textView"}, null, null, null, Theme.key_windowBackgroundWhiteBlackText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"valueTextView"}, null, null, null, Theme.key_windowBackgroundWhiteValueText));
         themeDescriptions.add(new ThemeDescription(listView, 0, new Class[]{TextCell.class}, new String[]{"imageView"}, null, null, null, Theme.key_windowBackgroundWhiteGrayIcon));

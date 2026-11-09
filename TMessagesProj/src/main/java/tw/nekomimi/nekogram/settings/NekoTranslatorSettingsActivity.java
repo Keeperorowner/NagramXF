@@ -96,6 +96,11 @@ import xyz.nextalone.nagram.NaConfig;
 public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
 
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    @Override
     protected RecyclerListView.SelectionAdapter getListAdapter() {
         return listAdapter;
     }
