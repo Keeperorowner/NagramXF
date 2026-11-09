@@ -26,6 +26,7 @@ import com.exteragram.messenger.plugins.models.SettingItem;
 import com.exteragram.messenger.plugins.models.SwitchSetting;
 import com.exteragram.messenger.plugins.models.TextSetting;
 import com.exteragram.messenger.plugins.ui.components.PluginEditTextCell;
+import com.exteragram.messenger.plugins.ui.components.PluginTranslateButton;
 import com.exteragram.messenger.plugins.ui.components.TranslatableText;
 import com.exteragram.messenger.preferences.utils.SettingsRegistry;
 import com.exteragram.messenger.utils.system.VibratorUtils;
@@ -38,9 +39,10 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
+import org.telegram.ui.ActionBar.SimpleActionBarMenuItem;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.NotificationsCheckCell;
 import org.telegram.ui.Cells.RadioColorCell;
@@ -54,6 +56,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
+import org.telegram.utils.glass.BaseFragmentSimpleGlass;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +64,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PluginSettingsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
-    private static final int TRANSLATE_ROW_ID = 0x7E5A0001;
+    /** Header entries: the reset button keeps the base id, the translate entry owns 1. */
+    private static final int MENU_RESET = 0;
+    private static final int MENU_TRANSLATE = 1;
 
     private final Plugin plugin;
     private final String customTitle;
@@ -74,7 +79,9 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
 
     private UniversalRecyclerView listView;
     private LinearLayoutManager layoutManager;
-    private ActionBarMenuItem resetItem;
+    private SimpleActionBarMenuItem resetItem;
+    private SimpleActionBarMenuItem translateItem;
+    private PluginTranslateButton translateButton;
 
     public PluginSettingsActivity(Plugin plugin) {
         this(plugin, null, null, null, null);
@@ -101,9 +108,72 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
     private final PluginSettingsTranslation.Listener translationListener = new PluginSettingsTranslation.Listener() {
         @Override
         public void onTranslationChanged(boolean failed) {
+            if (translateButton != null) {
+                translateButton.setFailed(failed);
+            }
+            updateTranslateButton();
+            if (failed) {
+                showTranslateFailureBulletin();
+            }
             refreshSettingsRows();
         }
     };
+
+    /** Reflects the shared translation state on the header entry of this page. */
+    private void updateTranslateButton() {
+        if (translateButton == null) {
+            return;
+        }
+        translateButton.updateState();
+        if (translateItem == null) {
+            return;
+        }
+        final boolean shown = plugin != null && translateButton.isEntryVisible();
+        // the menu item owns the animated shown state and resizes the pill around the entry
+        translateItem.setShown(shown, true);
+        translateItem.setContentDescription(LocaleController.getString(translateButton.isResetState()
+                ? R.string.PluginsSettingsShowOriginal : R.string.PluginsSettingsTranslate));
+    }
+
+    /** A batch that left texts untranslated: the entry stays for a retry, nothing is replaced silently. */
+    private void showTranslateFailureBulletin() {
+        if (getParentActivity() == null || fragmentView == null) {
+            return;
+        }
+        BulletinFactory.of(this).createSimpleBulletin(
+                R.raw.error,
+                LocaleController.getString(R.string.ErrorOccurred),
+                LocaleController.getString(R.string.Retry),
+                new Runnable() {
+                    @Override
+                    public void run() {
+                        translation.resetFailed();
+                        translation.setEnabled(true);
+                        updateTranslateButton();
+                        refreshSettingsRows();
+                    }
+                }).show();
+    }
+
+    /** The single click entry of the header button: translate the page, or show the originals again. */
+    private void onTranslateButtonClick() {
+        if (translation.isLoading()) {
+            // A batch is still in flight: the entry shows its progress instead of toggling.
+            return;
+        }
+        if (plugin == null) {
+            return;
+        }
+        if (translation.getEnabled()) {
+            translation.setEnabled(false);
+        } else {
+            // a retry after a failed batch must not skip the texts that failed
+            translation.resetFailed();
+            translation.setEnabled(true);
+        }
+        updateTranslateButton();
+        refreshSettingsRows();
+    }
 
     /** Coalesces refreshes so a burst of arriving translations rebuilds the list once. */
     private final Runnable refreshRowsRunnable = new Runnable() {
@@ -186,7 +256,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                 }, 60);
             }
             if (resetItem != null) {
-                AndroidUtilities.updateViewVisibilityAnimated(resetItem, PluginsController.getInstance().hasPluginSettingsPreferences(plugin.getId()), 0.5f, false);
+                resetItem.setShown(PluginsController.getInstance().hasPluginSettingsPreferences(plugin.getId()), true);
             }
         } else if (id == NotificationCenter.pluginSettingsUnregistered) {
             if (plugin != null && TextUtils.equals(plugin.getId(), pluginId) && !PluginsController.getInstance().hasPluginSettings(plugin.getId())) {
@@ -229,23 +299,50 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         });
     }
     @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
+    /** The list the glass header samples: the base mounts the header and owns the list paddings. */
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return listView;
+    }
+
+    @Override
+    public boolean isSupportEdgeToEdge() {
+        return true;
+    }
+
+    @Override
     public View createView(android.content.Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(customTitle != null ? customTitle : plugin.getName());
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        setHasOwnBackground(true);
+        simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        simpleActionBar.setTitle(customTitle != null ? customTitle : plugin.getName());
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
                     finishFragment();
+                } else if (id == MENU_TRANSLATE) {
+                    // single owner: the entry of the pill forwards its click here
+                    onTranslateButtonClick();
                 }
             }
         });
 
+        final SimpleActionBarMenu menu = simpleActionBar.createMenu();
+        translateButton = new PluginTranslateButton(context, getResourceProvider());
+        translateButton.setTranslation(translation);
+        // the entry is a menu item of the pill: the item owns the click and the animated shown state,
+        // the button only draws the state of the shared translation
+        translateItem = menu.addItem(MENU_TRANSLATE, 0);
+        translateItem.addView(translateButton, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         if (createSubFragmentCallback == null && plugin != null) {
-            resetItem = actionBar.createMenu().addItem(0, R.drawable.msg_reset);
+            resetItem = menu.addItem(MENU_RESET, R.drawable.msg_reset);
             resetItem.setContentDescription(LocaleController.getString(R.string.Reset));
-            AndroidUtilities.updateViewVisibilityAnimated(resetItem, PluginsController.getInstance().hasPluginSettingsPreferences(plugin.getId()), 0.5f, false);
+            resetItem.setShown(PluginsController.getInstance().hasPluginSettingsPreferences(plugin.getId()), false);
             resetItem.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -273,15 +370,30 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
                 return onLongClick(item, view, position.intValue(), x.floatValue(), y.floatValue());
             }
         });
-        listView.setSections(true);
+        // the glass header floats over the list: the sections decoration draws the cards
+        listView.setSections();
+        listView.setSectionsDrawBackground(true);
+        listView.adapter.setApplyBackground(false);
         translation.addListener(translationListener);
         listView.setClipToPadding(false);
-        listView.setPadding(0, 0, 0, AndroidUtilities.navigationBarHeight + AndroidUtilities.dp(12));
-        actionBar.setAdaptiveBackground(listView);
         layoutManager = listView.layoutManager;
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         fragmentView = frameLayout;
+        updateTranslateButton();
         return frameLayout;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        super.onInsets(left, top, right, bottom);
+        if (listView == null) {
+            return;
+        }
+        // The glass header is status bar + button row + 6dp of extra height (BaseFragmentSimpleGlass
+        // gives the simple bar that extra), so the first row starts 6dp lower than the plain row height
+        // while the list keeps its overscan for the glass sampling.
+        BaseFragmentSimpleGlass.setListViewParams(listView, mSystemInsets.top, mSystemInsets.bottom,
+                ActionBar.getCurrentActionBarHeight() + AndroidUtilities.dp(6), 0);
     }
 
     private void showResetDialog() {
@@ -291,7 +403,9 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         builder.setPositiveButton(LocaleController.getString(R.string.Reset), new AlertDialog.OnButtonClickListener() {
             @Override
             public void onClick(AlertDialog alertDialog, int which) {
-                AndroidUtilities.updateViewVisibilityAnimated(resetItem, false, 0.5f, true);
+                if (resetItem != null) {
+                    resetItem.setShown(false, true);
+                }
                 PluginsController.getInstance().clearPluginSettingsPreferences(plugin.getId());
                 PluginsController.getInstance().loadPluginSettings(plugin.getId());
                 AndroidUtilities.runOnUIThread(new Runnable() {
@@ -346,17 +460,11 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         }
 
         final ArrayList<String> texts = new ArrayList<>();
-        if (createSubFragmentCallback == null) {
-            final UItem translateRow = UItem.asButton(0, LocaleController.getString(translation.getEnabled()
-                    ? R.string.PluginsSettingsShowOriginal : R.string.PluginsSettingsTranslate));
-            translateRow.id = TRANSLATE_ROW_ID;
-            translateRow.accent = true;
-            items.add(translateRow);
-        }
         for (SettingItem definition : definitions) {
             collectTranslatableTexts(definition, texts);
         }
         translation.check(texts);
+        updateTranslateButton();
 
         boolean foundTarget = false;
         for (SettingItem item : definitions) {
@@ -383,7 +491,11 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         }
     }
 
-    /** Collects the human-readable texts of a settings item for translation. */
+    /**
+     * Collects the human-readable texts of a settings item for translation: the label of every row,
+     * the hints shown under a switch or in the input dialog, and the options of a selector, so the
+     * translated page never mixes translated labels with untranslated values.
+     */
     private void collectTranslatableTexts(SettingItem item, ArrayList<String> out) {
         if (item instanceof HeaderSetting) {
             out.add(((HeaderSetting) item).text);
@@ -392,10 +504,22 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
             out.add(((SwitchSetting) item).subtext);
         } else if (item instanceof InputSetting) {
             out.add(((InputSetting) item).text);
+            out.add(((InputSetting) item).subtext);
         } else if (item instanceof SelectorSetting) {
-            out.add(((SelectorSetting) item).text);
+            SelectorSetting selector = (SelectorSetting) item;
+            out.add(selector.text);
+            if (selector.items != null) {
+                for (String option : selector.items) {
+                    out.add(option);
+                }
+            }
         } else if (item instanceof TextSetting) {
             out.add(((TextSetting) item).text);
+        } else if (item instanceof EditTextSetting) {
+            out.add(((EditTextSetting) item).hint);
+        } else if (item instanceof DividerSetting) {
+            // the section caption of a divider is shown text as well, so it is translated too
+            out.add(((DividerSetting) item).text);
         }
     }
 
@@ -412,7 +536,11 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
             switch (item.type) {
                 case PluginsConstants.Settings.TYPE_DIVIDER: {
                     DividerSetting setting = (DividerSetting) item;
-                    CharSequence text = setting.text != null ? LocaleUtils.fullyFormatText(setting.text, this, null) : "";
+                    // Formatting runs on the (possibly translated) plain text: the spans of the section
+                    // caption stay valid because formatting is applied after the translation lookup.
+                    CharSequence text = setting.text != null
+                            ? LocaleUtils.fullyFormatText(translation.text(setting.text), this, null)
+                            : "";
                     UItem uiItem = UItem.asShadow(text);
                     uiItem.object2 = item;
                     return uiItem;
@@ -535,11 +663,6 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
     }
 
     private void onClick(final UItem item, View view, int position, float x, float y) {
-        if (item != null && item.id == TRANSLATE_ROW_ID) {
-            translation.setEnabled(!translation.getEnabled());
-            refreshSettingsRows();
-            return;
-        }
         if (item == null || plugin == null) {
             return;
         }
