@@ -60,6 +60,11 @@ import xyz.nextalone.nagram.NaConfig;
 
 public class GhostModeActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private ListAdapter listAdapter;
     private final CellGroup cellGroup = new CellGroup(this);
 
@@ -309,7 +314,7 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
             return;
         }
 
-        switchItem = actionBar.createMenu().addItemWithWidth(ID_GLOBAL_SETTINGS, 0, AndroidUtilities.dp(56));
+        switchItem = simpleActionBar.createMenu().addItemWithWidth(ID_GLOBAL_SETTINGS, 0, AndroidUtilities.dp(56));
 
         AvatarDrawable avatarDrawable = new AvatarDrawable();
         avatarDrawable.setTextSize(AndroidUtilities.dp(12));
@@ -338,7 +343,7 @@ public class GhostModeActivity extends BaseNekoXSettingsActivity {
         updateSelectorSelection(initialSelectedId);
         updateSelectorAvatar(context);
 
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {

@@ -29,9 +29,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BackDrawable;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CreationTextCell;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -41,8 +41,6 @@ import org.telegram.ui.Components.ChatAttachAlert;
 import org.telegram.ui.Components.ChatAttachAlertDocumentLayout;
 import org.telegram.ui.Components.CombinedDrawable;
 import org.telegram.ui.Components.FlickerLoadingView;
-import org.telegram.ui.Components.LayoutHelper;
-import org.telegram.ui.Components.NumberTextView;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,16 +80,20 @@ public class NekoEmojiSettingsActivity extends BaseNekoSettingsActivity implemen
     private int emojiPack2Row;
 
     private ChatAttachAlert chatAttachAlert;
-    private NumberTextView selectedCountTextView;
     private AlertDialog progressDialog;
+
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
     @Override
     public View createView(Context context) {
         View view = super.createView(context);
-        actionBar.setBackButtonDrawable(new BackDrawable(false));
-        ActionBarMenu actionMode = actionBar.createActionMode();
+        simpleActionBar.setBackButtonDrawable(new BackDrawable(false));
+        SimpleActionBarMenu actionMode = simpleActionBar.createActionMode();
 
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+        simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
                 if (id == -1) {
@@ -103,11 +105,6 @@ public class NekoEmojiSettingsActivity extends BaseNekoSettingsActivity implemen
                 }
             }
         });
-        selectedCountTextView = new NumberTextView(actionMode.getContext());
-        selectedCountTextView.setTextSize(18);
-        selectedCountTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
-        selectedCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
-        actionMode.addView(selectedCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         actionMode.addItemWithWidth(menu_share, R.drawable.msg_share, AndroidUtilities.dp(54));
         actionMode.addItemWithWidth(menu_delete, R.drawable.msg_delete, AndroidUtilities.dp(54));
         return view;
@@ -543,14 +540,14 @@ public class NekoEmojiSettingsActivity extends BaseNekoSettingsActivity implemen
 
         private void checkActionMode() {
             int selectedCount = getSelectedCount();
-            boolean actionModeShowed = actionBar.isActionModeShowed();
+            boolean actionModeShowed = simpleActionBar.isActionModeShowed();
             if (selectedCount > 0) {
-                selectedCountTextView.setNumber(selectedCount, actionModeShowed);
+                simpleActionBar.setActionModeCount(selectedCount, actionModeShowed);
                 if (!actionModeShowed) {
-                    actionBar.showActionMode();
+                    simpleActionBar.showActionMode();
                 }
             } else if (actionModeShowed) {
-                actionBar.hideActionMode();
+                simpleActionBar.hideActionMode();
             }
         }
 
