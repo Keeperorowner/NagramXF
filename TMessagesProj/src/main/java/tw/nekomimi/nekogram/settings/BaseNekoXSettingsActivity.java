@@ -86,31 +86,58 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         return true;
     }
 
+    /**
+     * Screens with the simple glass header return true; the base keeps the classic action bar for
+     * every page that has not opted in, so no page ever touches a null {@link #simpleActionBar}.
+     */
+    @Override
+    protected boolean useSimpleActionBar() {
+        return false;
+    }
+
     @Override
     public View createView(Context context) {
-        actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(getTitle());
-
-        if (AndroidUtilities.isTablet()) {
-            actionBar.setOccupyStatusBar(false);
-        }
-
-        actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
-            @Override
-            public void onItemClick(int id) {
-                if (id == -1) {
-                    finishFragment();
-                } else {
-                    onActionBarItemClick(id);
+        final boolean simple = useSimpleActionBar();
+        if (simple) {
+            setHasOwnBackground(true);
+            simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            simpleActionBar.setTitle(getTitle());
+            simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else {
+                        onActionBarItemClick(id);
+                    }
                 }
+            });
+        } else {
+            actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+            actionBar.setTitle(getTitle());
+
+            if (AndroidUtilities.isTablet()) {
+                actionBar.setOccupyStatusBar(false);
             }
-        });
+
+            actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
+                @Override
+                public void onItemClick(int id) {
+                    if (id == -1) {
+                        finishFragment();
+                    } else {
+                        onActionBarItemClick(id);
+                    }
+                }
+            });
+        }
 
         fragmentView = new FrameLayout(context);
         fragmentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
         FrameLayout frameLayout = (FrameLayout) fragmentView;
 
         listView = createListView(context);
+        listView.setUseBlurTopPadding(!simple);
         listView.setVerticalScrollBarEnabled(false);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
 
@@ -126,9 +153,32 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
         tooltip = new UndoView(context);
         frameLayout.addView(tooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.LEFT, 8, 0, 8, 8));
 
-        listView.setSections(true);
-        actionBar.setAdaptiveBackground(listView);
+        if (simple) {
+            // the glass header floats over the list: the sections decoration draws the cards and the
+            // list keeps the paddings set by BaseFragmentSimpleGlass
+            listView.setSections();
+            listView.setSectionsDrawBackground(true);
+        } else {
+            listView.setSections(true);
+            actionBar.setAdaptiveBackground(listView);
+        }
         return fragmentView;
+    }
+
+    /** The list the glass header samples; null while the page keeps the classic action bar. */
+    @Override
+    protected RecyclerListView getListViewForSimpleGlass() {
+        return useSimpleActionBar() ? listView : null;
+    }
+
+    /**
+     * The sectioned list draws the white card of a row on glass screens; a page must not paint an
+     * opaque background over it, or the rounded corners of the section disappear.
+     */
+    protected void applyRowBackground(View view) {
+        if (!useSimpleActionBar()) {
+            view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+        }
     }
 
     protected void onActionBarItemClick(int id) {
@@ -150,11 +200,17 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
 
     @Override
     public void onInsets(int left, int top, int right, int bottom) {
-        listView.setPadding(0, 0, 0, bottom);
-        listView.setClipToPadding(false);
-        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) tooltip.getLayoutParams();
-        layoutParams.setMargins(dp(8), 0, dp(8), dp(8) + bottom);
-        tooltip.setLayoutParams(layoutParams);
+        if (listView != null) {
+            listView.setClipToPadding(false);
+            if (!useSimpleActionBar()) {
+                listView.setPadding(0, 0, 0, bottom);
+            }
+        }
+        if (tooltip != null) {
+            FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) tooltip.getLayoutParams();
+            layoutParams.setMargins(dp(8), 0, dp(8), dp(8) + bottom);
+            tooltip.setLayoutParams(layoutParams);
+        }
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -432,16 +488,22 @@ public class BaseNekoXSettingsActivity extends BaseFragment {
     @Override
     public ArrayList<ThemeDescription> getThemeDescriptions() {
         ArrayList<ThemeDescription> themeDescriptions = new ArrayList<>();
-        themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{EmptyCell.class, TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, TextDetailSettingsCell.class, NotificationsCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        if (!useSimpleActionBar()) {
+            // a glass page lets the sections decoration draw the row background, so a white cell
+            // background here would cover its 12dp insets and 16dp corners on every theme change
+            themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_CELLBACKGROUNDCOLOR, new Class[]{EmptyCell.class, TextSettingsCell.class, TextCheckCell.class, HeaderCell.class, TextDetailSettingsCell.class, NotificationsCheckCell.class}, null, null, null, Theme.key_windowBackgroundWhite));
+        }
         themeDescriptions.add(new ThemeDescription(fragmentView, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_windowBackgroundGray));
 
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue));
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_LISTGLOWCOLOR, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_avatar_actionBarIconBlue));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_avatar_actionBarSelectorBlue));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground));
-        themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem));
+        if (!useSimpleActionBar()) {
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_BACKGROUND, null, null, null, null, Theme.key_avatar_backgroundActionBarBlue));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_ITEMSCOLOR, null, null, null, null, Theme.key_avatar_actionBarIconBlue));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_TITLECOLOR, null, null, null, null, Theme.key_actionBarDefaultTitle));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SELECTORCOLOR, null, null, null, null, Theme.key_avatar_actionBarSelectorBlue));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUBACKGROUND, null, null, null, null, Theme.key_actionBarDefaultSubmenuBackground));
+            themeDescriptions.add(new ThemeDescription(actionBar, ThemeDescription.FLAG_AB_SUBMENUITEM, null, null, null, null, Theme.key_actionBarDefaultSubmenuItem));
+        }
 
         themeDescriptions.add(new ThemeDescription(listView, ThemeDescription.FLAG_SELECTOR, null, null, null, null, Theme.key_listSelector));
 

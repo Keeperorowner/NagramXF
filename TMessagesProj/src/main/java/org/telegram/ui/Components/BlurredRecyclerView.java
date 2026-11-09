@@ -16,6 +16,7 @@ public class BlurredRecyclerView extends RecyclerListView {
     boolean globalIgnoreLayout;
     public int additionalClipBottom;
     public boolean alwaysDrawChild;
+    private boolean useBlurTopPadding = true;
 
     public BlurredRecyclerView(Context context) {
         super(context);
@@ -36,7 +37,19 @@ public class BlurredRecyclerView extends RecyclerListView {
         updateTopPadding();
     }
 
+    /** Controls the blur overscan for lists whose parent does not manage their margins. */
+    public void setUseBlurTopPadding(boolean useBlurTopPadding) {
+        if (this.useBlurTopPadding != useBlurTopPadding) {
+            this.useBlurTopPadding = useBlurTopPadding;
+            requestLayout();
+        }
+    }
+
     private void updateTopPadding() {
+        if (!useBlurTopPadding) {
+            blurTopPadding = 0;
+            return;
+        }
         if (getLayoutParams() == null) {
             return;
         }
