@@ -46,6 +46,11 @@ import xyz.nextalone.nagram.NaConfig;
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class NekoGeneralSettingsActivity extends BaseNekoXSettingsActivity {
 
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
+
     private ListAdapter listAdapter;
 
     @Override
