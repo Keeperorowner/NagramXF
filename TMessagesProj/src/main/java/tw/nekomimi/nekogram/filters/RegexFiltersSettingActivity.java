@@ -37,9 +37,9 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
@@ -66,6 +66,11 @@ import tw.nekomimi.nekogram.utils.HttpClient;
 import xyz.nextalone.nagram.NaConfig;
 
 public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
+
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
     private static final int VIEW_TYPE_CHAT_FILTER = 100;
 
@@ -175,7 +180,7 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
             AyuFilter.invalidateFilteredCache();
         };
 
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         ActionBarMenuItem menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.addSubItem(1, R.drawable.msg_user_search, getString(R.string.SelectChat));
         menuItem.addColoredGap();
@@ -1093,7 +1098,7 @@ public class RegexFiltersSettingActivity extends BaseNekoXSettingsActivity {
         protected View onCreateCustomViewHolder(@NonNull ViewGroup parent, int viewType) {
             if (viewType == VIEW_TYPE_CHAT_FILTER) {
                 FiltersChatCell chatCell = new FiltersChatCell(mContext);
-                chatCell.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                applyRowBackground(chatCell);
                 chatCell.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                 return chatCell;
             }

@@ -35,8 +35,8 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
+import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
@@ -89,6 +89,11 @@ import xyz.nextalone.nagram.helper.DoubleTap;
 @SuppressLint("RtlHardcoded")
 @SuppressWarnings({"unused", "FieldCanBeLocal"})
 public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implements NotificationCenter.NotificationCenterDelegate, EmojiHelper.EmojiPacksLoadedListener {
+
+    @Override
+    protected boolean useSimpleActionBar() {
+        return true;
+    }
 
     @Override
     protected RecyclerListView.SelectionAdapter getListAdapter() {
@@ -674,7 +679,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     public View createView(Context context) {
         View superView = super.createView(context);
 
-        ActionBarMenu menu = actionBar.createMenu();
+        SimpleActionBarMenu menu = simpleActionBar.createMenu();
         menuItem = menu.addItem(0, R.drawable.ic_ab_other);
         menuItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
         menuItem.addSubItem(1, R.drawable.msg_reset, getString(R.string.ResetStickerSize));
