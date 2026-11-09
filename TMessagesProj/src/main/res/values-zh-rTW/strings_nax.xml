@@ -488,4 +488,16 @@
     <string name="ChatHistory_ChatsRemoved_one">已移除 %1$d 個聊天</string>
     <string name="ChatHistory_ChatsRemoved_other">已移除 %1$d 個聊天</string>
 
+    <string name="AppIconNagram">Nagram</string>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AyuMoments">AyuMoments</string>
+    <string name="BackAnimationSpring">彈性</string>
+    <string name="ChatHistory_ChatsRemoved_few">已移除 %1$d 個聊天</string>
+    <string name="ChatHistory_ChatsRemoved_many">已移除 %1$d 個聊天</string>
+    <string name="LlmApiUrl">API 位址</string>
+    <string name="MapPreviewProviderYandexNax">Yandex</string>
+    <string name="OpenAiApiBaseUrlHint">API 位址 ([…]/chat/completions)</string>
+    <string name="TranscribeProviderGemini">Gemini</string>
+    <string name="TranscribeProviderOpenAI">OpenAI 相容 API</string>
+    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
 </resources>

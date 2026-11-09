@@ -554,4 +554,15 @@
     <string name="RestartPluginSystemToApplyUpdate">업데이트를 불러왔습니다. 적용하려면 플러그인 엔진을 다시 시작하세요.</string>
     <string name="RestoreSdkFromApk">APK에서 SDK 복원</string>
     <string name="PluginsRestartEngine">플러그인 엔진 다시 시작</string>
+    <string name="AppIconNagram">Nagram</string>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AyuMoments">AyuMoments</string>
+    <string name="ChatHistory_ChatsRemoved_few">채팅 %1$d개를 제거했습니다.</string>
+    <string name="ChatHistory_ChatsRemoved_many">채팅 %1$d개를 제거했습니다.</string>
+    <string name="LlmApiUrl">API 주소</string>
+    <string name="MapPreviewProviderYandexNax">Yandex</string>
+    <string name="OpenAiApiBaseUrlHint">API 주소 ([…]/chat/completions)</string>
+    <string name="ProviderRealMicrosoftTranslator">Microsoft 번역</string>
+    <string name="TranscribeProviderGemini">Gemini</string>
+    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
     <string name="ForceFontWeightFallback">글꼴 두께 폴백 강제 적용</string></resources>

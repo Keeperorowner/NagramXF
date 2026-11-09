@@ -380,4 +380,7 @@
     <string name="AIReplaceTelegramEditorInfo">Перевод, переписывание и вычитка черновиков через ваш AI-сервис</string>
     <string name="AIReplaceTelegramSummariesInfo">Краткое изложение длинных сообщений и постов через ваш AI-сервис</string>
     <string name="AIChatHistoryEmpty">Сохранённых сообщений пока нет</string>
+    <string name="AIError502">Ошибка шлюза</string>
+    <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
+    <string name="RegexFiltersImportUrlHint">https://…</string>
 </resources>

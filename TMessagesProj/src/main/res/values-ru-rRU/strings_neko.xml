@@ -271,4 +271,8 @@
     <string name="DonateDesc">Если вам нравится Nagram XF, пожалуйста, поддержите разработку.</string>
     <string name="DonateInfo">Нравится этот клиент? **Поддержать разработку**</string>
     <string name="iOSMessageInputField">Поле ввода сообщений в стиле iOS</string>
+    <string name="DonateAfdian">Afdian</string>
+    <string name="DonateKoFi">Ko-fi</string>
+    <string name="ProviderTelegramAPI">Telegram API</string>
+    <string name="StickerSizeDialogName">Duang</string>
     <string name="iOSMessageInputFieldNotice">Перемещает значок вложений влево и разделяет кнопки на отдельные пузыри. Пока включено, переопределяет режим меню вложений</string></resources>

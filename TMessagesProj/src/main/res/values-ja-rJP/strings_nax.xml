@@ -481,4 +481,17 @@
     <string name="ForceForwardStatusStoppingCurrentBatch">現在のバッチを停止中</string>
     <string name="ForceFontWeightFallback">フォントウェイトのフォールバックを強制</string>
     <string name="ChatHistory_ChatsRemoved_one">%1$d 件のチャットを削除しました</string>
+    <string name="AppIconNagram">Nagram</string>
+    <string name="AppIconTelegram">Telegram</string>
+    <string name="AyuMoments">AyuMoments</string>
+    <string name="BackAnimationSpring">スプリング</string>
+    <string name="ChatHistory_ChatsRemoved_few">%1$d 件のチャットを削除しました</string>
+    <string name="ChatHistory_ChatsRemoved_many">%1$d 件のチャットを削除しました</string>
+    <string name="IconReplacementRemix">Remix アイコン</string>
+    <string name="LlmApiUrl">API URL</string>
+    <string name="MapPreviewProviderYandexNax">Yandex</string>
+    <string name="OpenAiApiBaseUrlHint">API URL ([…]/chat/completions)</string>
+    <string name="TranscribeProviderGemini">Gemini</string>
+    <string name="TranscribeProviderOpenAI">OpenAI 互換 API</string>
+    <string name="TranscribeProviderWorkersAI">Whisper (Workers AI)</string>
     <string name="ChatHistory_ChatsRemoved_other">%1$d 件のチャットを削除しました</string></resources>
