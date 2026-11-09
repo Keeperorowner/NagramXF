@@ -142,6 +142,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import com.exteragram.messenger.feed.FeedMessageUtils;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.SaveToDownloadReceiver;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
@@ -2718,7 +2719,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     if ((lastFile.isVoice() || lastFile.isRoundVideo()) && lastFile.getId() != 0) {
                         startRecordingIfFromSpeaker();
                     }
-                    NotificationCenter.getInstance(lastFile.currentAccount).postNotificationName(NotificationCenter.messagePlayingDidReset, lastFile.getId(), stopService);
+                    // Trailing argument keeps the reset payload self-contained: args[0]/args[1] stay
+                    // (int id, boolean stopService) and receivers can validate account/dialog/real id.
+                    NotificationCenter.getInstance(lastFile.currentAccount).postNotificationName(NotificationCenter.messagePlayingDidReset, lastFile.getId(), stopService, lastFile);
                     pipSwitchingState = 0;
                     if (pipRoundVideoView != null) {
                         pipRoundVideoView.close(true);
@@ -2749,8 +2752,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         goingToShowMessageObject = null;
     }
 
+    /**
+     * Whether {@code messageObject} denotes the same playback item as the one being played.
+     * The player identity rules are unchanged; the shared predicate only adds the feed case
+     * where a synthetic feed row and its real channel message count as the same item.
+     */
     private boolean isSamePlayingMessage(MessageObject messageObject) {
-        return playingMessageObject != null && playingMessageObject.getDialogId() == messageObject.getDialogId() && playingMessageObject.getId() == messageObject.getId() && ((playingMessageObject.eventId == 0) == (messageObject.eventId == 0));
+        return playingMessageObject != null && FeedMessageUtils.isSamePlaybackMessage(playingMessageObject.currentAccount, playingMessageObject, messageObject);
     }
 
     public boolean seekToProgress(MessageObject messageObject, float progress) {

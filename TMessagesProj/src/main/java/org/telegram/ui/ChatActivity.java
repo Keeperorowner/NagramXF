@@ -18020,7 +18020,9 @@ public class ChatActivity extends BaseFragment implements
                             if (checkTextureViewPosition || PipRoundVideoView.getInstance() != null) {
                                 MediaController.getInstance().setCurrentVideoVisible(false);
                             } else if (needScroll) {
-                                scrollToMessageId(messageObject.getId(), 0, false, 0, true, 0);
+                                // A feed row can be the playing message outside the feed host; scroll to
+                                // the id that this host actually renders for the same post.
+                                scrollToMessageId(FeedMessageUtils.getPlaybackScrollMessageId(isFeedSearch(), dialog_id, messageObject), 0, false, 0, true, 0);
                             }
                         }
                     }
@@ -25629,6 +25631,7 @@ public class ChatActivity extends BaseFragment implements
                 AndroidUtilities.runOnUIThread(destroyTextureViewRunnable);
             }
             int messageId = (int) args[0];
+            final MessageObject resetSource = args.length > 2 && args[2] instanceof MessageObject ? (MessageObject) args[2] : null;
             if (chatListView != null) {
                 int count = chatListView.getChildCount();
                 for (int a = 0; a < count; a++) {
@@ -25646,7 +25649,7 @@ public class ChatActivity extends BaseFragment implements
                     if (messageObject.isRoundVideo()) {
                         if (!MediaController.getInstance().isPlayingMessage(messageObject)) {
                             Bitmap bitmap = null;
-                            if (id == NotificationCenter.messagePlayingDidReset && cell.getMessageObject() != null && cell.getMessageObject().getId() == messageId && videoTextureView != null) {
+                            if (id == NotificationCenter.messagePlayingDidReset && cell.getMessageObject() != null && FeedMessageUtils.matchesPlaybackNotification(account, cell.getMessageObject(), messageId, resetSource) && videoTextureView != null) {
                                 bitmap = videoTextureView.getBitmap();
                                 if (bitmap != null && bitmap.getPixel(0, 0) == Color.TRANSPARENT) {
                                     bitmap = null;
@@ -25700,7 +25703,7 @@ public class ChatActivity extends BaseFragment implements
                     if (view instanceof ChatMessageCell) {
                         ChatMessageCell cell = (ChatMessageCell) view;
                         MessageObject playing = cell.getMessageObject();
-                        if (playing != null && playing.getId() == mid) {
+                        if (playing != null && FeedMessageUtils.matchesPlaybackNotification(account, playing, mid)) {
                             MessageObject player = MediaController.getInstance().getPlayingMessageObject();
                             if (player != null && !cell.isDraggingdAnyMusicSeekBar()) {
                                 playing.audioProgress = player.audioProgress;
@@ -37530,6 +37533,11 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case OPTION_COPY_LINK: {
+                if (isFeedSearch()) {
+                    // Feed rows carry synthetic ids: export through the owning channel and the real message id.
+                    FeedMessageUtils.copyFeedPostLink(this, selectedObject);
+                    break;
+                }
                 TLRPC.TL_channels_exportMessageLink req = new TLRPC.TL_channels_exportMessageLink();
                 if (selectedObject == replyingMessageObject && isComments) {
                     req.id = replyOriginalMessageId;
@@ -51292,7 +51300,12 @@ public class ChatActivity extends BaseFragment implements
                     icons.add(R.drawable.msg_viewreplies);
                     items.add(LocaleController.getString(R.string.ViewInChat));
                 }
-                if (!isEphemeral && !selectedObject.isSponsored() && chatMode != MODE_SCHEDULED && ChatObject.isChannel(currentChat) && (!ChatObject.isMonoForum(currentChat) || ChatObject.canManageMonoForum(currentAccount, currentChat)) && selectedObject.getDialogId() != mergeDialogId && !selectedObject.isAyuDeleted()) {
+                TLRPC.Chat copyLinkChat = currentChat;
+                if (copyLinkChat == null && isFeedSearch() && selectedObject != null) {
+                    // Feed rows are rendered without a currentChat; the post's own channel is the link owner.
+                    copyLinkChat = FeedMessageUtils.resolveDisplayChannel(selectedObject);
+                }
+                if (!isEphemeral && !selectedObject.isSponsored() && chatMode != MODE_SCHEDULED && ChatObject.isChannel(copyLinkChat) && (!ChatObject.isMonoForum(copyLinkChat) || ChatObject.canManageMonoForum(currentAccount, copyLinkChat)) && selectedObject.getDialogId() != mergeDialogId && !selectedObject.isAyuDeleted()) {
                     allowCopyLink = true;
                     if (
                         (!GroupedIconsView.useGroupedIcons() && (NaConfig.INSTANCE.getShowCopyLink().Bool() || selectedObject.isAnyKindOfSticker() || selectedObject.isPoll()))

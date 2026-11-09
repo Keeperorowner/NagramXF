@@ -54,6 +54,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
     private boolean uiActiveHeld;
     private boolean uiResumedHeld;
     private boolean viewportFullyVisible;
+    private int feedSubtitleCount = -1;
 
     @Override
     public boolean drawEdgeNavigationBar() {
@@ -542,11 +543,16 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
 
     private void updateFeedSubtitle() {
         FeedController feedController = FeedController.getInstance(this.currentAccount);
-        setFeedSubtitle(feedController.getIncludedChannelCount());
+        if (this.feedSubtitleCount < 0 && feedController.getIncludedChannelCount() > 0) {
+            this.feedSubtitleCount = feedController.getIncludedChannelCount();
+        }
+        setFeedSubtitle(this.feedSubtitleCount);
         feedController.loadChannels((channels, includedCount, failed, configGeneration) -> {
             if (failed) {
+                setFeedSubtitle(FeedActivity.this.feedSubtitleCount);
                 return;
             }
+            FeedActivity.this.feedSubtitleCount = includedCount;
             setFeedSubtitle(includedCount);
         });
     }
@@ -558,7 +564,7 @@ public class FeedActivity extends BaseFragment implements NotificationCenter.Not
         if (container == null || (chatActivity = container.chatActivity) == null || (avatarContainer = chatActivity.avatarContainer) == null) {
             return;
         }
-        avatarContainer.setSubtitle(LocaleController.formatPluralString("Channels", count));
+        avatarContainer.setSubtitle(count < 0 ? LocaleController.getString(R.string.Loading) : LocaleController.formatPluralString("Channels", count));
         View subtitleTextView = this.chatContainer.chatActivity.avatarContainer.getSubtitleTextView();
         if (subtitleTextView != null) {
             subtitleTextView.setVisibility(View.VISIBLE);
