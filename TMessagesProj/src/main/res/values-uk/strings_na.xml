@@ -72,6 +72,7 @@
     <string name="PushServiceTypeMicroG" translatable="false">microG</string>
     <string name="PushServiceTypeInAppDialog">Показувати постійне сповіщення</string>
     <string name="PushServiceTypeUnifiedGateway">Шлюз UnifiedPush</string>
+    <string name="PushServiceTypeUnifiedFcmVapidKey">VAPID-ключ шлюзу</string>
     <string name="SendMp4DocumentAsVideo">Надіслати документи MP4 як відео</string>
     <string name="StickersChooseShortNameForStickerPack">Виберіть коротку назву для свого набору.</string>
     <string name="StickersCopyStickerSet">Скопіювати посилання на набір</string>

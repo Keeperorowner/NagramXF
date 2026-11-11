@@ -73,6 +73,8 @@
     <string name="PushServiceTypeMicroG" translatable="false">microG</string>
     <string name="PushServiceTypeInAppDialog">Show Resident Notifications</string>
     <string name="PushServiceTypeUnifiedGateway">Unified Push Gateway</string>
+    <string name="PushServiceTypeUnifiedFcm" translatable="false">UnifiedPush (Google FCM)</string>
+    <string name="PushServiceTypeUnifiedFcmVapidKey">Gateway VAPID Key</string>
     <string name="SendMp4DocumentAsVideo">Send MP4 Document as Video</string>
     <string name="StickersChooseShortNameForStickerPack">Choose a short name for your pack.</string>
     <string name="StickersCopyStickerSet">Copy Sticker Set</string>
