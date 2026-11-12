@@ -146,6 +146,11 @@ android {
         }
     }
 
+    // IWidgetEngine: the widget engine's isolated process (WidgetEngineService).
+    buildFeatures {
+        aidl true
+    }
+
     // emoji.pack is mmap'd via AssetManager.openFd; compressed assets have no fd
     aaptOptions {
         noCompress += "pack"
