@@ -168,6 +168,7 @@ private:
     bool updatingDcSettingsWorkaround = false;
     int32_t disconnectTimeoutAmount = 0;
     bool requestingSecondAddressByTlsHashMismatch = false;
+    bool tempAddressesTlsHashMismatch = false;
     int32_t requestingSecondAddress = 0;
     int32_t updatingDcStartTime = 0;
     int32_t lastDcUpdateTime = 0;
