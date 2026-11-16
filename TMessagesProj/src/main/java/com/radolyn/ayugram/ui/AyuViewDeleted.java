@@ -41,7 +41,6 @@ import com.radolyn.ayugram.utils.AyuMessageUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.DialogObject;
-import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
@@ -791,20 +790,11 @@ public class AyuViewDeleted extends NekoDelegateFragment {
                 } else if (option == OPTION_COPY_PHOTO_AS_STICKER) {
                     MessageHelper.addMessageToClipboardAsSticker(msg, () -> BulletinFactory.of(this).createCopyBulletin(getString(R.string.PhotoCopied)).show());
                 } else if (option == OPTION_SAVE_TO_GALLERY) {
-                    String path = null;
-                    if (!TextUtils.isEmpty(msg.messageOwner.attachPath)) {
-                        File temp = new File(msg.messageOwner.attachPath);
-                        if (temp.exists()) {
-                            path = msg.messageOwner.attachPath;
-                        }
-                    }
+                    // Same lookup as "Copy photo": it also finds the copy in Ayu's attachments folder.
+                    String path = MessageHelper.getPathToMessage(msg);
                     if (TextUtils.isEmpty(path)) {
-                        File f = FileLoader.getInstance(getCurrentAccount()).getPathToMessage(msg.messageOwner);
-                        if (f != null && f.exists()) {
-                            path = f.getPath();
-                        }
-                    }
-                    if (!TextUtils.isEmpty(path)) {
+                        BulletinFactory.of(this).createErrorBulletin(getString(R.string.PleaseDownload), getResourceProvider()).show();
+                    } else {
                         MediaController.saveFile(msg, path, getParentActivity(), msg.isVideo() ? 1 : 0, null, null, uri -> {
                             if (getParentActivity() != null) {
                                 BulletinFactory.of(this).createDownloadBulletin(
