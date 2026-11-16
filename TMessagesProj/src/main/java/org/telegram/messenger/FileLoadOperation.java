@@ -855,12 +855,15 @@ public class FileLoadOperation {
     // Snapshot the policy for this operation, including its connection pool.
     // Streams use it too, like TDLib, which shares one downloader between streaming and downloads.
     private void updateDownloadByteBudget() {
-        useDownloadByteBudget = !MessagesController.getInstance(currentAccount).downloadImprovementKillswitch &&
+        boolean premium = UserConfig.getInstance(currentAccount).isPremium();
+        int byteBudget = (premium ? 16 : 2) * 1024 * 1024;
+        // Where "Download Speed Boost" keeps more bytes in flight than the budget (here and in tgnet)
+        // allows, as on big files without Premium, keep the count-based scheduling it was made for.
+        boolean boostAboveBudget = NekoConfig.enhancedFileLoader.Bool() && currentDownloadChunkSize * currentMaxDownloadRequests > byteBudget;
+        useDownloadByteBudget = !MessagesController.getInstance(currentAccount).downloadImprovementKillswitch && !boostAboveBudget &&
                 totalBytesCount > 0 && key == null && !encryptFile && !isPreloadVideoOperation && preloadPrefixSize == 0;
         if (useDownloadByteBudget) {
-            boolean premium = UserConfig.getInstance(currentAccount).isPremium();
             downloadConnectionsCount = premium ? ConnectionsManager.DownloadConnectionsCount : 2;
-            int byteBudget = (premium ? 16 : 2) * 1024 * 1024;
             currentMaxDownloadRequests = byteBudget / currentDownloadChunkSize;
         }
     }
