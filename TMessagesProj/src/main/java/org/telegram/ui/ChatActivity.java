@@ -49402,16 +49402,13 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private void doRepeatMessage(boolean isLongClick, ArrayList<MessageObject> messages, boolean isRepeatAsCopy) {
-        boolean noforwards = getMessagesController().isChatNoForwards(currentChat);
-        if (selectedObject == null && noforwards && !messages.isEmpty()) {
-            selectedObject = messages.get(0);
-        }
-        if (selectedObject != null && selectedObject.messageOwner != null && (isLongClick || (isThreadChat() && !isTopic) || noforwards)) {
+        // Protected chats need no special case: forwardMessages copies their messages through AyuForward.
+        if (selectedObject != null && selectedObject.messageOwner != null && (isLongClick || (isThreadChat() && !isTopic))) {
             // If selected message contains `replyTo`:
             // When longClick it will reply to the `replyMessage` of selectedMessage
             // When not LongClick but in a threadchat: reply to the Thread
             MessageObject replyTo = selectedObject.replyMessageObject != null ? isLongClick ? selectedObject.replyMessageObject : getThreadMessage() : getThreadMessage();
-            if (replyTo != null || noforwards) {
+            if (replyTo != null) {
                 if (selectedObject.type == 0 || selectedObject.isAnimatedEmoji() || getMessageCaption(selectedObject, selectedObjectGroup) != null) {
                     CharSequence caption = getMessageCaption(selectedObject, selectedObjectGroup);
                     if (caption == null) {
