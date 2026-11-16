@@ -1002,6 +1002,13 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
             }
         }
 
+        // "Default HLS video quality" picks what the chat downloads, not only what the viewer plays.
+        final Quality defaultQuality = getDefaultSavedQuality(qualities);
+        final VideoUri defaultUri = defaultQuality != null ? defaultQuality.getDownloadUri() : null;
+        if (defaultUri != null) {
+            return defaultUri;
+        }
+
         VideoUri uri = null;
         if (uri == null) {
             for (final Quality q : qualities) {
