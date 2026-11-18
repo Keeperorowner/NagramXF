@@ -500,7 +500,7 @@ private suspend fun ChatActivity.finalizeTranslation(
     } else {
         withContext(Dispatchers.Main) {
             clearTranslated(msg, currentAccount, false)
-            messageHelper.resetMessageContent(dialogId, msg)
+            refreshTranslationContent(msg)
         }
     }
 }
@@ -514,6 +514,14 @@ private fun ChatActivity.postTranslatedNotification(msg: MessageObject) {
         notificationCenter.postNotificationName(
             NotificationCenter.messageTranslated, msg
         )
+    }
+}
+
+private fun ChatActivity.refreshTranslationContent(msg: MessageObject) {
+    if (isFeedSearch && !msg.isRich && !msg.isPoll && getValidGroupedMessage(msg) != null) {
+        postTranslatedNotification(msg)
+    } else {
+        messageHelper.resetMessageContent(dialogId, msg)
     }
 }
 
@@ -534,7 +542,7 @@ private fun ChatActivity.hideTranslation(
 
     AndroidUtilities.runOnUIThread {
         if ((MessageHelper.shouldKeepOriginalForManualTranslation(translatorMode) && !msg.messageOwner.summarizedOpen) || msg.isPoll) {
-            messageHelper.resetMessageContent(dialogId, msg)
+            refreshTranslationContent(msg)
         } else {
             postTranslatedNotification(msg)
         }
@@ -602,7 +610,7 @@ private fun ChatActivity.applyCachedTranslations(
                 }
 
                 MessageHelper.shouldKeepOriginalForManualTranslation(translatorMode) -> {
-                    messageHelper.resetMessageContent(dialogId, msg)
+                    refreshTranslationContent(msg)
                 }
 
                 else -> {

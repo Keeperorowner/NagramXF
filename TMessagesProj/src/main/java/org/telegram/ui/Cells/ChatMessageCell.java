@@ -8787,7 +8787,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 photoImage.setForcePreview(messageObject.needDrawBluredPreview());
                 boolean isSecretChat = (int) messageObject.getDialogId() == 0;
                 if (messageObject.type == MessageObject.TYPE_FILE) {
-                    if (currentPosition == null) {
+                    final boolean wideFeedFile = widePosts && messageObject.searchType == 4;
+                    if (wideFeedFile) {
+                        backgroundWidth = getWidePostsBubbleWidth();
+                    } else if (currentPosition == null) {
                         backgroundWidth = messageObject.getMaxMessageTextWidth();
                     } else {
                         if (AndroidUtilities.isTablet()) {
@@ -8800,7 +8803,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                         }
                     }
                     int maxTextWidth = 0;
-                    int maxWidth = backgroundWidth - dp(86 + (currentPosition == null ? 0 : 52));
+                    int maxWidth = backgroundWidth - dp(86 + (currentPosition == null || wideFeedFile ? 0 : 52));
                     if (currentPosition == null) {
                         captionFullWidth = backgroundWidth - getExtraTextX() * 2;
                         currentCaption = messageObject.caption;
@@ -9685,6 +9688,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                                 }
                             } else {
                                 captionLayout = null;
+                                if (widePosts && messageObject.searchType == 4) {
+                                    addedCaptionHeight = 0;
+                                }
                             }
                         } catch (Exception e) {
                             FileLog.e(e);
@@ -12487,9 +12493,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         if (currentMessageObject == null || currentMessageObject.shouldDrawWithoutBackground()) {
             return;
         }
-        int bubbleWidth = getWidePostsBubbleWidth();
-        if (backgroundWidth != bubbleWidth) {
-            backgroundWidth = bubbleWidth;
+        if (!WidePosts.isWideGroupedMedia(currentMessagesGroup)) {
+            backgroundWidth = getWidePostsBubbleWidth();
         }
         if (currentMessagesGroup == null) {
             applyWidePostsImageWidthBeforeLayout();
@@ -16744,7 +16749,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         boolean needAuthorName = isNeedAuthorName();
         boolean viaBot = (messageObject.messageOwner.fwd_from == null || messageObject.type == MessageObject.TYPE_MUSIC) && viaUsername != null;
         boolean viaGuestBot = messageObject.messageOwner.guestchat_via_from != null;
-        if (!hasPsaHint && (needAuthorName || viaBot || viaGuestBot)) {
+        final boolean hideFeedAlbumAuthor = widePostsEmbeddedProfileAvatar && messageObject.searchType == 4
+                && currentPosition != null && (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) == 0;
+        if (!hasPsaHint && !hideFeedAlbumAuthor && (needAuthorName || viaBot || viaGuestBot)) {
             drawNameLayout = true;
             drawNameAvatar = !messageObject.isOutOwner() && ((isForum || isMonoForum) && isSideMenuEnabled || hasCompactNameAvatar()) && (currentPosition == null || (currentPosition.flags & MessageObject.POSITION_FLAG_TOP) != 0) && !(messageObject.type == MessageObject.TYPE_ROUND_VIDEO || messageObject.type == MessageObject.TYPE_STICKER || messageObject.type == MessageObject.TYPE_ANIMATED_STICKER);
             if (widePostsEmbeddedProfileAvatar && !messageObject.isOutOwner()) {

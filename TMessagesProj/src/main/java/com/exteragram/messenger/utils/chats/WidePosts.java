@@ -659,7 +659,9 @@ public abstract class WidePosts {
             position.leftSpanOffset = hadOffset ? Math.max(0, target - scaledWidth) : 0;
         }
         normalizeGroupRows(grouped, target, withAvatar);
-        int remainder = GROUP_GRID - target;
+        final int remainder = GROUP_GRID - target;
+        final boolean inFeed = primary.searchType == 4;
+        final int rowEnd = inFeed && primary.isOutOwner() ? MessageObject.POSITION_FLAG_LEFT : MessageObject.POSITION_FLAG_RIGHT;
         boolean changed = false;
         for (MessageObject.GroupedMessagePosition position : grouped.posArray) {
             if (position == null) {
@@ -669,9 +671,14 @@ public abstract class WidePosts {
             if (state == null) {
                 continue;
             }
-            position.spanSize = position.pw;
-            if (withAvatar && (position.flags & 2) != 0) {
-                position.spanSize = position.pw + remainder;
+            if (inFeed && state.spanSize == GROUP_GRID) {
+                // Stacked siblings draw at an offset inside a full-span cell.
+                position.spanSize = GROUP_GRID;
+            } else {
+                position.spanSize = position.pw;
+                if ((inFeed || withAvatar) && (position.flags & rowEnd) != 0) {
+                    position.spanSize += remainder;
+                }
             }
             state.scaledForWidth = parentWidth;
             changed |= state.apply(position);

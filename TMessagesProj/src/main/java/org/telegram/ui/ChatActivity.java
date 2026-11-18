@@ -27071,7 +27071,12 @@ public class ChatActivity extends BaseFragment implements
                 return;
             }
             if (target != null) {
-                updateMessageTranslation(target, summary);
+                MessageObject.GroupedMessages feedGroup = isFeedSearch() ? getValidGroupedMessage(target) : null;
+                if (feedGroup != null) {
+                    updateFeedAlbumTranslation(feedGroup, target, summary);
+                } else {
+                    updateMessageTranslation(target, summary);
+                }
                 if (args.length > 2 && (boolean) args[2]) {
                     checkTranslation(true);
                 }
@@ -27507,6 +27512,46 @@ public class ChatActivity extends BaseFragment implements
     private int getScrollingOffsetForView(View v) {
         FileLog.d("getScrollingOffsetForView view=" + v + " results in {"+(chatListView.getMeasuredHeight() - v.getBottom() - chatListView.getPaddingBottom())+"} chatHeight=" + chatListView.getMeasuredHeight() + " bottom=" + v.getBottom() + " paddingBottom=" + chatListView.getPaddingBottom());
         return chatListView.getMeasuredHeight() - v.getBottom() - chatListView.getPaddingBottom();
+    }
+
+    private void updateFeedAlbumTranslation(MessageObject.GroupedMessages group, MessageObject target, boolean scroll) {
+        boolean changed = false;
+        for (MessageObject member : group.messages) {
+            if (member.getId() == target.getId() && member.getDialogId() == target.getDialogId()) {
+                FeedMessageUtils.copyTranslationState(target, member);
+            }
+            changed |= member.updateTranslation(false);
+        }
+        if (!changed) {
+            return;
+        }
+        group.cachedWidthForCaption = -1;
+        for (MessageObject member : group.messages) {
+            member.forceUpdate = true;
+        }
+        if (chatListView == null || chatAdapter == null || chatLayoutManager == null) {
+            return;
+        }
+        if (!chatLayoutManager.hasPendingScrollPosition()) {
+            View anchor = null;
+            if (scroll) {
+                for (int i = 0; i < chatListView.getChildCount(); i++) {
+                    View child = chatListView.getChildAt(i);
+                    if (child instanceof ChatMessageCell && ((ChatMessageCell) child).getMessageObject() == target
+                            && chatListView.getChildAdapterPosition(child) != RecyclerView.NO_POSITION) {
+                        anchor = child;
+                        break;
+                    }
+                }
+            }
+            if (anchor != null) {
+                chatLayoutManager.scrollToPositionWithOffset(chatListView.getChildAdapterPosition(anchor), anchor.getTop() - (int) chatListViewPaddingTop, false);
+            } else {
+                saveGeneralScroll();
+            }
+        }
+        // Lay out the entire album before drawing its shared background again.
+        chatAdapter.notifyDataSetChanged(false);
     }
 
     private boolean updateMessageTranslation(MessageObject messageObject, boolean scroll) {
