@@ -1265,7 +1265,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     private boolean showingSavedMessagesHint;
 
     public void updateSubtitle(boolean animated) {
-        if (parentFragment == null) {
+        if (parentFragment == null || parentFragment.isFeedSearch()) {
             return;
         }
         if (parentFragment.getChatMode() == ChatActivity.MODE_EDIT_BUSINESS_LINK) {

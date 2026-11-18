@@ -213,6 +213,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private boolean glassModeIsForum;
 
     private ChatAvatarContainer chatAvatarContainer;
+    private boolean chatTitlePillLeftAligned;
     public boolean doNotDrawCenterGlass;
 
     public void setGlassOnlyBack() {
@@ -221,6 +222,14 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
     public void setChatAvatarContainer(ChatAvatarContainer chatAvatarContainer) {
         this.chatAvatarContainer = chatAvatarContainer;
+    }
+
+    public void setChatTitlePillLeftAligned(boolean leftAligned) {
+        if (chatTitlePillLeftAligned != leftAligned) {
+            chatTitlePillLeftAligned = leftAligned;
+            requestLayout();
+            invalidate();
+        }
     }
 
     public void setupGlass(BlurredBackgroundDrawableViewFactory factory, BlurredBackgroundColorProvider colorProvider) {
@@ -1719,7 +1728,16 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (child.getVisibility() == GONE || child == titleTextView[0] || child == titleTextView[1] || child == additionalSubTitleOverlayContainer || child == subtitleTextView || child == menu || child == backButtonImageView || child == additionalSubtitleTextView || child == avatarSearchImageView) {
                 continue;
             }
-            measureChildWithMargins(child, widthMeasureSpec, 0, MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY), 0);
+            int widthUsed = 0;
+            if (child == chatAvatarContainer && chatTitlePillLeftAligned) {
+                if (menu != null && menu.getVisibility() != GONE && !menu.searchFieldVisible()) {
+                    widthUsed = Math.max(0, menu.getMeasuredWidth() - ((MarginLayoutParams) child.getLayoutParams()).rightMargin);
+                }
+                if (backButtonImageView != null && backButtonImageView.getVisibility() == VISIBLE) {
+                    widthUsed += dp(6) + dp(46);
+                }
+            }
+            measureChildWithMargins(child, widthMeasureSpec, widthUsed, MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY), 0);
         }
     }
 
@@ -2434,7 +2452,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             //visualWidth = Math.max(visualWidth, dp(168));
         }
 
-        final int width = Math.min(getMeasuredWidth() - dp(6 + 46 + 6 + 6 + 46 + 6), visualWidth);
+        final int width = chatTitlePillLeftAligned ? visualWidth
+                : Math.min(getMeasuredWidth() - dp(6 + 46 + 6 + 6 + 46 + 6), visualWidth);
         if (animated) {
             if (animatorAvatarContainerWidth.getToFactor() != width) {
                 animatorAvatarContainerWidth.animateTo(width);
@@ -2579,8 +2598,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 final int widthDefault = rightDefault - leftDefault;
                 final int left, right;
                 if (chatAvatarContainer != null && !chatAvatarContainer.useSeparateAvatarPill()) {
-                    final int width = lerp(Math.min(widthDefault, (int) animatorAvatarContainerWidth.getFactor() + p * 2), widthDefault, Math.max(searchFactor, actionModeFactor));
-                    left = (rightDefault + leftDefault - width) / 2;
+                    final int width = chatTitlePillLeftAligned
+                            ? Math.max(0, widthDefault - p * 2)
+                            : lerp(Math.min(widthDefault, (int) animatorAvatarContainerWidth.getFactor() + p * 2), widthDefault, Math.max(searchFactor, actionModeFactor));
+                    left = chatTitlePillLeftAligned ? leftDefault : (rightDefault + leftDefault - width) / 2;
                     right = left + width;
 
                     final float translationX = left

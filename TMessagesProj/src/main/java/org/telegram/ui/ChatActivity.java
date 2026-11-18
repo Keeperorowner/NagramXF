@@ -5351,6 +5351,12 @@ public class ChatActivity extends BaseFragment implements
             BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
             ChatObject.isForum(currentChat));
         actionBar.setChatAvatarContainer(avatarContainer);
+        final boolean isFeedTab = hasMainTabs && isFeedSearch();
+        actionBar.setChatTitlePillLeftAligned(isFeedTab);
+        if (isFeedTab) {
+            avatarContainer.setActionBar(actionBar);
+            updateFeedTabBackButton();
+        }
         setupHeaderMenuOverlay(parentView);
 
         if (chatMode == MODE_PINNED) {
