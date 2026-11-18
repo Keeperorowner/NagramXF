@@ -5351,17 +5351,14 @@ public class ChatActivity extends BaseFragment implements
             BlurredBackgroundProviderImpl.topPanelChatActivity(themeDelegate),
             ChatObject.isForum(currentChat));
         actionBar.setChatAvatarContainer(avatarContainer);
+        avatarContainer.setActionBar(actionBar);
         setupHeaderMenuOverlay(parentView);
 
-        if (chatMode == MODE_PINNED) {
-            avatarContainer.setActionBar(actionBar);
-        } else if (chatMode == MODE_WELCOME_MESSAGES) {
+        if (chatMode == MODE_WELCOME_MESSAGES) {
             actionBar.setForcedMenuWidth(dp(46));
             actionBar.doNotDrawGlassMenu = true;
-            avatarContainer.setActionBar(actionBar);
         } else if (isComments) {
             actionBar.setForcedMenuMinWidth(dp(46));
-            avatarContainer.setActionBar(actionBar);
         }
 
         fadeDrawable = new BlurredBackgroundWithFadeDrawable(
