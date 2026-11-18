@@ -129,7 +129,7 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
     private static final int OPTION_BAN_FROM_COMMUNITY = 103;
     private static final int OPTION_BAN_FROM_COMMUNITY_INFO = 104;
 
-    private static final int RIGHT_DURATION = 100;
+    private static final int RIGHT_DURATION = 200;
 
     private class Action {
         int type;
@@ -784,7 +784,6 @@ public class DeleteMessagesBottomSheet extends BottomSheetWithRecyclerListView {
 
         items.add(UItem.asSpace(dp(12)));
         items.add(UItem.asHeader(getString(R.string.DeleteAdditionalActions)));
-        fillAction(items, report);
         fillAction(items, report);
 
         if (isSingleUsersMode) {
