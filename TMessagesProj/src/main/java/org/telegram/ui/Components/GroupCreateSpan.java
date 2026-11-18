@@ -307,7 +307,7 @@ public class GroupCreateSpan extends View implements Theme.Colorable {
 
     private void updateColorsInternal() {
         int color = avatarDrawable.getColor();
-        int back = Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider), 0.05f);
+        int back = Theme.getColor(Theme.key_groupcreate_spanBackground, resourcesProvider);
         int delete = Theme.getColor(Theme.key_groupcreate_spanDelete, resourcesProvider);
         colors[0] = Color.red(back);
         colors[1] = Color.red(color);
