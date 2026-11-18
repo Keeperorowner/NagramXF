@@ -523,6 +523,16 @@ public class SimpleActionBar extends FrameLayout implements FactorAnimator.Targe
         return extraHeight;
     }
 
+    private int titleMinSideInset;
+
+    /** The centered title keeps this far from both edges, e.g. clear of a custom child at the right (a balance). */
+    public void setTitleMinSideInset(int value) {
+        if (titleMinSideInset != value) {
+            titleMinSideInset = value;
+            requestLayout();
+        }
+    }
+
     private int getRowTop() {
         return occupyStatusBar ? AndroidUtilities.statusBarHeight : 0;
     }
@@ -540,8 +550,14 @@ public class SimpleActionBar extends FrameLayout implements FactorAnimator.Targe
 
         final float menuWidth = menu != null && menu.getVisibility() != GONE ? menu.getTargetPillWidth() : 0;
         final float doneSpace = getDoneButtonSpace(true);
-        final int titleSide = Math.max(hasBack ? dp(64) : dp(18), menuWidth > 0 || doneSpace > 0 ? (int) (menuWidth + doneSpace) + dp(6 + 12) : 0);
-        titleLayout.setInsets(NaConfig.INSTANCE.getCenterActionBarTitle().Bool() ? titleSide : hasBack ? dp(64) : dp(18), NaConfig.INSTANCE.getCenterActionBarTitle().Bool() ? titleSide : (int) (menuWidth + doneSpace) + dp(18));
+        final int leftInset = hasBack ? dp(64) : dp(18);
+        final int rightInset = (int) (menuWidth + doneSpace) + dp(18);
+        if (NaConfig.INSTANCE.getCenterActionBarTitle().Bool()) {
+            final int titleSide = Math.max(titleMinSideInset, Math.max(leftInset, rightInset));
+            titleLayout.setInsets(titleSide, titleSide);
+        } else {
+            titleLayout.setInsets(leftInset, Math.max(titleMinSideInset, rightInset));
+        }
         setMargins(titleLayout, 0, rowTop, 0);
         titleLayout.getLayoutParams().height = rowHeight;
 

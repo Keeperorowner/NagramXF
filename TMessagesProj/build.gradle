@@ -151,6 +151,10 @@ android {
         noCompress += "pack"
     }
 
+    buildFeatures {
+        aidl true
+    }
+
     // splits.abi is not flavor-aware; the plugin flavor prunes x86_64 and universal below.
     splits {
         abi {
@@ -177,6 +181,7 @@ android {
                 ndk.abiFilters.addAll(pluginAbis)
             }
             externalNativeBuild.cmake.arguments '-DENABLE_PLUGINS=ON'
+            externalNativeBuild.cmake.targets 'aliuhook'
             proguardFiles 'proguard-plugin-rules.pro'
         }
     }
@@ -206,6 +211,7 @@ android {
 
         externalNativeBuild {
             cmake {
+                targets 'tmessages.49', 'twidget'
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-27', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'
                 System.getenv('PATH').split(File.pathSeparator).any { path ->
                     var file = Paths.get("${path}${File.separator}ccache${if (OperatingSystem.current().windows) ".exe" else ""}").toFile()

@@ -614,6 +614,12 @@
         </receiver>
 
         <service
+            android:name="org.telegram.utils.twidget.WidgetEngineService"
+            android:process=":widgets"
+            android:isolatedProcess="true"
+            android:exported="false" />
+
+        <service
             android:name=".AuthenticatorService"
             android:exported="true"
             android:foregroundServiceType="dataSync"
