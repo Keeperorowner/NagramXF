@@ -2432,10 +2432,18 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             //visualWidth = Math.max(visualWidth, dp(168));
         }
 
+        if (getMeasuredWidth() <= 0) {
+            return;
+        }
+
         final int width = Math.min(getMeasuredWidth() - dp(6 + 46 + 6 + 6 + 46 + 6), visualWidth);
         if (animated) {
             if (animatorAvatarContainerWidth.getToFactor() != width) {
-                animatorAvatarContainerWidth.animateTo(width);
+                if (width > animatorAvatarContainerWidth.getFactor()) {
+                    animatorAvatarContainerWidth.forceFactor(width);
+                } else {
+                    animatorAvatarContainerWidth.animateTo(width);
+                }
             }
         } else {
             animatorAvatarContainerWidth.forceFactor(width);
