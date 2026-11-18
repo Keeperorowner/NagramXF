@@ -1619,12 +1619,12 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 }
                 MenuItem copyItem = menu.findItem(android.R.id.copy);
                 if (copyItem != null) {
-                    copyItem.setVisible(true || canCopy());
+                    copyItem.setVisible(canCopy());
                 }
                 MenuItem selectAllItem = menu.findItem(android.R.id.selectAll);
                 if (selectAllItem != null && selectedView != null) {
                     CharSequence charSequence = getText(selectedView, false);
-                    if (false && !canCopy()) {
+                    if (!canCopy()) {
                         selectAllItem.setVisible(false);
                     } else if (forceShowSelectAll()) {
                         selectAllItem.setVisible(true);

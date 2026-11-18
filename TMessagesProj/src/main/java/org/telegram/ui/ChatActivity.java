@@ -4049,14 +4049,7 @@ public class ChatActivity extends BaseFragment implements
 
         @Override
         protected boolean canCopy() {
-            if (chatActivity != null && chatActivity.getDialogId() == UserObject.VERIFY) {
-                return true;
-            }
-            return chatActivity == null || !(selectedView != null && selectedView.getMessageObject() != null && selectedView.getMessageObject().messageOwner != null);
-            /*return chatActivity == null || !(
-                chatActivity.getDialogId() < 0 && chatActivity.getMessagesController().isPeerNoForwards(chatActivity.getDialogId()) ||
-                selectedView != null && selectedView.getMessageObject() != null && (selectedView.getMessageObject().messageOwner != null && selectedView.getMessageObject().messageOwner.noforwards)
-            );*/
+            return true;
         }
 
         @Override
