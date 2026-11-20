@@ -695,7 +695,9 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
             if (key.equals(NekoConfig.disableProximityEvents.getKey())) {
                 MediaController.getInstance().recreateProximityWakeLock();
-            } else if (key.equals(NekoConfig.showSeconds.getKey())) {
+            } else if (key.equals(NekoConfig.showSeconds.getKey())
+                    || key.equals(NaConfig.INSTANCE.getWidePostsInFeed().getKey())
+                    || key.equals(NaConfig.INSTANCE.getWidePostsInChannels().getKey())) {
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
             } else if (key.equals(NaConfig.INSTANCE.getConfirmAllLinks().getKey())) {
                 checkSkipOpenLinkConfirmRows();

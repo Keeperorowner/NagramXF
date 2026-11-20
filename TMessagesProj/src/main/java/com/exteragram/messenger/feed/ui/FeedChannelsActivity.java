@@ -2,6 +2,7 @@ package com.exteragram.messenger.feed.ui;
 
 import android.content.Context;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 
@@ -14,6 +15,7 @@ import com.exteragram.messenger.feed.FeedController;
 import com.exteragram.messenger.preferences.BasePreferencesActivity;
 import com.exteragram.messenger.utils.system.VibratorUtils;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -25,7 +27,9 @@ import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.ItemOptions;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
+import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
@@ -49,6 +53,7 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
     });
     private final ArrayList<TLRPC.Chat> channels = new ArrayList<>();
     private ActionBarMenuItem otherItem;
+    private UndoView restartTooltip;
     private String query;
     private boolean searching;
 
@@ -88,6 +93,9 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
     @Override
     public View createView(Context context) {
         View view = super.createView(context);
+        restartTooltip = new UndoView(context, this, false, getResourceProvider());
+        contentView.addView(restartTooltip, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 8, 0, 8, 8));
+        updateRestartTooltipInsets(mSystemInsets.left, mSystemInsets.right, mSystemInsets.bottom);
         simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -135,6 +143,17 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
         this.otherItem.addSubItem(2, R.drawable.msg_cancel, LocaleController.getString(R.string.DeselectAll));
         reloadChannels();
         return view;
+    }
+
+    @Override
+    public void onInsets(int left, int top, int right, int bottom) {
+        super.onInsets(left, top, right, bottom);
+        updateRestartTooltipInsets(left, right, bottom);
+    }
+
+    private void updateRestartTooltipInsets(int left, int right, int bottom) {
+        int margin = AndroidUtilities.dp(8);
+        AndroidUtilities.setViewLayoutMargins(restartTooltip, left + margin, 0, right + margin, bottom + margin);
     }
 
     @Override
@@ -250,10 +269,8 @@ public class FeedChannelsActivity extends BasePreferencesActivity implements Not
                 NotificationCenter.getInstance(FeedChannelsActivity.this.currentAccount).postNotificationNameOnUIThread(NotificationCenter.updateInterfaces, 0);
             });
         } else if (id == ID_WIDE_POSTS) {
-            toggleBooleanSettingAndRefresh(item, value -> {
-                NaConfig.INSTANCE.getWidePostsInFeed().setConfigBool(value);
-                NotificationCenter.getInstance(FeedChannelsActivity.this.currentAccount).postNotificationNameOnUIThread(NotificationCenter.updateInterfaces, 0);
-            });
+            toggleBooleanSettingAndRefresh(item, value -> NaConfig.INSTANCE.getWidePostsInFeed().setConfigBool(value));
+            restartTooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);
         } else if (id == ID_INCLUDE_ARCHIVED) {
             FeedConfig.getInstance(this.currentAccount).setIncludeArchived(!FeedConfig.getInstance(this.currentAccount).getIncludeArchived());
             reloadChannels();
