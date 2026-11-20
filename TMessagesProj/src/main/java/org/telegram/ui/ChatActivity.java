@@ -45106,14 +45106,16 @@ public class ChatActivity extends BaseFragment implements
                         quoteOffset = messageObject.messageOwner.reply_to.quote_offset;
                     }
                 }
-                long did = dialog_id;
+                final boolean inFeed = isFeedSearch();
+                final long sourceDialogId = inFeed ? messageObject.getDialogId() : dialog_id;
+                long did = sourceDialogId;
                 boolean couldBeDifferentTopic = false;
                 if (messageObject.messageOwner != null && messageObject.messageOwner.reply_to != null) {
                     if (messageObject.messageOwner.reply_to.reply_to_peer_id != null) {
                         if (!(messageObject.messageOwner.reply_to.reply_to_peer_id instanceof TLRPC.TL_peerUser)) {
                             did = DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.reply_to_peer_id);
                             couldBeDifferentTopic = true;
-                        } else if (DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.reply_to_peer_id) != dialog_id) {
+                        } else if (DialogObject.getPeerDialogId(messageObject.messageOwner.reply_to.reply_to_peer_id) != sourceDialogId) {
                             did = Long.MAX_VALUE;
                         }
                     } else if (messageObject.messageOwner.reply_to.reply_from != null) {
@@ -45131,7 +45133,7 @@ public class ChatActivity extends BaseFragment implements
                 if (did < 0) {
                     chat = getMessagesController().getChat(-did);
                 }
-                if (did == Long.MAX_VALUE || did != dialog_id && chat != null && !ChatObject.isPublic(chat) && (chat.left || chat.kicked)) {
+                if (did == Long.MAX_VALUE || (inFeed || did != dialog_id) && chat != null && !ChatObject.isPublic(chat) && (chat.left || chat.kicked)) {
                     if (messageObject != null && messageObject.messageOwner != null && messageObject.messageOwner.reply_to != null && !TextUtils.isEmpty(messageObject.messageOwner.reply_to.quote_text) && messageObject.replyTextEllipsized && !messageObject.replyTextRevealed && !messageObject.shouldDrawWithoutBackground()) {
                         messageObject.replyTextRevealed = true;
                         updateMessageAnimated(messageObject, true);
@@ -45158,7 +45160,11 @@ public class ChatActivity extends BaseFragment implements
                     }
                     return;
                 }
-                if ((did != dialog_id || ChatObject.isForum(currentChat) && couldBeDifferentTopic) && did != Long.MAX_VALUE || chatMode == MODE_SAVED && (messageObject.replyMessageObject == null || messageObject.replyMessageObject.getSavedDialogId() != getTopicId())) {
+                if (inFeed && (did == 0 || id <= 0)) {
+                    BulletinFactory.of(ChatActivity.this).createSimpleBulletin(R.raw.error, LocaleController.getString(R.string.MessageNotFound)).show(true);
+                    return;
+                }
+                if (inFeed || did != dialog_id || ChatObject.isForum(currentChat) && couldBeDifferentTopic || chatMode == MODE_SAVED && (messageObject.replyMessageObject == null || messageObject.replyMessageObject.getSavedDialogId() != getTopicId())) {
                     if (LaunchActivity.instance != null) {
                         if (progressDialogCurrent != null) {
                             progressDialogCurrent.cancel();
@@ -45179,7 +45185,7 @@ public class ChatActivity extends BaseFragment implements
                                     AndroidUtilities.runOnUIThread(ChatActivity.this::resetProgressDialogLoading, 250);
                                 }
                             }
-                        }, messageObject.getId(), quoteOffset, task_id, option_id);
+                        }, inFeed ? 0 : messageObject.getId(), quoteOffset, task_id, option_id);
                     }
                 } else if (chatMode == MODE_PINNED || chatMode == MODE_SCHEDULED) {
                     chatActivityDelegate.openReplyMessage(id);
