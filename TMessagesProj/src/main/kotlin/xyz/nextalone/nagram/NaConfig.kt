@@ -36,10 +36,13 @@ object NaConfig {
                 try {
                     getPreferences().getBoolean("IgnoreUnreadCount", false)
                 } catch (_: Exception) {
-                    val legacyInt = getPreferences().getInt("IgnoreUnreadCount", 0)
+                    // Old versions stored an Int; any other type (an imported backup) gets the default.
+                    val legacyInt = getPreferences().all["IgnoreUnreadCount"] as? Int
                     getPreferences().edit {
                         remove("IgnoreUnreadCount")
-                        putBoolean("IgnoreUnreadCount", legacyInt == NekoConfig.DIALOG_FILTER_EXCLUDE_ALL)
+                        if (legacyInt != null) {
+                            putBoolean("IgnoreUnreadCount", legacyInt == NekoConfig.DIALOG_FILTER_EXCLUDE_ALL)
+                        }
                     }
                 }
             }
@@ -2099,73 +2102,80 @@ object NaConfig {
             }
             for (i in configs.indices) {
                 val o = configs[i]
-                if (o.type == ConfigItem.configTypeBool) {
-                    o.value = getPreferences().getBoolean(
-                        o.key, o.defaultValue as Boolean
-                    )
-                }
-                if (o.type == ConfigItem.configTypeInt) {
-                    o.value = getPreferences().getInt(
-                        o.key, o.defaultValue as Int
-                    )
-                }
-                if (o.type == ConfigItem.configTypeLong) {
-                    o.value = getPreferences().getLong(
-                        o.key, (o.defaultValue as Long)
-                    )
-                }
-                if (o.type == ConfigItem.configTypeFloat) {
-                    o.value = getPreferences().getFloat(
-                        o.key, (o.defaultValue as Float)
-                    )
-                }
-                if (o.type == ConfigItem.configTypeString) {
-                    o.value = getPreferences().getString(
-                        o.key, o.defaultValue as String
-                    )
-                }
-                if (o.type == ConfigItem.configTypeSetInt) {
-                    val ss = getPreferences().getStringSet(
-                        o.key, HashSet()
-                    )
-                    val si = HashSet<Int>()
-                    for (s in ss!!) {
-                        si.add(
-                            s.toInt()
+                try {
+                    if (o.type == ConfigItem.configTypeBool) {
+                        o.value = getPreferences().getBoolean(
+                            o.key, o.defaultValue as Boolean
                         )
                     }
-                    o.value = si
-                }
-                if (o.type == ConfigItem.configTypeMapIntInt) {
-                    val cv = getPreferences().getString(
-                        o.key, ""
-                    )
-                    // Log.e("NC", String.format("Getting pref %s val %s", o.key, cv));
-                    if (cv!!.isEmpty()) {
-                        o.value = HashMap<Int, Int>()
-                    } else {
-                        try {
-                            val data = Base64.decode(
-                                cv, Base64.DEFAULT
+                    if (o.type == ConfigItem.configTypeInt) {
+                        o.value = getPreferences().getInt(
+                            o.key, o.defaultValue as Int
+                        )
+                    }
+                    if (o.type == ConfigItem.configTypeLong) {
+                        o.value = getPreferences().getLong(
+                            o.key, (o.defaultValue as Long)
+                        )
+                    }
+                    if (o.type == ConfigItem.configTypeFloat) {
+                        o.value = getPreferences().getFloat(
+                            o.key, (o.defaultValue as Float)
+                        )
+                    }
+                    if (o.type == ConfigItem.configTypeString) {
+                        o.value = getPreferences().getString(
+                            o.key, o.defaultValue as String
+                        )
+                    }
+                    if (o.type == ConfigItem.configTypeSetInt) {
+                        val ss = getPreferences().getStringSet(
+                            o.key, HashSet()
+                        )
+                        val si = HashSet<Int>()
+                        for (s in ss!!) {
+                            si.add(
+                                s.toInt()
                             )
-                            val ois = ObjectInputStream(
-                                ByteArrayInputStream(
-                                    data
+                        }
+                        o.value = si
+                    }
+                    if (o.type == ConfigItem.configTypeMapIntInt) {
+                        val cv = getPreferences().getString(
+                            o.key, ""
+                        )
+                        // Log.e("NC", String.format("Getting pref %s val %s", o.key, cv));
+                        if (cv!!.isEmpty()) {
+                            o.value = HashMap<Int, Int>()
+                        } else {
+                            try {
+                                val data = Base64.decode(
+                                    cv, Base64.DEFAULT
                                 )
-                            )
-                            o.value = ois.readObject() as HashMap<*, *>
-                            if (o.value == null) {
+                                val ois = ObjectInputStream(
+                                    ByteArrayInputStream(
+                                        data
+                                    )
+                                )
+                                o.value = ois.readObject() as HashMap<*, *>
+                                if (o.value == null) {
+                                    o.value = HashMap<Int, Int>()
+                                }
+                                ois.close()
+                            } catch (_: Exception) {
                                 o.value = HashMap<Int, Int>()
                             }
-                            ois.close()
-                        } catch (_: Exception) {
-                            o.value = HashMap<Int, Int>()
                         }
                     }
-                }
-                if (o.type == ConfigItem.configTypeBoolLinkInt) {
-                    o as ConfigItemKeyLinked
-                    o.changedFromKeyLinked(getPreferences().getInt(o.keyLinked.key, o.keyLinked.defaultValue as Int))
+                    if (o.type == ConfigItem.configTypeBoolLinkInt) {
+                        o as ConfigItemKeyLinked
+                        o.changedFromKeyLinked(getPreferences().getInt(o.keyLinked.key, o.keyLinked.defaultValue as Int))
+                    }
+                } catch (_: ClassCastException) {
+                    // The stored value has another type (a key that changed type, an imported backup):
+                    // reading it would throw on every start, so drop it and use the default.
+                    o.value = o.defaultValue
+                    getPreferences().edit().remove(o.key).apply()
                 }
             }
             configLoaded = true
