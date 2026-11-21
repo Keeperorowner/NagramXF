@@ -3728,13 +3728,13 @@ public class ChatActivity extends BaseFragment implements
         }
         firstMessagesLoaded = true;
         final Runnable load = () -> {
+            if (isFeedSearch()) {
+                loadInitialFeedSearchResults();
+                return;
+            }
             waitingForLoad.add(lastLoadIndex);
             if (chatMode == MODE_SEARCH) {
-                if (isFeedSearch()) {
-                    loadMoreFeedSearchResults();
-                } else {
-                    HashtagSearchController.getInstance(currentAccount).searchHashtag(searchingHashtag, classGuid, searchType, lastLoadIndex++);
-                }
+                HashtagSearchController.getInstance(currentAccount).searchHashtag(searchingHashtag, classGuid, searchType, lastLoadIndex++);
             } else if (startLoadFromDate != 0) {
                 getMessagesController().loadMessages(dialog_id, mergeDialogId, false, 30, 0, startLoadFromDate, true, 0, classGuid, 4, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
             } else if (startLoadFromMessageId != 0 && (!isThreadChat() || startLoadFromMessageId == highlightMessageId || isTopic)) {
@@ -7665,6 +7665,9 @@ public class ChatActivity extends BaseFragment implements
                     textSelectionHelper.stopScrolling();
                     updateVisibleRows();
                     scrollByTouch = false;
+                    if (isFeedSearch()) {
+                        checkScrollForLoad(false);
+                    }
                 } else {
                     if (groupEmojiPackHint != null && groupEmojiPackHint.shown()) {
                         groupEmojiPackHint.hide();
@@ -8553,14 +8556,12 @@ public class ChatActivity extends BaseFragment implements
                 int visibleItemCount = lastVisibleItem == RecyclerView.NO_POSITION ? 0 : lastVisibleItem;
                 if (visibleItemCount > 0 && lastVisibleItem > messagesSearchAdapter.loadedCount - 5) {
                     if (chatMode == MODE_SEARCH) {
-                        if (!loading && !endReached[0]) {
-                            if (isFeedSearch()) {
-                                loadMoreFeedSearchResults();
-                            } else {
-                                loading = true;
-                                waitingForLoad.add(lastLoadIndex);
-                                HashtagSearchController.getInstance(currentAccount).searchHashtag(searchingHashtag, classGuid, searchType, lastLoadIndex++);
-                            }
+                        if (isFeedSearch()) {
+                            loadMoreFeedSearchResults();
+                        } else if (!loading && !endReached[0]) {
+                            loading = true;
+                            waitingForLoad.add(lastLoadIndex);
+                            HashtagSearchController.getInstance(currentAccount).searchHashtag(searchingHashtag, classGuid, searchType, lastLoadIndex++);
                         }
                     } else {
                         getMediaDataController().loadMoreSearchMessages(true);
@@ -15742,19 +15743,18 @@ public class ChatActivity extends BaseFragment implements
             checkLoadCount = 5;
         }
 
-        if (chatMode == MODE_SEARCH) {
-            if (totalItemCount - firstVisibleItemFinal - visibleItemCountFinal <= checkLoadCount && !loading) {
-                if (!endReached[0]) {
-                    if (isFeedSearch()) {
-                        loadMoreFeedSearchResults();
-                    } else {
-                        loading = true;
-                        waitingForLoad.add(lastLoadIndex);
-                        HashtagSearchController.getInstance(currentAccount).searchHashtag(searchingHashtag, classGuid, searchType, lastLoadIndex++);
-                    }
-                }
+        if (isFeedSearch()) {
+            if (lastVisibleItem != RecyclerListView.NO_POSITION && totalItemCount - 1 - lastVisibleItem <= checkLoadCount) {
+                loadMoreFeedSearchResults();
             }
-
+            return;
+        }
+        if (chatMode == MODE_SEARCH) {
+            if (totalItemCount - firstVisibleItemFinal - visibleItemCountFinal <= checkLoadCount && !loading && !endReached[0]) {
+                loading = true;
+                waitingForLoad.add(lastLoadIndex);
+                HashtagSearchController.getInstance(currentAccount).searchHashtag(searchingHashtag, classGuid, searchType, lastLoadIndex++);
+            }
             return;
         }
 
@@ -23267,9 +23267,13 @@ public class ChatActivity extends BaseFragment implements
         int loaded_max_id = (Integer) args[12];
         int loaded_mentions_count = chatWasReset ? 0 : (Integer) args[13];
         AyuHistoryPagination.Page<?> ayuHistoryPage = args.length > 15 && args[15] instanceof AyuHistoryPagination.Page<?> page ? page : null;
-        boolean preserveFeedScroll = isFeedSearch() && feedIntegration != null && feedIntegration.consumePreserveScrollLoad(queryLoadIndex);
-        boolean scheduleFeedLoadNext = isFeedSearch() && args.length > 15 && Boolean.TRUE.equals(args[15]);
-        boolean feedLoadFailed = isFeedSearch() && args.length > 16 && Boolean.TRUE.equals(args[16]);
+        final boolean feed = isFeedSearch();
+        boolean preserveFeedScroll = feed && feedIntegration != null && feedIntegration.consumePreserveScrollLoad(queryLoadIndex);
+        boolean scheduleFeedLoadNext = feed && args.length > 15 && Boolean.TRUE.equals(args[15]);
+        boolean feedLoadFailed = feed && args.length > 16 && Boolean.TRUE.equals(args[16]);
+        if (feed && load_type != 1) {
+            endReached[0] = FeedController.getInstance(currentAccount).getStore().isEndReached();
+        }
         if (scheduleFeedLoadNext) {
             AndroidUtilities.cancelRunOnUIThread(loadNextNewerFeedPage);
             AndroidUtilities.runOnUIThread(loadNextNewerFeedPage);
@@ -24061,7 +24065,7 @@ public class ChatActivity extends BaseFragment implements
             }
             loadingForward = false;
         } else {
-            if (messArr.size() < count && load_type != 3 && load_type != 4
+            if (!feed && messArr.size() < count && load_type != 3 && load_type != 4
                     && (ayuHistoryPage == null || !ayuHistoryPage.hasMoreOlder)) {
                 if (isCache) {
                     if (currentEncryptedChat != null || loadIndex == 1 && mergeDialogId != 0 && isEnd) {
@@ -24302,7 +24306,7 @@ public class ChatActivity extends BaseFragment implements
             showFloatingTopicView(false);
         }
         addSponsoredMessages(!isFirstLoading);
-        if (!feedLoadFailed) {
+        if (!feedLoadFailed && !(feed && load_type == 2 && newRowsCount == 0)) {
             checkScrollForLoad(false);
         }
         handleFeedLoadResult(feedLoadFailed);
@@ -41613,7 +41617,8 @@ public class ChatActivity extends BaseFragment implements
                     int prevType = getItemViewType(prevPosition);
                     int prevPrevType = getItemViewType(prevPrevPosition);
 
-                    if (!(message.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) && nextType == holder.getItemViewType()) {
+                    final boolean pinAdjacentPosts = !isFeedSearch();
+                    if (pinAdjacentPosts && !(message.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) && nextType == holder.getItemViewType()) {
                         MessageObject nextMessage = messages.get(nextPosition - messagesStartRow);
                         pinnedBottom = nextMessage.isOutOwner() == message.isOutOwner()
                             && (Math.abs(nextMessage.messageOwner.date - message.messageOwner.date) <= 5 * 60 || chatMode == MODE_WELCOME_MESSAGES);
@@ -41672,7 +41677,7 @@ public class ChatActivity extends BaseFragment implements
 
                     final boolean lastInChatList = position == messagesStartRow;
 
-                    if (prevType == holder.getItemViewType()) {
+                    if (pinAdjacentPosts && prevType == holder.getItemViewType()) {
                         MessageObject prevMessage = messages.get(prevPosition - messagesStartRow);
                         pinnedTop = !(prevMessage.messageOwner.reply_markup instanceof TLRPC.TL_replyInlineMarkup) && prevMessage.isOutOwner() == message.isOutOwner()
                             && (Math.abs(prevMessage.messageOwner.date - message.messageOwner.date) <= 5 * 60 || chatMode == MODE_WELCOME_MESSAGES);
@@ -48502,20 +48507,7 @@ public class ChatActivity extends BaseFragment implements
 
                 @Override
                 public void requestOlderFeedPage() {
-                    FeedController feedController = FeedController.getInstance(currentAccount);
-                    if (ChatActivity.this.loading || feedController.getStore().isEndReached()) {
-                        return;
-                    }
-                    int loadIndex = ChatActivity.this.lastLoadIndex;
-                    ChatActivity.this.loading = true;
-                    ChatActivity.this.waitingForLoad.add(loadIndex);
-                    boolean started = feedController.loadMore(ChatActivity.this.classGuid, loadIndex);
-                    if (started) {
-                        ChatActivity.this.lastLoadIndex++;
-                    } else {
-                        ChatActivity.this.waitingForLoad.remove(Integer.valueOf(loadIndex));
-                        ChatActivity.this.loading = false;
-                    }
+                    ChatActivity.this.loadMoreFeedSearchResults();
                 }
 
                 @Override
@@ -48775,24 +48767,26 @@ public class ChatActivity extends BaseFragment implements
         feedIntegration().hideChannelWithUndo(dialogId, title);
     }
 
+    private void loadInitialFeedSearchResults() {
+        final int loadIndex = lastLoadIndex++;
+        loading = true;
+        waitingForLoad.add(loadIndex);
+        if (FeedController.getInstance(currentAccount).loadInitial(classGuid, loadIndex)) {
+            AndroidUtilities.cancelRunOnUIThread(loadNextNewerFeedPage);
+            AndroidUtilities.runOnUIThread(loadNextNewerFeedPage);
+        }
+    }
+
     private void loadMoreFeedSearchResults() {
-        int account = currentAccount;
-        FeedController feedController = FeedController.getInstance(account);
-        boolean emptyMessages = messages.isEmpty();
-        int guid = classGuid;
-        if (emptyMessages) {
-            int loadIndex = lastLoadIndex;
-            lastLoadIndex = loadIndex + 1;
-            if (feedController.loadInitial(guid, loadIndex)) {
-                AndroidUtilities.cancelRunOnUIThread(loadNextNewerFeedPage);
-                AndroidUtilities.runOnUIThread(loadNextNewerFeedPage);
-            }
+        FeedController feedController = FeedController.getInstance(currentAccount);
+        if (loading || feedController.getStore().isEndReached()) {
             return;
         }
-        if (feedController.loadMore(guid, lastLoadIndex)) {
-            lastLoadIndex++;
-        } else {
-            waitingForLoad.remove(Integer.valueOf(lastLoadIndex));
+        final int loadIndex = lastLoadIndex++;
+        loading = true;
+        waitingForLoad.add(loadIndex);
+        if (!feedController.loadMore(classGuid, loadIndex)) {
+            waitingForLoad.remove(Integer.valueOf(loadIndex));
             loading = false;
         }
     }
