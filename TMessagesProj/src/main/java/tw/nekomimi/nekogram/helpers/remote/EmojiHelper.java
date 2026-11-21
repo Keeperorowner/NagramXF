@@ -806,21 +806,25 @@ public class EmojiHelper extends BaseRemoteHelper implements NotificationCenter.
                 documents.put(message.id, message.media.document);
             }
 
-            SerializedData serializedData = new SerializedData();
-            serializedData.writeInt32(packs.size());
+            // A pack whose file or preview message is gone can't be shown or installed, and
+            // serializeToStream writes both documents, so it would throw on the missing one.
+            var completePacks = new ArrayList<EmojiPackInfo>();
             for (EmojiPackInfo pack : packs) {
                 TLRPC.Document file = documents.get(pack.fileId);
-                if (file != null) {
-                    pack.flags |= 1;
-                    pack.fileDocument = file;
-                    pack.fileSize = file.size;
-                    pack.fileLocation = getFileLoader().getPathToAttach(file).getAbsolutePath();
-                }
                 TLRPC.Document preview = documents.get(pack.previewId);
-                if (preview != null) {
-                    pack.flags |= 2;
-                    pack.previewDocument = preview;
+                if (file == null || preview == null) {
+                    continue;
                 }
+                pack.flags |= 3;
+                pack.fileDocument = file;
+                pack.fileSize = file.size;
+                pack.fileLocation = getFileLoader().getPathToAttach(file).getAbsolutePath();
+                pack.previewDocument = preview;
+                completePacks.add(pack);
+            }
+            SerializedData serializedData = new SerializedData();
+            serializedData.writeInt32(completePacks.size());
+            for (EmojiPackInfo pack : completePacks) {
                 pack.serializeToStream(serializedData);
             }
             preferences.edit().putString("emoji_packs_v2", Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP | Base64.NO_PADDING)).apply();
@@ -828,7 +832,7 @@ public class EmojiHelper extends BaseRemoteHelper implements NotificationCenter.
 
             AndroidUtilities.runOnUIThread(() -> {
                 emojiPacksInfo.removeIf(emojiPackBase -> emojiPackBase instanceof EmojiPackInfo);
-                emojiPacksInfo.addAll(packs);
+                emojiPacksInfo.addAll(completePacks);
             });
         }
         delegate.onTLResponse(null, null);
