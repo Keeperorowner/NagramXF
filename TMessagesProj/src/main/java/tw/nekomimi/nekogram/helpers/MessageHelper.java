@@ -734,7 +734,8 @@ public class MessageHelper extends BaseController {
         if (text == null || messageObject == null || messageObject.messageOwner == null) {
             return;
         }
-        CharSequence messageText = messageObject.messageText;
+        // A push object shows "Sender: text"; the text the chat will filter is in messageOwner.message.
+        CharSequence messageText = messageObject.isFcmMessage() ? messageObject.messageOwner.message : messageObject.messageText;
         if (!TextUtils.isEmpty(messageText)
             && !TextUtils.equals(messageText, LocaleController.getString(R.string.AttachVideo))
             && !TextUtils.equals(messageText, LocaleController.getString(R.string.AttachPhoto))
@@ -1032,7 +1033,10 @@ public class MessageHelper extends BaseController {
         if (!AyuFilter.shouldHideFilteredMessages() && !AyuFilter.shouldHideIgnoredBlockedMessages()) {
             return false;
         }
-        MessageObject msgObj = new MessageObject(currentAccount, message, false, false);
+        return isBlockedOrFiltered(new MessageObject(currentAccount, message, false, false));
+    }
+
+    public boolean isBlockedOrFiltered(MessageObject msgObj) {
         boolean blocked = AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(msgObj);
         return blocked || AyuFilter.shouldHideFilteredMessage(msgObj, null);
     }
