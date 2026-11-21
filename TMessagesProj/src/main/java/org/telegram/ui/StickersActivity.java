@@ -824,6 +824,17 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         }
     }
 
+    @Override
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationEnd(isOpen, backward);
+        // Opened from a sticker backup sent in a chat: the import was already confirmed there.
+        if (isOpen && stickersFile != null) {
+            File file = stickersFile;
+            stickersFile = null;
+            processStickersFile(file, true);
+        }
+    }
+
     public void clearSelected() {
         selectedSets.clear();
         listView.adapter.update(true);
