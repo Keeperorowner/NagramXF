@@ -504,7 +504,13 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				if (BuildVars.LOGS_ENABLED) {
 					FileLog.e("bt headset state = " + intent.getIntExtra(BluetoothProfile.EXTRA_STATE, 0));
 				}
-				updateBluetoothHeadsetState(intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED) == BluetoothProfile.STATE_CONNECTED);
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+					// the profile can connect before the headset is a communication device, and routing to it
+					// would find nothing; the audio device callback checks again when it is added
+					checkUpdateBluetoothHeadset();
+				} else {
+					updateBluetoothHeadsetState(intent.getIntExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED) == BluetoothProfile.STATE_CONNECTED);
+				}
 			} else if (AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED.equals(intent.getAction())) {
 				int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, AudioManager.SCO_AUDIO_STATE_DISCONNECTED);
 				if (BuildVars.LOGS_ENABLED) {
@@ -4898,7 +4904,10 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	private void checkUpdateBluetoothHeadset() {
-		if (!USE_CONNECTION_SERVICE && btAdapter != null && btAdapter.isEnabled()) {
+		// On Android 12+ the headset is looked up among communication devices, not through btAdapter. btAdapter is
+		// null when SCO off call was reported unavailable at the start of the call, as some firmwares do while no
+		// headset is connected, and a headset connected later was never used.
+		if (!USE_CONNECTION_SERVICE && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S || btAdapter != null && btAdapter.isEnabled())) {
 			try {
 				MediaRouter mr = (MediaRouter) getSystemService(Context.MEDIA_ROUTER_SERVICE);
 				AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
