@@ -51,7 +51,6 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
     private static final float MENU_RADIUS = 22;
 
     private float glassColorsFactor = 1f;
-    private PopupSwipeBackLayout swipeBackListening;
     private final BlurredBackgroundColorProvider glassColors = new BlurredBackgroundColorProvider() {
         @Nullable
         private BlurredBackgroundColorProvider base() {
@@ -316,6 +315,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         final Drawable background;
         final Drawable backgroundDrawable;
         final int backgroundColor;
+        final ActionBarPopupWindow.onSizeChangedListener sizeChangedListener;
         final int paddingLeft, paddingTop, paddingRight, paddingBottom;
 
         PopupState(ActionBarPopupWindow.ActionBarPopupWindowLayout layout) {
@@ -323,6 +323,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
             background = layout.getBackground();
             backgroundDrawable = layout.getBackgroundDrawable();
             backgroundColor = layout.getBackgroundColor();
+            sizeChangedListener = layout.getOnSizeChangedListener();
             paddingLeft = layout.getPaddingLeft();
             paddingTop = layout.getPaddingTop();
             paddingRight = layout.getPaddingRight();
@@ -330,6 +331,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         }
 
         void restore() {
+            layout.setOnSizeChangedListener(sizeChangedListener);
             layout.setBackground(background);
             layout.setBackgroundDrawable(backgroundDrawable);
             if (backgroundDrawable != null) {
@@ -349,7 +351,15 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
             }
         }
         if (!saved) {
-            popupStates.add(new PopupState(layout));
+            final PopupState state = new PopupState(layout);
+            popupStates.add(state);
+            // The glass follows visible bounds, including size changes within an already open page.
+            layout.setOnSizeChangedListener(() -> {
+                invalidate();
+                if (state.sizeChangedListener != null) {
+                    state.sizeChangedListener.onSizeChanged();
+                }
+            });
         }
         layout.setBackground(null);
         layout.setBackgroundDrawable(null);
@@ -380,11 +390,6 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         if (swipeBack != null) {
             swipeBack.closeForeground(false);
             swipeBack.setForegroundOnGlass(true);
-            if (swipeBackListening != swipeBack) {
-                // a nested page changes the size of the glass: the page's own redraws do not reach this view's drawing
-                swipeBackListening = swipeBack;
-                swipeBack.addOnSwipeBackProgressListener((layout, toProgress, progress) -> invalidate());
-            }
             // the nested pages are popups of their own: their background would be a card inside the glass
             for (int i = 1; i < swipeBack.getChildCount(); i++) {
                 if (swipeBack.getChildAt(i) instanceof ActionBarPopupWindow.ActionBarPopupWindowLayout) {

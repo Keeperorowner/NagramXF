@@ -187,7 +187,7 @@ public class AyuGramMenuPopupWrapper {
         detailPage = new LinearLayout(parentActivity);
         detailPage.setOrientation(LinearLayout.VERTICAL);
         detailPage.setVisibility(View.GONE);
-        swipeBack.addView(detailPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        swipeBack.addView(detailPage, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         ActionBarMenuSubItem backItem = createBackItem(v -> {
             if (popupSwipeBackLayout != null) {

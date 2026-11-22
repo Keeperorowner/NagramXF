@@ -1424,8 +1424,8 @@ public class CacheControlActivity extends BaseFragment implements NotificationCe
                 showClearCacheDialog(item.entities);
             } else if (item.keepMediaType >= 0) {
                 KeepMediaPopupView windowLayout = new KeepMediaPopupView(this, view.getContext());
-                ActionBarPopupWindow popupWindow = AlertsCreator.createSimplePopup(CacheControlActivity.this, windowLayout, view, x, y);
                 windowLayout.update(itemInners.get(position).keepMediaType);
+                ActionBarPopupWindow popupWindow = AlertsCreator.createSimplePopup(CacheControlActivity.this, windowLayout, view, x, y);
                 windowLayout.setParentWindow(popupWindow);
                 windowLayout.setCallback((type, keepMedia) -> {
                     AndroidUtilities.updateVisibleRows(listView);

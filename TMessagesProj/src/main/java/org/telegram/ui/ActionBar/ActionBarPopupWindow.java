@@ -688,6 +688,10 @@ public class ActionBarPopupWindow extends PopupWindow {
             this.onSizeChangedListener = onSizeChangedListener;
         }
 
+        public ActionBarPopupWindow.onSizeChangedListener getOnSizeChangedListener() {
+            return onSizeChangedListener;
+        }
+
         public int getVisibleHeight() {
             return (int) (getMeasuredHeight() * backScaleY);
         }

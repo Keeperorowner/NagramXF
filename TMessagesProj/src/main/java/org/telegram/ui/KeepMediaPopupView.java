@@ -76,13 +76,7 @@ public class KeepMediaPopupView extends ActionBarPopupWindow.ActionBarPopupWindo
         checkItems.add(new CheckItem(delete, CacheByChatsController.KEEP_MEDIA_DELETE));
 
 
-        gap = new FrameLayout(context);
-        ThemeBind.backgroundColor(gap, Theme.key_actionBarDefaultSubmenuSeparator);
-        View gapShadow = new View(context);
-        ThemeBind.themedBackground(gapShadow, context, R.drawable.greydivider, Theme.key_windowBackgroundGrayShadow);
-        gap.addView(gapShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-        gap.setTag(R.id.fit_width_tag, 1);
-        addView(gap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 8));
+        gap = ActionBarMenuItem.addColoredGap(this, null);
 
         exceptionsView = new ExceptionsView(context);
         addView(exceptionsView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48));
