@@ -57,6 +57,8 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.LaunchActivity;
 
+import tw.nekomimi.nekogram.helpers.AppRestartHelper;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -96,11 +98,13 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     public static String SDK_VERSION;
     public static boolean SDK_BETA = false;
 
-    public PyObject basePluginClass;
+    public volatile PyObject basePluginClass;
     public PyObject debuggerListener;
     private PyObject devServerClass;
     public static volatile boolean sdkInitialized;
     private volatile Python python;
+    // SDK modules remain imported when only the plugin engine shuts down.
+    private boolean sdkImportedInProcess;
 
     public final ConcurrentHashMap<String, PyObject> pluginInstances = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> settingsCache = new ConcurrentHashMap<>();
@@ -160,8 +164,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 return null;
             }
         }
-        initSdk();
-        return python;
+        return initSdk() ? python : null;
     }
 
     private void initPython() {
@@ -200,7 +203,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     @Override
     public boolean isEngineAvailable() {
-        return getPython() != null && Python.isStarted() && sdkInitialized && basePluginClass != null;
+        return python != null && Python.isStarted() && sdkInitialized && basePluginClass != null;
     }
 
     @Override
@@ -210,13 +213,13 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     private void initOnPluginsQueue(Runnable runnable) {
         long initStart = System.currentTimeMillis();
-        if (getPython() == null) {
-            if (runnable != null) {
-                AndroidUtilities.runOnUIThread(runnable);
-            }
-            return;
-        }
         try {
+            if (!ExteraConfig.pluginsEngine || getPython() == null) {
+                if (runnable != null) {
+                    AndroidUtilities.runOnUIThread(runnable);
+                }
+                return;
+            }
             long pythonMs = System.currentTimeMillis();
             if (!initSdk()) {
                 if (runnable != null) {
@@ -244,9 +247,9 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             } catch (PyException e) {
                 FileLog.e("Failed to initialize plugin_settings module", e);
             }
-            loadPlugins(runnable);
             checkDevServer();
             FileLog.d("init: total took " + (System.currentTimeMillis() - initStart) + "ms");
+            loadPlugins(runnable);
         } catch (Throwable t) {
             FileLog.e("Failed to initialize Python plugin engine", t);
             if (runnable != null) {
@@ -273,9 +276,10 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         File sdkUpdateFile = Updater.getPythonSdkUpdateFile();
         File currentSdkFile = Updater.getPythonCurrentSdkFile();
         boolean fromApk = requestSdkFromApkFile.exists();
-        if (fromApk) {
-            deleteRecursive(SDK_DIR);
-            deleteFileIfExists(requestSdkFromApkFile);
+        if (sdkImportedInProcess && (fromApk || sdkUpdateFile.exists())) {
+            FileLog.w("SDK replacement requires an application restart; keeping pending SDK files intact.");
+            Updater.restartApp();
+            return false;
         }
         if (!fromApk && sdkUpdateFile.exists()) {
             try {
@@ -311,6 +315,11 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             }
         }
         if (fromApk || !isSdkDirValid(SDK_DIR)) {
+            if (sdkImportedInProcess) {
+                FileLog.w("SDK restoration requires an application restart.");
+                Updater.restartApp();
+                return false;
+            }
             if (!fromApk) {
                 FileLog.w("Python SDK directory is missing required files. Restoring SDK from APK.");
             }
@@ -323,6 +332,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     sdkStream.close();
                 }
                 installSdkArchive(currentSdkFile, true);
+                deleteFileIfExists(requestSdkFromApkFile);
             } catch (IOException e) {
                 FileLog.e("Failed to install Python SDK from APK", e);
                 return false;
@@ -341,6 +351,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     sysPath.callAttr("append", SDK_COMPAT_SHIMS_DIR.getAbsolutePath());
                 }
             }
+            sdkImportedInProcess = true;
             PyObject sdkVersionModule = python.getModule("_sdk_version");
             PyObject startResult = sdkVersionModule.callAttr("__start__");
             sdkInitialized = startResult != null && startResult.toBoolean();
@@ -987,7 +998,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     @Override
     public void shutdown(Runnable runnable) {
-        if (getPython() == null) {
+        if (python == null) {
             if (runnable != null) {
                 runnable.run();
             }
@@ -1021,15 +1032,17 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     public void loadPlugins(Runnable runnable) {
         PluginsController.runOnPluginsQueue(() -> {
-            if (getPython() == null) {
-                if (runnable != null) {
-                    AndroidUtilities.runOnUIThread(runnable);
-                }
-                return;
-            }
+            boolean completionPosted = false;
             try {
+                if (!ExteraConfig.pluginsEngine) {
+                    return;
+                }
+                Python python = getPython();
+                if (python == null || !sdkInitialized) {
+                    return;
+                }
                 long loadStart = System.currentTimeMillis();
-                PyObject sys = getPython().getModule("sys");
+                PyObject sys = python.getModule("sys");
                 PyObject path = sys.get("path");
                 if (path != null) {
                     path.callAttr("append", getPluginsController().pluginsDir.getAbsolutePath());
@@ -1037,10 +1050,6 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
                 File[] files = getPluginsController().pluginsDir.listFiles((dir, name) -> name.toLowerCase().endsWith(".py"));
                 if (files == null) {
-                    getPluginsController().notifyPluginsChanged();
-                    if (runnable != null) {
-                        AndroidUtilities.runOnUIThread(runnable);
-                    }
                     return;
                 }
 
@@ -1081,6 +1090,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 // with every plugin (enabled=false). Import + on_plugin_load
                 // continue below on this same queue, notifying per-plugin.
                 if (runnable != null) {
+                    completionPosted = true;
                     AndroidUtilities.runOnUIThread(runnable);
                 }
 
@@ -1111,8 +1121,13 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                     }
                 }
                 FileLog.d("Python plugin system initialized. Total: " + getPluginsController().plugins.size() + ", Enabled: " + enabledCount);
-            } catch (PyException e) {
+            } catch (Throwable e) {
                 FileLog.e("Failed to setup Python environment for plugins", e);
+            } finally {
+                getPluginsController().notifyPluginsChanged();
+                if (!completionPosted && runnable != null) {
+                    AndroidUtilities.runOnUIThread(runnable);
+                }
             }
         });
     }
@@ -2105,6 +2120,17 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         return digits.toString();
     }
 
+    private void cachePluginSetting(String pluginId, String key, Object value) {
+        if (value == null) {
+            ConcurrentHashMap<String, Object> cached = settingsCache.get(pluginId);
+            if (cached != null) {
+                cached.remove(key);
+            }
+        } else {
+            settingsCache.computeIfAbsent(pluginId, ignored -> new ConcurrentHashMap<>()).put(key, value);
+        }
+    }
+
     @Override
     public Object getPluginSetting(String pluginId, String key, Object defaultValue) {
         ConcurrentHashMap<String, Object> cached = settingsCache.get(pluginId);
@@ -2133,7 +2159,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 } else {
                     javaValue = value.toJava(defaultValue.getClass());
                 }
-                settingsCache.computeIfAbsent(pluginId, ignored -> new ConcurrentHashMap<>()).put(key, javaValue);
+                cachePluginSetting(pluginId, key, javaValue);
                 return javaValue;
             }
         } catch (PyException e) {
@@ -2144,7 +2170,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     @Override
     public void setPluginSetting(String pluginId, String key, Object value) {
-        settingsCache.computeIfAbsent(pluginId, ignored -> new ConcurrentHashMap<>()).put(key, value);
+        cachePluginSetting(pluginId, key, value);
         if (getPython() == null) {
             return;
         }
@@ -2182,7 +2208,13 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                         map.put(entry.getKey().toString(), entry.getValue() != null ? entry.getValue().toJava(Object.class) : null);
                     }
                 }
-                settingsCache.put(pluginId, new ConcurrentHashMap<>(map));
+                ConcurrentHashMap<String, Object> cached = new ConcurrentHashMap<>();
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    if (entry.getValue() != null) {
+                        cached.put(entry.getKey(), entry.getValue());
+                    }
+                }
+                settingsCache.put(pluginId, cached);
                 return map;
             }
         } catch (PyException e) {
@@ -2471,6 +2503,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         private static long lastCheckUpdateTime = 0L;
         private static int downloadObserverTag;
         private static boolean isLoading;
+        private static boolean appRestartScheduled;
         private static boolean notifyWhenChangeStatus = true;
         public static int status = STATUS_IDLE;
         public static final Runnable notifyRunnable = () ->
@@ -2613,10 +2646,26 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 case STATUS_DOWNLOADING:
                     return LocaleController.getString(R.string.LoadingUpdate);
                 case STATUS_READY:
-                    return LocaleController.getString(R.string.RestartPluginSystemToApplyUpdate);
+                    return LocaleController.getString(R.string.RestartAppToTakeEffect);
                 default:
                     return getVersion();
             }
+        }
+
+        public static void restartApp() {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (appRestartScheduled || ApplicationLoader.applicationContext == null) {
+                    return;
+                }
+                appRestartScheduled = true;
+                try {
+                    AppRestartHelper.triggerRebirth(ApplicationLoader.applicationContext,
+                            new Intent(ApplicationLoader.applicationContext, LaunchActivity.class));
+                } catch (Throwable t) {
+                    appRestartScheduled = false;
+                    FileLog.e("Failed to restart app for plugin SDK replacement", t);
+                }
+            });
         }
 
         public static boolean isRestartRequired() {
@@ -2915,7 +2964,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 }
                 copyFile(pathToAttach, updateFile);
                 if (autoRestartEngine) {
-                    PluginsController.getInstance().restart();
+                    restartApp();
                 } else {
                     updateStatus(STATUS_READY);
                 }

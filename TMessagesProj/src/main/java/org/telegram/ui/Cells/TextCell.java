@@ -947,22 +947,21 @@ public class TextCell extends FrameLayout implements Theme.Colorable {
         CharSequence text = textView.getText();
         if (!TextUtils.isEmpty(text)) {
             final CharSequence valueText = valueTextView.getText();
-            if (!TextUtils.isEmpty(valueText)) {
+            if (valueTextView.getVisibility() == VISIBLE && !TextUtils.isEmpty(valueText)) {
                 text = TextUtils.concat(text, ": ", valueText);
             }
         }
-        if (checkBox != null) {
+        if (subtitleView.getVisibility() == VISIBLE && !TextUtils.isEmpty(subtitleView.getText())) {
+            text = TextUtils.concat(text, "\n", subtitleView.getText());
+        }
+        if (checkBox != null && checkBox.getVisibility() == VISIBLE) {
             info.setClassName("android.widget.Switch");
             info.setCheckable(true);
             info.setChecked(checkBox.isChecked());
-            StringBuilder sb = new StringBuilder();
-            sb.append(textView.getText());
-            if (!TextUtils.isEmpty(valueTextView.getText())) {
-                sb.append('\n');
-                sb.append(valueTextView.getText());
-            }
-            info.setContentDescription(sb);
+            info.setContentDescription(text);
         } else {
+            info.setCheckable(false);
+            info.setChecked(false);
             if (!TextUtils.isEmpty(text)) {
                 info.setText(text);
             }

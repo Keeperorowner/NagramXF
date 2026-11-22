@@ -1238,15 +1238,17 @@ public class PluginsController implements PluginsHooks {
     }
 
     public void executeOnAppEvent(String eventName) {
-        if (!isPluginEngineAvailable()) {
-            return;
-        }
-        FileLog.d("Execute scripts on app event " + eventName);
-        for (PluginsEngine engine : engines.values()) {
-            if (engine != null) {
-                engine.executeOnAppEvent(eventName);
+        runOnPluginsQueue(() -> {
+            if (!isPluginEngineAvailable()) {
+                return;
             }
-        }
+            FileLog.d("Execute scripts on app event " + eventName);
+            for (PluginsEngine engine : engines.values()) {
+                if (engine != null) {
+                    engine.executeOnAppEvent(eventName);
+                }
+            }
+        });
     }
 
     List<String> getInterestedPluginIds(String hookName) {

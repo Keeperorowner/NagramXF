@@ -17,6 +17,10 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
+
+import java.nio.charset.StandardCharsets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -27,8 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import okhttp3.Call;
 import tw.nekomimi.nekogram.llm.net.OpenAICompatClient;
@@ -44,14 +46,16 @@ public class Client {
     private static final int MAX_HISTORY_MESSAGES = 32;
     private static final int MAX_HISTORY_CHARS = 24000;
 
+    private final int account;
     private final Service serviceOverride;
     private final Float temperatureOverride;
     private final Role roleOverride;
-    private final AtomicBoolean isGenerating = new AtomicBoolean(false);
+    private final ConcurrentHashMap<String, AiConfig.HistorySnapshot> savedTurns = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ExecutorService> activeRequests = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Call> activeCalls = new ConcurrentHashMap<>();
 
     private Client(Builder builder) {
+        this.account = builder.account;
         this.serviceOverride = builder.serviceOverride;
         this.roleOverride = builder.roleOverride;
         this.temperatureOverride = builder.temperatureOverride;
@@ -65,16 +69,41 @@ public class Client {
         return getResponse(prompt, false, false, null, callback);
     }
 
+    private Role getSelectedRole() {
+        return roleOverride != null ? roleOverride
+                : serviceOverride == null ? AiController.getInstance().getSelectedRole() : null;
+    }
+
+    private String getHistoryContext(Service service, Role role) {
+        JSONArray identity = new JSONArray();
+        identity.put(UserConfig.getInstance(account).getClientUserId());
+        identity.put(service.getUrl());
+        identity.put(service.getModel());
+        identity.put(service.getKey());
+        identity.put(service.getProtocol());
+        identity.put(service.isReasoningEnabled());
+        identity.put(role != null ? role.getName() : JSONObject.NULL);
+        identity.put(role != null ? role.getPrompt() : JSONObject.NULL);
+        return Utilities.bytesToHex(Utilities.computeSHA256(identity.toString().getBytes(StandardCharsets.UTF_8)));
+    }
+
     public String getResponse(String prompt, boolean useHistory, boolean stream, String imagePath, GenerationCallback callback) {
+        Service selected = getSelectedService();
+        Service service = new Service(selected.getUrl(), selected.getModel(), selected.getKey(),
+                selected.getProtocol(), selected.isReasoningEnabled());
+        Role selectedRole = getSelectedRole();
+        Role role = selectedRole != null ? new Role(selectedRole.getName(), selectedRole.getPrompt()) : null;
+        AiConfig.HistorySnapshot history = useHistory ? AiConfig.beginConversation(getHistoryContext(service, role)) : null;
         String requestId = UUID.randomUUID().toString();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         activeRequests.put(requestId, executor);
-        executor.execute(() -> executeRequest(prompt, stream, useHistory, imagePath, requestId, callback));
+        executor.execute(() -> executeRequest(prompt, stream, imagePath, requestId, service, role, history, callback));
         return requestId;
     }
 
-    private void executeRequest(String prompt, boolean stream, boolean useHistory, String imagePath, String requestId, GenerationCallback callback) {
-        isGenerating.set(true);
+    private void executeRequest(String prompt, boolean stream, String imagePath, String requestId,
+                                Service service, Role role, AiConfig.HistorySnapshot history, GenerationCallback callback) {
+        if (!activeRequests.containsKey(requestId)) return;
         try {
             byte[] imageData = null;
             String mimeType = null;
@@ -86,15 +115,12 @@ public class Client {
                 }
             }
 
-            Service service = getSelectedService();
             String baseUrl = resolveBaseUrl(service);
-            ArrayList<Message> conversationHistory = new ArrayList<>();
-            if (useHistory) {
-                conversationHistory.addAll(trimConversationHistory(AiConfig.getConversationHistory()));
-            }
+            ArrayList<Message> conversationHistory = history != null
+                    ? trimConversationHistory(history.messages) : new ArrayList<>();
 
             Message userMessage = new Message("user", prompt, imageData, mimeType);
-            String requestJson = createRequestJson(service, baseUrl, userMessage, stream, useHistory, conversationHistory);
+            String requestJson = createRequestJson(service, role, baseUrl, userMessage, stream, history != null, conversationHistory);
             if (baseUrl == null || requestJson == null) {
                 notifyErrorAndFinish(requestId, callback, 500, "Failed to create request body");
                 return;
@@ -106,9 +132,14 @@ public class Client {
                 return;
             }
             activeCalls.put(requestId, call);
+            if (!activeRequests.containsKey(requestId)) {
+                activeCalls.remove(requestId, call);
+                call.cancel();
+                return;
+            }
 
             if (stream) {
-                streamResponse(call, requestId, useHistory, conversationHistory, callback);
+                streamResponse(call, requestId, history, conversationHistory, callback);
             } else {
                 OpenAICompatClient.LlmResponse<String> response = OpenAICompatClient.executeChatCompletions(call);
                 if (!activeRequests.containsKey(requestId)) return;
@@ -117,9 +148,9 @@ public class Client {
                     if (content == null || content.trim().isEmpty()) {
                         notifyErrorAndFinish(requestId, callback, 500, "Failed to parse response");
                     } else {
-                        if (useHistory) {
+                        if (history != null) {
                             conversationHistory.add(new Message("assistant", content));
-                            AiConfig.saveConversationHistory(conversationHistory);
+                            saveHistory(requestId, history, conversationHistory);
                         }
                         notifyResponseAndFinish(requestId, callback, content.trim());
                     }
@@ -134,7 +165,7 @@ public class Client {
         }
     }
 
-    private void streamResponse(Call call, String requestId, boolean useHistory,
+    private void streamResponse(Call call, String requestId, AiConfig.HistorySnapshot history,
                                 ArrayList<Message> conversationHistory, GenerationCallback callback) {
         OpenAICompatClient.streamChatCompletions(call, STREAM_SYMBOLS_LIMIT, new OpenAICompatClient.StreamCallback() {
             @Override
@@ -149,13 +180,14 @@ public class Client {
 
             @Override
             public void onComplete(String fullContent) {
+                if (!activeRequests.containsKey(requestId)) return;
                 if (TextUtils.isEmpty(fullContent)) {
                     finishRequest(requestId);
                     return;
                 }
-                if (useHistory) {
+                if (history != null) {
                     conversationHistory.add(new Message("assistant", fullContent));
-                    AiConfig.saveConversationHistory(conversationHistory);
+                    saveHistory(requestId, history, conversationHistory);
                 }
                 notifyResponseAndFinish(requestId, callback, fullContent);
             }
@@ -179,15 +211,11 @@ public class Client {
         return TextUtils.isEmpty(normalized) ? null : normalized;
     }
 
-    private String createRequestJson(Service service, String baseUrl, Message userMessage, boolean stream, boolean useHistory, ArrayList<Message> conversationHistory) {
+    private String createRequestJson(Service service, Role selectedRole, String baseUrl, Message userMessage, boolean stream, boolean useHistory, ArrayList<Message> conversationHistory) {
         try {
             JSONObject json = new JSONObject();
             JSONArray messages = new JSONArray();
 
-            Role selectedRole = roleOverride;
-            if (selectedRole == null) {
-                selectedRole = serviceOverride == null ? AiController.getInstance().getSelectedRole() : null;
-            }
             if (selectedRole != null && !TextUtils.isEmpty(selectedRole.getPrompt())) {
                 messages.put(new JSONObject().put("role", "system").put("content", selectedRole.getPrompt()));
             }
@@ -358,7 +386,7 @@ public class Client {
     }
 
     public boolean isGenerating() {
-        return isGenerating.get();
+        return !activeRequests.isEmpty();
     }
 
     private void finishRequest(String requestId) {
@@ -367,28 +395,43 @@ public class Client {
         if (executor != null) {
             executor.shutdown();
         }
-        if (activeRequests.isEmpty()) {
-            isGenerating.set(false);
+    }
+
+    private void saveHistory(String requestId, AiConfig.HistorySnapshot history, ArrayList<Message> messages) {
+        synchronized (activeRequests) {
+            if (activeRequests.containsKey(requestId)
+                    && history.context.equals(getHistoryContext(getSelectedService(), getSelectedRole()))) {
+                AiConfig.HistorySnapshot saved = AiConfig.saveConversationHistory(history, messages);
+                if (saved != null) {
+                    savedTurns.put(requestId, saved);
+                }
+            }
+        }
+    }
+
+    public boolean hasSavedTurn(String requestId) {
+        return requestId != null && savedTurns.containsKey(requestId);
+    }
+
+    public void removeLastSavedTurn(String requestId) {
+        if (requestId != null) {
+            AiConfig.removeLastFromHistory(savedTurns.remove(requestId));
         }
     }
 
     public void stopRequest(String requestId) {
         if (TextUtils.isEmpty(requestId)) return;
-        Call call = activeCalls.remove(requestId);
+        ExecutorService executor;
+        Call call;
+        synchronized (activeRequests) {
+            executor = activeRequests.remove(requestId);
+            call = activeCalls.remove(requestId);
+        }
         if (call != null) {
             call.cancel();
         }
-        ExecutorService executor = activeRequests.remove(requestId);
         if (executor != null) {
             executor.shutdownNow();
-            try {
-                executor.awaitTermination(500, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        if (activeRequests.isEmpty()) {
-            isGenerating.set(false);
         }
     }
 
@@ -414,9 +457,15 @@ public class Client {
 
 
     public static class Builder {
+        private int account = UserConfig.selectedAccount;
         private Service serviceOverride;
         private Role roleOverride;
         private Float temperatureOverride;
+
+        public Builder account(int account) {
+            this.account = account;
+            return this;
+        }
 
         public Builder serviceOverride(Service service) {
             this.serviceOverride = service;

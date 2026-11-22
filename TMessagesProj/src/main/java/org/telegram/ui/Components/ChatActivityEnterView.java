@@ -5614,7 +5614,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 if (keyboardVisible) closeKeyboard();
                 else if (isPopupShowing()) hidePopup(false);
-                Client aiClient = new Client.Builder().build();
+                Client aiClient = new Client.Builder().account(currentAccount).build();
                 ResponseAlert.showAlert(parentFragment, aiClient, getEditField().getText().toString(), AiConfig.saveHistory, false, null, () -> {}, (prompt, response, rich) ->
                         insertAiResponse(prompt, response, rich)).setDimBehind(true);
             }));

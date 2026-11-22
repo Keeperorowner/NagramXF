@@ -49,7 +49,7 @@ public class AiHistoryActivity extends BaseFragment {
     public View createView(Context context) {
         setHasOwnBackground(true);
         simpleActionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        simpleActionBar.setTitle(LocaleController.getString(R.string.AIChatMessageHistory));
+        simpleActionBar.setTitle(LocaleController.getString(R.string.AIChatSavedConversations));
         simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -62,7 +62,7 @@ public class AiHistoryActivity extends BaseFragment {
             }
         });
         SimpleActionBarMenu menu = simpleActionBar.createMenu();
-        menu.addItem(MENU_CLEAR, R.drawable.msg_delete).setContentDescription(LocaleController.getString(R.string.AIChatHistoryCleared));
+        menu.addItem(MENU_CLEAR, R.drawable.msg_delete).setContentDescription(LocaleController.getString(R.string.Delete));
 
         fragmentView = new FrameLayout(context);
         fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));

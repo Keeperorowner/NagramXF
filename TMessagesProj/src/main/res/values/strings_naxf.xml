@@ -179,6 +179,7 @@
     <string name="AIChatUseLlmProvider">Use AI Translator Provider</string>
     <string name="AIChatRoles">Roles</string>
     <string name="AIChatMessageHistory">Message History</string>
+    <string name="AIChatSavedConversations">Saved Conversations</string>
     <string name="AIChatSaveHistory">Save History</string>
     <string name="AIChatHistoryInfo">When enabled, the AI will remember previous messages in the conversation.</string>
     <string name="AIChatOther">Other</string>

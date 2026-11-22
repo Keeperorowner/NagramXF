@@ -218,7 +218,10 @@ public class PluginsInfoActivity extends BasePreferencesActivity implements Noti
                 break;
             case ITEM_PYSDK_RESTORE:
                 PythonPluginsEngine.Updater.restoreSdkFromApk();
-                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check, LocaleController.getString(R.string.RestartPluginSystemToApplyUpdate)).show();
+                BulletinFactory.of(this).createSimpleBulletin(R.raw.contact_check,
+                        LocaleController.getString(R.string.RestartAppToTakeEffect),
+                        LocaleController.getString(R.string.RestartApp),
+                        PythonPluginsEngine.Updater::restartApp).show();
                 break;
             case ITEM_DOCUMENTATION:
                 Browser.openUrl(getParentActivity(), "https://plugins.exteragram.app/");

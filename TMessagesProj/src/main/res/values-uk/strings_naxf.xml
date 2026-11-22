@@ -179,6 +179,7 @@
     <string name="AIChatUseLlmProvider">Провайдер ШІ-перекладача</string>
     <string name="AIChatRoles">Ролі</string>
     <string name="AIChatMessageHistory">Історія повідомлень</string>
+    <string name="AIChatSavedConversations">Збережені діалоги</string>
     <string name="AIChatSaveHistory">Зберігати історію</string>
     <string name="AIChatHistoryInfo">Якщо увімкнено, ШІ пам’ятатиме попередні повідомлення в діалозі.</string>
     <string name="AIChatOther">Інше</string>

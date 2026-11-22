@@ -2,6 +2,8 @@ package tw.nekomimi.nekogram.config.cell;
 
 import static org.telegram.messenger.LocaleController.getString;
 
+import android.view.View;
+
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.ui.Cells.TextCell;
@@ -83,19 +85,26 @@ public class ConfigCellTextCheckIcon extends AbstractConfigCell implements WithB
     }
 
     public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-        if (this.cell != null) {
-            this.cell.setEnabled(this.enabled);
+        if (this.enabled == enabled) {
+            return;
         }
+        this.enabled = enabled;
+        notifyChanged();
     }
 
     public void setValue(String newValue) {
+        if (java.util.Objects.equals(value, newValue)) {
+            return;
+        }
         value = newValue;
-        if (cell != null) {
-            if (value == null) {
-                cell.setTextAndIcon(title, resId, cellGroup.needSetDivider(this));
-            } else {
-                cell.setTextAndValueAndIcon(title, value, resId, cellGroup.needSetDivider(this));
+        notifyChanged();
+    }
+
+    private void notifyChanged() {
+        if (cellGroup != null && cellGroup.getListAdapter() != null) {
+            int position = cellGroup.rows.indexOf(this);
+            if (position >= 0) {
+                cellGroup.getListAdapter().notifyItemChanged(position);
             }
         }
     }
@@ -105,6 +114,9 @@ public class ConfigCellTextCheckIcon extends AbstractConfigCell implements WithB
         this.cell = cell;
         cell.setEnabled(enabled);
         if (bindConfig == null) {
+            if (cell.getCheckBox() != null) {
+                cell.getCheckBox().setVisibility(View.GONE);
+            }
             if (value == null) {
                 cell.setTextAndIcon(title, resId, cellGroup.needSetDivider(this));
             } else {
@@ -113,6 +125,7 @@ public class ConfigCellTextCheckIcon extends AbstractConfigCell implements WithB
             return;
         }
         cell.setTextAndCheckAndIcon(title, bindConfig.Bool(), resId, cellGroup.needSetDivider(this));
+        cell.setSubtitle(value);
     }
 
     public void onClick() {

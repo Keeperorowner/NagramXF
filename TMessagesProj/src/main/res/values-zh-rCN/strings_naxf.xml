@@ -170,6 +170,7 @@
     <string name="AIChatUseLlmProvider">与 AI 翻译共用服务商</string>
     <string name="AIChatRoles">角色</string>
     <string name="AIChatMessageHistory">消息历史</string>
+    <string name="AIChatSavedConversations">已保存的对话</string>
     <string name="AIChatSaveHistory">保存历史</string>
     <string name="AIChatHistoryInfo">启用后，AI 将记住对话中的先前消息。</string>
     <string name="AIChatOther">其他</string>

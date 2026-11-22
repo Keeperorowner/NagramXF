@@ -49469,7 +49469,7 @@ public class ChatActivity extends BaseFragment implements
 
         String imagePath = AiController.getPathToMessage(selectedObject);
         new GenerateFromMessageBottomSheet(messageText, imagePath, ChatActivity.this, getParentActivity(), data -> {
-            Client aiClient = new Client.Builder().build();
+            Client aiClient = new Client.Builder().account(currentAccount).build();
             boolean noForwards = getMessagesController().isPeerNoForwards(getDialogId())
                     || (selectedObject.messageOwner != null && selectedObject.messageOwner.noforwards);
             ResponseAlert.showAlert(ChatActivity.this, aiClient, data.prompt(), data.imagePath(), data.useHistory(), noForwards,

@@ -43,8 +43,7 @@ import com.exteragram.messenger.ai.AiConfig;
 import com.exteragram.messenger.ai.AiController;
 import com.exteragram.messenger.ai.data.Service;
 import com.exteragram.messenger.ai.network.Client;
-import com.exteragram.messenger.ai.network.backend.BackendRequest;
-import com.exteragram.messenger.ai.network.backend.BackendSink;
+import com.exteragram.messenger.ai.network.GenerationCallback;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Emoji;
@@ -462,16 +461,21 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         }
     }
 
+    @Override
+    public void dismiss() {
+        client.stopRequest(currentRequestId);
+        super.dismiss();
+    }
+
     private void generate() {
+        client.stopRequest(currentRequestId);
         currentResponse = null;
         turnSaved = false;
         stopThinking();
         if (AiController.getInstance().getSelected().isReasoningEnabled() && AiConfig.responseStreaming) {
             showThinking();
         }
-        final float temperature = AiConfig.temperature / 20.0f * AiController.getBackend().getMaxTemperature();
-        currentRequestId = AiController.getBackend().execute(new BackendRequest(
-                AiController.getInstance().getSelected(), null, prompt, imagePath, useHistory, AiConfig.responseStreaming, temperature), new BackendSink() {
+        currentRequestId = client.getResponse(prompt, useHistory, AiConfig.responseStreaming, imagePath, new GenerationCallback() {
             @Override
             public void onThinking() {
                 showThinking();
@@ -482,7 +486,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
                 if (TextUtils.isEmpty(response)) return;
                 stopThinking();
                 currentResponse = response;
-                turnSaved = useHistory;
+                turnSaved = client.hasSavedTurn(currentRequestId);
                 setFormattedResponse(response);
                 adapter.updateMainView(textViewContainer);
                 updateMainButton(false);
@@ -493,7 +497,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
                 if (TextUtils.isEmpty(chunk)) return;
                 stopThinking();
                 currentResponse = chunk;
-                turnSaved = useHistory;
+                turnSaved = client.hasSavedTurn(currentRequestId);
                 setFormattedResponse(chunk);
                 adapter.updateMainView(textViewContainer);
             }
@@ -871,7 +875,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
                 }
             } else if (id == 2) {
                 if (turnSaved) {
-                    AiConfig.removeLastFromHistory();
+                    client.removeLastSavedTurn(currentRequestId);
                 }
                 adapter.updateMainView(loadingTextView);
                 updateMainButton(true);
@@ -879,7 +883,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             } else if (id == 3) {
                 new GenerateFromMessageBottomSheet(prompt, imagePath, fragment, context, data -> {
                     if (turnSaved) {
-                        AiConfig.removeLastFromHistory();
+                        client.removeLastSavedTurn(currentRequestId);
                     }
                     setPrompt(data.prompt());
                     imagePath = data.imagePath();

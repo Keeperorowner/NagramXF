@@ -90,35 +90,99 @@ public abstract class AiConfig {
         temperature = temperatureConfig.Int();
     }
 
+    private static long historyRevision;
+    private static String activeHistoryContext;
+
+    public static final class HistorySnapshot {
+        public final String context;
+        public final long revision;
+        public final ArrayList<Message> messages;
+
+        private HistorySnapshot(String context, long revision, ArrayList<Message> messages) {
+            this.context = context;
+            this.revision = revision;
+            this.messages = messages;
+        }
+    }
+
+    public static HistorySnapshot beginConversation(String context) {
+        synchronized (sync) {
+            if (!context.equals(activeHistoryContext)) {
+                activeHistoryContext = context;
+                historyRevision++;
+            }
+            ArrayList<Message> messages = context.equals(preferences.getString("conversationHistoryContext", null))
+                    ? getConversationHistory() : new ArrayList<>();
+            return new HistorySnapshot(context, historyRevision, messages);
+        }
+    }
+
+    public static HistorySnapshot saveConversationHistory(HistorySnapshot snapshot, ArrayList<Message> history) {
+        synchronized (sync) {
+            if (snapshot.revision != historyRevision || !snapshot.context.equals(activeHistoryContext)
+                    || !saveHistoryConfig.Bool()) {
+                return null;
+            }
+            historyRevision++;
+            boolean saved = preferences.edit().putString("conversationHistory", GSON.toJson(history))
+                    .putString("conversationHistoryContext", snapshot.context).commit();
+            return saved ? new HistorySnapshot(snapshot.context, historyRevision, new ArrayList<>()) : null;
+        }
+    }
+
+    public static boolean removeLastFromHistory(HistorySnapshot savedTurn) {
+        synchronized (sync) {
+            if (savedTurn == null || savedTurn.revision != historyRevision
+                    || !savedTurn.context.equals(activeHistoryContext)
+                    || !savedTurn.context.equals(preferences.getString("conversationHistoryContext", null))) {
+                return false;
+            }
+            removeLastFromHistory();
+            return true;
+        }
+    }
+
     public static void saveConversationHistory(ArrayList<Message> history) {
-        editor.putString("conversationHistory", GSON.toJson(history)).commit();
+        synchronized (sync) {
+            historyRevision++;
+            preferences.edit().putString("conversationHistory", GSON.toJson(history))
+                    .remove("conversationHistoryContext").commit();
+        }
     }
 
     public static ArrayList<Message> getConversationHistory() {
-        Type type = new TypeToken<ArrayList<Message>>() {}.getType();
-        String json = preferences.getString("conversationHistory", null);
-        if (json == null) return new ArrayList<>();
-        try {
-            ArrayList<Message> list = GSON.fromJson(json, type);
-            return list != null ? list : new ArrayList<>();
-        } catch (Exception e) {
-            FileLog.e(e);
-            return new ArrayList<>();
+        synchronized (sync) {
+            Type type = new TypeToken<ArrayList<Message>>() {}.getType();
+            String json = preferences.getString("conversationHistory", null);
+            if (json == null) return new ArrayList<>();
+            try {
+                ArrayList<Message> list = GSON.fromJson(json, type);
+                return list != null ? list : new ArrayList<>();
+            } catch (Exception e) {
+                FileLog.e(e);
+                return new ArrayList<>();
+            }
         }
     }
 
     public static void clearConversationHistory() {
-        editor.remove("conversationHistory").commit();
+        synchronized (sync) {
+            historyRevision++;
+            preferences.edit().remove("conversationHistory").remove("conversationHistoryContext").commit();
+        }
     }
 
     public static void removeLastFromHistory() {
-        ArrayList<Message> history = getConversationHistory();
-        if (history.size() >= 2
-                && "assistant".equals(history.get(history.size() - 1).role())
-                && "user".equals(history.get(history.size() - 2).role())) {
-            history.remove(history.size() - 1);
-            history.remove(history.size() - 1);
-            saveConversationHistory(history);
+        synchronized (sync) {
+            ArrayList<Message> history = getConversationHistory();
+            if (history.size() >= 2
+                    && "assistant".equals(history.get(history.size() - 1).role())
+                    && "user".equals(history.get(history.size() - 2).role())) {
+                history.remove(history.size() - 1);
+                history.remove(history.size() - 1);
+                historyRevision++;
+                preferences.edit().putString("conversationHistory", GSON.toJson(history)).commit();
+            }
         }
     }
 
