@@ -461,12 +461,6 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         }
     }
 
-    @Override
-    public void dismiss() {
-        client.stopRequest(currentRequestId);
-        super.dismiss();
-    }
-
     private void generate() {
         client.stopRequest(currentRequestId);
         currentResponse = null;
@@ -622,6 +616,7 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
 
     @Override
     public void dismiss() {
+        client.stopRequest(currentRequestId);
         super.dismiss();
         stopThinking();
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.emojiLoaded);
