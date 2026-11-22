@@ -135,6 +135,8 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         menu.addItem(MENU_SEARCH, R.drawable.ic_ab_search, resourcesProvider);
         overflowItem = menu.addItem(MENU_OVERFLOW, R.drawable.ic_ab_other, resourcesProvider);
         overflowItem.setContentDescription(getString(R.string.AccDescrMoreOptions));
+        overflowItem.addSubItem(MENU_RESTART, R.drawable.msg_retry, getString(R.string.RestartApp));
+        overflowItem.addColoredGap();
         overflowItem.addSubItem(MENU_IMPORT, R.drawable.import_solar, getString(R.string.ImportSettings));
         overflowItem.addSubItem(MENU_EXPORT, R.drawable.export_solar, getString(R.string.BackupSettings));
         overflowItem.addColoredGap();
@@ -142,7 +144,6 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         int red = Theme.getColor(Theme.key_text_RedRegular, resourcesProvider);
         resetSub.setColors(red, red);
         resetSub.setSelectorColor(Theme.multAlpha(red, .12f));
-        overflowItem.setOnClickListener(v -> showOverflowMenu());
         overflowItem.setLongClickEnabled(false);
 
         simpleActionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -374,20 +375,6 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             showDialog(dialog);
         } catch (Exception ignore) {
         }
-    }
-
-    private void showOverflowMenu() {
-        if (overflowItem == null) return;
-        Context context = getContext();
-        if (context == null) return;
-        ActionBarMenuSubItem restartItem = new ActionBarMenuSubItem(context, false, true, true, resourcesProvider);
-        restartItem.setTextAndIcon(getString(R.string.RestartApp), R.drawable.msg_retry);
-        restartItem.setMinimumWidth(AndroidUtilities.dp(196));
-        restartItem.setOnClickListener(view -> {
-            overflowItem.closeSubMenu();
-            AppRestartHelper.triggerRebirth(getParentActivity(), new Intent(getParentActivity(), LaunchActivity.class));
-        });
-        overflowItem.toggleSubMenu(restartItem, overflowItem);
     }
 
     @Override
