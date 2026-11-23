@@ -12674,6 +12674,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             return of(null, caption, null, null, videoEditedInfo, null, document, null, null, null, peer, path, replyToMsg, replyToTopMsg, null, true, null, entities, replyMarkup, params, notify, scheduleDate, scheduleRepeatPeriod, ttl, parentObject, sendAnimationData, updateStickersOrder, hasMediaSpoilers);
         }
 
+        public static SendMessageParams of(String message, long peer, MessageObject replyToMsg, MessageObject replyToTopMsg, TLRPC.WebPage webPage, boolean searchLinks, ArrayList<TLRPC.MessageEntity> entities, TLRPC.ReplyMarkup replyMarkup, HashMap<String, String> params, boolean notify, int scheduleDate, MessageObject.SendAnimationData sendAnimationData, boolean updateStickersOrder) {
+            return of(message, peer, replyToMsg, replyToTopMsg, webPage, searchLinks, entities, replyMarkup, params, notify, scheduleDate, 0, sendAnimationData, updateStickersOrder);
+        }
+
         public static SendMessageParams of(String message, long peer, MessageObject replyToMsg, MessageObject replyToTopMsg, TLRPC.WebPage webPage, boolean searchLinks, ArrayList<TLRPC.MessageEntity> entities, TLRPC.ReplyMarkup replyMarkup, HashMap<String, String> params, boolean notify, int scheduleDate, int scheduleRepeatPeriod, MessageObject.SendAnimationData sendAnimationData, boolean updateStickersOrder) {
             return of(message, null, null, null, null, null, null, null, null, null, peer, null, replyToMsg, replyToTopMsg, webPage, searchLinks, null, entities, replyMarkup, params, notify, scheduleDate, scheduleRepeatPeriod, 0, null, sendAnimationData, updateStickersOrder);
         }

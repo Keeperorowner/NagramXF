@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import traceback
 
+from java import jarray  # re-exported for plugins that import it from here
 from java import jclass
 from android_utils import log
 
@@ -121,3 +122,27 @@ def set_static_private_field(clazz, field_name, new_value):
         return True
     except Exception:
         return False
+
+
+def _is_class_object(value):
+    """True when *value* is a ``java.lang.Class`` rather than an instance."""
+    if value is None:
+        return False
+    try:
+        return hasattr(value, "getDeclaredField") and hasattr(value, "isInterface")
+    except Exception:
+        return False
+
+
+def get_field(target, field_name):
+    """Read ``field_name`` from a class object (static) or an instance."""
+    if _is_class_object(target):
+        return get_static_private_field(target, field_name)
+    return get_private_field(target, field_name)
+
+
+def set_field(target, field_name, new_value):
+    """Write ``field_name`` on a class object (static) or an instance."""
+    if _is_class_object(target):
+        return set_static_private_field(target, field_name, new_value)
+    return set_private_field(target, field_name, new_value)

@@ -14,6 +14,6 @@
 -dontwarn org.mvel2.jsr223.**
 
 # Plugins look these classes up by name and call them reflectively.
--keep class com.radolyn.ayugram.AyuState { *; }
+-keep class com.radolyn.ayugram.** { *; }
 -keep class com.exteragram.messenger.preferences.components.AltSeekbar { *; }
 -keep class com.exteragram.messenger.preferences.appearance.components.FilterTabsPreviewCell { *; }

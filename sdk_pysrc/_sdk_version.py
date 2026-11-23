@@ -8,7 +8,7 @@ Exposes the values the Java host (``PythonPluginsEngine``) reads:
 """
 from __future__ import annotations
 
-__version__ = "1.4.8.0"
+__version__ = "1.4.9.0"
 __beta__ = False
 
 version_str = __version__

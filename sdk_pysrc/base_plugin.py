@@ -7,6 +7,8 @@ Do not rely on ``self.id`` in ``__init__``.
 """
 from __future__ import annotations
 
+import threading
+
 from java import jclass
 
 from android_utils import log as _log
@@ -297,6 +299,28 @@ class BasePlugin:
         self.name = None
         self.enabled = False
         self.initialized = False
+        self._cleanup_callbacks = []
+        self._stop_event = None
+
+    @property
+    def stop_event(self):
+        """``threading.Event`` set when the plugin is unloaded; worker loops watch it."""
+        if getattr(self, "_stop_event", None) is None:
+            self._stop_event = threading.Event()
+        return self._stop_event
+
+    @stop_event.setter
+    def stop_event(self, event):
+        """Plugins that create their own event keep control of it; it is still set on unload."""
+        self._stop_event = event
+
+    def register_cleanup(self, cleanup):
+        """Run ``cleanup`` once when the plugin unloads, in reverse registration order."""
+        if cleanup is None:
+            return
+        if getattr(self, "_cleanup_callbacks", None) is None:
+            self._cleanup_callbacks = []
+        self._cleanup_callbacks.append(cleanup)
 
     @classmethod
     def _findPluginClass(cls, module):
@@ -379,6 +403,19 @@ class BasePlugin:
 
     def _cleanup(self):
         """Release per-plugin SDK state; the host calls this when the plugin unloads."""
+        event = getattr(self, "_stop_event", None)
+        if event is not None:
+            try:
+                event.set()
+            except Exception:
+                pass
+        callbacks = getattr(self, "_cleanup_callbacks", None) or []
+        self._cleanup_callbacks = []
+        for cleanup in reversed(callbacks):
+            try:
+                cleanup()
+            except Exception as e:
+                _log("[%s] cleanup failed: %s" % (self.id, e))
         try:
             from log_utils import _reset_plugin_logger
 

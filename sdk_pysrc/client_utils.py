@@ -6,7 +6,9 @@ selected in the UI via ``UserConfig.selectedAccount``).
 """
 from __future__ import annotations
 
-from java import dynamic_proxy, jclass
+import contextlib
+
+from java import dynamic_proxy, jarray, jclass
 
 from android_utils import R, log
 
@@ -53,6 +55,17 @@ def get_queue_by_name(name):
         return getattr(Utilities, name)
     except Exception:
         return None
+
+
+@contextlib.contextmanager
+def account_scope(account):
+    """Temporarily set the hook account used by controller getters and callbacks."""
+    previous = get_hook_account()
+    _set_hook_account(account)
+    try:
+        yield account
+    finally:
+        _set_hook_account(previous)
 
 
 def run_on_queue(fn, queue_name=PLUGINS_QUEUE, delay=0):
@@ -225,6 +238,79 @@ def get_media_controller():
     return MediaController.getInstance()
 
 
+_MIME_OVERRIDES = {
+    "webp": "image/webp",
+    "opus": "audio/opus",
+    "mp3": "audio/mpeg",
+    "m4a": "audio/m4a",
+    "ogg": "audio/ogg",
+    "flac": "audio/flac",
+}
+
+_AUDIO_EXTENSIONS = ("opus", "mp3", "m4a", "ogg", "flac")
+
+
+def _document_mime_type(extension):
+    """Best-effort MIME type for a file extension."""
+    extension = (extension or "").lower()
+    if extension in _MIME_OVERRIDES:
+        return _MIME_OVERRIDES[extension]
+    try:
+        MimeTypeMap = jclass("android.webkit.MimeTypeMap")
+        resolved = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        if resolved:
+            return str(resolved)
+    except Exception:
+        pass
+    return "application/octet-stream"
+
+
+def _prepare_document(file_path):
+    """Build a local ``TLRPC.TL_document`` for *file_path*, or ``None`` on failure.
+
+    The returned document has no server id yet, so sending it together with the
+    same path makes ``SendMessagesHelper`` upload the file.
+    """
+    if not file_path:
+        return None
+    try:
+        File = jclass("java.io.File")
+        TLRPC = jclass("org.telegram.tgnet.TLRPC")
+        file = File(str(file_path))
+        if not file.exists() or not file.isFile():
+            log("_prepare_document: file not found: %s" % file_path)
+            return None
+
+        name = str(file.getName())
+        size = int(file.length())
+        extension = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+
+        document = TLRPC.TL_document()
+        document.id = 0
+        document.access_hash = 0
+        document.file_reference = jarray("byte", [])
+        document.date = int(get_connections_manager().getCurrentTime())
+        document.mime_type = _document_mime_type(extension)
+        document.size = size
+        document.dc_id = 0
+        document.attributes = ArrayList()
+
+        file_name = TLRPC.TL_documentAttributeFilename()
+        file_name.file_name = name
+        document.attributes.add(file_name)
+
+        if extension in _AUDIO_EXTENSIONS:
+            audio = TLRPC.TL_documentAttributeAudio()
+            audio.voice = extension == "opus"
+            document.attributes.add(audio)
+        elif extension == "gif":
+            document.attributes.add(TLRPC.TL_documentAttributeAnimated())
+        return document
+    except Exception:
+        log("_prepare_document: failed to prepare %s" % file_path)
+        return None
+
+
 class RequestCallback(dynamic_proxy(RequestDelegate)):
     """A ``RequestDelegate`` backed by a Python callable ``fn(response, error)``.
 
@@ -241,7 +327,8 @@ class RequestCallback(dynamic_proxy(RequestDelegate)):
     def run(self, response, error):
         _set_hook_account(self._account)
         try:
-            self._fn(response, error)
+            if self._fn is not None:
+                self._fn(response, error)
         finally:
             _set_hook_account(None)
 
