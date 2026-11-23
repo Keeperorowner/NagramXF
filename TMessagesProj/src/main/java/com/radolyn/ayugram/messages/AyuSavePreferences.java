@@ -153,6 +153,14 @@ public class AyuSavePreferences {
         return true;
     }
 
+    /** 编辑历史沿用同一套会话排除规则，只是开关换成「保存编辑历史」。 */
+    public static boolean saveEditedMessageFor(int accountId, long dialogId, long userId) {
+        if (!NaConfig.INSTANCE.getEnableSaveEditsHistory().Bool()) {
+            return false;
+        }
+        return AyuSaveExclusions.isSavingAllowedFor(accountId, dialogId, userId);
+    }
+
     /**
      * 先查内存缓存，未命中再直读存储。
      *

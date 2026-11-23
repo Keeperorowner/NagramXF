@@ -376,6 +376,11 @@ public class AyuMessagesController {
             return;
         }
 
+        // 会话被排除时不留编辑历史；强制路径（来自设置页/备份）仍要写入。
+        if (!force && !AyuSavePreferences.saveEditedMessageFor(prefs.getAccountId(), prefs.getDialogId(), prefs.getFromUserId())) {
+            return;
+        }
+
         var revision = new EditedMessage();
         AyuMessageUtils.map(prefs, revision);
         AyuMessageUtils.mapMedia(prefs, revision, !sameMedia);
@@ -664,6 +669,11 @@ public class AyuMessagesController {
     private boolean onMessageDeletedInner(AyuSavePreferences prefs) {
         if (prefs.getDialogId() == 0 || prefs.getUserId() == 0 || prefs.getUserId() != UserConfig.getInstance(prefs.getAccountId()).getClientUserId()
                 || !AyuSavePreferences.saveDeletedMessageFor(prefs.getAccountId(), prefs.getDialogId(), prefs.getFromUserId())) {
+            return false;
+        }
+
+        // 用户主动删除的消息不再归档：放行标记在这里也要生效，不能只拦历史清空那条路径。
+        if (AyuState.isDeletePermitted(prefs.getDialogId(), prefs.getMessageId())) {
             return false;
         }
 
