@@ -43,7 +43,7 @@ public class PluginTranslateButton extends View implements NotificationCenter.No
     private PluginSettingsTranslation translation;
 
     private Drawable translateDrawable;
-    private Drawable resetDrawable;
+    private Drawable originalDrawable;
 
     private int iconColor;
     private int accentColor;
@@ -137,7 +137,7 @@ public class PluginTranslateButton extends View implements NotificationCenter.No
             drawProgress(canvas, color);
             return;
         }
-        final Drawable drawable = resetState ? getResetDrawable() : getTranslateDrawable();
+        final Drawable drawable = resetState ? getOriginalDrawable() : getTranslateDrawable();
         if (drawable == null) {
             return;
         }
@@ -176,14 +176,15 @@ public class PluginTranslateButton extends View implements NotificationCenter.No
         return translateDrawable;
     }
 
-    private Drawable getResetDrawable() {
-        if (resetDrawable == null) {
-            resetDrawable = ContextCompat.getDrawable(getContext(), R.drawable.msg_reset);
-            if (resetDrawable != null) {
-                resetDrawable = resetDrawable.mutate();
+    /** The originals entry must not share the reset icon of the neighbouring menu item. */
+    private Drawable getOriginalDrawable() {
+        if (originalDrawable == null) {
+            originalDrawable = ContextCompat.getDrawable(getContext(), R.drawable.msg_text_outlined);
+            if (originalDrawable != null) {
+                originalDrawable = originalDrawable.mutate();
             }
         }
-        return resetDrawable;
+        return originalDrawable;
     }
 
     /* Progress animation */
