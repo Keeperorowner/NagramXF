@@ -179,7 +179,7 @@ public class PluginTranslateButton extends View implements NotificationCenter.No
     /** The originals entry must not share the reset icon of the neighbouring menu item. */
     private Drawable getOriginalDrawable() {
         if (originalDrawable == null) {
-            originalDrawable = ContextCompat.getDrawable(getContext(), R.drawable.msg_text_outlined);
+            originalDrawable = ContextCompat.getDrawable(getContext(), R.drawable.photo_undo2);
             if (originalDrawable != null) {
                 originalDrawable = originalDrawable.mutate();
             }
