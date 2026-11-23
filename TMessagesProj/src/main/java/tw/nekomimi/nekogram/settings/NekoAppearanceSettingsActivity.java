@@ -33,6 +33,7 @@ import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UndoView;
 import org.telegram.ui.LaunchActivity;
 
+import com.exteragram.messenger.preferences.appearance.components.FilterTabsPreviewCell;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.config.CellGroup;
@@ -47,7 +48,6 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.ui.cells.AvatarCornersPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.ChatListPreviewCell;
 import tw.nekomimi.nekogram.ui.cells.FabShapePreviewCell;
-import tw.nekomimi.nekogram.ui.cells.FilterTabsPreviewCell;
 import xyz.nextalone.nagram.NaConfig;
 
 @SuppressLint("RtlHardcoded")

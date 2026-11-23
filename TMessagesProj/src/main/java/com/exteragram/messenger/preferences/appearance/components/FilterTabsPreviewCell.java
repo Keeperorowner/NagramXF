@@ -1,4 +1,4 @@
-package tw.nekomimi.nekogram.ui.cells;
+package com.exteragram.messenger.preferences.appearance.components;
 
 import android.content.Context;
 import android.graphics.Canvas;

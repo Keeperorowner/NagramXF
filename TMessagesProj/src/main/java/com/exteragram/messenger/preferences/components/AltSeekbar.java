@@ -1,4 +1,4 @@
-package tw.nekomimi.nekogram.ui.cells;
+package com.exteragram.messenger.preferences.components;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -19,10 +19,12 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.SeekBarView;
 
+import java.util.Locale;
+
 public class AltSeekbar extends FrameLayout {
 
     public interface OnDrag {
-        void run(float value, boolean stop);
+        void run(float value);
     }
 
     private final int min;
@@ -36,6 +38,7 @@ public class AltSeekbar extends FrameLayout {
     private float currentValue;
     private int roundedValue;
     private int vibro = -1;
+    private Runnable onValueChangeFinished;
 
     public AltSeekbar(Context context, OnDrag onDrag, int min, int max, String header, String leftText, String rightText) {
         super(context);
@@ -78,9 +81,12 @@ public class AltSeekbar extends FrameLayout {
             @Override
             public void onSeekBarDrag(boolean stop, float progress) {
                 float value = min + ((max - min) * progress);
-                onDrag.run(value, stop);
+                onDrag.run(value);
+                if (stop && onValueChangeFinished != null) {
+                    onValueChangeFinished.run();
+                }
                 if (Math.round(value) != roundedValue) {
-                    setProgress(progress);
+                    setProgress(value);
                 } else {
                     currentValue = value;
                     seekBarView.setProgress(progress);
@@ -108,11 +114,16 @@ public class AltSeekbar extends FrameLayout {
         addView(labelsLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP, 21, 52, 21, 0));
     }
 
-    public void setProgress(float progress) {
-        float value = min + ((max - min) * progress);
-        currentValue = value;
-        roundedValue = Math.round(value);
-        seekBarView.setProgress(progress);
+    /** Notified after the user stops dragging, so callers can commit the value once. */
+    public void setOnValueChangeFinished(Runnable onValueChangeFinished) {
+        this.onValueChangeFinished = onValueChangeFinished;
+    }
+
+    /** Sets the absolute value; the slider position is derived from the [min, max] range. */
+    public void setProgress(float value) {
+        currentValue = clamp(value);
+        roundedValue = Math.round(currentValue);
+        seekBarView.setProgress((currentValue - min) / (max - min));
         headerValue.cancelAnimation();
         headerValue.setText(getTextForHeader(), true);
         if ((roundedValue == min || roundedValue == max) && roundedValue != vibro) {
@@ -153,7 +164,11 @@ public class AltSeekbar extends FrameLayout {
         } else {
             text = String.valueOf(roundedValue);
         }
-        return text.toString().toUpperCase();
+        return text.toString().toUpperCase(Locale.getDefault());
+    }
+
+    private float clamp(float value) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private static float clamp01(float value) {

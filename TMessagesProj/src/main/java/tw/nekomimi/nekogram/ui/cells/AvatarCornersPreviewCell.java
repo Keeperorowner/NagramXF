@@ -16,6 +16,8 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 
+import com.exteragram.messenger.preferences.components.AltSeekbar;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AvatarCornerHelper;
 import org.telegram.messenger.LocaleController;
@@ -46,17 +48,9 @@ public class AvatarCornersPreviewCell extends FrameLayout {
 
         seekBar = new AltSeekbar(
                 context,
-                (value, stop) -> {
+                value -> {
                     previewAvatarCorners = value;
                     invalidate();
-                    boolean valueChanged = Float.compare(committedAvatarCorners, value) != 0;
-                    if (stop && valueChanged) {
-                        committedAvatarCorners = value;
-                        NaConfig.INSTANCE.getAvatarCorners().setConfigFloat(value);
-                        if (onValueChanged != null) {
-                            onValueChanged.run();
-                        }
-                    }
                 },
                 0,
                 28,
@@ -64,7 +58,16 @@ public class AvatarCornersPreviewCell extends FrameLayout {
                 LocaleController.getString(R.string.AvatarCornersLeft),
                 LocaleController.getString(R.string.AvatarCornersRight)
         );
-        seekBar.setProgress(previewAvatarCorners / 28.0f);
+        seekBar.setOnValueChangeFinished(() -> {
+            if (Float.compare(committedAvatarCorners, previewAvatarCorners) != 0) {
+                committedAvatarCorners = previewAvatarCorners;
+                NaConfig.INSTANCE.getAvatarCorners().setConfigFloat(previewAvatarCorners);
+                if (onValueChanged != null) {
+                    onValueChanged.run();
+                }
+            }
+        });
+        seekBar.setProgress(previewAvatarCorners);
         addView(seekBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         preview = new FrameLayout(context) {
