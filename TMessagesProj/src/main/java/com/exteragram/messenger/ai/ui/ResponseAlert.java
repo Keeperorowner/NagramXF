@@ -41,6 +41,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.exteragram.messenger.ai.AiConfig;
 import com.exteragram.messenger.ai.AiController;
+import com.exteragram.messenger.ai.data.Role;
 import com.exteragram.messenger.ai.data.Service;
 import com.exteragram.messenger.ai.network.Client;
 import com.exteragram.messenger.ai.network.GenerationCallback;
@@ -73,6 +74,7 @@ import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LinkPath;
 import org.telegram.ui.Components.LinkSpanDrawable;
 import org.telegram.ui.Components.LoadingDrawable;
@@ -743,6 +745,8 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
         private final View shadow;
         private final LinearLayout subtitleView;
         private final AnimatedTextView titleTextView;
+        private final LinearLayout titleRow;
+        private final ImageView roleArrow;
 
         public HeaderView(Context context) {
             super(context);
@@ -799,10 +803,26 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             titleTextView.setTextColor(getThemedColor(Theme.key_dialogTextBlack));
             titleTextView.setTextSize(AndroidUtilities.dp(20));
             titleTextView.setTypeface(AndroidUtilities.bold());
-            titleTextView.setText(LocaleController.getString(R.string.AIChat));
+            titleTextView.setText(AiController.getInstance().getSelectedRole().getName());
+            titleTextView.setMaxWidth(Math.max(AndroidUtilities.dp(60), AndroidUtilities.displaySize.x - AndroidUtilities.dp(22) - AndroidUtilities.dp(112) - AndroidUtilities.dp(2)));
             titleTextView.setPivotX(0f);
             titleTextView.setPivotY(0f);
-            addView(titleTextView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 30f, Gravity.TOP | Gravity.LEFT, 22f, 20f, 22f, 0f));
+            titleTextView.setOnClickListener(v -> openRoleSelect());
+
+            roleArrow = new ImageView(context);
+            roleArrow.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+            roleArrow.setImageResource(R.drawable.ic_arrow_drop_down);
+            roleArrow.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_dialogTextBlack), PorterDuff.Mode.MULTIPLY));
+            roleArrow.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(12)));
+            roleArrow.setContentDescription(LocaleController.getString(R.string.AIChatRoles));
+            roleArrow.setOnClickListener(v -> openRoleSelect());
+
+            titleRow = new LinearLayout(context);
+            titleRow.setOrientation(LinearLayout.HORIZONTAL);
+            titleRow.setGravity(Gravity.CENTER_VERTICAL);
+            titleRow.addView(titleTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, Gravity.CENTER_VERTICAL));
+            titleRow.addView(roleArrow, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 2, 0, 0, 0));
+            addView(titleRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30f, Gravity.TOP | Gravity.LEFT, 22f, 20f, 112f, 0f));
 
             subtitleView = new LinearLayout(context);
             subtitleView.setPivotX(0f);
@@ -963,6 +983,43 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             popup[0].showAtLocation(containerView, Gravity.LEFT | Gravity.TOP, loc[0] - AndroidUtilities.dp(8), y);
         }
 
+        /**
+         * Suggests the built-in roles first and then the roles the user saved, so the picker stays
+         * usable before any custom role exists.
+         */
+        public void openRoleSelect() {
+            if (client.isGenerating()) return;
+            ArrayList<Role> roles = new ArrayList<>(AiController.getInstance().getSuggestedRoles());
+            for (Role role : AiController.getInstance().getRoles()) {
+                boolean exists = false;
+                for (Role existing : roles) {
+                    if (existing.getName().equals(role.getName())) {
+                        exists = true;
+                        break;
+                    }
+                }
+                if (!exists) {
+                    roles.add(role);
+                }
+            }
+            if (roles.isEmpty()) return;
+            ItemOptions options = ItemOptions.makeOptions(containerView, resourcesProvider, titleRow)
+                    .setDrawScrim(false)
+                    .setDimAlpha(0)
+                    .setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            for (Role role : roles) {
+                options.addChecked(role.isSelected(), role.getName(), () -> {
+                    if (role.isSelected()) return;
+                    titleTextView.setText(role.getName());
+                    AiConfig.setSelectedRole(role);
+                    adapter.updateMainView(loadingTextView);
+                    updateMainButton(true);
+                    generate();
+                });
+            }
+            options.show();
+        }
+
         @Override
         public void setTranslationY(float translationY) {
             super.setTranslationY(translationY);
@@ -970,10 +1027,10 @@ public abstract class ResponseAlert extends BottomSheet implements NotificationC
             if (!hasEnoughHeight()) t = 1f;
             float interp = CubicBezierInterpolator.EASE_OUT.getInterpolation(t);
 
-            titleTextView.setScaleX(AndroidUtilities.lerp(0.85f, 1f, interp));
-            titleTextView.setScaleY(AndroidUtilities.lerp(0.85f, 1f, interp));
-            titleTextView.setTranslationY(AndroidUtilities.lerp(AndroidUtilities.dpf2(-12f), 0f, interp));
-            titleTextView.setTranslationX(AndroidUtilities.lerp(AndroidUtilities.dpf2(50f), 0f, interp));
+            titleRow.setScaleX(AndroidUtilities.lerp(0.85f, 1f, interp));
+            titleRow.setScaleY(AndroidUtilities.lerp(0.85f, 1f, interp));
+            titleRow.setTranslationY(AndroidUtilities.lerp(AndroidUtilities.dpf2(-12f), 0f, interp));
+            titleRow.setTranslationX(AndroidUtilities.lerp(AndroidUtilities.dpf2(50f), 0f, interp));
 
             subtitleView.setTranslationX(AndroidUtilities.lerp(AndroidUtilities.dpf2(50f), 0f, interp));
             subtitleView.setTranslationY(AndroidUtilities.lerp(AndroidUtilities.dpf2(-22f), 0f, interp));

@@ -226,6 +226,14 @@ public class AiController {
 
 
     public static void clearHistory(final BaseFragment fragment, Theme.ResourcesProvider resourcesProvider, boolean showConfirm) {
+        clearHistory(fragment, resourcesProvider, showConfirm, null);
+    }
+
+    /**
+     * Clears the saved conversation. The callback runs after the history was dropped, so screens
+     * that keep a copy of the messages can refresh themselves.
+     */
+    public static void clearHistory(final BaseFragment fragment, Theme.ResourcesProvider resourcesProvider, boolean showConfirm, Runnable onCleared) {
         if (fragment == null) return;
         if (showConfirm) {
             AlertDialog.Builder builder = new AlertDialog.Builder(fragment.getParentActivity(), resourcesProvider);
@@ -235,6 +243,9 @@ public class AiController {
             builder.setPositiveButton(LocaleController.getString(R.string.ClearButton), (dialog, which) -> {
                 AiConfig.clearConversationHistory();
                 BulletinFactory.of(fragment).createSimpleBulletin(R.raw.ic_delete, LocaleController.getString(R.string.AIChatHistoryCleared)).show();
+                if (onCleared != null) {
+                    onCleared.run();
+                }
             });
             AlertDialog alertDialog = builder.create();
             fragment.showDialog(alertDialog);
@@ -245,6 +256,9 @@ public class AiController {
         } else {
             AiConfig.clearConversationHistory();
             BulletinFactory.of(fragment).createSimpleBulletin(R.raw.ic_delete, LocaleController.getString(R.string.AIChatHistoryCleared)).show();
+            if (onCleared != null) {
+                onCleared.run();
+            }
         }
     }
 

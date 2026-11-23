@@ -16,6 +16,7 @@ import com.exteragram.messenger.ai.data.Service;
 import com.exteragram.messenger.ai.data.Suggestions;
 import com.exteragram.messenger.ai.network.Client;
 import com.exteragram.messenger.ai.network.GenerationCallback;
+import com.exteragram.messenger.ai.network.NativeChatClient;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
@@ -27,6 +28,7 @@ import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
@@ -34,6 +36,7 @@ import org.telegram.ui.Components.OutlineTextContainerView;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SectionsScrollView;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 
 import java.util.ArrayList;
@@ -55,6 +58,8 @@ public class EditServiceActivity extends BaseFragment {
     private OutlineTextContainerView keyFieldContainer;
     private TextCheckCell reasoningCell;
     private boolean reasoningEnabled;
+    private TextSettingsCell protocolCell;
+    private int protocol = Service.PROTOCOL_OPENAI;
     private View doneButton;
     private ButtonWithCounterView testButton;
     private ButtonWithCounterView fetchModelsButton;
@@ -175,12 +180,18 @@ public class EditServiceActivity extends BaseFragment {
 
         reasoningCell = new TextCheckCell(context, getResourceProvider());
         reasoningCell.setBackground(Theme.getSelectorDrawable(false));
-        reasoningCell.setTextAndCheck(LocaleController.getString(R.string.AIChatReasoning), reasoningEnabled, false);
+        reasoningCell.setTextAndCheck(LocaleController.getString(R.string.AIChatReasoning), reasoningEnabled, true);
         reasoningCell.setOnClickListener(v -> {
             reasoningEnabled = !reasoningEnabled;
             reasoningCell.setChecked(reasoningEnabled);
         });
         layout.addView(reasoningCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+
+        protocolCell = new TextSettingsCell(context, getResourceProvider());
+        protocolCell.setBackground(Theme.getSelectorDrawable(false));
+        protocolCell.setTextAndValue(LocaleController.getString(R.string.AIChatProtocol), protocolName(protocol), false);
+        protocolCell.setOnClickListener(v -> showProtocolPicker());
+        layout.addView(protocolCell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         if (currentService != null) {
             if (urlField != null) urlField.setText(currentService.getUrl());
@@ -188,12 +199,21 @@ public class EditServiceActivity extends BaseFragment {
             keyField.setText(currentService.getKey() != null ? currentService.getKey() : "");
             reasoningEnabled = currentService.isReasoningEnabled();
             reasoningCell.setChecked(reasoningEnabled);
+            protocol = currentService.getProtocol();
+            protocolCell.setTextAndValue(LocaleController.getString(R.string.AIChatProtocol), protocolName(protocol), false);
         } else {
             if (urlField != null) {
                 urlField.setText(isCustom ? AiConfig.DEFAULT_SERVICE.getUrl() : ProviderPresets.PRESET_URLS[presetIndex]);
             }
             modelField.setText(isCustom ? AiConfig.DEFAULT_SERVICE.getModel() : ProviderPresets.PRESET_DEFAULT_MODELS[presetIndex]);
             keyField.setText("");
+            // The preset names the provider, so start on the protocol it actually speaks.
+            if (presetIndex == ProviderPresets.PRESET_CLAUDE) {
+                protocol = Service.PROTOCOL_CLAUDE;
+            } else if (presetIndex == ProviderPresets.PRESET_GEMINI) {
+                protocol = Service.PROTOCOL_GEMINI;
+            }
+            protocolCell.setTextAndValue(LocaleController.getString(R.string.AIChatProtocol), protocolName(protocol), false);
         }
         updateDoneButton();
 
@@ -216,6 +236,47 @@ public class EditServiceActivity extends BaseFragment {
             return urlField != null ? urlField.getText().toString().trim() : "";
         }
         return ProviderPresets.PRESET_URLS[presetIndex];
+    }
+
+    /** The Google preset targets the OpenAI surface, so its native base is the parent path. */
+    private static String nativeBaseUrl(String url) {
+        String trimmed = url == null ? "" : url.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        if (trimmed.endsWith("/openai")) {
+            trimmed = trimmed.substring(0, trimmed.length() - "/openai".length());
+        }
+        return LlmUrlNormalizer.normalizeBaseUrl(trimmed);
+    }
+
+    private static String protocolName(int protocol) {
+        switch (protocol) {
+            case Service.PROTOCOL_CLAUDE:
+                return LocaleController.getString(R.string.AIChatProtocolAnthropic);
+            case Service.PROTOCOL_GEMINI:
+                return LocaleController.getString(R.string.AIChatProtocolGemini);
+            case Service.PROTOCOL_OPENAI:
+            default:
+                return LocaleController.getString(R.string.AIChatProtocolOpenAi);
+        }
+    }
+
+    private void showProtocolPicker() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        String[] options = new String[]{
+                protocolName(Service.PROTOCOL_OPENAI),
+                protocolName(Service.PROTOCOL_CLAUDE),
+                protocolName(Service.PROTOCOL_GEMINI)
+        };
+        int selected = protocol == Service.PROTOCOL_CLAUDE ? 1 : protocol == Service.PROTOCOL_GEMINI ? 2 : 0;
+        AlertsCreator.createSingleChoiceDialog(getParentActivity(), options,
+                LocaleController.getString(R.string.AIChatProtocol), selected, (dialog, which) -> {
+                    protocol = which == 1 ? Service.PROTOCOL_CLAUDE : which == 2 ? Service.PROTOCOL_GEMINI : Service.PROTOCOL_OPENAI;
+                    protocolCell.setTextAndValue(LocaleController.getString(R.string.AIChatProtocol), protocolName(protocol), false);
+                }).show();
     }
 
     private EditTextBoldCursor createEditText(Context context) {
@@ -260,7 +321,9 @@ public class EditServiceActivity extends BaseFragment {
     }
 
     private void fetchModels() {
-        String url = LlmUrlNormalizer.normalizeBaseUrl(getEffectiveUrl());
+        String url = protocol == Service.PROTOCOL_OPENAI
+                ? LlmUrlNormalizer.normalizeBaseUrl(getEffectiveUrl())
+                : nativeBaseUrl(getEffectiveUrl());
         String key = keyField.getText().toString().trim();
         if (TextUtils.isEmpty(url) || TextUtils.isEmpty(key)) {
             if (TextUtils.isEmpty(key)) AndroidUtilities.shakeView(keyFieldContainer);
@@ -269,9 +332,12 @@ public class EditServiceActivity extends BaseFragment {
         }
 
         fetchModelsButton.setLoading(true);
+        final int requestProtocol = protocol;
 
         new Thread(() -> {
-            OpenAICompatClient.LlmResponse<List<String>> response = OpenAICompatClient.fetchModels(url, key);
+            OpenAICompatClient.LlmResponse<List<String>> response = requestProtocol == Service.PROTOCOL_OPENAI
+                    ? OpenAICompatClient.fetchModels(url, key)
+                    : NativeChatClient.fetchModels(requestProtocol, url, key);
             AndroidUtilities.runOnUIThread(() -> {
                 fetchModelsButton.setLoading(false);
                 if (response.isSuccess() && response.data() != null) {
@@ -307,7 +373,7 @@ public class EditServiceActivity extends BaseFragment {
         }
 
         testButton.setLoading(true);
-        Service service = new Service(url, model, key, Service.PROTOCOL_OPENAI);
+        Service service = new Service(url, model, key, protocol);
         Client client = new Client.Builder()
                 .serviceOverride(service)
                 .roleOverride(Suggestions.ASSISTANT.getRole())
@@ -342,7 +408,7 @@ public class EditServiceActivity extends BaseFragment {
 
     private void saveConfig() {
         String url = getEffectiveUrl();
-        Service service = new Service(url, modelField.getText().toString().trim(), keyField.getText().toString().trim(), Service.PROTOCOL_OPENAI, reasoningEnabled);
+        Service service = new Service(url, modelField.getText().toString().trim(), keyField.getText().toString().trim(), protocol, reasoningEnabled);
 
         if (!AiController.getInstance().contains(service)) {
             Client client = new Client.Builder()

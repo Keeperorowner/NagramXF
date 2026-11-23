@@ -115,18 +115,23 @@ public class Client {
                 }
             }
 
-            String baseUrl = resolveBaseUrl(service);
+            boolean nativeProtocol = isNativeProtocol(service);
+            String baseUrl = nativeProtocol ? resolveNativeBaseUrl(service) : resolveBaseUrl(service);
             ArrayList<Message> conversationHistory = history != null
                     ? trimConversationHistory(history.messages) : new ArrayList<>();
 
             Message userMessage = new Message("user", prompt, imageData, mimeType);
-            String requestJson = createRequestJson(service, role, baseUrl, userMessage, stream, history != null, conversationHistory);
+            String requestJson = nativeProtocol
+                    ? createNativeRequestJson(service, role, userMessage, stream, history != null, conversationHistory)
+                    : createRequestJson(service, role, baseUrl, userMessage, stream, history != null, conversationHistory);
             if (baseUrl == null || requestJson == null) {
                 notifyErrorAndFinish(requestId, callback, 500, "Failed to create request body");
                 return;
             }
 
-            Call call = OpenAICompatClient.newChatCompletionsCall(HttpClient.INSTANCE.getLlmStreamInstance(), baseUrl, service.getKey(), requestJson);
+            Call call = nativeProtocol
+                    ? NativeChatClient.newCall(HttpClient.INSTANCE.getLlmStreamInstance(), service.getProtocol(), baseUrl, service.getKey(), service.getModel(), requestJson, stream)
+                    : OpenAICompatClient.newChatCompletionsCall(HttpClient.INSTANCE.getLlmStreamInstance(), baseUrl, service.getKey(), requestJson);
             if (call == null) {
                 notifyErrorAndFinish(requestId, callback, 500, "Failed to create request");
                 return;
@@ -139,9 +144,11 @@ public class Client {
             }
 
             if (stream) {
-                streamResponse(call, requestId, history, conversationHistory, callback);
+                streamResponse(call, service.getProtocol(), nativeProtocol, requestId, history, conversationHistory, callback);
             } else {
-                OpenAICompatClient.LlmResponse<String> response = OpenAICompatClient.executeChatCompletions(call);
+                OpenAICompatClient.LlmResponse<String> response = nativeProtocol
+                        ? NativeChatClient.execute(call, service.getProtocol())
+                        : OpenAICompatClient.executeChatCompletions(call);
                 if (!activeRequests.containsKey(requestId)) return;
                 if (response.isSuccess()) {
                     String content = ReasoningContentFilter.stripReasoningMarkup(response.data());
@@ -165,9 +172,10 @@ public class Client {
         }
     }
 
-    private void streamResponse(Call call, String requestId, AiConfig.HistorySnapshot history,
+    private void streamResponse(Call call, int protocol, boolean nativeProtocol, String requestId,
+                                AiConfig.HistorySnapshot history,
                                 ArrayList<Message> conversationHistory, GenerationCallback callback) {
-        OpenAICompatClient.streamChatCompletions(call, STREAM_SYMBOLS_LIMIT, new OpenAICompatClient.StreamCallback() {
+        OpenAICompatClient.StreamCallback streamCallback = new OpenAICompatClient.StreamCallback() {
             @Override
             public void onChunk(String chunk) {
                 sendStreamChunk(requestId, chunk, callback);
@@ -197,7 +205,131 @@ public class Client {
                 FileLog.e("AI Stream Error: " + error);
                 notifyErrorAndFinish(requestId, callback, code != 0 ? code : 500, error);
             }
-        });
+        };
+        if (nativeProtocol) {
+            NativeChatClient.stream(call, protocol, STREAM_SYMBOLS_LIMIT, streamCallback);
+        } else {
+            OpenAICompatClient.streamChatCompletions(call, STREAM_SYMBOLS_LIMIT, streamCallback);
+        }
+    }
+
+
+    private static boolean isNativeProtocol(Service service) {
+        int protocol = service.getProtocol();
+        return protocol == Service.PROTOCOL_CLAUDE || protocol == Service.PROTOCOL_GEMINI;
+    }
+
+    /**
+     * Native endpoints are addressed as they were entered: the OpenAI compatibility rewrite of
+     * the Google host must not apply here, and the version segment stays part of the base URL.
+     */
+    public static String resolveNativeBaseUrl(Service service) {
+        String url = service.getUrl();
+        if (TextUtils.isEmpty(url)) return null;
+        String trimmed = url.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        // The Google preset points at the OpenAI compatible surface; the native surface is its parent.
+        if (service.getProtocol() == Service.PROTOCOL_GEMINI && trimmed.endsWith("/openai")) {
+            trimmed = trimmed.substring(0, trimmed.length() - "/openai".length());
+        }
+        String normalized = LlmUrlNormalizer.normalizeBaseUrl(trimmed);
+        return TextUtils.isEmpty(normalized) ? null : normalized;
+    }
+
+    private String createNativeRequestJson(Service service, Role selectedRole, Message userMessage,
+                                           boolean stream, boolean useHistory,
+                                           ArrayList<Message> conversationHistory) {
+        try {
+            JSONObject json = new JSONObject();
+            String model = service.getModel();
+
+            if (service.getProtocol() == Service.PROTOCOL_CLAUDE) {
+                if (selectedRole != null && !TextUtils.isEmpty(selectedRole.getPrompt())) {
+                    json.put("system", selectedRole.getPrompt());
+                }
+                JSONArray messages = new JSONArray();
+                if (useHistory) {
+                    for (Message msg : conversationHistory) {
+                        messages.put(createNativeMessageObject(msg));
+                    }
+                    conversationHistory.add(userMessage);
+                }
+                messages.put(createNativeMessageObject(userMessage));
+                json.put("messages", messages);
+                json.put("model", model);
+                json.put("max_tokens", 4096);
+                if (stream) {
+                    json.put("stream", true);
+                }
+                if (LlmModelUtil.supportsTemperature(model)) {
+                    json.put("temperature", temperatureOverride != null ? temperatureOverride : AiConfig.temperature / 10.0f);
+                }
+                return json.toString();
+            }
+
+            JSONArray contents = new JSONArray();
+            if (useHistory) {
+                for (Message msg : conversationHistory) {
+                    contents.put(createGeminiContentObject(msg));
+                }
+                conversationHistory.add(userMessage);
+            }
+            contents.put(createGeminiContentObject(userMessage));
+            json.put("contents", contents);
+            if (selectedRole != null && !TextUtils.isEmpty(selectedRole.getPrompt())) {
+                json.put("systemInstruction", new JSONObject()
+                        .put("parts", new JSONArray().put(new JSONObject().put("text", selectedRole.getPrompt()))));
+            }
+            JSONObject generationConfig = new JSONObject();
+            if (LlmModelUtil.supportsTemperature(model)) {
+                generationConfig.put("temperature", temperatureOverride != null ? temperatureOverride : AiConfig.temperature / 10.0f);
+            }
+            generationConfig.put("maxOutputTokens", 4096);
+            json.put("generationConfig", generationConfig);
+            return json.toString();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
+
+    private JSONObject createNativeMessageObject(Message message) throws JSONException {
+        JSONObject obj = new JSONObject();
+        obj.put("role", "assistant".equals(message.role()) ? "assistant" : "user");
+        if (message.getImageData() != null && !TextUtils.isEmpty(message.getMimeType())) {
+            JSONArray content = new JSONArray();
+            content.put(new JSONObject()
+                    .put("type", "image")
+                    .put("source", new JSONObject()
+                            .put("type", "base64")
+                            .put("media_type", message.getMimeType())
+                            .put("data", Base64.encodeToString(message.getImageData(), Base64.NO_WRAP))));
+            if (!TextUtils.isEmpty(message.content())) {
+                content.put(new JSONObject().put("type", "text").put("text", message.content()));
+            }
+            obj.put("content", content);
+        } else {
+            obj.put("content", message.content());
+        }
+        return obj;
+    }
+
+    private JSONObject createGeminiContentObject(Message message) throws JSONException {
+        JSONArray parts = new JSONArray();
+        if (!TextUtils.isEmpty(message.content())) {
+            parts.put(new JSONObject().put("text", message.content()));
+        }
+        if (message.getImageData() != null && !TextUtils.isEmpty(message.getMimeType())) {
+            parts.put(new JSONObject()
+                    .put("inlineData", new JSONObject()
+                            .put("mimeType", message.getMimeType())
+                            .put("data", Base64.encodeToString(message.getImageData(), Base64.NO_WRAP))));
+        }
+        return new JSONObject()
+                .put("role", "assistant".equals(message.role()) ? "model" : "user")
+                .put("parts", parts);
     }
 
 

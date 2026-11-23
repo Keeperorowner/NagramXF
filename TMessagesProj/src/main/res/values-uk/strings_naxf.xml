@@ -175,6 +175,7 @@
     <!-- AI Chat -->
     <string name="AIChat">ШІ-чат</string>
     <string name="AIChatInfo">Налаштування сервісів, ролей та історії</string>
+<string name="AIChatInfo2">Створюйте текст із повідомлень або готуйте чернетки перед надсиланням.</string>
     <string name="AIChatServices">Сервіси</string>
     <string name="AIChatUseLlmProvider">Провайдер ШІ-перекладача</string>
     <string name="AIChatRoles">Ролі</string>
@@ -204,10 +205,12 @@
     <string name="AIChatReasoning">Режим міркування</string>
     <string name="AIChatReasoningInfo">Увімкнути розширене мислення для моделей міркування (o1, o3, Gemini Thinking тощо)</string>
     <string name="AIChatTemperature">Температура</string>
+<string name="AIChatTemperatureInfo">Вищі значення роблять відповіді різноманітнішими, нижчі — точнішими.</string>
     <string name="AIChatAddRole">Додати роль</string>
-    <string name="AIChatRolesInfo">Ролі визначають характер і поведінку ШІ.</string>
-    <string name="AIChatSuggestedRoles">Рекомендовані</string>
+    <string name="AIChatRolesInfo">Створюйте ролі під свої потреби!</string>
+    <string name="AIChatSuggestedRoles">Пропозиції</string>
     <string name="AIChatCustomRoles">Власні</string>
+    <string name="AIChatDeleteRoleInfo">Видалити «%1$s»? Її промпт буде видалено.</string>
     <string name="AIChatNewRole">Нова роль</string>
     <string name="AIChatEditRole">Змінити роль</string>
     <string name="AIChatRoleName">Ім’я</string>
@@ -311,5 +314,10 @@
     <string name="AIFeaturesSummaries">Підсумки</string>
     <string name="AIReplaceTelegramEditorInfo">Переклад, переписування та вичитування чернеток через ваш AI-сервіс</string>
     <string name="AIReplaceTelegramSummariesInfo">Стислий виклад довгих повідомлень і постів через ваш AI-сервіс</string>
+<string name="AIReplaceTelegramInfo">Вибрані функції використовують ваш AI-сервіс замість серверів Telegram, без обмежень Premium.</string>
+<string name="AIGeneration">Генерація ШІ</string>
     <string name="AIChatHistoryEmpty">Збережених повідомлень ще немає</string>
+    <string name="AIChatProtocolOpenAi">Сумісно з OpenAI</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

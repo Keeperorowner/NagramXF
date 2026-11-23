@@ -242,6 +242,7 @@
     <!-- AI Chat -->
     <string name="AIChat">AI 聊天</string>
     <string name="AIChatInfo">設定服務、角色與歷史記錄</string>
+<string name="AIChatInfo2">根據訊息生成文字，或在傳送前生成內容。</string>
     <string name="AIChatServices">服務</string>
     <string name="AIChatUseLlmProvider">與 AI 翻譯共用服務商</string>
     <string name="AIChatRoles">角色</string>
@@ -273,11 +274,13 @@
     <string name="AIChatReasoning">推理模式</string>
     <string name="AIChatReasoningInfo">為推理模型啟用延伸思考（o1、o3、Gemini Thinking 等）</string>
     <string name="AIChatTemperature">溫度</string>
+<string name="AIChatTemperatureInfo">數值越高，回覆越多元；數值越低，回覆越集中。</string>
     <string name="AIChatAddRole">新增角色</string>
     <string name="AIChatAddRoleHint">點擊新增自訂角色</string>
-    <string name="AIChatRolesInfo">角色定義 AI 的個性與行為。</string>
-    <string name="AIChatSuggestedRoles">推薦</string>
+    <string name="AIChatRolesInfo">根據您的需求建立角色！</string>
+    <string name="AIChatSuggestedRoles">建議</string>
     <string name="AIChatCustomRoles">自訂</string>
+    <string name="AIChatDeleteRoleInfo">刪除“%1$s”？它的提示詞將被刪除。</string>
     <string name="AIChatNewRole">新建角色</string>
     <string name="AIChatEditRole">編輯角色</string>
     <string name="AIChatRoleName">名稱</string>
@@ -381,7 +384,13 @@
     <string name="AIFeaturesSummaries">摘要</string>
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服務翻譯、改寫和校對草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服務生成長訊息和貼文的摘要</string>
+<string name="AIReplaceTelegramInfo">選定的功能使用您的 AI 服務而非 Telegram 伺服器，沒有 Premium 限制。</string>
+<string name="AIGeneration">AI 生成</string>
     <string name="AIChatHistoryEmpty">還沒有儲存的對話</string>
     <string name="NavigationDrawerProxyPingShort">延遲 %1$d ms</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 相容</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

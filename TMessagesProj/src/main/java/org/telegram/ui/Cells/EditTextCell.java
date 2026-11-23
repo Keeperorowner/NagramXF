@@ -98,6 +98,13 @@ public class EditTextCell extends FrameLayout implements Theme.Colorable {
         updateLimitText();
     }
 
+    /** Applies a new character budget to an already built cell. */
+    public void setMaxLength(int maxLength) {
+        this.maxLength = maxLength;
+        editText.setPadding(dp(21), dp(15), dp((maxLength > 0 ? 42 : 0) + 21), dp(15));
+        updateLimitText();
+    }
+
     private void updateLimitText() {
         if (editText == null) return;
         limitCount = maxLength - getText().length();

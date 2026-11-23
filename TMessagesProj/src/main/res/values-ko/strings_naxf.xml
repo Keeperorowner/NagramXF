@@ -169,6 +169,7 @@
     <!-- AI Chat -->
     <string name="AIChat">AI 채팅</string>
     <string name="AIChatInfo">서비스, 역할 및 기록 설정</string>
+<string name="AIChatInfo2">메시지에서 텍스트를 생성하거나 보내기 전에 내용을 작성합니다.</string>
     <string name="AIChatServices">서비스</string>
     <string name="AIChatUseLlmProvider">AI 번역 제공자 사용</string>
     <string name="AIChatRoles">역할</string>
@@ -198,10 +199,12 @@
     <string name="AIChatReasoning">추론 모드</string>
     <string name="AIChatReasoningInfo">추론 모델(o1, o3, Gemini Thinking 등)의 확장 사고 기능을 활성화합니다.</string>
     <string name="AIChatTemperature">온도</string>
+<string name="AIChatTemperatureInfo">값이 높을수록 응답이 다양해지고, 낮을수록 더 집중됩니다.</string>
     <string name="AIChatAddRole">역할 추가</string>
-    <string name="AIChatRolesInfo">역할은 AI의 성격과 동작을 정의합니다.</string>
-    <string name="AIChatSuggestedRoles">추천</string>
+    <string name="AIChatRolesInfo">필요에 맞는 역할을 만들어 보세요!</string>
+    <string name="AIChatSuggestedRoles">제안</string>
     <string name="AIChatCustomRoles">사용자 지정</string>
+    <string name="AIChatDeleteRoleInfo">“%1$s”을(를) 삭제하시겠습니까? 프롬프트도 삭제됩니다.</string>
     <string name="AIChatNewRole">새 역할</string>
     <string name="AIChatEditRole">역할 편집</string>
     <string name="AIChatRoleName">이름</string>
@@ -305,7 +308,13 @@
     <string name="AIFeaturesSummaries">요약</string>
     <string name="AIReplaceTelegramEditorInfo">자신의 AI 서비스로 초안을 번역, 재작성, 교정합니다</string>
     <string name="AIReplaceTelegramSummariesInfo">자신의 AI 서비스로 긴 메시지와 게시물을 요약합니다</string>
+<string name="AIReplaceTelegramInfo">선택한 기능은 Telegram 서버 대신 사용자의 AI 서비스를 사용하며, Premium 제한이 없습니다.</string>
+<string name="AIGeneration">AI 생성</string>
     <string name="AIChatHistoryEmpty">저장된 대화가 없습니다</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 호환</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

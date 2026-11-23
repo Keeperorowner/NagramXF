@@ -175,6 +175,7 @@
     <!-- AI Chat -->
     <string name="AIChat">AI Chat</string>
     <string name="AIChatInfo">Setup Services, Roles, and History</string>
+<string name="AIChatInfo2">Generate text from messages, or draft content before sending.</string>
     <string name="AIChatServices">Services</string>
     <string name="AIChatUseLlmProvider">Use AI Translator Provider</string>
     <string name="AIChatRoles">Roles</string>
@@ -204,10 +205,12 @@
     <string name="AIChatReasoning">Reasoning Mode</string>
     <string name="AIChatReasoningInfo">Enable extended thinking for reasoning models (o1, o3, Gemini Thinking, etc.)</string>
     <string name="AIChatTemperature">Temperature</string>
+<string name="AIChatTemperatureInfo">Higher values make replies more varied, lower values keep them focused.</string>
     <string name="AIChatAddRole">Add Role</string>
-    <string name="AIChatRolesInfo">Roles define the AI personality and behavior.</string>
-    <string name="AIChatSuggestedRoles">Suggested</string>
+    <string name="AIChatRolesInfo">Create roles for your specific needs!</string>
+    <string name="AIChatSuggestedRoles">Suggestions</string>
     <string name="AIChatCustomRoles">Custom</string>
+    <string name="AIChatDeleteRoleInfo">Delete “%1$s”? Its prompt will be removed.</string>
     <string name="AIChatNewRole">New Role</string>
     <string name="AIChatEditRole">Edit Role</string>
     <string name="AIChatRoleName">Name</string>
@@ -311,5 +314,10 @@
     <string name="AIFeaturesSummaries">Summaries</string>
     <string name="AIReplaceTelegramEditorInfo">Translate, restyle and proofread drafts with your AI service</string>
     <string name="AIReplaceTelegramSummariesInfo">Summarize long messages and posts with your AI service</string>
+<string name="AIReplaceTelegramInfo">Selected features use your AI service instead of Telegram servers, with no Premium limits.</string>
+<string name="AIGeneration">AI Generation</string>
     <string name="AIChatHistoryEmpty">No saved messages yet</string>
+    <string name="AIChatProtocolOpenAi">OpenAI compatible</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

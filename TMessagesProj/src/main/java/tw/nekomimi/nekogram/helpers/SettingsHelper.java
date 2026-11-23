@@ -202,7 +202,6 @@ public class SettingsHelper {
                 new GhostModeActivity(),
                 new MainTabsCustomizeActivity(),
                 new RegexFiltersSettingActivity(),
-                new AiPreferencesActivity(),
         };
         final int topPageCount = 7;
 
@@ -230,6 +229,9 @@ public class SettingsHelper {
                 }
             }
         }
+        items.add(new SettingsSearchResult(searchGuid(AiPreferencesActivity.class, "", 0),
+                getString(R.string.AIChat), n_title, null, R.drawable.ai_chat,
+                () -> callback.presentFragment(new AiPreferencesActivity())));
         addSearchRow(items, callback, SidebarMenuActivity::new, SidebarMenuActivity.class,
                 R.string.DrawerElements, R.string.HomeDrawer, "navigationDrawerEnabled", R.drawable.menu_newfilter);
         addSearchRow(items, callback, PillStackPreferencesActivity::new, PillStackPreferencesActivity.class,

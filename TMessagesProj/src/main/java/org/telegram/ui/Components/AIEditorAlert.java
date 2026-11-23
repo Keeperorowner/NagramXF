@@ -1983,6 +1983,12 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
 
         private Long emoji_id;
 
+        /** When set the editor works on a locally stored role instead of a server side AI style. */
+        private boolean localMode;
+        private boolean localEditing;
+        private boolean localPreview;
+        private Utilities.Callback3Return<String, String, Long, Boolean> onLocalSaved;
+
         private SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow selectAnimatedEmojiDialog;
 
         public CreateAiStyleAlert(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -2131,14 +2137,30 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             button.setText(getString(R.string.AIEditorStyleCreate));
             button.setOnClickListener(v -> {
                 if (button.isLoading()) return;
+                if (localPreview) return;
                 if (!button.isEnabled()) {
-                    if (emoji_id == null) {
-                        openIconDialog();
+                    if (localMode || emoji_id != null) {
+                        return;
                     }
+                    openIconDialog();
                     return;
                 }
 
                 button.setLoading(true);
+                if (localMode) {
+                    boolean saved = true;
+                    if (onLocalSaved != null && !onLocalSaved.run(titleCell.getText().toString(), promptCell.getText().toString(), emoji_id)) {
+                        saved = false;
+                    }
+                    button.setLoading(false);
+                    if (saved) {
+                        dismiss();
+                    } else {
+                        titleCell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        AndroidUtilities.shakeView(titleCell);
+                    }
+                    return;
+                }
                 if (editing != null) {
                     final TL_aicompose.updateTone req = new TL_aicompose.updateTone();
                     req.flags |= TLObject.FLAG_0;
@@ -2194,7 +2216,7 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         }
 
         private void openIconDialog() {
-            if (selectAnimatedEmojiDialog != null) {
+            if (localPreview || selectAnimatedEmojiDialog != null) {
                 return;
             }
             final SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[] popup = new SelectAnimatedEmojiDialog.SelectAnimatedEmojiDialogWindow[1];
@@ -2263,6 +2285,56 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             return this;
         }
 
+        /**
+         * Switches the sheet into local role editing. The callback receives the edited name,
+         * prompt and emoji and returns whether the caller accepted the change.
+         */
+        public CreateAiStyleAlert setLocalStyle(String name, String prompt, long emoji, boolean isEditing, int maxNameLength, int maxPromptLength, Utilities.Callback3Return<String, String, Long, Boolean> onSave) {
+            localMode = true;
+            localEditing = isEditing;
+            localPreview = false;
+            onLocalSaved = onSave;
+            emoji_id = emoji != 0 ? emoji : null;
+            updateIcon();
+
+            titleCell.setMaxLength(maxNameLength);
+            titleCell.editText.setHint(getString(R.string.AIChatRoleName));
+            titleCell.setText(name);
+
+            promptCell.setMaxLength(maxPromptLength);
+            promptCell.setShowLimitWhenNear(Math.max(100, maxPromptLength / 2));
+            promptCell.editText.setHint(getString(R.string.AIChatRolePrompt));
+            promptCell.setText(prompt);
+
+            actionBar.setTitle(getString(isEditing ? R.string.AIChatEditRole : R.string.AIChatNewRole));
+            button.setText(getString(isEditing ? R.string.AIEditorStyleEdit : R.string.AIEditorStyleCreate));
+
+            updateButton();
+            adapter.update(false);
+            return this;
+        }
+
+        /** Read only variant of {@link #setLocalStyle} used to preview a suggested role. */
+        public CreateAiStyleAlert setLocalStylePreview(String name, String prompt, long emoji, int maxNameLength, int maxPromptLength) {
+            setLocalStyle(name, prompt, emoji, false, maxNameLength, maxPromptLength, null);
+            localPreview = true;
+            iconButton.setEnabled(false);
+            titleCell.editText.setFocusable(false);
+            titleCell.editText.setFocusableInTouchMode(false);
+            titleCell.editText.setCursorVisible(false);
+            promptCell.editText.setFocusable(false);
+            promptCell.editText.setFocusableInTouchMode(false);
+            promptCell.editText.setCursorVisible(false);
+            promptCell.editText.setMaxLines(Integer.MAX_VALUE);
+            final int padding = backgroundPaddingLeft;
+            recyclerListView.setPadding(padding, 0, padding, dp(6));
+            buttonContainer.setVisibility(View.GONE);
+            actionBar.setTitle(getString(R.string.Info));
+            updateButton();
+            adapter.update(false);
+            return this;
+        }
+
         private Utilities.Callback<TL_aicompose.AiComposeTone> onToneEdited;
         public CreateAiStyleAlert setOnToneEdited(Utilities.Callback<TL_aicompose.AiComposeTone> listener) {
             this.onToneEdited = listener;
@@ -2284,8 +2356,12 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         }
 
         private void updateButton() {
+            if (localPreview) {
+                button.setEnabled(false);
+                return;
+            }
             button.setEnabled(
-                emoji_id != null &&
+                (localMode || emoji_id != null) &&
                 titleCell.getText().length() > 0 &&
                 promptCell.getText().length() > 0
             );
@@ -2307,15 +2383,21 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
             items.add(UItem.asShadow(null));
             items.add(UItem.asCustom(promptCell));
             items.add(UItem.asShadow(null));
-            if (editing != null) {
+            if (editing != null && !localMode) {
                 items.add(UItem.asButton(1, getString(R.string.AIEditorDeleteStyle)).red());
                 items.add(UItem.asShadow(null));
+            }
+            if (localMode) {
+                return;
             }
             items.add(UItem.asCustomShadow(checkboxCell));
         }
 
         @Override
         protected CharSequence getTitle() {
+            if (localMode) {
+                return getString(localEditing ? R.string.AIChatEditRole : R.string.AIChatNewRole);
+            }
             return editing != null ? getString(R.string.AIEditorEditStyle) : getString(R.string.AIEditorNewStyle);
         }
 

@@ -228,6 +228,7 @@
     <!-- AI Chat -->
     <string name="AIChat">ИИ-чат</string>
     <string name="AIChatInfo">Настройка сервисов, ролей и истории</string>
+<string name="AIChatInfo2">Создавайте текст из сообщений или готовьте черновики перед отправкой.</string>
     <string name="AIChatServices">Сервисы</string>
     <string name="AIChatUseLlmProvider">Провайдер ИИ-переводчика</string>
     <string name="AIChatRoles">Роли</string>
@@ -259,11 +260,13 @@
     <string name="AIChatReasoning">Режим рассуждения</string>
     <string name="AIChatReasoningInfo">Включить расширенное мышление для моделей рассуждения (o1, o3, Gemini Thinking и др.)</string>
     <string name="AIChatTemperature">Температура</string>
+<string name="AIChatTemperatureInfo">Более высокие значения делают ответы разнообразнее, более низкие — точнее.</string>
     <string name="AIChatAddRole">Добавить роль</string>
     <string name="AIChatAddRoleHint">Нажмите, чтобы добавить свою роль</string>
-    <string name="AIChatRolesInfo">Роли определяют характер и поведение ИИ.</string>
-    <string name="AIChatSuggestedRoles">Рекомендуемые</string>
+    <string name="AIChatRolesInfo">Создавайте роли под свои задачи!</string>
+    <string name="AIChatSuggestedRoles">Предложения</string>
     <string name="AIChatCustomRoles">Свои</string>
+    <string name="AIChatDeleteRoleInfo">Удалить «%1$s»? Её промпт будет удалён.</string>
     <string name="AIChatNewRole">Новая роль</string>
     <string name="AIChatEditRole">Изменить роль</string>
     <string name="AIChatRoleName">Имя</string>
@@ -380,8 +383,14 @@
     <string name="AIFeaturesSummaries">Сводки</string>
     <string name="AIReplaceTelegramEditorInfo">Перевод, переписывание и вычитка черновиков через ваш AI-сервис</string>
     <string name="AIReplaceTelegramSummariesInfo">Краткое изложение длинных сообщений и постов через ваш AI-сервис</string>
+<string name="AIReplaceTelegramInfo">Выбранные функции используют ваш AI-сервис вместо серверов Telegram, без ограничений Premium.</string>
+<string name="AIGeneration">Генерация ИИ</string>
     <string name="AIChatHistoryEmpty">Сохранённых сообщений пока нет</string>
     <string name="AIError502">Ошибка шлюза</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">Совместимо с OpenAI</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

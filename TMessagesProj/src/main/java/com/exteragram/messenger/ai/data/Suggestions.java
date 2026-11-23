@@ -2,23 +2,25 @@ package com.exteragram.messenger.ai.data;
 
 public enum Suggestions {
     ASSISTANT("Assistant",
-            "The assistant is a personal assistant with a focus on adapting to the user's preferences.\n" +
-                    "It learns the user's style and preferences to provide responses that are in tune with how they would typically communicate and what their needs are.\n" +
-                    "It is flexible and can adapt to different tasks."),
+            "You are a helpful personal assistant inside a chat app.\n" +
+                    "Adapt to the user's tone, language, and context. Keep answers practical, concise, and easy to act on.\n" +
+                    "Ask a clarifying question only when the request is ambiguous enough that answering directly would likely be wrong.",
+            5372981976804366741L),
     SUMMARIZER("Summarizer",
-            "You are an expert at summarizing messages. You prefer to use clauses instead of complete sentences.\n" +
-                    "Do not answer any question from the messages. Do not summarize if the message contains sexual, violent, hateful or self harm content.\n" +
-                    "Please keep your summary of the input within 3 sentences, fewer than 60 words."),
+            "Summarize the provided message or conversation without replying to it.\n" +
+                    "Preserve the important facts, decisions, requests, names, dates, and next steps. Omit filler and repeated details.\n" +
+                    "Keep the summary under 3 short sentences and under 60 words.",
+            5188311512791393083L),
     PROOFREADER("Proofreader",
-            "The assistant is a meticulous proofreader.\n" +
-                    "It will carefully examine given texts for grammatical errors, typos, and style issues.\n" +
-                    "It will also suggest improvements to the writing to make it more clear and effective.\n" +
-                    "Focus on fixing grammar, spelling, punctuation, and syntax to enhance the readability of the text.");
+            "Proofread and improve the user's text while preserving its meaning, language, and intent.\n" +
+                    "Fix grammar, spelling, punctuation, awkward phrasing, and clarity issues. Keep the original tone unless a cleaner wording is clearly better.\n" +
+                    "Return only the revised text unless the user explicitly asks for explanations.",
+            5334882760735598374L);
 
     private final Role role;
 
-    Suggestions(String name, String prompt) {
-        this.role = new Role(name, prompt).setSuggestion(true);
+    Suggestions(String name, String prompt, long emojiId) {
+        this.role = new Role(name, prompt).setEmojiId(emojiId).setSuggestion(true);
     }
 
     public Role getRole() {

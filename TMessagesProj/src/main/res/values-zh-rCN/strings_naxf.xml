@@ -166,6 +166,7 @@
     <!-- AI Chat -->
     <string name="AIChat">AI 聊天</string>
     <string name="AIChatInfo">配置服务，角色和历史记录</string>
+<string name="AIChatInfo2">根据消息生成文本，或在发送前生成内容。</string>
     <string name="AIChatServices">服务</string>
     <string name="AIChatUseLlmProvider">与 AI 翻译共用服务商</string>
     <string name="AIChatRoles">角色</string>
@@ -197,11 +198,13 @@
     <string name="AIChatReasoning">推理模式</string>
     <string name="AIChatReasoningInfo">为推理模型启用扩展思考（o1、o3、Gemini Thinking 等）</string>
     <string name="AIChatTemperature">温度</string>
+<string name="AIChatTemperatureInfo">数值越高，回复越多样；数值越低，回复越集中。</string>
     <string name="AIChatAddRole">添加角色</string>
     <string name="AIChatAddRoleHint">点击添加自定义角色</string>
-    <string name="AIChatRolesInfo">角色定义 AI 的个性和行为。</string>
-    <string name="AIChatSuggestedRoles">推荐</string>
+    <string name="AIChatRolesInfo">根据您的需求创建角色！</string>
+    <string name="AIChatSuggestedRoles">建议</string>
     <string name="AIChatCustomRoles">自定义</string>
+    <string name="AIChatDeleteRoleInfo">删除“%1$s”？它的提示词将被删除。</string>
     <string name="AIChatNewRole">新建角色</string>
     <string name="AIChatEditRole">编辑角色</string>
     <string name="AIChatRoleName">名称</string>
@@ -295,6 +298,8 @@
     <string name="AIFeaturesSummaries">摘要</string>
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服务翻译、改写和校对草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服务生成长消息和帖子的摘要</string>
+<string name="AIReplaceTelegramInfo">选定的功能使用您的 AI 服务而不是 Telegram 服务器，没有 Premium 限制。</string>
+<string name="AIGeneration">AI 生成</string>
     <string name="AIChatHistoryEmpty">还没有保存的对话</string>
     <string name="LastSeenPillAutoRefresh">自动刷新</string>
     <string name="NavigationDrawerProxyPingShort">延迟 %1$d ms</string>
@@ -303,4 +308,8 @@
     <string name="StickerShapeRounded">圆角</string>
     <string name="StickerShapeRoundedMsg">消息</string>
     <string name="WeatherPickLocationHint">轻触以在地图上选择位置</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 兼容</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

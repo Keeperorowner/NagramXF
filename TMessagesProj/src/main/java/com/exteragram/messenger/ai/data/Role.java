@@ -8,6 +8,7 @@ import java.util.Objects;
 public class Role implements Comparable<Role>, Serializable {
     private String name;
     private String prompt;
+    private long emojiId;
     private boolean isSuggestion;
 
     public Role(String name, String prompt) {
@@ -38,6 +39,15 @@ public class Role implements Comparable<Role>, Serializable {
 
     public String getPrompt() {
         return prompt;
+    }
+
+    public long getEmojiId() {
+        return emojiId;
+    }
+
+    public Role setEmojiId(long emojiId) {
+        this.emojiId = emojiId;
+        return this;
     }
 
     public boolean isSuggestion() {

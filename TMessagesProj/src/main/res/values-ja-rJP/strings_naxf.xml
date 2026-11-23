@@ -230,6 +230,7 @@
     <!-- AI Chat -->
     <string name="AIChat">AI チャット</string>
     <string name="AIChatInfo">サービス、ロール、履歴を設定</string>
+<string name="AIChatInfo2">メッセージからテキストを生成したり、送信前に内容を作成したりします。</string>
     <string name="AIChatServices">サービス</string>
     <string name="AIChatUseLlmProvider">AI 翻訳のプロバイダーを使用</string>
     <string name="AIChatRoles">ロール</string>
@@ -261,11 +262,13 @@
     <string name="AIChatReasoning">推論モード</string>
     <string name="AIChatReasoningInfo">推論モデルの拡張思考を有効にする（o1、o3、Gemini Thinking など）</string>
     <string name="AIChatTemperature">温度</string>
+<string name="AIChatTemperatureInfo">値が高いほど応答は多様になり、低いほど焦点が絞られます。</string>
     <string name="AIChatAddRole">ロールを追加</string>
     <string name="AIChatAddRoleHint">タップしてカスタムロールを追加</string>
-    <string name="AIChatRolesInfo">ロールは AI の性格と動作を定義します。</string>
-    <string name="AIChatSuggestedRoles">おすすめ</string>
+    <string name="AIChatRolesInfo">ニーズに合わせてロールを作成しましょう！</string>
+    <string name="AIChatSuggestedRoles">候補</string>
     <string name="AIChatCustomRoles">カスタム</string>
+    <string name="AIChatDeleteRoleInfo">「%1$s」を削除しますか？プロンプトも削除されます。</string>
     <string name="AIChatNewRole">新規ロール</string>
     <string name="AIChatEditRole">ロールを編集</string>
     <string name="AIChatRoleName">名前</string>
@@ -380,8 +383,14 @@
     <string name="AIFeaturesSummaries">要約</string>
     <string name="AIReplaceTelegramEditorInfo">自分の AI サービスで下書きを翻訳・書き換え・校正します</string>
     <string name="AIReplaceTelegramSummariesInfo">自分の AI サービスで長いメッセージや投稿を要約します</string>
+<string name="AIReplaceTelegramInfo">選択した機能は Telegram のサーバーではなく、あなたの AI サービスを使用します。Premium の制限はありません。</string>
+<string name="AIGeneration">AI 生成</string>
     <string name="AIChatHistoryEmpty">保存された会話はまだありません</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="NavigationDrawerProxyPingShort">ピング %1$d ms</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 互換</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>
