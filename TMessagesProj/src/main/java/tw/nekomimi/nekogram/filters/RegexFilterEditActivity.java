@@ -281,6 +281,8 @@ public class RegexFilterEditActivity extends BaseFragment {
 
     private CheckBoxCell createOptionCell(Context context, CharSequence text, boolean checked, boolean divider, View.OnClickListener listener) {
         CheckBoxCell cell = new CheckBoxCell(context, CheckBoxCell.TYPE_CHECK_BOX_DEFAULT, getResourceProvider());
+        // the options are a plain list: no section card behind them
+        cell.setTag(RecyclerListView.TAG_NOT_SECTION);
         cell.setBackgroundDrawable(Theme.getSelectorDrawable(false));
         cell.setText(text, null, checked, divider);
         int leftPadding = dp(LocaleController.isRTL ? 16 : 8);
