@@ -40,8 +40,6 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
 
-import xyz.nextalone.nagram.NaConfig;
-
 public class ProfileMusicView extends View {
 
     private final Theme.ResourcesProvider resourcesProvider;
@@ -129,10 +127,6 @@ public class ProfileMusicView extends View {
     // Same color as ProfileActionsView buttons.
     public void setButtonColor(int color, boolean hasColorById) {
         if (trailingView != null) trailingView.setButtonColor(color, hasColorById);
-        if (!hasColorById && NaConfig.INSTANCE.getDisableAvatarBlur().Bool()
-                && AndroidUtilities.computePerceivedBrightness(Theme.getColor(Theme.key_actionBarDefault, resourcesProvider)) > .8f) {
-            color = Theme.multAlpha(Theme.getColor(Theme.getActiveTheme().isMonet() ? Theme.key_chat_botKeyboardButtonBackground : Theme.key_windowBackgroundWhiteBlueText, resourcesProvider), .15f * 3);
-        }
         if (buttonColor == color && this.hasColorById == hasColorById) return;
         buttonColor = color;
         this.hasColorById = hasColorById;
