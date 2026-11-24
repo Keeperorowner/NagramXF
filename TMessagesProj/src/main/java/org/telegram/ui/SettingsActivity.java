@@ -721,11 +721,19 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         if (avatarGooey == null || searchItem != null && searchItem.isSearchFieldVisible2() || avatarHideShown <= 0 || avatarHideShown >= 1) {
             return;
         }
-        if (avatarHideShown >= 0.5f) {
-            listView.smoothScrollBy(0, (int) -(avatarShownY - avatarListY), CubicBezierInterpolator.EASE_OUT_QUINT);
-        } else {
-            listView.smoothScrollBy(0, (int) Math.ceil(avatarListY - avatarHiddenY), CubicBezierInterpolator.EASE_OUT_QUINT);
+        // at the end of the list there is nothing to snap to: scrolling would either not move at all,
+        // which leaves the avatar half hidden and repeats on every idle, or pull the list away from
+        // the position the user scrolled to
+        if (!listView.canScrollVertically(1)) {
+            return;
         }
+        final int dy = avatarHideShown >= 0.5f
+                ? (int) Math.ceil(avatarListY - avatarShownY)
+                : (int) Math.ceil(avatarListY - avatarHiddenY);
+        if (dy == 0) {
+            return;
+        }
+        listView.smoothScrollBy(0, dy, CubicBezierInterpolator.EASE_OUT_QUINT);
     }
 
     /** Top of the list item holding {@code view}, in the list. */

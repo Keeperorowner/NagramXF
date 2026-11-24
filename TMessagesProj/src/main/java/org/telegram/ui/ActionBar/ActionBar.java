@@ -2598,10 +2598,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 final int widthDefault = rightDefault - leftDefault;
                 final int left, right;
                 if (chatAvatarContainer != null && !chatAvatarContainer.useSeparateAvatarPill()) {
-                    final int width = chatTitlePillLeftAligned
-                            ? Math.max(0, widthDefault - p * 2)
-                            : lerp(Math.min(widthDefault, (int) animatorAvatarContainerWidth.getFactor() + p * 2), widthDefault, Math.max(searchFactor, actionModeFactor));
-                    left = chatTitlePillLeftAligned ? leftDefault : (rightDefault + leftDefault - width) / 2;
+                    // the pill spans the header from the back button to the menu: a short name keeps
+                    // the full width instead of shrinking the pill into a chip around its text
+                    final int width = chatTitlePillLeftAligned ? Math.max(0, widthDefault - p * 2) : widthDefault;
+                    left = leftDefault;
                     right = left + width;
 
                     final float translationX = left
