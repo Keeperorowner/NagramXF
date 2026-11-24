@@ -704,6 +704,29 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
     private boolean isCenterTitle;
 
+    private boolean forceLeftTitle;
+
+    /**
+     * Keeps the title on the left even when the centered title setting is on. Bottom sheets opt out
+     * of the setting, their header is a sheet title rather than a chat title.
+     */
+    public void setForceLeftTitle(boolean value) {
+        if (forceLeftTitle == value) {
+            return;
+        }
+        forceLeftTitle = value;
+        for (SimpleTextView title : titleTextView) {
+            if (title != null) {
+                title.setGravity(isCentered() || isCenterTitle || centerTitleAndGlass ? Gravity.CENTER : Gravity.LEFT | Gravity.CENTER_VERTICAL);
+            }
+        }
+        if (subtitleTextView != null) {
+            subtitleTextView.setGravity(isCentered() ? Gravity.CENTER : Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        }
+        requestLayout();
+        invalidate();
+    }
+
     public void centerTitle() {
         isCenterTitle = true;
         if (titleTextView != null) {
@@ -2918,7 +2941,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     private boolean isCentered() {
-        return NaConfig.INSTANCE.getCenterActionBarTitle().Bool();
+        return !forceLeftTitle && NaConfig.INSTANCE.getCenterActionBarTitle().Bool();
     }
 
     // --- Spring Animation ---

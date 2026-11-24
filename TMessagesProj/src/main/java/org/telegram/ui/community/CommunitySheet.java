@@ -736,6 +736,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
 
 
             actionBar = new ActionBar(context, resourcesProvider);
+            // a sheet header keeps its title on the leading edge, the centered title setting is
+            // meant for chat and page headers
+            actionBar.setForceLeftTitle(true);
             actionBar.setOccupyStatusBar(false);
             ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, CommunitySheet.this.resourcesProvider);
             ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, CommunitySheet.this.resourcesProvider, false);
@@ -868,6 +871,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             contentView.addView(chatsPageFadeView, LayoutHelper.createFrameMatchParent());
 
             actionBar = new ActionBar(context, resourcesProvider);
+            // a sheet header keeps its title on the leading edge, the centered title setting is
+            // meant for chat and page headers
+            actionBar.setForceLeftTitle(true);
             actionBar.setOccupyStatusBar(false);
             ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, CommunitySheet.this.resourcesProvider);
             ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, CommunitySheet.this.resourcesProvider, false);
@@ -949,6 +955,9 @@ public class CommunitySheet extends BottomSheet implements NotificationCenter.No
             contentView.addView(listView, 0, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
             actionBar = new ActionBar(context, resourcesProvider);
+            // a sheet header keeps its title on the leading edge, the centered title setting is
+            // meant for chat and page headers
+            actionBar.setForceLeftTitle(true);
             actionBar.setOccupyStatusBar(false);
             ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, CommunitySheet.this.resourcesProvider);
             ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, CommunitySheet.this.resourcesProvider, false);

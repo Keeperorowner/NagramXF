@@ -1006,6 +1006,9 @@ public class PollVotesAlert extends BottomSheet {
                 containerView.invalidate();
             }
         };
+        // a sheet header keeps its title on the leading edge, the centered title setting is
+        // meant for chat and page headers
+        actionBar.setForceLeftTitle(true);
         ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         ThemeBind.actionBarItemsColor(actionBar, Theme.key_dialogTextBlack, false);

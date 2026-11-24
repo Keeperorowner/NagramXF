@@ -486,6 +486,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                     return super.dispatchTouchEvent(ev);
                 }
             };
+            // the sheet header keeps its title on the left, the centered title setting is meant
+            // for chat and page headers
+            actionBar.setForceLeftTitle(true);
             ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground, resourcesProvider);
             ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, resourcesProvider, false);
@@ -701,6 +704,7 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
     }
 
     protected boolean centerTitle;
+
     private boolean restore;
     protected void preDrawInternal(Canvas canvas, View parent) {
         restore = false;
