@@ -96,8 +96,6 @@ import org.telegram.ui.Stories.recorder.ButtonWithCounterView;
 import org.telegram.ui.Stories.recorder.HintView2;
 
 import java.util.ArrayList;
-
-import xyz.nextalone.nagram.NaConfig;
 import java.util.HashSet;
 
 public class AIEditorAlert extends BottomSheetWithRecyclerListView implements NotificationCenter.NotificationCenterDelegate {
@@ -661,19 +659,6 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
         closeView.setAlpha(1.0f - alpha);
         closeView.setScaleX(lerp(0.6f, 1.0f, 1.0f - alpha));
         closeView.setScaleY(lerp(0.6f, 1.0f, 1.0f - alpha));
-    }
-
-    @Override
-    protected void onPreDraw(Canvas canvas, int top, float progressToFullView) {
-        super.onPreDraw(canvas, top, progressToFullView);
-        if (!NaConfig.INSTANCE.getCenterActionBarTitle().Bool() || NaConfig.INSTANCE.getCenterActionBarTitleType().Int() == 3) {
-            return;
-        }
-        final SimpleTextView titleTextView = actionBar.getTitleTextView();
-        if (titleTextView == null) {
-            return;
-        }
-        titleTextView.setTranslationX((actionBar.getMeasuredWidth() - titleTextView.getMeasuredWidth()) / 2f - titleTextView.getLeft());
     }
 
     public static CharSequence copy(CharSequence c) {
