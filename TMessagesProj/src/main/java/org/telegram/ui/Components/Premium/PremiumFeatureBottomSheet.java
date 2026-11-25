@@ -612,6 +612,9 @@ public class PremiumFeatureBottomSheet extends BottomSheet implements Notificati
                 updateStatusBar();
             }
         };
+        // a sheet header keeps its title on the leading edge, the centered title setting is
+        // meant for chat and page headers
+        actionBar.setForceLeftTitle(true);
         ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground, resourcesProvider);
         ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, resourcesProvider, false);

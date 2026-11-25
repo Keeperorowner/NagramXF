@@ -706,6 +706,9 @@ public class BotWebViewAttachedSheet implements NotificationCenter.NotificationC
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
         };
+        // a sheet header keeps its title on the leading edge, the centered title setting is
+        // meant for chat and page headers
+        actionBar.setForceLeftTitle(true);
         actionBar.setBackgroundColor(Color.TRANSPARENT);
         actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
         backDrawable.setAnimationTime(200.0f);

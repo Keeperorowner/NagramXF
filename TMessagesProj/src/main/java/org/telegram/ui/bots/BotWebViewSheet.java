@@ -941,6 +941,9 @@ public class BotWebViewSheet extends Dialog implements NotificationCenter.Notifi
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
         };
+        // a sheet header keeps its title on the leading edge, the centered title setting is
+        // meant for chat and page headers
+        actionBar.setForceLeftTitle(true);
         actionBar.setBackgroundColor(Color.TRANSPARENT);
         actionBar.setBackButtonImage(R.drawable.ic_close_white);
         updateActionBarColors();
