@@ -495,6 +495,7 @@ object BaseIconPacks {
             put(R.drawable.msg_topic_create, R.drawable.msg_topic_create_solar)
             put(R.drawable.msg_topics, R.drawable.msg_topics_solar)
             put(R.drawable.msg_translate, R.drawable.msg_translate_solar)
+            put(R.drawable.msg_translate_12, R.drawable.msg_translate_12_solar)
             put(R.drawable.ic_translate, R.drawable.msg_translate_solar)
             put(R.drawable.msg_unarchive, R.drawable.msg_unarchive_solar)
             put(R.drawable.msg_unfave, R.drawable.msg_unfave_solar)
