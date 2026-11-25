@@ -47,9 +47,6 @@ public class BuildVars {
     static {
         APP_ID = BuildConfig.APP_ID;
         APP_HASH = BuildConfig.APP_HASH;
-        if (ApplicationLoader.applicationContext != null) {
-            loadLogsEnabled(ApplicationLoader.applicationContext);
-        }
         final Thread.UncaughtExceptionHandler pastHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((thread, exception) -> {
             try {
@@ -65,13 +62,17 @@ public class BuildVars {
     }
 
     public static synchronized void loadLogsEnabled(Context context) {
+        if (context == null || org.telegram.utils.twidget.WidgetEngineService.isEngineProcess()) {
+            LOGS_ENABLED = false;
+            return;
+        }
         SharedPreferences sharedPreferences = context.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);
         LOGS_ENABLED = sharedPreferences.getBoolean("logsEnabled", BuildConfig.BUILD_TYPE.equals("debug"));
     }
 
     public static synchronized boolean setLogsEnabled(boolean enabled) {
         Context context = ApplicationLoader.applicationContext;
-        if (context == null) {
+        if (context == null || org.telegram.utils.twidget.WidgetEngineService.isEngineProcess()) {
             return false;
         }
         SharedPreferences sharedPreferences = context.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);

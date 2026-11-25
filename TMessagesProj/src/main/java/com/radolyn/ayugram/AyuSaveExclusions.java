@@ -2,6 +2,8 @@ package com.radolyn.ayugram;
 
 import android.content.SharedPreferences;
 
+import org.json.JSONException;
+import org.json.JSONTokener;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.MessagesController;
@@ -62,16 +64,32 @@ public final class AyuSaveExclusions {
         NekoConfig.getPreferences().edit().putBoolean(KEY_WHITELIST, whitelist).apply();
     }
 
-    /** Ids explicitly saved ({@code always}) or skipped ({@code always == false}). */
+    /**
+     * Ids explicitly saved ({@code always}) or skipped ({@code always == false}).
+     * Unreadable lists temporarily return an empty set without changing the stored value.
+     */
     public static Set<String> getIds(boolean always) {
         ensureMigrated();
-        return getStoredIds(NekoConfig.getPreferences(), always ? KEY_ALWAYS : KEY_NEVER);
+        Set<String> ids = getStoredIds(NekoConfig.getPreferences(), always ? KEY_ALWAYS : KEY_NEVER);
+        return ids == null ? new HashSet<>() : ids;
     }
 
     public static void setIds(boolean always, Set<String> ids) {
-        NekoConfig.getPreferences().edit()
-                .putStringSet(always ? KEY_ALWAYS : KEY_NEVER, new HashSet<>(ids))
-                .apply();
+        SharedPreferences preferences = NekoConfig.getPreferences();
+        String key = always ? KEY_ALWAYS : KEY_NEVER;
+        SharedPreferences.Editor editor = preferences.edit();
+        Map<String, ?> values = preferences.getAll();
+        Object stored = values.get(key);
+        if (stored instanceof String && getStoredIds(preferences, key) == null) {
+            String backupKey = key + "_unparsed";
+            for (int suffix = 1; values.containsKey(backupKey) && !stored.equals(values.get(backupKey)); suffix++) {
+                backupKey = key + "_unparsed_" + suffix;
+            }
+            if (!values.containsKey(backupKey)) {
+                editor.putString(backupKey, (String) stored);
+            }
+        }
+        editor.putStringSet(key, new HashSet<>(ids)).apply();
     }
 
     /** Category bitmask that applies to the given set. */
@@ -222,16 +240,75 @@ public final class AyuSaveExclusions {
             return;
         }
         Set<String> never = getStoredIds(preferences, KEY_NEVER);
-        addLegacyIds(preferences.getAll(), never, getStoredIds(preferences, KEY_ALWAYS), preferences.getBoolean(KEY_MIGRATED_UNSIGNED, false));
+        Set<String> always = getStoredIds(preferences, KEY_ALWAYS);
+        if (never == null || always == null) {
+            return;
+        }
+        addLegacyIds(preferences.getAll(), never, always, preferences.getBoolean(KEY_MIGRATED_UNSIGNED, false));
         preferences.edit()
                 .putStringSet(KEY_NEVER, never)
                 .putBoolean(KEY_MIGRATED, true)
                 .apply();
     }
 
+    /** Returns null for unreadable data so migration leaves the stored value intact. */
     private static Set<String> getStoredIds(SharedPreferences preferences, String key) {
-        Set<String> stored = preferences.getStringSet(key, null);
-        return stored == null ? new HashSet<>() : new HashSet<>(stored);
+        Object stored;
+        try {
+            stored = preferences.getStringSet(key, null);
+        } catch (ClassCastException e) {
+            stored = preferences.getAll().get(key);
+        }
+        Set<String> ids = new HashSet<>();
+        if (stored == null) {
+            return ids;
+        }
+        if (stored instanceof Set<?>) {
+            for (Object item : (Set<?>) stored) {
+                if (!(item instanceof String)) {
+                    return null;
+                }
+                ids.add((String) item);
+            }
+            return ids;
+        }
+        if (!(stored instanceof String)) {
+            return null;
+        }
+        String serialized = (String) stored;
+        if (serialized.indexOf('\0') >= 0) {
+            return null;
+        }
+        serialized = serialized.trim();
+        if (!serialized.startsWith("[") || !serialized.endsWith("]")) {
+            return null;
+        }
+        String body = serialized.substring(1, serialized.length() - 1).trim();
+        String[] items = body.isEmpty() ? new String[0] : body.split(",", -1);
+        try {
+            for (String item : items) {
+                String id = item.trim();
+                if (id.startsWith("\"")) {
+                    if (!id.matches("\"(?:[-0-9]|\\\\u[0-9a-fA-F]{4})+\"")) {
+                        return null;
+                    }
+                    JSONTokener tokener = new JSONTokener(id);
+                    Object decoded = tokener.nextValue();
+                    if (!(decoded instanceof String) || tokener.more()) {
+                        return null;
+                    }
+                    id = (String) decoded;
+                }
+                if (!id.matches("-?[0-9]+")) {
+                    return null;
+                }
+                ids.add(String.valueOf(Long.parseLong(id)));
+            }
+        } catch (JSONException | NumberFormatException e) {
+            return null;
+        }
+        preferences.edit().putStringSet(key, ids).apply();
+        return ids;
     }
 
     /**

@@ -2592,6 +2592,13 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 newMsg.params = new HashMap<>();
                 newMsg.params.put("fwd_id", "" + msgObj.getId());
                 newMsg.params.put("fwd_peer", "" + msgObj.getDialogId());
+                newMsg.params.put("fwd_drop_author", Boolean.toString(forwardFromMyName));
+                newMsg.params.put("fwd_drop_media_captions", Boolean.toString(hideCaption));
+                newMsg.silent = !notify || MessagesController.getNotificationsSettings(currentAccount).getBoolean("silent_" + peer, false);
+                newMsg.params.put("fwd_silent", Boolean.toString(newMsg.silent));
+                if (replyToTopMsg != null) {
+                    newMsg.params.put("fwd_top_msg_id", Integer.toString(replyToTopMsg.getId()));
+                }
                 if (!msgObj.messageOwner.restriction_reason.isEmpty()) {
                     newMsg.restriction_reason = msgObj.messageOwner.restriction_reason;
                     newMsg.flags |= 4194304;
@@ -2756,6 +2763,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     ids.add(newMsg.fwd_msg_id);
                 }
                 newMsg.date = scheduleDate != 0 ? scheduleDate : getConnectionsManager().getCurrentTime();
+                if (scheduleDate != 0 && scheduleRepeatPeriod != 0) {
+                    newMsg.flags2 |= TLObject.FLAG_10;
+                    newMsg.schedule_repeat_period = scheduleRepeatPeriod;
+                }
                 if (inputPeer instanceof TLRPC.TL_inputPeerChannel && isChannel) {
                     if (scheduleDate == 0) {
                         newMsg.views = 1;
@@ -4768,7 +4779,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 if (parentObject == null && params != null && params.containsKey("parentObject")) {
                     parentObject = params.get("parentObject");
                 }
-                if (retryMessageObject.isForwarded() || params != null && params.containsKey("fwd_id")) {
+                if (retryMessageObject.isForwarded() || newMsg.fwd_msg_id != 0 || params != null && (params.containsKey("fwd_id") || params.containsKey("fwd_peer"))) {
                     type = 4;
                 } else {
                     if (retryMessageObject.isDice()) {
@@ -5180,6 +5191,9 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 getUserConfig().saveConfig(false);
             }
             newMsg.silent = !notify || MessagesController.getNotificationsSettings(currentAccount).getBoolean("silent_" + peer, false);
+            if (type == 4 && params != null && params.containsKey("fwd_silent")) {
+                newMsg.silent = Boolean.parseBoolean(params.get("fwd_silent"));
+            }
             if (newMsg.random_id == 0) {
                 newMsg.random_id = getNextRandomId();
             }
@@ -5460,7 +5474,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 isFinalGroupMedia = params.get("final") != null;
             }
 
-            if (!((params != null && params.containsKey("fwd_id")) || MessageObject.isForwardedMessage(newMsg)) && canUsePangu) {
+            if (type != 4 && !((params != null && params.containsKey("fwd_id")) || MessageObject.isForwardedMessage(newMsg)) && canUsePangu) {
                 kotlin.Pair<String, ArrayList<TLRPC.MessageEntity>> pair;
                 if (caption != null) {
                     pair = StringUtils.spacingText(caption, entities);
@@ -6676,27 +6690,65 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 if (replyToTopMsg != null) {
                     reqSend.top_msg_id = replyToTopMsg.getId();
                     reqSend.flags |= 512;
+                } else if (params != null && params.containsKey("fwd_top_msg_id")) {
+                    reqSend.top_msg_id = Integer.parseInt(params.get("fwd_top_msg_id"));
+                    if (reqSend.top_msg_id <= 0) {
+                        throw new IllegalArgumentException("Invalid forward topic id");
+                    }
+                    reqSend.flags |= 512;
                 }
+                // Prefer the immediate source id saved in params; the field supports pending messages without that key.
+                int fwdId = 0;
+                boolean useOwnSource = false;
                 if (params != null && params.containsKey("fwd_id")) {
-                    int fwdId = Utilities.parseInt(params.get("fwd_id"));
-                    reqSend.drop_author = true;
-                    long peerId = Utilities.parseLong(params.get("fwd_peer"));
-                    if (peerId < 0) {
-                        TLRPC.Chat chat = getMessagesController().getChat(-peerId);
-                        if (ChatObject.isChannel(chat)) {
-                            reqSend.from_peer = new TLRPC.TL_inputPeerChannel();
-                            reqSend.from_peer.channel_id = chat.id;
-                            reqSend.from_peer.access_hash = chat.access_hash;
-                        } else {
-                            reqSend.from_peer = new TLRPC.TL_inputPeerEmpty();
-                        }
+                    try {
+                        fwdId = Integer.parseInt(params.get("fwd_id"));
+                    } catch (NumberFormatException ignore) {
+                    }
+                }
+                if (fwdId <= 0) {
+                    useOwnSource = newMsg.fwd_msg_id <= 0 && retryMessageObject.getId() > 0;
+                    if (useOwnSource && params != null && params.containsKey("fwd_peer") && Long.parseLong(params.get("fwd_peer")) != retryMessageObject.getDialogId()) {
+                        throw new IllegalArgumentException("Mismatched forward source peer");
+                    }
+                    fwdId = newMsg.fwd_msg_id > 0 ? newMsg.fwd_msg_id : Math.max(0, retryMessageObject.getId());
+                }
+                long peerId;
+                if (params != null && params.containsKey("fwd_peer")) {
+                    peerId = Long.parseLong(params.get("fwd_peer"));
+                } else if (useOwnSource) {
+                    peerId = retryMessageObject.getDialogId();
+                } else if (newMsg.fwd_from != null && newMsg.fwd_from.saved_from_peer != null && newMsg.fwd_from.saved_from_msg_id > 0 && (fwdId == 0 || fwdId == newMsg.fwd_from.saved_from_msg_id)) {
+                    fwdId = newMsg.fwd_from.saved_from_msg_id;
+                    peerId = DialogObject.getPeerDialogId(newMsg.fwd_from.saved_from_peer);
+                } else if (newMsg.fwd_from != null && newMsg.fwd_from.from_id != null && newMsg.fwd_from.from_id.channel_id != 0 && newMsg.fwd_from.channel_post > 0 && (fwdId == 0 || fwdId == newMsg.fwd_from.channel_post)) {
+                    fwdId = newMsg.fwd_from.channel_post;
+                    peerId = DialogObject.getPeerDialogId(newMsg.fwd_from.from_id);
+                } else {
+                    throw new IllegalArgumentException("Missing forward source peer");
+                }
+                if (fwdId <= 0 || (!DialogObject.isUserDialog(peerId) && !DialogObject.isChatDialog(peerId))) {
+                    throw new IllegalArgumentException("Invalid forward source");
+                }
+                if (peerId < 0) {
+                    TLRPC.Chat chat = getMessagesController().getChat(-peerId);
+                    if (chat == null) {
+                        throw new IllegalArgumentException("Unknown forward source chat");
+                    }
+                    if (ChatObject.isChannel(chat)) {
+                        reqSend.from_peer = new TLRPC.TL_inputPeerChannel();
+                        reqSend.from_peer.channel_id = chat.id;
+                        reqSend.from_peer.access_hash = chat.access_hash;
                     } else {
                         reqSend.from_peer = new TLRPC.TL_inputPeerEmpty();
                     }
-                    reqSend.id.add(fwdId);
                 } else {
                     reqSend.from_peer = new TLRPC.TL_inputPeerEmpty();
                 }
+                boolean hiddenCaption = newMsg.media != null && !(newMsg.media instanceof TLRPC.TL_messageMediaEmpty) && TextUtils.isEmpty(newMsg.message) && (newMsg.fwd_from == null || newMsg.media instanceof TLRPC.TL_messageMediaWidget);
+                reqSend.drop_author = params != null && params.containsKey("fwd_drop_author") ? Boolean.parseBoolean(params.get("fwd_drop_author")) : newMsg.fwd_from == null || hiddenCaption;
+                reqSend.drop_media_captions = params != null && params.containsKey("fwd_drop_media_captions") ? Boolean.parseBoolean(params.get("fwd_drop_media_captions")) : hiddenCaption;
+                reqSend.id.add(fwdId);
                 reqSend.silent = newMsg.silent;
                 if (scheduleDate != 0) {
                     reqSend.schedule_date = scheduleDate;
@@ -6707,15 +6759,6 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     }
                 }
                 reqSend.random_id.add(newMsg.random_id);
-                if (retryMessageObject.getId() >= 0) {
-                    reqSend.id.add(retryMessageObject.getId());
-                } else {
-                    if (retryMessageObject.messageOwner.fwd_msg_id != 0) {
-                        reqSend.id.add(retryMessageObject.messageOwner.fwd_msg_id);
-                    } else if (retryMessageObject.messageOwner.fwd_from != null) {
-                        reqSend.id.add(retryMessageObject.messageOwner.fwd_from.channel_post);
-                    }
-                }
                 if (payStars > 0) {
                     reqSend.flags |= 2097152;
                     reqSend.allow_paid_stars = payStars;
@@ -12653,6 +12696,10 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                 }
                 params.quick_reply_shortcut_id = retryMessageObject.getQuickReplyId();
                 params.payStars = retryMessageObject.messageOwner.paid_message_stars;
+                HashMap<String, String> messageParams = retryMessageObject.messageOwner.params;
+                if (retryMessageObject.isForwarded() || retryMessageObject.messageOwner.fwd_msg_id != 0 || messageParams != null && (messageParams.containsKey("fwd_id") || messageParams.containsKey("fwd_peer"))) {
+                    params.scheduleRepeatPeriod = retryMessageObject.messageOwner.schedule_repeat_period;
+                }
             }
             params.ephemeralReceiverBotId = retryMessageObject.getEphemeralReceiverBotId();
             return params;

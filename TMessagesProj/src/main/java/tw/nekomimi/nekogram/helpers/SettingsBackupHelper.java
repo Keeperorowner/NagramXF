@@ -16,6 +16,7 @@ import com.google.gson.JsonPrimitive;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 import com.radolyn.ayugram.utils.AyuGhostPreferences;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
@@ -152,12 +153,22 @@ public final class SettingsBackupHelper {
             if (filter != null && !filter.apply(key)) {
                 continue;
             }
-            if (entry.getValue() instanceof Long) {
+            Object value = entry.getValue();
+            if (value instanceof Long) {
                 key = key + "_long";
-            } else if (entry.getValue() instanceof Float) {
+            } else if (value instanceof Float) {
                 key = key + "_float";
+            } else if (value instanceof Set<?>) {
+                JSONArray strings = new JSONArray();
+                for (Object item : (Set<?>) value) {
+                    if (!(item instanceof String)) {
+                        throw new JSONException("Invalid StringSet item for " + sp + "/" + key);
+                    }
+                    strings.put(item);
+                }
+                value = strings;
             }
-            jsonConfig.put(key, entry.getValue());
+            jsonConfig.put(key, value);
         }
         object.put(sp, jsonConfig);
     }
@@ -211,11 +222,13 @@ public final class SettingsBackupHelper {
 
         for (Map.Entry<String, JsonElement> element : configJson.entrySet()) {
             String spName = element.getKey();
+            if (!element.getValue().isJsonObject()) {
+                throw new JSONException("Invalid settings object for " + spName);
+            }
             SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences(spName, Activity.MODE_PRIVATE);
             SharedPreferences.Editor editor = preferences.edit();
             for (Map.Entry<String, JsonElement> config : ((JsonObject) element.getValue()).entrySet()) {
                 String key = config.getKey();
-                JsonPrimitive value = (JsonPrimitive) config.getValue();
                 if ("nkmrcfg".equals(spName)) {
                     boolean shouldSkip = true;
                     for (String prefix : preservePrefixes) {
@@ -237,6 +250,22 @@ public final class SettingsBackupHelper {
                         continue;
                     }
                 }
+                JsonElement jsonValue = config.getValue();
+                if (jsonValue.isJsonArray()) {
+                    Set<String> strings = new HashSet<>();
+                    for (JsonElement item : jsonValue.getAsJsonArray()) {
+                        if (!item.isJsonPrimitive() || !item.getAsJsonPrimitive().isString()) {
+                            throw new JSONException("Invalid StringSet item for " + spName + "/" + key);
+                        }
+                        strings.add(item.getAsString());
+                    }
+                    editor.putStringSet(key, strings);
+                    continue;
+                }
+                if (!jsonValue.isJsonPrimitive()) {
+                    throw new JSONException("Invalid settings value for " + spName + "/" + key);
+                }
+                JsonPrimitive value = jsonValue.getAsJsonPrimitive();
                 if (value.isBoolean()) {
                     editor.putBoolean(key, value.getAsBoolean());
                 } else if (value.isNumber()) {

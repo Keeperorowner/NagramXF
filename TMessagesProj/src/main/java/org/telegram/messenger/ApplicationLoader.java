@@ -118,6 +118,9 @@ public class ApplicationLoader extends Application {
         if (applicationContext == null) {
             applicationContext = base;
         }
+        if (org.telegram.utils.twidget.WidgetEngineService.isEngineProcess()) {
+            return;
+        }
         BuildVars.loadLogsEnabled(applicationContext);
         // Keep the default handler chain (plugin crash attribution, Crashlytics) alive for main-thread crashes.
         final Thread.UncaughtExceptionHandler existingMainHandler = Thread.currentThread().getUncaughtExceptionHandler();
