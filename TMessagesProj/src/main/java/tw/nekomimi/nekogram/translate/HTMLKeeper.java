@@ -69,21 +69,44 @@ public class HTMLKeeper {
                 } else if (o2 instanceof URLSpan) {
                     priority2 = 1;
                 }
-                return Integer.compare(priority2, priority1);
+                int byPriority = Integer.compare(priority2, priority1);
+                if (byPriority != 0) {
+                    return byPriority;
+                }
+                // Equal priorities are ordered by their extent, outermost first. The order has to
+                // be the same for every segment, otherwise two spans could swap places between
+                // segments and the shared prefix below would close and reopen them.
+                int byStart = Integer.compare(text.getSpanStart(o1), text.getSpanStart(o2));
+                if (byStart != 0) {
+                    return byStart;
+                }
+                int byEnd = Integer.compare(text.getSpanEnd(o2), text.getSpanEnd(o1));
+                if (byEnd != 0) {
+                    return byEnd;
+                }
+                return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
             });
 
             ArrayList<CharacterStyle> currentActiveSpans = new ArrayList<>(Arrays.asList(spans));
 
-            boolean sameSet = openStack.size() == currentActiveSpans.size() && openStack.containsAll(currentActiveSpans);
-            if (!sameSet) {
-                for (int j = openStack.size() - 1; j >= 0; j--) {
-                    closeTagFor(out, openStack.get(j));
-                }
-                openStack.clear();
-                for (CharacterStyle currentSpan : currentActiveSpans) {
-                    openTagFor(out, currentSpan);
-                    openStack.add(currentSpan);
-                }
+            // Only the tail of the stack is rewritten, so an entity that spans several style runs
+            // stays a single tag: closing the outer tags too would split a quote around every
+            // bold or monospace run inside it.
+            int shared = 0;
+            while (shared < openStack.size() && shared < currentActiveSpans.size()
+                    && openStack.get(shared) == currentActiveSpans.get(shared)) {
+                shared++;
+            }
+            for (int j = openStack.size() - 1; j >= shared; j--) {
+                closeTagFor(out, openStack.get(j));
+            }
+            while (openStack.size() > shared) {
+                openStack.remove(openStack.size() - 1);
+            }
+            for (int j = shared; j < currentActiveSpans.size(); j++) {
+                CharacterStyle currentSpan = currentActiveSpans.get(j);
+                openTagFor(out, currentSpan);
+                openStack.add(currentSpan);
             }
 
             out.append(StringEscapeUtils.escapeHtml4(text.subSequence(i, next).toString()));
