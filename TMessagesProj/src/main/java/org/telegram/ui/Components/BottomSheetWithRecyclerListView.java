@@ -32,7 +32,6 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.LaunchActivity;
-import xyz.nextalone.nagram.NaConfig;
 
 public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
@@ -487,6 +486,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                     return super.dispatchTouchEvent(ev);
                 }
             };
+            // the sheet header keeps its title on the left, the centered title setting is meant
+            // for chat and page headers
+            actionBar.setForceLeftTitle(true);
             ThemeBind.backgroundColor(actionBar, Theme.key_dialogBackground, resourcesProvider);
             ThemeBind.actionBarTitleColor(actionBar, Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
             ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, resourcesProvider, false);
@@ -703,14 +705,6 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
 
     protected boolean centerTitle;
 
-    /**
-     * Sheets follow the centered title setting as well. ActionBar lays the title out centered
-     * whenever this flag is on, so the sliding offset below must not drag it back to the left.
-     */
-    private boolean centerTitleFromSettings() {
-        return NaConfig.INSTANCE.getCenterActionBarTitle().Bool();
-    }
-
     private boolean restore;
     protected void preDrawInternal(Canvas canvas, View parent) {
         restore = false;
@@ -770,15 +764,9 @@ public abstract class BottomSheetWithRecyclerListView extends BottomSheet {
                 actionBar.backButtonImageView.setPivotY(actionBar.backButtonImageView.getMeasuredHeight() / 2f);
                 actionBar.backButtonImageView.setScaleY(t);
                 SimpleTextView titleTextView = actionBar.getTitleTextView();
-                if (centerTitleFromSettings()) {
-                    // the action bar centers its title in the layout pass already, the sliding
-                    // offset would drag it back to the left edge
-                    titleTextView.setTranslationX(additionalTitleX);
-                } else {
-                    titleTextView.setTranslationX(AndroidUtilities.lerp(dp(21) - titleTextView.getLeft(), 0.0f, t) + additionalTitleX);
-                    if (centerTitle) {
-                        titleTextView.setTranslationX((actionBar.getMeasuredWidth() - titleTextView.getTextWidth()) / 2f - titleTextView.getLeft());
-                    }
+                titleTextView.setTranslationX(AndroidUtilities.lerp(dp(21) - titleTextView.getLeft(), 0.0f, t) + additionalTitleX);
+                if (centerTitle) {
+                    titleTextView.setTranslationX((actionBar.getMeasuredWidth() - titleTextView.getTextWidth()) / 2f - titleTextView.getLeft());
                 }
                 actionBar.setTranslationY(actionBarY);
                 top -= AndroidUtilities.lerp(0, headerTotalHeight - headerHeight - headerPaddingTop - headerPaddingBottom + dp(13), t);
