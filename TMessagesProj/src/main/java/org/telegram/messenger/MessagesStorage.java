@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -94,6 +95,7 @@ public class MessagesStorage extends BaseController {
 
     private DispatchQueue2 storageQueue;
     private SQLiteDatabase database;
+    private final AtomicLong storageSession = new AtomicLong();
     private File cacheFile;
     private File walCacheFile;
     private File shmCacheFile;
@@ -256,6 +258,10 @@ public class MessagesStorage extends BaseController {
 
     public DispatchQueue2 getStorageQueue() {
         return storageQueue;
+    }
+
+    long getStorageSession() {
+        return storageSession.get();
     }
 
     @UiThread
@@ -868,7 +874,10 @@ public class MessagesStorage extends BaseController {
     }
 
     public void cleanup(boolean isLogin) {
+        storageSession.incrementAndGet();
         storageQueue.postRunnable(() -> {
+            // Invalidate work captured between the cleanup request and replacement of the database.
+            storageSession.incrementAndGet();
             cleanupInternal(true);
             openDatabase(1);
             if (isLogin) {
@@ -4087,7 +4096,12 @@ public class MessagesStorage extends BaseController {
     }
 
     public void loadUnreadMessages() {
+        final long accountUserId = getUserConfig().getClientUserId();
+        final long session = getStorageSession();
         storageQueue.postRunnable(() -> {
+            if (accountUserId == 0 || getUserConfig().getClientUserId() != accountUserId || getStorageSession() != session) {
+                return;
+            }
             SQLiteCursor cursor = null;
             int magic = 0;
             try {
@@ -4318,7 +4332,7 @@ public class MessagesStorage extends BaseController {
                     getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                 }
 
-                AndroidUtilities.runOnUIThread(() -> getNotificationsController().processLoadedUnreadMessages(pushDialogs, messages, pushMessages, users, chats, encryptedChats, storyPushes.values()));
+                AndroidUtilities.runOnUIThread(() -> getNotificationsController().processLoadedUnreadMessages(accountUserId, session, pushDialogs, messages, pushMessages, users, chats, encryptedChats, storyPushes.values()));
             } catch (Exception e) {
                 checkSQLException(e);
             } finally {
@@ -14964,6 +14978,21 @@ public class MessagesStorage extends BaseController {
                 if (cursor != null) {
                     cursor.dispose();
                 }
+            }
+        });
+    }
+
+    void deleteReadReactionPushMessages(long accountUserId, long session, long dialogId, Set<Integer> messageIds, Runnable onDeleted) {
+        storageQueue.postRunnable(() -> {
+            try {
+                if (getUserConfig().getClientUserId() == accountUserId && getStorageSession() == session) {
+                    database.executeFast(String.format(Locale.US, "DELETE FROM unread_push_messages WHERE uid = %d AND mid IN(%s) AND is_reaction = 1", dialogId, TextUtils.join(",", messageIds))).stepThis().dispose();
+                }
+            } catch (Exception e) {
+                checkSQLException(e);
+            } finally {
+                // Keep the same Storage → UI → notifications ordering as loadUnreadMessages.
+                AndroidUtilities.runOnUIThread(onDeleted);
             }
         });
     }

@@ -435,18 +435,23 @@ public class PushListenerController {
                         } else if ("READ_REACTION".equals(loc_key)) {
                             String messages = custom.getString("messages");
                             String[] messagesArgs = messages.split(",");
-                            LongSparseArray<ArrayList<Integer>> deletedMessages = new LongSparseArray<>();
                             ArrayList<Integer> ids = new ArrayList<>();
                             SparseBooleanArray sparseBooleanArray = new SparseBooleanArray();
-                            for (int a = 0; a < messagesArgs.length; a++) {
-                                int messageId = Utilities.parseInt(messagesArgs[a]);
-                                ids.add(messageId);
-                                sparseBooleanArray.put(messageId, false);
+                            for (String messageArg : messagesArgs) {
+                                try {
+                                    int messageId = Integer.parseInt(messageArg.trim());
+                                    if (messageId > 0 && sparseBooleanArray.indexOfKey(messageId) < 0) {
+                                        ids.add(messageId);
+                                        sparseBooleanArray.put(messageId, false);
+                                    }
+                                } catch (NumberFormatException ignore) {
+                                }
                             }
-                            deletedMessages.put(-channel_id, ids);
-                            NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, true);
-
-                            MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
+                            if (!ids.isEmpty()) {
+                                final long session = MessagesStorage.getInstance(currentAccount).getStorageSession();
+                                NotificationsController.getInstance(currentAccount).removeReadReactionNotifications(accountUserId, session, dialogId, ids);
+                                MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
+                            }
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                             }

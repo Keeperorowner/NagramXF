@@ -116,6 +116,8 @@ public class NotificationsController extends BaseController implements Notificat
     private final ArrayList<MessageObject> pushMessages = new ArrayList<>();
     private final ArrayList<MessageObject> delayedPushMessages = new ArrayList<>();
     private final LongSparseArray<SparseArray<MessageObject>> pushMessagesDict = new LongSparseArray<>();
+    private final ArrayList<Pair<Long, HashSet<Integer>>> pendingReadReactions = new ArrayList<>();
+    private long pendingReadReactionsSession = -1;
     private final LongSparseArray<MessageObject> fcmRandomMessagesDict = new LongSparseArray<>();
     private final LongSparseArray<Point> smartNotificationsDialogs = new LongSparseArray<>();
     private static NotificationManagerCompat notificationManager = null;
@@ -490,6 +492,7 @@ public class NotificationsController extends BaseController implements Notificat
             personalCount = 0;
             pushMessages.clear();
             pushMessagesDict.clear();
+            pendingReadReactions.clear();
             fcmRandomMessagesDict.clear();
             pushDialogs.clear();
             wearNotificationsIds.clear();
@@ -832,6 +835,127 @@ public class NotificationsController extends BaseController implements Notificat
                 setBadge(getTotalAllUnreadCount());
             }
         });
+    }
+
+    void removeReadReactionNotifications(long accountUserId, long session, long dialogId, ArrayList<Integer> messageIds) {
+        final HashSet<Integer> ids = new HashSet<>(messageIds);
+        if (accountUserId == 0 || ids.isEmpty()) {
+            return;
+        }
+        final Pair<Long, HashSet<Integer>> pending = new Pair<>(dialogId, ids);
+        notificationsQueue.postRunnable(() -> {
+            if (!isCurrentNotificationSession(accountUserId, session)) {
+                return;
+            }
+            // Keep only in-flight deletes so an older unread snapshot cannot restore these reactions.
+            if (pendingReadReactionsSession != session) {
+                pendingReadReactions.clear();
+                pendingReadReactionsSession = session;
+            }
+            pendingReadReactions.add(pending);
+            getMessagesStorage().deleteReadReactionPushMessages(accountUserId, session, dialogId, ids, () ->
+                notificationsQueue.postRunnable(() -> {
+                    for (int i = 0; i < pendingReadReactions.size(); i++) {
+                        if (pendingReadReactions.get(i) == pending) {
+                            pendingReadReactions.remove(i);
+                            break;
+                        }
+                    }
+                })
+            );
+
+            int oldUnreadCount = total_unread_count;
+            int oldDialogCount = pushDialogs.size();
+            HashSet<Integer> removedIds = new HashSet<>();
+            for (int i = pushMessages.size() - 1; i >= 0; i--) {
+                MessageObject message = pushMessages.get(i);
+                if (matchesReadReaction(message, pending)) {
+                    pushMessages.remove(i);
+                    removedIds.add(message.getId());
+                    if (isPersonalMessage(message)) {
+                        personalCount--;
+                    }
+                }
+            }
+            delayedPushMessages.removeIf(message -> matchesReadReaction(message, pending));
+            for (int i = pushMessagesDict.size() - 1; i >= 0; i--) {
+                final long key = pushMessagesDict.keyAt(i);
+                SparseArray<MessageObject> messages = pushMessagesDict.valueAt(i);
+                for (int mid : ids) {
+                    MessageObject message = messages.get(mid);
+                    if (!matchesReadReaction(message, pending)) {
+                        continue;
+                    }
+                    removedIds.add(mid);
+                    messages.remove(mid);
+                    // A restored push can share its dictionary slot with a notification still in the list.
+                    for (MessageObject remaining : pushMessages) {
+                        if (remaining.getId() == mid && getPushMessageKey(remaining) == key) {
+                            messages.put(mid, remaining);
+                            break;
+                        }
+                    }
+                }
+                if (messages.size() == 0) {
+                    pushMessagesDict.removeAt(i);
+                }
+            }
+            if (!removedIds.isEmpty()) {
+                int count = pushDialogs.get(dialogId, 0);
+                int newCount = Math.max(0, count - removedIds.size());
+                if (newCount == 0) {
+                    pushDialogs.remove(dialogId);
+                    pushDialogsOverrideMention.remove(dialogId);
+                    smartNotificationsDialogs.remove(dialogId);
+                } else {
+                    pushDialogs.put(dialogId, newCount);
+                }
+                if (!getMessagesController().isCommunity(dialogId)) {
+                    if (getMessagesController().isForum(dialogId)) {
+                        total_unread_count += (newCount > 0 ? 1 : 0) - (count > 0 ? 1 : 0);
+                    } else {
+                        total_unread_count += newCount - count;
+                    }
+                }
+                if (isCurrentNotificationSession(accountUserId, session) && (SharedConfig.showNotificationsForAllAccounts || currentAccount == UserConfig.selectedAccount)) {
+                    showOrUpdateNotification(false);
+                }
+            }
+            int pushDialogsCount = pushDialogs.size();
+            boolean countersChanged = total_unread_count != oldUnreadCount || pushDialogsCount != oldDialogCount;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!isCurrentNotificationSession(accountUserId, session)) {
+                    return;
+                }
+                if (popupMessages.removeIf(message -> matchesReadReaction(message, pending))) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
+                }
+                popupReplyMessages.removeIf(message -> matchesReadReaction(message, pending));
+                if (countersChanged) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.notificationsCountUpdated, currentAccount);
+                    getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadCounterChanged, pushDialogsCount);
+                }
+            });
+            if (countersChanged && showBadgeNumber) {
+                setBadge(getTotalAllUnreadCount());
+            }
+        });
+    }
+
+    private boolean isCurrentNotificationSession(long accountUserId, long session) {
+        return getUserConfig().getClientUserId() == accountUserId && getMessagesStorage().getStorageSession() == session;
+    }
+
+    private static boolean matchesReadReaction(MessageObject message, Pair<Long, HashSet<Integer>> readReaction) {
+        return message != null && message.isReactionPush && !message.isStoryReactionPush
+                && message.getDialogId() == readReaction.first && readReaction.second.contains(message.getId());
+    }
+
+    private static long getPushMessageKey(MessageObject message) {
+        if (message.isStoryReactionPush) {
+            return message.getDialogId();
+        }
+        return message.messageOwner.peer_id == null ? 0 : -message.messageOwner.peer_id.channel_id;
     }
 
     public void processSeenStoryReactions(long dialogId, int storyId) {
@@ -1659,12 +1783,18 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
-    public void processLoadedUnreadMessages(LongSparseArray<Integer> dialogs, ArrayList<TLRPC.Message> messages, ArrayList<MessageObject> push, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<TLRPC.EncryptedChat> encryptedChats, Collection<StoryNotification> storyPushes) {
+    public void processLoadedUnreadMessages(long accountUserId, long session, LongSparseArray<Integer> dialogs, ArrayList<TLRPC.Message> messages, ArrayList<MessageObject> push, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<TLRPC.EncryptedChat> encryptedChats, Collection<StoryNotification> storyPushes) {
+        if (!isCurrentNotificationSession(accountUserId, session)) {
+            return;
+        }
         getMessagesController().putUsers(users, true);
         getMessagesController().putChats(chats, true);
         getMessagesController().putEncryptedChats(encryptedChats, true);
 
         notificationsQueue.postRunnable(() -> {
+            if (!isCurrentNotificationSession(accountUserId, session)) {
+                return;
+            }
             pushDialogs.clear();
             pushMessages.clear();
             pushMessagesDict.clear();
@@ -1765,16 +1895,28 @@ public class NotificationsController extends BaseController implements Notificat
             }
 
             if (push != null) {
+                pushLoop:
                 for (int a = 0; a < push.size(); a++) {
                     MessageObject messageObject = push.get(a);
+                    if (messageObject.isReactionPush && pendingReadReactionsSession == session) {
+                        for (Pair<Long, HashSet<Integer>> pending : pendingReadReactions) {
+                            if (matchesReadReaction(messageObject, pending)) {
+                                continue pushLoop;
+                            }
+                        }
+                    }
                     int mid = messageObject.getId();
-                    if (pushMessagesDict.indexOfKey(mid) >= 0) {
-                        continue;
-                    }
-                    if (isPersonalMessage(messageObject)) {
-                        personalCount++;
-                    }
                     long dialogId = messageObject.getDialogId();
+                    final long key = getPushMessageKey(messageObject);
+                    SparseArray<MessageObject> sparseArray = pushMessagesDict.get(key);
+                    if (mid != 0 && sparseArray != null) {
+                        MessageObject existing = sparseArray.get(mid);
+                        if (existing != null && existing.getDialogId() == dialogId
+                                && existing.isReactionPush == messageObject.isReactionPush
+                                && existing.isStoryReactionPush == messageObject.isStoryReactionPush) {
+                            continue;
+                        }
+                    }
                     long originalDialogId = dialogId;
                     long topicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, getMessagesController().isForum(messageObject));
                     long randomId = messageObject.messageOwner.random_id;
@@ -1797,19 +1939,13 @@ public class NotificationsController extends BaseController implements Notificat
                     if (!value || dialogId == openedDialogId && ApplicationLoader.isScreenOn) {
                         continue;
                     }
+                    if (isPersonalMessage(messageObject)) {
+                        personalCount++;
+                    }
                     if (mid != 0) {
-                        long did;
-                        if (messageObject.isStoryReactionPush) {
-                            did = messageObject.getDialogId();
-                        } else if (messageObject.messageOwner.peer_id.channel_id != 0) {
-                            did = -messageObject.messageOwner.peer_id.channel_id;
-                        } else {
-                            did = 0;
-                        }
-                        SparseArray<MessageObject> sparseArray = pushMessagesDict.get(did);
                         if (sparseArray == null) {
                             sparseArray = new SparseArray<>();
-                            pushMessagesDict.put(did, sparseArray);
+                            pushMessagesDict.put(key, sparseArray);
                         }
                         sparseArray.put(mid, messageObject);
                     } else if (randomId != 0) {
@@ -1855,8 +1991,14 @@ public class NotificationsController extends BaseController implements Notificat
                 Collections.sort(storyPushMessages, Comparator.comparingLong(n -> n.date));
             }
 
+            if (!isCurrentNotificationSession(accountUserId, session)) {
+                return;
+            }
             int pushDialogsCount = pushDialogs.size();
             AndroidUtilities.runOnUIThread(() -> {
+                if (!isCurrentNotificationSession(accountUserId, session)) {
+                    return;
+                }
                 if (total_unread_count == 0) {
                     popupMessages.clear();
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
