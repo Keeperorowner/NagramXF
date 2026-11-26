@@ -450,7 +450,7 @@ public class PushListenerController {
                             if (!ids.isEmpty()) {
                                 final long session = MessagesStorage.getInstance(currentAccount).getStorageSession();
                                 NotificationsController.getInstance(currentAccount).removeReadReactionNotifications(accountUserId, session, dialogId, ids);
-                                MessagesController.getInstance(currentAccount).checkUnreadReactions(dialogId, topicId, sparseBooleanArray);
+                                MessagesController.getInstance(currentAccount).checkUnreadReactions(accountUserId, session, dialogId, topicId, sparseBooleanArray);
                             }
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));

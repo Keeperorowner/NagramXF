@@ -21963,19 +21963,33 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void checkUnreadReactions(long dialogId, long topicId, SparseBooleanArray unreadReactions) {
-        checkUnreadReactionsInternal(dialogId, topicId, unreadReactions, true);
+        checkUnreadReactions(getUserConfig().getClientUserId(), getMessagesStorage().getStorageSession(), dialogId, topicId, unreadReactions);
+    }
+
+    void checkUnreadReactions(long accountUserId, long session, long dialogId, long topicId, SparseBooleanArray unreadReactions) {
+        checkUnreadReactionsInternal(dialogId, topicId, unreadReactions, true, accountUserId, session);
     }
 
     public void checkUnreadPollVotes(long dialogId, long topicId, SparseBooleanArray unreadPollVotes) {
-        checkUnreadReactionsInternal(dialogId, topicId, unreadPollVotes, false);
+        checkUnreadReactionsInternal(dialogId, topicId, unreadPollVotes, false, 0, 0);
     }
 
-    private void checkUnreadReactionsInternal(long dialogId, long topicId, SparseBooleanArray unreadReactions, boolean isReactions) {
+    private static final long UNREAD_REACTIONS_RECOUNT_COOLDOWN_MS = 10_000L;
+    private static final int MAX_UNREAD_REACTIONS_RECOUNTS = 64;
+    // Only the storage queue accesses the optional recount throttle.
+    private final HashMap<Pair<Long, Long>, Long> unreadReactionsRecounts = new HashMap<>();
+    private long unreadReactionsRecountSession = -1;
+    private long unreadReactionsRecountUserId;
+
+    private void checkUnreadReactionsInternal(long dialogId, long topicId, SparseBooleanArray unreadReactions, boolean isReactions, long accountUserId, long session) {
         final String tableMentionsForDialogs = isReactions ? "reaction_mentions" : "poll_votes_mentions";
         final String tableMentionsForTopics = isReactions ? "reaction_mentions_topics" : "poll_votes_mentions_topics";
         final boolean isVotes = !isReactions;
 
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
+            if (isReactions && (accountUserId == 0 || !isCurrentUnreadReactionsSession(accountUserId, session))) {
+                return;
+            }
             boolean needReload = false;
             boolean changed = false;
             ArrayList<Integer> newUnreadMessages = new ArrayList<>();
@@ -22006,6 +22020,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 e.printStackTrace();
             }
             int newUnreadCount = 0;
+            boolean alreadyRead = false;
             for (int i = 0; i < unreadReactions.size(); i++) {
                 int messageId = unreadReactions.keyAt(i);
                 boolean hasUnreadReaction = unreadReactions.valueAt(i);
@@ -22013,6 +22028,8 @@ public class MessagesController extends BaseController implements NotificationCe
                     if (reactionsMentionsMessageIds.get(messageId) != hasUnreadReaction) {
                         newUnreadCount += hasUnreadReaction ? 1 : -1;
                         changed = true;
+                    } else if (!hasUnreadReaction) {
+                        alreadyRead = true;
                     }
                 } else {
                     needReload = true;
@@ -22046,7 +22063,10 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
             if (isReactions) {
-                checkUnreadReactionsInternal2(dialogId, topicId, needReload, changed, newUnreadCount, newUnreadMessages);
+                // A locally cleared row can leave a stale positive count even if other rows changed.
+                boolean reconcileRead = alreadyRead && !needReload && isCurrentUnreadReactionsSession(accountUserId, session)
+                        && shouldRecountUnreadReactions(dialogId, topicId, accountUserId, session);
+                checkUnreadReactionsInternal2(dialogId, topicId, needReload, reconcileRead, changed, newUnreadCount, newUnreadMessages, accountUserId, session);
             }
             if (isVotes) {
                 checkUnreadPollVotesInternal2(dialogId, topicId, needReload, changed, newUnreadCount, newUnreadMessages);
@@ -22054,8 +22074,53 @@ public class MessagesController extends BaseController implements NotificationCe
         });
     }
 
-    private void checkUnreadReactionsInternal2(long dialogId, long topicId, boolean needReload, boolean changed, int newUnreadCount, ArrayList<Integer> newUnreadMessages) {
-        if (needReload) {
+    private boolean shouldRecountUnreadReactions(long dialogId, long topicId, long accountUserId, long session) {
+        if (unreadReactionsRecountSession != session || unreadReactionsRecountUserId != accountUserId) {
+            unreadReactionsRecounts.clear();
+            unreadReactionsRecountSession = session;
+            unreadReactionsRecountUserId = accountUserId;
+        }
+        final long now = SystemClock.elapsedRealtime();
+        final Pair<Long, Long> key = new Pair<>(dialogId, topicId);
+        final Long previous = unreadReactionsRecounts.get(key);
+        if (previous != null && now - previous < UNREAD_REACTIONS_RECOUNT_COOLDOWN_MS) {
+            return false;
+        }
+        unreadReactionsRecounts.values().removeIf(time -> now - time >= UNREAD_REACTIONS_RECOUNT_COOLDOWN_MS);
+        if (unreadReactionsRecounts.size() >= MAX_UNREAD_REACTIONS_RECOUNTS) {
+            return false;
+        }
+        SQLiteCursor cursor = null;
+        try {
+            cursor = topicId == 0
+                    ? getMessagesStorage().getDatabase().queryFinalized("SELECT unread_reactions FROM dialogs WHERE did = ?", dialogId)
+                    : getMessagesStorage().getDatabase().queryFinalized("SELECT unread_reactions FROM topics WHERE did = ? AND topic_id = ?", dialogId, topicId);
+            if (cursor.next() && cursor.intValue(0) > 0) {
+                unreadReactionsRecounts.put(key, now);
+                return true;
+            }
+        } catch (SQLiteException e) {
+            FileLog.e(e);
+        } finally {
+            if (cursor != null) {
+                cursor.dispose();
+            }
+        }
+        return false;
+    }
+
+    private boolean isCurrentUnreadReactionsSession(long accountUserId, long session) {
+        return getUserConfig().getClientUserId() == accountUserId && getMessagesStorage().getStorageSession() == session;
+    }
+
+    private void checkUnreadReactionsInternal2(long dialogId, long topicId, boolean needReload, boolean reconcileRead, boolean changed, int newUnreadCount, ArrayList<Integer> newUnreadMessages, long accountUserId, long session) {
+        if (!isCurrentUnreadReactionsSession(accountUserId, session)) {
+            return;
+        }
+        if (changed && !needReload) {
+            applyUnreadReactionsDelta(dialogId, topicId, newUnreadCount, newUnreadMessages, accountUserId, session);
+        }
+        if (needReload || reconcileRead) {
             if (topicId == 0) {
                 TLRPC.TL_messages_getPeerDialogs req = new TLRPC.TL_messages_getPeerDialogs();
                 TLRPC.TL_inputDialogPeer inputDialogPeer = new TLRPC.TL_inputDialogPeer();
@@ -22066,6 +22131,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_messages_peerDialogs dialogs = (TLRPC.TL_messages_peerDialogs) response;
                         int count = dialogs.dialogs.size() == 0 ? 0 : dialogs.dialogs.get(0).unread_reactions_count;
                         AndroidUtilities.runOnUIThread(() -> {
+                            if (!isCurrentUnreadReactionsSession(accountUserId, session)) {
+                                return;
+                            }
                             TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
                             if (dialog == null) {
                                 getMessagesStorage().updateDialogUnreadReactions(dialogId, 0, count, false);
@@ -22086,6 +22154,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_messages_savedDialogs topics = (TLRPC.TL_messages_savedDialogs) response;
                         int count = topics.dialogs.size() == 0 ? 0 : topics.dialogs.get(0).unread_reactions_count;
                         AndroidUtilities.runOnUIThread(() -> {
+                            if (!isCurrentUnreadReactionsSession(accountUserId, session)) {
+                                return;
+                            }
                             getMessagesController().getTopicsController().updateReactionsUnread(dialogId, topicId, count, false);
                             getMessagesStorage().updateUnreadReactionsCount(dialogId, topicId, count);
                             getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, topicId, count, newUnreadMessages);
@@ -22101,6 +22172,9 @@ public class MessagesController extends BaseController implements NotificationCe
                         TLRPC.TL_messages_forumTopics topics = (TLRPC.TL_messages_forumTopics) response;
                         int count = topics.topics.size() == 0 ? 0 : topics.topics.get(0).unread_reactions_count;
                         AndroidUtilities.runOnUIThread(() -> {
+                            if (!isCurrentUnreadReactionsSession(accountUserId, session)) {
+                                return;
+                            }
                             getMessagesController().getTopicsController().updateReactionsUnread(dialogId, topicId, count, false);
                             getMessagesStorage().updateUnreadReactionsCount(dialogId, topicId, count);
                             getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, topicId, count, newUnreadMessages);
@@ -22108,34 +22182,33 @@ public class MessagesController extends BaseController implements NotificationCe
                     }
                 });
             }
-        } else if (changed) {
-            int finalNewUnreadCount = newUnreadCount;
-            AndroidUtilities.runOnUIThread(() -> {
-                if (topicId == 0) {
-                    TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
-                    if (dialog == null) {
-                        getMessagesStorage().updateDialogUnreadReactions(dialogId, 0, finalNewUnreadCount, true);
-                        return;
-                    }
-                    dialog.unread_reactions_count += finalNewUnreadCount;
-                    if (dialog.unread_reactions_count < 0) {
-                        dialog.unread_reactions_count = 0;
-                    }
-                    getMessagesStorage().updateUnreadReactionsCount(dialogId, 0, dialog.unread_reactions_count);
-                    if (isForum(dialogId) || isMonoForum(dialogId) || dialogId > 0) {
-                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, topicId, dialog.unread_reactions_count, newUnreadMessages);
-                    }
-                } else {
-                    int totalCount = getMessagesController().getTopicsController().updateReactionsUnread(dialogId, topicId, finalNewUnreadCount, true);
-                    if (totalCount >= 0) {
-                        getMessagesStorage().updateUnreadReactionsCount(dialogId, topicId, totalCount, true);
-                        if (isForum(dialogId) || isMonoForum(dialogId) || dialogId > 0) {
-                            getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, topicId, totalCount, newUnreadMessages);
-                        }
-                    }
-                }
-            });
         }
+    }
+
+    private void applyUnreadReactionsDelta(long dialogId, long topicId, int delta, ArrayList<Integer> newUnreadMessages, long accountUserId, long session) {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (!isCurrentUnreadReactionsSession(accountUserId, session)) {
+                return;
+            }
+            final int count;
+            if (topicId == 0) {
+                TLRPC.Dialog dialog = dialogs_dict.get(dialogId);
+                if (dialog == null) {
+                    getMessagesStorage().updateDialogUnreadReactions(dialogId, 0, delta, true);
+                    return;
+                }
+                count = dialog.unread_reactions_count = Math.max(0, dialog.unread_reactions_count + delta);
+            } else {
+                count = getTopicsController().updateReactionsUnread(dialogId, topicId, delta, true);
+                if (count < 0) {
+                    return;
+                }
+            }
+            getMessagesStorage().updateUnreadReactionsCount(dialogId, topicId, count);
+            if (isForum(dialogId) || isMonoForum(dialogId) || dialogId > 0) {
+                getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadReactionsCounterChanged, dialogId, topicId, count, newUnreadMessages);
+            }
+        });
     }
 
     private void checkUnreadPollVotesInternal2(long dialogId, long topicId, boolean needReload, boolean changed, int newUnreadCount, ArrayList<Integer> newUnreadMessages) {
