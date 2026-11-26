@@ -57,7 +57,7 @@ public class FileUploadOperation {
     private ArrayList<byte[]> freeRequestIvs;
     private int requestNum;
     private String uploadingFilePath;
-    private int state;
+    private int state; // Accessed on stageQueue.
     private byte[] readBuffer;
     private FileUploadOperationDelegate delegate;
     public final SparseIntArray requestTokens = new SparseIntArray();
@@ -117,12 +117,12 @@ public class FileUploadOperation {
     }
 
     public void start() {
-        if (state != 0) {
-            return;
-        }
-        state = 1;
-        AutoDeleteMediaTask.lockFile(uploadingFilePath);
         Utilities.stageQueue.postRunnable(() -> {
+            if (state != 0) {
+                return;
+            }
+            state = 1;
+            AutoDeleteMediaTask.lockFile(uploadingFilePath);
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
             slowNetwork = ApplicationLoader.isConnectionSlow();
             if (BuildVars.LOGS_ENABLED) {
@@ -148,20 +148,14 @@ public class FileUploadOperation {
     }
 
     protected void onNetworkChanged(final boolean slow) {
-        if (state != 1) {
-            return;
-        }
         Utilities.stageQueue.postRunnable(() -> {
-            if (slowNetwork != slow) {
+            if (state == 1 && slowNetwork != slow) {
                 slowNetwork = slow;
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("network changed to slow = " + slowNetwork);
                 }
-                for (int a = 0; a < requestTokens.size(); a++) {
-                    ConnectionsManager.getInstance(currentAccount).cancelRequest(requestTokens.valueAt(a), true);
-                }
-                requestTokens.clear();
-                cleanup();
+                cancelOutstandingRequests();
+                clearUploadResources();
                 isLastPart = false;
                 nextPartFirst = false;
                 requestNum = 0;
@@ -178,31 +172,55 @@ public class FileUploadOperation {
                 uploadFirstPartLater = false;
                 cachedResults.clear();
 
-                operationGuid++;
                 for (int a = 0, count = (slowNetwork ? initialRequestsSlowNetworkCount : initialRequestsCount); a < count; a++) {
                     startUploadRequest();
                 }
             }
         });
-        AndroidUtilities.runOnUIThread(() -> uiRequestTokens.clear());
     }
 
     public void cancel() {
-        if (state == 3) {
-            return;
-        }
-        state = 2;
         Utilities.stageQueue.postRunnable(() -> {
-            for (int a = 0; a < requestTokens.size(); a++) {
-                ConnectionsManager.getInstance(currentAccount).cancelRequest(requestTokens.valueAt(a), true);
+            if (state == 2 || state == 3 || state == 4) {
+                return;
+            }
+            boolean wasRunning = state == 1;
+            state = 2;
+            if (wasRunning) {
+                cancelOutstandingRequests();
+            }
+            delegate.didFailedUploadingFile(this);
+            if (wasRunning) {
+                cleanup();
             }
         });
-        AutoDeleteMediaTask.unlockFile(uploadingFilePath);
+    }
+
+    private void cancelOutstandingRequests() {
+        operationGuid++;
+        for (int a = 0; a < requestTokens.size(); a++) {
+            ConnectionsManager.getInstance(currentAccount).cancelRequest(requestTokens.valueAt(a), true);
+        }
+        requestTokens.clear();
+        AndroidUtilities.runOnUIThread(() -> uiRequestTokens.clear());
+    }
+
+    private void failUpload() {
+        if (state != 1) {
+            return;
+        }
+        state = 4;
+        cancelOutstandingRequests();
         delegate.didFailedUploadingFile(this);
         cleanup();
     }
 
     private void cleanup() {
+        clearUploadResources();
+        AutoDeleteMediaTask.unlockFile(uploadingFilePath);
+    }
+
+    private void clearUploadResources() {
         if (preferences == null) {
             preferences = ApplicationLoader.applicationContext.getSharedPreferences("uploadinfo", Activity.MODE_PRIVATE);
         }
@@ -221,11 +239,13 @@ public class FileUploadOperation {
         } catch (Exception e) {
             FileLog.e(e);
         }
-        AutoDeleteMediaTask.unlockFile(uploadingFilePath);
     }
 
     protected void checkNewDataAvailable(final long newAvailableSize, final long finalSize, final Float progress) {
         Utilities.stageQueue.postRunnable(() -> {
+            if (state != 0 && state != 1) {
+                return;
+            }
             if (progress != null && estimatedSize != 0 && finalSize == 0) {
                 boolean needRecalculation = false;
                 if (progress > 0.75f && !recalculatedEstimatedSize[0]) {
@@ -550,9 +570,7 @@ public class FileUploadOperation {
             readBytesCount += currentRequestBytes;
         } catch (Exception e) {
             FileLog.e(e);
-            state = 4;
-            delegate.didFailedUploadingFile(this);
-            cleanup();
+            failUpload();
             return;
         }
         currentPartNum++;
@@ -582,7 +600,7 @@ public class FileUploadOperation {
         long time = System.currentTimeMillis();
         int[] requestToken = new int[1];
         requestToken[0] = ConnectionsManager.getInstance(currentAccount).sendRequest(finalRequest, (response, error) -> {
-            if (currentOperationGuid != operationGuid) {
+            if (currentOperationGuid != operationGuid || requestTokens.indexOfKey(requestNumFinal) < 0) {
                 return;
             }
             uploadRequestsPerConnection[requestConnectionNum]--;
@@ -701,9 +719,7 @@ public class FileUploadOperation {
                     startUploadRequests();
                 }
             } else {
-                state = 4;
-                delegate.didFailedUploadingFile(FileUploadOperation.this);
-                cleanup();
+                failUpload();
             }
         }, null, () -> Utilities.stageQueue.postRunnable(() -> {
             startUploadRequests();

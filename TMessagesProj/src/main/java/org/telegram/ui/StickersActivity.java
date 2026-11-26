@@ -237,6 +237,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public void onFragmentDestroy() {
+        stickersFile = null;
         super.onFragmentDestroy();
         if (currentType == MediaDataController.TYPE_FEATURED_EMOJIPACKS) {
             NotificationCenter.getInstance(currentAccount).removeObserver(this, NotificationCenter.featuredEmojiDidLoad);
@@ -821,6 +822,16 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         super.onResume();
         if (listView != null) {
             listView.adapter.update(true);
+        }
+    }
+
+    @Override
+    public void onTransitionAnimationEnd(boolean isOpen, boolean backward) {
+        super.onTransitionAnimationEnd(isOpen, backward);
+        if (isOpen && stickersFile != null) {
+            File file = stickersFile;
+            stickersFile = null;
+            processStickersFile(file, true);
         }
     }
 

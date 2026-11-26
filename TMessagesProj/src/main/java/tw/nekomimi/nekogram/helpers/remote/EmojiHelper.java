@@ -800,27 +800,30 @@ public class EmojiHelper extends BaseRemoteHelper implements NotificationCenter.
             getMessagesController().removeDeletedMessagesFromArray(CHANNEL_METADATA_ID, res.messages);
             var documents = new HashMap<Integer, TLRPC.Document>();
             for (var message : res.messages) {
-                if (message.media == null || message.media.document == null) {
+                if (message.media == null || message.media.document == null || message.media.document instanceof TLRPC.TL_documentEmpty) {
                     continue;
                 }
                 documents.put(message.id, message.media.document);
             }
 
-            SerializedData serializedData = new SerializedData();
-            serializedData.writeInt32(packs.size());
+            var completePacks = new ArrayList<EmojiPackInfo>();
             for (EmojiPackInfo pack : packs) {
                 TLRPC.Document file = documents.get(pack.fileId);
-                if (file != null) {
-                    pack.flags |= 1;
-                    pack.fileDocument = file;
-                    pack.fileSize = file.size;
-                    pack.fileLocation = getFileLoader().getPathToAttach(file).getAbsolutePath();
-                }
                 TLRPC.Document preview = documents.get(pack.previewId);
-                if (preview != null) {
-                    pack.flags |= 2;
-                    pack.previewDocument = preview;
+                if (file == null || preview == null) {
+                    continue;
                 }
+                pack.flags |= 3;
+                pack.fileDocument = file;
+                pack.fileSize = file.size;
+                pack.fileLocation = getFileLoader().getPathToAttach(file).getAbsolutePath();
+                pack.previewDocument = preview;
+                completePacks.add(pack);
+            }
+
+            SerializedData serializedData = new SerializedData();
+            serializedData.writeInt32(completePacks.size());
+            for (EmojiPackInfo pack : completePacks) {
                 pack.serializeToStream(serializedData);
             }
             preferences.edit().putString("emoji_packs_v2", Base64.encodeToString(serializedData.toByteArray(), Base64.NO_WRAP | Base64.NO_PADDING)).apply();
@@ -828,7 +831,7 @@ public class EmojiHelper extends BaseRemoteHelper implements NotificationCenter.
 
             AndroidUtilities.runOnUIThread(() -> {
                 emojiPacksInfo.removeIf(emojiPackBase -> emojiPackBase instanceof EmojiPackInfo);
-                emojiPacksInfo.addAll(packs);
+                emojiPacksInfo.addAll(completePacks);
             });
         }
         delegate.onTLResponse(null, null);
