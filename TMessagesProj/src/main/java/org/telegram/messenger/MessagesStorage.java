@@ -4891,8 +4891,12 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    public void resetDialogs(TLRPC.messages_Dialogs dialogsRes, int messagesCount, int seq, int newPts, int date, int qts, LongSparseArray<TLRPC.Dialog> new_dialogs_dict, LongSparseArray<ArrayList<MessageObject>> new_dialogMessage, TLRPC.Message lastMessage, int dialogsCount) {
+    void resetDialogs(MessagesController.DialogsReset reset, TLRPC.messages_Dialogs dialogsRes, LongSparseArray<TLRPC.Dialog> new_dialogs_dict, LongSparseArray<ArrayList<MessageObject>> new_dialogMessage, TLRPC.Message lastMessage, int dialogsCount) {
         storageQueue.postRunnable(() -> {
+            MessagesController controller = getMessagesController();
+            if (!controller.isCurrentDialogsReset(reset)) {
+                return;
+            }
             SQLiteCursor cursor = null;
             try {
                 int maxPinnedNum = 0;
@@ -4980,21 +4984,27 @@ public class MessagesStorage extends BaseController {
                     }
                 }
 
-                putDialogsInternal(dialogsRes, 0);
-                saveDiffParamsInternal(seq, newPts, date, qts);
+                if (!putDialogsInternal(dialogsRes, 0)) {
+                    Utilities.stageQueue.postRunnable(() -> controller.failDialogsReset(reset));
+                    return;
+                }
+                if (!controller.isCurrentDialogsReset(reset)) {
+                    return;
+                }
 
                 int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
-                int dialogsLoadOffsetId;
-                int dialogsLoadOffsetDate;
+                // Without a usable message, a slice still needs a fresh first page.
+                int dialogsLoadOffsetId = lastMessage == null
+                        ? dialogsRes instanceof TLRPC.TL_messages_dialogsSlice ? 0 : Integer.MAX_VALUE
+                        : lastMessage.id;
+                int dialogsLoadOffsetDate = lastMessage == null ? 0 : lastMessage.date;
                 long dialogsLoadOffsetChannelId = 0;
                 long dialogsLoadOffsetChatId = 0;
                 long dialogsLoadOffsetUserId = 0;
                 long dialogsLoadOffsetAccess = 0;
 
                 totalDialogsLoadCount += dialogsRes.dialogs.size();
-                dialogsLoadOffsetId = lastMessage.id;
-                dialogsLoadOffsetDate = lastMessage.date;
-                if (lastMessage.peer_id.channel_id != 0) {
+                if (lastMessage != null && lastMessage.peer_id.channel_id != 0) {
                     dialogsLoadOffsetChannelId = lastMessage.peer_id.channel_id;
                     dialogsLoadOffsetChatId = 0;
                     dialogsLoadOffsetUserId = 0;
@@ -5005,7 +5015,7 @@ public class MessagesStorage extends BaseController {
                             break;
                         }
                     }
-                } else if (lastMessage.peer_id.chat_id != 0) {
+                } else if (lastMessage != null && lastMessage.peer_id.chat_id != 0) {
                     dialogsLoadOffsetChatId = lastMessage.peer_id.chat_id;
                     dialogsLoadOffsetChannelId = 0;
                     dialogsLoadOffsetUserId = 0;
@@ -5016,7 +5026,7 @@ public class MessagesStorage extends BaseController {
                             break;
                         }
                     }
-                } else if (lastMessage.peer_id.user_id != 0) {
+                } else if (lastMessage != null && lastMessage.peer_id.user_id != 0) {
                     dialogsLoadOffsetUserId = lastMessage.peer_id.user_id;
                     dialogsLoadOffsetChatId = 0;
                     dialogsLoadOffsetChannelId = 0;
@@ -5040,9 +5050,13 @@ public class MessagesStorage extends BaseController {
                 }
                 getUserConfig().draftsLoaded = false;
                 getUserConfig().saveConfig(false);
-                getMessagesController().completeDialogsReset(dialogsRes, messagesCount, seq, newPts, date, qts, new_dialogs_dict, new_dialogMessage, lastMessage);
+                if (reset.fromDifference) {
+                    saveDiffParamsInternal(reset.seq, reset.pts, reset.date, reset.qts);
+                }
+                controller.completeDialogsReset(reset, dialogsRes, new_dialogs_dict, new_dialogMessage);
             } catch (Exception e) {
                 checkSQLException(e);
+                Utilities.stageQueue.postRunnable(() -> controller.failDialogsReset(reset));
             } finally {
                 if (database != null) {
                     database.commitTransaction();
@@ -17872,7 +17886,7 @@ public class MessagesStorage extends BaseController {
         });
     }
 
-    private void putDialogsInternal(TLRPC.messages_Dialogs dialogs, int check) {
+    private boolean putDialogsInternal(TLRPC.messages_Dialogs dialogs, int check) {
         SQLitePreparedStatement state_messages = null;
         SQLitePreparedStatement state_dialogs = null;
         SQLitePreparedStatement state_media = null;
@@ -18125,8 +18139,10 @@ public class MessagesStorage extends BaseController {
 
             database.commitTransaction();
             resetAllUnreadCounters(false);
+            return true;
         } catch (Exception e) {
             checkSQLException(e);
+            return false;
         } finally {
             if (database != null) {
                 database.commitTransaction();

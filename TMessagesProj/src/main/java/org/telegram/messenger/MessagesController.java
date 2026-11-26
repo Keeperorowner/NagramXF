@@ -389,9 +389,30 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean firstGettingTask;
     public boolean registeringForPush;
     private long lastPushRegisterSendTime;
-    private boolean resetingDialogs;
-    private TLRPC.TL_messages_peerDialogs resetDialogsPinned;
-    private TLRPC.messages_Dialogs resetDialogsAll;
+    // stageQueue owns the reset; the main thread also uses it to gate pagination and invalidate on cleanup.
+    private volatile DialogsReset dialogsReset;
+    private DialogsReset pendingDifferenceReset;
+
+    static final class DialogsReset {
+        final long userId;
+        final long storageSession;
+        final boolean fromDifference;
+        final int seq, pts, date, qts;
+        TLRPC.TL_messages_peerDialogs pinned;
+        TLRPC.messages_Dialogs unpinned;
+        boolean finished;
+
+        DialogsReset(long userId, long storageSession, boolean fromDifference, int seq, int pts, int date, int qts) {
+            this.userId = userId;
+            this.storageSession = storageSession;
+            this.fromDifference = fromDifference;
+            this.seq = seq;
+            this.pts = pts;
+            this.date = date;
+            this.qts = qts;
+        }
+    }
+
     private SparseIntArray loadingPinnedDialogs = new SparseIntArray();
 
     public ArrayList<FaqSearchResult> faqSearchArray = new ArrayList<>();
@@ -6579,6 +6600,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void cleanup() {
+        dialogsReset = null;
         getContactsController().cleanup();
         MediaController.getInstance().cleanup();
         getNotificationsController().cleanup();
@@ -6746,8 +6768,8 @@ public class MessagesController extends BaseController implements NotificationCe
             createdDialogIds.clear();
             createdScheduledDialogIds.clear();
             gettingDifference = false;
-            resetDialogsPinned = null;
-            resetDialogsAll = null;
+            dialogsReset = null;
+            pendingDifferenceReset = null;
         });
         createdDialogMainThreadIds.clear();
         visibleDialogMainThreadIds.clear();
@@ -6788,7 +6810,6 @@ public class MessagesController extends BaseController implements NotificationCe
         blockedEndReached = false;
         firstGettingTask = false;
         updatingState = false;
-        resetingDialogs = false;
         lastStatusUpdateTime = 0;
         offlineSent = false;
         registeringForPush = false;
@@ -12964,7 +12985,7 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void loadDialogs(final int folderId, int offset, int count, boolean fromCache, Runnable onEmptyCallback) {
-        if (loadingDialogs.get(folderId) || resetingDialogs) {
+        if (loadingDialogs.get(folderId) || dialogsReset != null) {
             return;
         }
         loadingDialogs.put(folderId, true);
@@ -13236,7 +13257,14 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void forceResetDialogs() {
-        resetDialogs(true, getMessagesStorage().getLastSeqValue(), getMessagesStorage().getLastPtsValue(), getMessagesStorage().getLastDateValue(), getMessagesStorage().getLastQtsValue());
+        long userId = getUserConfig().getClientUserId();
+        MessagesStorage storage = getMessagesStorage();
+        long session = storage.getStorageSession();
+        Utilities.stageQueue.postRunnable(() -> {
+            if (dialogsReset == null && pendingDifferenceReset == null) {
+                startDialogsReset(new DialogsReset(userId, session, false, storage.getLastSeqValue(), storage.getLastPtsValue(), storage.getLastDateValue(), storage.getLastQtsValue()));
+            }
+        });
         getNotificationsController().deleteAllNotificationChannels();
     }
 
@@ -13347,35 +13375,56 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
-    private void resetDialogs(boolean query, int seq, int newPts, int date, int qts) {
-        if (query) {
-            if (resetingDialogs) {
+    private boolean isCurrentDialogsResetSession(DialogsReset reset) {
+        return reset.userId != 0 && reset.userId == getUserConfig().getClientUserId() && reset.storageSession == getMessagesStorage().getStorageSession();
+    }
+
+    boolean isCurrentDialogsReset(DialogsReset reset) {
+        return dialogsReset == reset && isCurrentDialogsResetSession(reset);
+    }
+
+    private void startDialogsReset(DialogsReset reset) {
+        if (!isCurrentDialogsResetSession(reset)) {
+            return;
+        }
+        dialogsReset = reset;
+        getUserConfig().setPinnedDialogsLoaded(1, false);
+        TLRPC.TL_messages_getPinnedDialogs req = new TLRPC.TL_messages_getPinnedDialogs();
+        getConnectionsManager().sendRequest(req, (response, error) -> {
+            if (!isCurrentDialogsReset(reset) || reset.finished) {
                 return;
             }
-            getUserConfig().setPinnedDialogsLoaded(1, false);
-            resetingDialogs = true;
-            TLRPC.TL_messages_getPinnedDialogs req = new TLRPC.TL_messages_getPinnedDialogs();
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (response != null) {
-                    resetDialogsPinned = (TLRPC.TL_messages_peerDialogs) response;
-                    for (int a = 0; a < resetDialogsPinned.dialogs.size(); a++) {
-                        TLRPC.Dialog d = resetDialogsPinned.dialogs.get(a);
-                        d.pinned = true;
-                    }
-                    resetDialogs(false, seq, newPts, date, qts);
-                }
-            });
-            TLRPC.TL_messages_getDialogs req2 = new TLRPC.TL_messages_getDialogs();
-            req2.limit = 100;
-            req2.exclude_pinned = true;
-            req2.offset_peer = new TLRPC.TL_inputPeerEmpty();
-            getConnectionsManager().sendRequest(req2, (response, error) -> {
-                if (error == null) {
-                    resetDialogsAll = (TLRPC.messages_Dialogs) response;
-                    resetDialogs(false, seq, newPts, date, qts);
-                }
-            });
-        } else if (resetDialogsPinned != null && resetDialogsAll != null) {
+            if (error != null || !(response instanceof TLRPC.TL_messages_peerDialogs)) {
+                failDialogsReset(reset);
+                return;
+            }
+            reset.pinned = (TLRPC.TL_messages_peerDialogs) response;
+            for (TLRPC.Dialog dialog : reset.pinned.dialogs) {
+                dialog.pinned = true;
+            }
+            processDialogsReset(reset);
+        });
+        TLRPC.TL_messages_getDialogs req2 = new TLRPC.TL_messages_getDialogs();
+        req2.limit = 100;
+        req2.exclude_pinned = true;
+        req2.offset_peer = new TLRPC.TL_inputPeerEmpty();
+        getConnectionsManager().sendRequest(req2, (response, error) -> {
+            if (!isCurrentDialogsReset(reset) || reset.finished) {
+                return;
+            }
+            if (error != null || !(response instanceof TLRPC.messages_Dialogs) || response instanceof TLRPC.TL_messages_dialogsNotModified) {
+                failDialogsReset(reset);
+                return;
+            }
+            reset.unpinned = (TLRPC.messages_Dialogs) response;
+            processDialogsReset(reset);
+        });
+    }
+
+    private void processDialogsReset(DialogsReset reset) {
+        TLRPC.messages_Dialogs resetDialogsAll = reset.unpinned;
+        TLRPC.TL_messages_peerDialogs resetDialogsPinned = reset.pinned;
+        if (resetDialogsPinned != null && resetDialogsAll != null) {
             int messagesCount = resetDialogsAll.messages.size();
             int dialogsCount = resetDialogsAll.dialogs.size();
             fetchFolderInLoadedPinnedDialogs(resetDialogsPinned);
@@ -13401,10 +13450,13 @@ public class MessagesController extends BaseController implements NotificationCe
             TLRPC.Message lastMessage = null;
             for (int a = 0; a < resetDialogsAll.messages.size(); a++) {
                 TLRPC.Message message = resetDialogsAll.messages.get(a);
-                if (a < messagesCount) {
+                if (a < messagesCount && !(message instanceof TLRPC.TL_messageEmpty) && message.peer_id != null) {
                     if (lastMessage == null || message.date < lastMessage.date) {
                         lastMessage = message;
                     }
+                }
+                if (message.peer_id == null) {
+                    continue;
                 }
                 if (message.peer_id.channel_id != 0) {
                     TLRPC.Chat chat = chatsDict.get(message.peer_id.channel_id);
@@ -13500,22 +13552,51 @@ public class MessagesController extends BaseController implements NotificationCe
                 }
             }
 
-            getMessagesStorage().resetDialogs(resetDialogsAll, messagesCount, seq, newPts, date, qts, new_dialogs_dict, new_dialogMessage, lastMessage, dialogsCount);
-            resetDialogsPinned = null;
-            resetDialogsAll = null;
+            reset.pinned = null;
+            reset.unpinned = null;
+            getMessagesStorage().resetDialogs(reset, resetDialogsAll, new_dialogs_dict, new_dialogMessage, lastMessage, dialogsCount);
         }
     }
 
-    protected void completeDialogsReset(final TLRPC.messages_Dialogs dialogsRes, int messagesCount, int seq, int newPts, int date, int qts, LongSparseArray<TLRPC.Dialog> new_dialogs_dict, LongSparseArray<ArrayList<MessageObject>> new_dialogMessage, TLRPC.Message lastMessage) {
-        Utilities.stageQueue.postRunnable(() -> {
+    private void releaseDialogsReset(DialogsReset reset) {
+        if (!isCurrentDialogsReset(reset)) {
+            return;
+        }
+        dialogsReset = null;
+        DialogsReset next = pendingDifferenceReset;
+        pendingDifferenceReset = null;
+        if (next != null) {
+            startDialogsReset(next);
+        }
+    }
+
+    void failDialogsReset(DialogsReset reset) {
+        if (!isCurrentDialogsReset(reset) || reset.finished) {
+            return;
+        }
+        if (reset.fromDifference) {
             gettingDifference = false;
-            getMessagesStorage().setLastPtsValue(newPts);
-            getMessagesStorage().setLastDateValue(date);
-            getMessagesStorage().setLastQtsValue(qts);
-            getDifference();
+            getConnectionsManager().setIsUpdating(false);
+        }
+        releaseDialogsReset(reset);
+    }
+
+    void completeDialogsReset(DialogsReset reset, TLRPC.messages_Dialogs dialogsRes, LongSparseArray<TLRPC.Dialog> new_dialogs_dict, LongSparseArray<ArrayList<MessageObject>> new_dialogMessage) {
+        Utilities.stageQueue.postRunnable(() -> {
+            if (!isCurrentDialogsReset(reset) || reset.finished) {
+                return;
+            }
+            reset.finished = true;
+            if (reset.fromDifference) {
+                getMessagesStorage().setLastPtsValue(reset.pts);
+                getMessagesStorage().setLastDateValue(reset.date);
+                getMessagesStorage().setLastQtsValue(reset.qts);
+            }
 
             AndroidUtilities.runOnUIThread(() -> {
-                resetingDialogs = false;
+                if (!isCurrentDialogsReset(reset)) {
+                    return;
+                }
                 applyDialogsNotificationsSettings(dialogsRes.dialogs);
 
                 MediaDataController mediaDataController = getMediaDataController();
@@ -13586,12 +13667,29 @@ public class MessagesController extends BaseController implements NotificationCe
                 dialogsEndReached.put(1, true);
                 serverDialogsEndReached.put(1, false);
 
-                int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
-                long[] dialogsLoadOffset = getUserConfig().getDialogLoadOffsets(0);
-                if (totalDialogsLoadCount < 400 && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != -1 && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != Integer.MAX_VALUE) {
-                    loadDialogs(0, 0, 100, false);
-                }
-                getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+                Utilities.stageQueue.postRunnable(() -> {
+                    if (!isCurrentDialogsReset(reset)) {
+                        return;
+                    }
+                    if (reset.fromDifference) {
+                        gettingDifference = false;
+                    }
+                    releaseDialogsReset(reset);
+                    if (dialogsReset == null) {
+                        getDifference();
+                    }
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!isCurrentDialogsResetSession(reset)) {
+                            return;
+                        }
+                        int totalDialogsLoadCount = getUserConfig().getTotalDialogsCount(0);
+                        long[] dialogsLoadOffset = getUserConfig().getDialogLoadOffsets(0);
+                        if (totalDialogsLoadCount < 400 && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != -1 && dialogsLoadOffset[UserConfig.i_dialogsLoadOffsetId] != Integer.MAX_VALUE) {
+                            loadDialogs(0, 0, 100, false);
+                        }
+                        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+                    });
+                });
             });
         });
     }
@@ -17402,6 +17500,8 @@ public class MessagesController extends BaseController implements NotificationCe
             return;
         }
         gettingDifference = true;
+        long userId = getUserConfig().getClientUserId();
+        long session = getMessagesStorage().getStorageSession();
         TLRPC.TL_updates_getDifference req = new TLRPC.TL_updates_getDifference();
         req.pts = pts;
         req.date = date;
@@ -17427,12 +17527,23 @@ public class MessagesController extends BaseController implements NotificationCe
             if (error == null) {
                 TLRPC.updates_Difference res = (TLRPC.updates_Difference) response;
                 if (res instanceof TLRPC.TL_updates_differenceTooLong) {
+                    DialogsReset reset = new DialogsReset(userId, session, true, getMessagesStorage().getLastSeqValue(), res.pts, date, qts);
+                    if (!isCurrentDialogsResetSession(reset)) {
+                        return;
+                    }
                     AndroidUtilities.runOnUIThread(() -> {
-                        loadedFullUsers.clear();
-                        loadedFullChats.clear();
-                        resetDialogs(true, getMessagesStorage().getLastSeqValue(), res.pts, date, qts);
-                        getStoriesController().cleanup();
+                        if (isCurrentDialogsResetSession(reset)) {
+                            loadedFullUsers.clear();
+                            loadedFullChats.clear();
+                            getStoriesController().cleanup();
+                        }
                     });
+                    // A manual reset may be in storage or waiting to update the UI. Do not replace it mid-write.
+                    if (dialogsReset == null) {
+                        startDialogsReset(reset);
+                    } else {
+                        pendingDifferenceReset = reset;
+                    }
                 } else {
                     if (res instanceof TLRPC.TL_updates_differenceSlice) {
                         getDifference(res.intermediate_state.pts, res.intermediate_state.date, res.intermediate_state.qts, true);
