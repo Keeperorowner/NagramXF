@@ -82,14 +82,20 @@ public class PipController {
     private final Gson gson = new Gson();
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Set<String>>> registry = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Object> installLocks = new ConcurrentHashMap<>();
+    private final Map<String, PluginUpdate> pluginUpdates = new HashMap<>();
 
     private PipController() {
         loadRegistry();
     }
 
     public List<String> installDependencies(List<String> requirements, String pluginId, InstallerDelegate delegate) throws Exception {
+        PluginUpdate update;
+        synchronized (this) {
+            update = pluginUpdates.get(pluginId);
+        }
         LinkedHashSet<PackageRef> resolved = new LinkedHashSet<>();
         LinkedHashSet<PackageRef> sessionInstalled = new LinkedHashSet<>();
+        ArrayList<String> result = new ArrayList<>();
         try {
             notifyProgress(delegate, LocaleController.getString(R.string.PluginDependencyPreparing));
             if (requirements != null) {
@@ -104,22 +110,85 @@ public class PipController {
                     resolveAndInstall(requirement, resolved, pluginId, delegate, sessionInstalled);
                 }
             }
-            updateRegistryForPlugin(pluginId, resolved);
-            saveRegistry();
+            for (PackageRef ref : resolved) {
+                result.add(getVersionDir(ref.name, ref.version).getAbsolutePath());
+            }
+            synchronized (this) {
+                if (pluginUpdates.get(pluginId) != update) {
+                    throw new InstallationCancelledException();
+                }
+                for (String path : result) {
+                    if (!new File(path).isDirectory()) {
+                        throw new IOException("Resolved dependency directory is missing: " + path);
+                    }
+                }
+                if (update != null) {
+                    update.resolved = resolved;
+                    update.installed.addAll(sessionInstalled);
+                } else {
+                    updateRegistryForPlugin(pluginId, resolved);
+                    saveRegistry();
+                }
+            }
         } catch (Throwable t) {
             rollbackSession(sessionInstalled);
             throw t;
         } finally {
             installLocks.clear();
         }
-        ArrayList<String> result = new ArrayList<>();
-        for (PackageRef ref : resolved) {
-            result.add(getVersionDir(ref.name, ref.version).getAbsolutePath());
-        }
         return result;
     }
 
-    public void uninstallDependencies(String pluginId) {
+    public synchronized void beginPluginUpdate(String pluginId) {
+        if (pluginUpdates.containsKey(pluginId)) {
+            throw new IllegalStateException("Dependency update already in progress for " + pluginId);
+        }
+        // Keep the registered dependencies usable until the candidate is accepted.
+        pluginUpdates.put(pluginId, new PluginUpdate());
+    }
+
+    public synchronized boolean isPluginUpdateInProgress(String pluginId) {
+        return pluginUpdates.containsKey(pluginId);
+    }
+
+    public synchronized void finishPluginUpdate(String pluginId, boolean commit) {
+        PluginUpdate update = pluginUpdates.remove(pluginId);
+        if (update == null) {
+            return;
+        }
+        if (commit && update.resolved != null) {
+            updateRegistryForPlugin(pluginId, update.resolved);
+        } else {
+            cleanupInternal();
+        }
+        saveRegistry();
+        rollbackSession(update.installed);
+    }
+
+    public synchronized List<String> getRegisteredDependencyPaths(String pluginId) {
+        List<String> paths = new ArrayList<>();
+        for (Map.Entry<String, ConcurrentHashMap<String, Set<String>>> pkg : registry.entrySet()) {
+            for (Map.Entry<String, Set<String>> version : pkg.getValue().entrySet()) {
+                if (version.getValue().contains(pluginId)) {
+                    try {
+                        File directory = getVersionDir(pkg.getKey(), version.getKey());
+                        if (!directory.isDirectory()) {
+                            return null;
+                        }
+                        paths.add(directory.getAbsolutePath());
+                    } catch (IOException e) {
+                        FileLog.e("Invalid registered dependency path for " + pluginId, e);
+                        return null;
+                    }
+                }
+            }
+        }
+        Collections.sort(paths);
+        return paths.isEmpty() ? null : paths;
+    }
+
+    public synchronized void uninstallDependencies(String pluginId) {
+        finishPluginUpdate(pluginId, false);
         boolean changed = false;
         for (Map.Entry<String, ConcurrentHashMap<String, Set<String>>> packageEntry : registry.entrySet()) {
             ConcurrentHashMap<String, Set<String>> versions = packageEntry.getValue();
@@ -135,7 +204,7 @@ public class PipController {
         }
     }
 
-    public void cleanup() {
+    public synchronized void cleanup() {
         cleanupInternal();
         saveRegistry();
     }
@@ -753,13 +822,11 @@ public class PipController {
     private String normalizePackageName(String value) {
         return NORMALIZE.matcher(value.toLowerCase(Locale.US)).replaceAll("-");
     }
-    private void rollbackSession(Set<PackageRef> refs) {
-        if (refs == null || refs.isEmpty()) {
-            return;
-        }
+    private synchronized void rollbackSession(Set<PackageRef> refs) {
         for (PackageRef ref : refs) {
             ConcurrentHashMap<String, Set<String>> versions = registry.get(ref.name);
-            if (versions == null || !versions.containsKey(ref.version)) {
+            Set<String> owners = versions != null ? versions.get(ref.version) : null;
+            if ((owners == null || owners.isEmpty()) && !isStaged(ref.name, ref.version)) {
                 try {
                     deleteRecursive(getVersionDir(ref.name, ref.version));
                 } catch (IOException e) {
@@ -820,7 +887,7 @@ public class PipController {
             for (Map.Entry<String, Set<String>> versionEntry : new ArrayList<>(versions.entrySet())) {
                 String version = versionEntry.getKey();
                 Set<String> plugins = versionEntry.getValue();
-                if (plugins == null || plugins.isEmpty()) {
+                if ((plugins == null || plugins.isEmpty()) && !isStaged(packageName, version)) {
                     versions.remove(version);
                     try {
                         deleteRecursive(getVersionDir(packageName, version));
@@ -831,9 +898,24 @@ public class PipController {
             }
             if (versions.isEmpty()) {
                 registry.remove(packageName);
-                deleteRecursive(getPackageDir(packageName));
+                if (!isStaged(packageName, null)) {
+                    deleteRecursive(getPackageDir(packageName));
+                }
             }
         }
+    }
+
+    private boolean isStaged(String name, String version) {
+        for (PluginUpdate update : pluginUpdates.values()) {
+            if (update.resolved != null) {
+                for (PackageRef ref : update.resolved) {
+                    if (ref.name.equals(name) && (version == null || ref.version.equals(version))) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private JsonObject getJson(String url) throws IOException {
@@ -1023,6 +1105,11 @@ public class PipController {
             this.operator = operator;
             this.version = version;
         }
+    }
+
+    private static final class PluginUpdate {
+        Set<PackageRef> resolved;
+        final Set<PackageRef> installed = new LinkedHashSet<>();
     }
 
     private static final class PackageRef {
