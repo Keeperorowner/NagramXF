@@ -482,7 +482,7 @@ public class PluginCell extends FrameLayout implements NotificationCenter.Notifi
 
         @Override
         public boolean contentsEquals(UItem a, UItem b) {
-            return a.id == b.id && a.intValue == b.intValue;
+            return a.id == b.id && a.object == b.object && a.intValue == b.intValue;
         }
 
         public static UItem of(Plugin plugin, PluginCellDelegate delegate) {
