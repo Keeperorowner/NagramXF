@@ -172,6 +172,7 @@ public class InstallPluginBottomSheet extends BottomSheet {
                 if (!(engine instanceof PythonPluginsEngine)) {
                     return;
                 }
+                final boolean enableOnSuccess = enableAfterInstallation;
                 final AtomicBoolean cancelled = new AtomicBoolean(false);
                 final AlertDialog progressDialog = new AlertDialog.Builder(activity, resourcesProvider)
                         .setTitle(LocaleController.getString(updating ? R.string.UpdatePlugin : R.string.InstallPlugin))
@@ -200,7 +201,7 @@ public class InstallPluginBottomSheet extends BottomSheet {
                             }
                         });
                     }
-                }, new Utilities.Callback<String>() {
+                }, enableOnSuccess, new Utilities.Callback<String>() {
                     @Override
                     public void run(final String error) {
                         AndroidUtilities.runOnUIThread(new Runnable() {
@@ -215,7 +216,7 @@ public class InstallPluginBottomSheet extends BottomSheet {
                                 }
                                 if (error == null) {
                                     dismiss();
-                                    if (enableAfterInstallation && !ExteraConfig.pluginsSafeMode) {
+                                    if (!updating && enableOnSuccess && !ExteraConfig.pluginsSafeMode) {
                                         PluginsController.getInstance().setPluginEnabled(validationResult.plugin.getId(), true, new Utilities.Callback<String>() {
                                             @Override
                                             public void run(final String enableError) {

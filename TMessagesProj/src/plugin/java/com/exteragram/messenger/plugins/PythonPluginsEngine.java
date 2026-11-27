@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
+import android.system.Os;
 import android.text.TextUtils;
 import android.view.View;
 
@@ -109,6 +110,8 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     public final ConcurrentHashMap<String, PyObject> pluginInstances = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Object>> settingsCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, List<String>> pluginDependencyPaths = new ConcurrentHashMap<>();
+    // Paths attached to the interpreter, including paths whose last owner was released.
+    private final Set<String> insertedDependencyPaths = new java.util.LinkedHashSet<>();
 
     @FunctionalInterface
     public interface PyMethodCaller<T> {
@@ -558,34 +561,36 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         }
     }
 
-    private void ensurePathsInserted(List<String> paths) throws PyException {
-        if (paths == null || paths.isEmpty()) {
-            return;
-        }
-        PyObject path = getPython().getModule("sys").get("path");
-        if (path == null) {
-            return;
-        }
-        for (int i = paths.size() - 1; i >= 0; i--) {
-            String value = paths.get(i);
-            if (!TextUtils.isEmpty(value)) {
-                path.callAttr("insert", 0, value);
-            }
-        }
+    private List<String> installPluginDependencies(String pluginId, Plugin pluginMetadata, PipController.InstallerDelegate delegate) throws Exception {
+        List<String> paths = resolveDependencyPaths(pluginId, pluginMetadata, delegate);
+        activatePluginDependencies(pluginId, paths);
+        return paths;
     }
 
-    private List<String> installPluginDependencies(String pluginId, Plugin pluginMetadata, PipController.InstallerDelegate delegate) throws Exception {
+    private void preparePluginDependencies(String pluginId, Plugin pluginMetadata, PipController.InstallerDelegate delegate) throws Exception {
+        checkDependencyPaths(pluginId, resolveDependencyPaths(pluginId, pluginMetadata, delegate));
+    }
+
+    private List<String> resolveDependencyPaths(String pluginId, Plugin pluginMetadata, PipController.InstallerDelegate delegate) throws Exception {
         List<String> requirements = pluginMetadata != null ? pluginMetadata.getRequirements() : null;
-        if (requirements == null || requirements.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<String> paths = PipController.INSTANCE.installDependencies(requirements, pluginId, delegate);
-        LinkedHashMap<String, Set<String>> pathModules = new LinkedHashMap<>();
+        return PipController.INSTANCE.installDependencies(requirements, pluginId, delegate);
+    }
+
+    private Map<String, Set<String>> checkDependencyPaths(String pluginId, List<String> paths) throws Exception {
+        Map<String, Set<String>> pathModules = new LinkedHashMap<>();
         for (String path : paths) {
-            pathModules.put(path, topLevelModuleNames(new File(path)));
+            File directory = new File(path).getCanonicalFile();
+            if (!directory.isDirectory()) {
+                throw new IOException("Dependency directory is missing: " + path);
+            }
+            pathModules.put(directory.getAbsolutePath(), topLevelModuleNames(directory));
         }
         Set<String> sdkModules = topLevelModuleNames(SDK_DIR);
         for (Map.Entry<String, Set<String>> entry : pathModules.entrySet()) {
+            if (entry.getValue().contains(pluginId)) {
+                throw new Exception("Dependency " + new File(entry.getKey()).getName()
+                        + " provides a module with the same name as plugin '" + pluginId + "'.");
+            }
             Set<String> intersect = new java.util.HashSet<>(entry.getValue());
             intersect.retainAll(sdkModules);
             if (!intersect.isEmpty()) {
@@ -593,22 +598,67 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                         + " provides " + intersect + ", which would replace the plugins SDK module of the same name.");
             }
         }
-        for (Map.Entry<String, Set<String>> entry : pathModules.entrySet()) {
-            disableShadowedPlugins(pluginId, new File(entry.getKey()).getName(), entry.getValue());
+        return pathModules;
+    }
+
+    private void activatePluginDependencies(String pluginId, List<String> paths) throws Exception {
+        Map<String, Set<String>> pathModules = checkDependencyPaths(pluginId, paths);
+        boolean inUpdate = PipController.INSTANCE.isPluginUpdateInProgress(pluginId);
+        if (inUpdate) {
+            for (Map.Entry<String, Set<String>> dependency : pathModules.entrySet()) {
+                for (String module : dependency.getValue()) {
+                    if (pluginInstances.containsKey(module) || getPluginsController().isPluginActive(module)) {
+                        throw new Exception("Dependency of '" + pluginId + "' would shadow enabled plugin '" + module + "'.");
+                    }
+                }
+                File packageDir = new File(dependency.getKey()).getParentFile();
+                for (Map.Entry<String, List<String>> owner : pluginDependencyPaths.entrySet()) {
+                    if (pluginId.equals(owner.getKey())) {
+                        continue;
+                    }
+                    for (String activePath : owner.getValue()) {
+                        if (!dependency.getKey().equals(activePath)
+                                && packageDir.equals(new File(activePath).getParentFile())) {
+                            throw new Exception("Dependency " + packageDir.getName() + " of '" + pluginId
+                                    + "' conflicts with the version in use by '" + owner.getKey() + "'.");
+                        }
+                    }
+                }
+            }
         }
-        Python python = getPython();
-        if (python != null) {
-            PyObject sysPath = python.getModule("sys").get("path");
-            if (sysPath != null) {
-                for (int i = paths.size() - 1; i >= 0; i--) {
-                    String path = paths.get(i);
+        List<String> canonicalPaths = new ArrayList<>(pathModules.keySet());
+        pluginDependencyPaths.put(pluginId, canonicalPaths);
+        boolean attached = false;
+        try {
+            if (!inUpdate) {
+                for (Map.Entry<String, Set<String>> entry : pathModules.entrySet()) {
+                    disableShadowedPlugins(pluginId, new File(entry.getKey()).getName(), entry.getValue());
+                }
+            }
+            if (!canonicalPaths.isEmpty()) {
+                Python python = getPython();
+                PyObject sysPath = python == null ? null : python.getModule("sys").get("path");
+                if (sysPath == null) {
+                    throw new IllegalStateException("Python import path is unavailable");
+                }
+                for (int i = canonicalPaths.size() - 1; i >= 0; i--) {
+                    String path = canonicalPaths.get(i);
+                    // Existing owners keep their relative search precedence.
+                    if (insertedDependencyPaths.contains(path) && sysPath.callAttr("__contains__", path).toBoolean()) {
+                        continue;
+                    }
+                    insertedDependencyPaths.add(path);
                     removeFromSysPath(sysPath, path);
                     sysPath.callAttr("insert", 0, path);
                 }
             }
+            attached = true;
+        } finally {
+            if (!attached) {
+                pluginDependencyPaths.remove(pluginId);
+            }
+            pruneDependencyPaths();
         }
-        pluginDependencyPaths.put(pluginId, new ArrayList<>(paths));
-        return paths;
     }
 
     private void disableShadowedPlugins(String pluginId, String dependencyName, Set<String> providedModules) {
@@ -630,128 +680,89 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         }
     }
 
+    private static final String PRUNE_DEPENDENCY_IMPORTS = """
+            import importlib, os, sys
+
+            def prune_dependency_imports(roots):
+                roots = tuple(roots)
+                prefixes = tuple(root + os.sep for root in roots)
+
+                def under_stale_root(path):
+                    if not isinstance(path, str) or not os.path.isabs(path):
+                        return False
+                    path = os.path.realpath(path)
+                    return path in roots or path.startswith(prefixes)
+
+                # Inspect namespace package portions before changing their search path.
+                stale_modules = []
+                for name, module in list(sys.modules.items()):
+                    if not isinstance(name, str) or not isinstance(module, type(sys)):
+                        continue
+                    attrs = vars(module)
+                    try:
+                        origin = attrs.get('__file__')
+                        if origin is None:
+                            locations = tuple(attrs.get('__path__', ()))
+                            stale = bool(locations) and all(map(under_stale_root, locations))
+                        else:
+                            stale = under_stale_root(origin)
+                    except (OSError, TypeError, ValueError):
+                        continue
+                    if stale:
+                        stale_modules.append((name, module))
+
+                sys.path[:] = [path for path in sys.path if not under_stale_root(path)]
+                for path in list(sys.path_importer_cache):
+                    if under_stale_root(path):
+                        sys.path_importer_cache.pop(path, None)
+                for name, module in stale_modules:
+                    if sys.modules.get(name) is module:
+                        sys.modules.pop(name, None)
+                        parent_name, _, child = name.rpartition('.')
+                        parent = sys.modules.get(parent_name)
+                        if isinstance(parent, type(sys)) and vars(parent).get(child) is module:
+                            vars(parent).pop(child, None)
+                importlib.invalidate_caches()
+            """;
+
     private void pruneDependencyPaths() {
-        if (pluginDependencyPaths.isEmpty()) {
+        if (insertedDependencyPaths.isEmpty() || python == null) {
             return;
         }
-        Set<String> activeLibraryPaths = new java.util.HashSet<>();
+        Set<String> stale = new java.util.LinkedHashSet<>(insertedDependencyPaths);
         for (List<String> paths : pluginDependencyPaths.values()) {
-            if (paths != null) {
-                activeLibraryPaths.addAll(paths);
-            }
-        }
-        ArrayList<String> stale = new ArrayList<>();
-        for (List<String> paths : pluginDependencyPaths.values()) {
-            if (paths == null) {
-                continue;
-            }
-            for (String path : paths) {
-                if (!activeLibraryPaths.contains(path)) {
-                    stale.add(path);
-                }
-            }
+            stale.removeAll(paths);
         }
         if (stale.isEmpty()) {
             return;
         }
         try {
-            Python python = getPython();
-            if (python == null) {
-                return;
-            }
-            PyObject sys = python.getModule("sys");
-            PyObject sysPath = sys.get("path");
-            PyObject sysModules = sys.get("modules");
-            PyObject pathImporterCache = sys.get("path_importer_cache");
+            PyObject builtins = python.getBuiltins();
+            PyObject namespace = builtins.callAttr("dict");
+            builtins.callAttr("exec", PRUNE_DEPENDENCY_IMPORTS, namespace);
+            PyObject roots = builtins.callAttr("list");
             for (String path : stale) {
-                if (sysPath != null) {
-                    removeFromSysPath(sysPath, path);
-                }
-                if (pathImporterCache != null) {
-                    pathImporterCache.callAttr("pop", path, null);
-                }
-                if (sysModules != null) {
-                    removeModulesUnderPath(sysModules, path);
-                }
-                for (List<String> paths : pluginDependencyPaths.values()) {
-                    if (paths != null) {
-                        paths.remove(path);
-                    }
-                }
+                roots.callAttr("append", path);
             }
-            python.getModule("importlib").callAttr("invalidate_caches");
+            namespace.callAttr("__getitem__", "prune_dependency_imports").call(roots);
+            insertedDependencyPaths.removeAll(stale);
         } catch (PyException e) {
             FileLog.e("Failed to prune plugin dependency paths", e);
         }
     }
 
-    private void removeModulesUnderPath(PyObject sysModules, String path) {
-        if (sysModules == null) {
-            return;
-        }
-        String withSeparator = path + File.separator;
-        String canonical = canonicalPathOrNull(path);
-        String canonicalWithSeparator = canonical != null ? canonical + File.separator : withSeparator;
-        ArrayList<String> toRemove = new ArrayList<>();
-        try {
-            for (PyObject nameObj : getPython().getBuiltins().callAttr("list", sysModules).asList()) {
-                String name = nameObj != null ? nameObj.toString() : null;
-                if (TextUtils.isEmpty(name)) {
-                    continue;
-                }
-                PyObject module = sysModules.callAttr("get", name);
-                if (module == null) {
-                    continue;
-                }
-                PyObject fileObj = module.get("__file__");
-                String file = fileObj != null ? fileObj.toString() : null;
-                if (file == null) {
-                    PyObject pathObj = module.get("__path__");
-                    if (pathObj != null) {
-                        List<PyObject> pathList = pathObj.asList();
-                        file = pathList != null && !pathList.isEmpty() ? pathList.get(0).toString() : null;
-                    }
-                }
-                if (file == null) {
-                    continue;
-                }
-                if (file.startsWith(withSeparator)
-                        || (canonicalPathOrNull(file) != null && canonicalPathOrNull(file).startsWith(canonicalWithSeparator))) {
-                    toRemove.add(name);
-                }
-            }
-        } catch (PyException e) {
-            FileLog.e("Failed to scan sys.modules for stale plugin modules", e);
-        }
-        for (String name : toRemove) {
-            sysModules.callAttr("pop", name, null);
-        }
-        if (!toRemove.isEmpty()) {
-            FileLog.d("Unloaded " + toRemove.size() + " module(s) under " + new File(path).getName());
-        }
-    }
-
     private void removePluginPathsFromSysPath() {
+        pluginDependencyPaths.clear();
+        pruneDependencyPaths();
         Python python = this.python;
         if (python == null) {
             return;
         }
         try {
             PyObject sysPath = python.getModule("sys").get("path");
-            if (sysPath == null) {
-                return;
+            if (sysPath != null) {
+                removeFromSysPath(sysPath, getPluginsController().pluginsDir.getAbsolutePath());
             }
-            ArrayList<String> paths = new ArrayList<>();
-            for (List<String> dependencyPaths : pluginDependencyPaths.values()) {
-                if (dependencyPaths != null) {
-                    paths.addAll(dependencyPaths);
-                }
-            }
-            paths.add(getPluginsController().pluginsDir.getAbsolutePath());
-            for (String path : paths) {
-                removeFromSysPath(sysPath, path);
-            }
-            pluginDependencyPaths.clear();
         } catch (PyException e) {
             FileLog.e("Failed to remove plugin paths from sys.path", e);
         }
@@ -1146,6 +1157,19 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     public void loadPlugin(String pluginId, String filePath, Plugin plugin, PipController.InstallerDelegate dependencyDelegate, boolean notifyPlugins) throws Exception {
         boolean shouldEnable = getPluginsController().preferences.getBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, false);
+        try {
+            loadPlugin(pluginId, filePath, plugin, dependencyDelegate, shouldEnable, dependencyDelegate != null, null);
+        } catch (Throwable t) {
+            cleanUpFailedLoad(pluginId, t);
+            throw t;
+        }
+        if (notifyPlugins && shouldEnable && !ExteraConfig.pluginsSafeMode) {
+            getPluginsController().notifyPluginsChanged();
+        }
+    }
+
+    private void loadPlugin(String pluginId, String filePath, Plugin plugin, PipController.InstallerDelegate dependencyDelegate,
+                            boolean shouldEnable, boolean prepareDependencies, List<String> dependencyPaths) throws Exception {
         File file = new File(filePath);
         if (!file.exists() || !file.isFile()) {
             throw new Exception("Plugin file not found: " + filePath);
@@ -1171,16 +1195,20 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             return;
         }
         if (shouldEnable) {
-            createPluginInstance(pluginId, plugin, dependencyDelegate);
-            setPluginEnabledInternal(pluginId, true, null, notifyPlugins);
-        } else if (dependencyDelegate != null) {
-            installPluginDependencies(pluginId, plugin, dependencyDelegate);
+            enablePlugin(pluginId, plugin, dependencyDelegate, dependencyPaths);
+        } else if (prepareDependencies) {
+            preparePluginDependencies(pluginId, plugin, dependencyDelegate);
         }
     }
 
-    private void createPluginInstance(String pluginId, Plugin plugin, PipController.InstallerDelegate dependencyDelegate) throws Exception {
+    private void createPluginInstance(String pluginId, Plugin plugin, PipController.InstallerDelegate dependencyDelegate,
+                                      List<String> dependencyPaths) throws Exception {
         try {
-            installPluginDependencies(pluginId, plugin, dependencyDelegate);
+            if (dependencyPaths != null) {
+                activatePluginDependencies(pluginId, dependencyPaths);
+            } else {
+                installPluginDependencies(pluginId, plugin, dependencyDelegate);
+            }
             refreshImportCaches(pluginId, new File(getPluginsController().pluginsDir, pluginId + ".py").getParentFile());
             Python python = getPython();
             if (python == null) {
@@ -1192,8 +1220,8 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             }
             PyObject moduleFile = module.get("__file__");
             String file = moduleFile != null ? moduleFile.toString() : null;
-            if (!TextUtils.equals(canonicalPathOrNull(file),
-                    canonicalPathOrNull(new File(getPluginsController().pluginsDir, pluginId + ".py").getAbsolutePath()))) {
+            String expectedFile = canonicalPathOrNull(new File(getPluginsController().pluginsDir, pluginId + ".py").getAbsolutePath());
+            if (expectedFile == null || !expectedFile.equals(canonicalPathOrNull(file))) {
                 throw new Exception("Plugin module '" + pluginId + "' was loaded from a different location ("
                         + file + "). Make sure your plugin id matches the plugin file name.");
             }
@@ -1259,7 +1287,6 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     /** Full teardown: drops the instance and the imported module, so the next enable is a fresh load. */
     public void unloadPlugin(String pluginId) {
         settingsCache.remove(pluginId);
-        pluginDependencyPaths.remove(pluginId);
         PyObject instance = pluginInstances.remove(pluginId);
         Plugin plugin = getPluginsController().plugins.get(pluginId);
         if (plugin != null) {
@@ -1290,15 +1317,19 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         } catch (PyException e) {
             FileLog.e("Failed to unload plugin " + pluginId, e);
         } finally {
-            getPluginsController().cleanupPlugin(pluginId);
-            if (instance != null) {
-                try {
-                    instance.close();
-                } catch (Throwable t) {
-                    FileLog.e("Failed to close plugin instance " + pluginId, t);
+            try {
+                getPluginsController().cleanupPlugin(pluginId);
+            } finally {
+                if (instance != null) {
+                    try {
+                        instance.close();
+                    } catch (Throwable t) {
+                        FileLog.e("Failed to close plugin instance " + pluginId, t);
+                    }
                 }
+                pluginDependencyPaths.remove(pluginId);
+                pruneDependencyPaths();
             }
-            pruneDependencyPaths();
         }
     }
 
@@ -1334,90 +1365,82 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     }
 
     private void setPluginEnabledInternal(String pluginId, boolean enabled, Utilities.Callback<String> callback, boolean notify) {
+        String error = null;
         try {
             Plugin plugin = getPluginsController().plugins.get(pluginId);
             if (plugin == null) {
                 throw new Exception("Plugin not found: " + pluginId);
             }
-            PyObject instance = pluginInstances.get(pluginId);
             if (enabled && ExteraConfig.pluginsSafeMode) {
                 plugin.setError(null);
                 plugin.setEnabled(true);
+                PyObject instance = pluginInstances.get(pluginId);
                 if (instance != null) {
                     instance.put("enabled", true);
                     instance.put("initialized", false);
                     instance.put("error_message", (Object) null);
                 }
-                getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, true).apply();
-                if (notify) {
-                    getPluginsController().notifyPluginsChanged();
-                }
-                if (callback != null) {
-                    AndroidUtilities.runOnUIThread(() -> callback.run(null));
-                }
-                return;
-            }
-            if (enabled && instance == null) {
-                createPluginInstance(pluginId, plugin, null);
-                instance = pluginInstances.get(pluginId);
-                if (instance == null) {
-                    throw new Exception("Failed to create plugin instance: " + pluginId);
-                }
-            }
-            if (PyObjectUtils.getBoolean(instance, "initialized", false) == enabled && !plugin.hasError()) {
-                if (callback != null) {
-                    AndroidUtilities.runOnUIThread(() -> callback.run(null));
-                }
-                return;
-            }
-
-            if (enabled) {
-                getPluginsController().cleanupPlugin(pluginId);
-                getPluginsController().watchdog.onPluginExecutionStarted(pluginId);
-                try {
-                    instance.callAttr(PluginsConstants.ON_PLUGIN_LOAD);
-                } finally {
-                    getPluginsController().watchdog.onPluginExecutionFinished(pluginId);
-                }
-                instance.put("initialized", true);
-                instance.put("error_message", (Object) null);
-                plugin.setError(null);
-                instance.put("enabled", true);
-                plugin.setEnabled(true);
-                getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, true).apply();
-                getPluginsController().loadPluginSettings(pluginId);
+            } else if (enabled) {
+                enablePlugin(pluginId, plugin, null, null);
             } else {
-                // Disabling drops the instance and the imported module: re-enabling must behave like
-                // a fresh load, so the teardown goes through unloadPlugin instead of a partial cleanup.
-                getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, false).apply();
                 unloadPlugin(pluginId);
             }
-
-            if (notify) {
-                getPluginsController().notifyPluginsChanged();
-            }
-
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(() -> callback.run(null));
-            }
+            getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, enabled).apply();
         } catch (Throwable t) {
             FileLog.e("Unexpected error setting enabled state for " + pluginId, t);
             if (enabled) {
-                Plugin plugin = getPluginsController().plugins.get(pluginId);
-                if (plugin != null) {
-                    plugin.setEnabled(false);
-                    plugin.setError(t);
-                }
-                PyObject instance = pluginInstances.get(pluginId);
-                if (instance != null) {
-                    instance.put("error_message", t.getMessage());
-                }
+                cleanUpFailedLoad(pluginId, t);
                 getPluginsController().preferences.edit().putBoolean(PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId, false).apply();
-                unloadPlugin(pluginId);
             }
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(() -> callback.run(stackTraceToString(t)));
+            error = stackTraceToString(t);
+        }
+        if (notify) {
+            getPluginsController().notifyPluginsChanged();
+        }
+        if (callback != null) {
+            String result = error;
+            AndroidUtilities.runOnUIThread(() -> callback.run(result));
+        }
+    }
+
+    private void enablePlugin(String pluginId, Plugin plugin, PipController.InstallerDelegate dependencyDelegate,
+                              List<String> dependencyPaths) throws Exception {
+        PyObject instance = pluginInstances.get(pluginId);
+        if (instance == null) {
+            createPluginInstance(pluginId, plugin, dependencyDelegate, dependencyPaths);
+            instance = pluginInstances.get(pluginId);
+            if (instance == null) {
+                throw new Exception("Failed to create plugin instance: " + pluginId);
             }
+        }
+        if (PyObjectUtils.getBoolean(instance, "initialized", false) && !plugin.hasError()) {
+            return;
+        }
+        getPluginsController().cleanupPlugin(pluginId);
+        getPluginsController().watchdog.onPluginExecutionStarted(pluginId);
+        try {
+            instance.callAttr(PluginsConstants.ON_PLUGIN_LOAD);
+        } finally {
+            getPluginsController().watchdog.onPluginExecutionFinished(pluginId);
+        }
+        instance.put("initialized", true);
+        instance.put("error_message", (Object) null);
+        instance.put("enabled", true);
+        plugin.setError(null);
+        plugin.setEnabled(true);
+        getPluginsController().loadPluginSettings(pluginId);
+    }
+
+    private void cleanUpFailedLoad(String pluginId, Throwable failure) {
+        try {
+            unloadPlugin(pluginId);
+        } catch (Throwable cleanupError) {
+            failure.addSuppressed(cleanupError);
+        }
+        Plugin plugin = getPluginsController().plugins.get(pluginId);
+        if (plugin != null) {
+            plugin.setError(failure);
+            plugin.setEnabled(false);
         }
     }
 
@@ -1426,129 +1449,200 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     }
 
     public void loadPluginFromFile(String sourceFilePath, Plugin plugin, PipController.InstallerDelegate dependencyDelegate, Utilities.Callback<String> callback) {
-        PluginsController.runOnPluginsQueue(() -> {
-            String pluginId = null;
-            File targetFile = null;
-            File backupFile = null;
-            boolean hadPreviousVersion = false;
-            boolean copiedToTarget = false;
-            Plugin resolvedPlugin = plugin;
-            try {
-                if (resolvedPlugin == null) {
-                    PluginsController.PluginValidationResult validationResult = validatePluginFromFile(sourceFilePath);
-                    if (validationResult.error != null) {
-                        throw new Exception(validationResult.error);
-                    }
-                    resolvedPlugin = validationResult.plugin;
-                }
+        loadPluginFromFile(sourceFilePath, plugin, dependencyDelegate, false, callback);
+    }
 
+    public void loadPluginFromFile(String sourceFilePath, Plugin plugin, PipController.InstallerDelegate dependencyDelegate,
+                                   boolean enableAfterUpdate, Utilities.Callback<String> callback) {
+        PluginsController.runOnPluginsQueue(() -> {
+            PluginsController controller = getPluginsController();
+            String pluginId = null;
+            String enabledKey = null;
+            File targetFile = null;
+            File stagedFile = null;
+            File backupFile = null;
+            Plugin previousPlugin = null;
+            Plugin resolvedPlugin = null;
+            Throwable previousError = null;
+            List<String> previousPaths = null;
+            PyObject previousSettings = null;
+            boolean hadEnabledPreference = false;
+            boolean wasEnabled = false;
+            boolean wasActive = false;
+            boolean dependencyUpdateStarted = false;
+            boolean previousUnloaded = false;
+            boolean targetReplaced = false;
+            String error = null;
+            try {
+                File directory = controller.pluginsDir;
+                stagedFile = File.createTempFile("plugin-", ".tmp", directory);
+                copyPluginFile(new File(sourceFilePath), stagedFile);
+                PluginsController.PluginValidationResult validation = validatePluginFromFile(stagedFile.getAbsolutePath());
+                if (validation.error != null || validation.plugin == null) {
+                    throw new IOException(validation.error != null ? validation.error : "Cannot validate plugin metadata");
+                }
+                resolvedPlugin = validation.plugin;
                 pluginId = resolvedPlugin.getId();
-                targetFile = new File(getPluginsController().pluginsDir, pluginId + ".py");
+                if (plugin != null && !pluginId.equals(plugin.getId())) {
+                    throw new IOException("Plugin ID changed before installation: " + plugin.getId());
+                }
+                enabledKey = PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId;
+                hadEnabledPreference = controller.preferences.contains(enabledKey);
+                wasEnabled = controller.preferences.getBoolean(enabledKey, false);
+                targetFile = new File(directory, pluginId + ".py");
+                if (dependencyDelegate != null && dependencyDelegate.isCancelled()) {
+                    throw new PipController.InstallationCancelledException();
+                }
 
                 if (targetFile.exists()) {
-                    hadPreviousVersion = true;
+                    previousPlugin = controller.plugins.get(pluginId);
+                    wasActive = previousPlugin != null && previousPlugin.isEnabled();
+                    previousError = previousPlugin != null ? previousPlugin.getError() : null;
+                    previousPaths = pluginDependencyPaths.get(pluginId);
+                    if (previousPaths != null) {
+                        previousPaths = new ArrayList<>(previousPaths);
+                    }
+                    boolean willEnable = wasEnabled || enableAfterUpdate;
+                    if (willEnable && !ExteraConfig.pluginsSafeMode) {
+                        PyObject settings = getPython().getModule("plugin_settings").callAttr("get_all_settings", pluginId);
+                        previousSettings = getPython().getModule("copy").callAttr("deepcopy", settings);
+                    }
+                    File backup = File.createTempFile(pluginId + "-", ".py.bak", directory);
+                    backupFile = backup;
+                    copyPluginFile(targetFile, backup);
+                }
+
+                PipController.INSTANCE.beginPluginUpdate(pluginId);
+                dependencyUpdateStarted = true;
+                if (backupFile != null) {
+                    previousUnloaded = true;
                     unloadPlugin(pluginId);
-                    backupFile = new File(getPluginsController().pluginsDir, pluginId + ".py.bak");
-                    if (backupFile.exists()) {
-                        //noinspection ResultOfMethodCallIgnored
-                        backupFile.delete();
-                    }
-                    if (!targetFile.renameTo(backupFile)) {
-                        throw new IOException("Failed to backup existing plugin file.");
-                    }
                 }
-
-                try (FileInputStream input = new FileInputStream(sourceFilePath);
-                     FileOutputStream output = new FileOutputStream(targetFile)) {
-                    byte[] buffer = new byte[1024];
-                    int read;
-                    while ((read = input.read(buffer)) != -1) {
-                        output.write(buffer, 0, read);
-                    }
+                Os.rename(stagedFile.getAbsolutePath(), targetFile.getAbsolutePath());
+                targetReplaced = true;
+                boolean shouldEnable = wasEnabled || (backupFile != null && enableAfterUpdate && !ExteraConfig.pluginsSafeMode);
+                loadPlugin(pluginId, targetFile.getAbsolutePath(), resolvedPlugin, dependencyDelegate, shouldEnable, true, null);
+                if (dependencyDelegate != null && dependencyDelegate.isCancelled()) {
+                    throw new PipController.InstallationCancelledException();
                 }
-                copiedToTarget = true;
-
-                loadPlugin(pluginId, targetFile.getAbsolutePath(), resolvedPlugin, dependencyDelegate);
-
-                if (backupFile != null && backupFile.exists()) {
-                    //noinspection ResultOfMethodCallIgnored
-                    backupFile.delete();
+                if (shouldEnable && !wasEnabled) {
+                    controller.preferences.edit().putBoolean(enabledKey, true).apply();
                 }
-                getPluginsController().notifyPluginsChanged();
-                if (callback != null) {
-                    AndroidUtilities.runOnUIThread(() -> callback.run(null));
-                }
+                PipController.INSTANCE.finishPluginUpdate(pluginId, true);
+                dependencyUpdateStarted = false;
             } catch (Throwable t) {
-                FileLog.e("Unexpected error loading plugin from file: " + sourceFilePath, t);
                 boolean cancelled = t instanceof PipController.InstallationCancelledException;
-                if (!TextUtils.isEmpty(pluginId)) {
-                    PipController.INSTANCE.uninstallDependencies(pluginId);
+                if (targetReplaced) {
+                    cleanUpFailedLoad(pluginId, t);
                 }
-
-                if (hadPreviousVersion && backupFile != null && backupFile.exists() && targetFile != null) {
-                    if (targetFile.exists()) {
-                        //noinspection ResultOfMethodCallIgnored
-                        targetFile.delete();
+                if (dependencyUpdateStarted) {
+                    try {
+                        PipController.INSTANCE.finishPluginUpdate(pluginId, false);
+                    } catch (Throwable rollbackError) {
+                        t.addSuppressed(rollbackError);
                     }
-                    if (backupFile.renameTo(targetFile)) {
-                        try {
-                            loadPlugin(pluginId, targetFile.getAbsolutePath());
-                        } catch (Exception e) {
-                            FileLog.e("Failed to reload original plugin after update failure for " + pluginId, e);
+                }
+                if (targetReplaced || previousUnloaded) {
+                    restoreEnabledPreference(controller.preferences, enabledKey, hadEnabledPreference, wasEnabled);
+                    if (backupFile != null) {
+                        if (targetReplaced) {
+                            try {
+                                Os.rename(backupFile.getAbsolutePath(), targetFile.getAbsolutePath());
+                            } catch (Throwable restoreError) {
+                                t.addSuppressed(restoreError);
+                                FileLog.e("Plugin backup retained at " + backupFile, restoreError);
+                                backupFile = null;
+                            }
                         }
+                        if (previousSettings != null) {
+                            try {
+                                getPython().getModule("plugin_settings").callAttr("set_all_settings", pluginId, previousSettings);
+                            } catch (Throwable restoreError) {
+                                t.addSuppressed(restoreError);
+                            } finally {
+                                settingsCache.remove(pluginId);
+                            }
+                        }
+                        if (backupFile != null) {
+                            try {
+                                boolean restoreActive = previousPlugin == null ? wasEnabled : wasActive;
+                                if (previousPaths == null && restoreActive && !ExteraConfig.pluginsSafeMode) {
+                                    previousPaths = PipController.INSTANCE.getRegisteredDependencyPaths(pluginId);
+                                }
+                                loadPlugin(pluginId, targetFile.getAbsolutePath(), previousPlugin, null, restoreActive, false, previousPaths);
+                                if (!restoreActive && previousPlugin != null) {
+                                    previousPlugin.setError(previousError);
+                                }
+                            } catch (Throwable reloadError) {
+                                cleanUpFailedLoad(pluginId, reloadError);
+                                if (previousPlugin != null) {
+                                    previousPlugin.setEnabled(false);
+                                    previousPlugin.setError(reloadError);
+                                    controller.plugins.put(pluginId, previousPlugin);
+                                }
+                                t.addSuppressed(reloadError);
+                            }
+                        } else {
+                            // Keep the unverified candidate disabled if the previous source could not be put back.
+                            controller.preferences.edit().putBoolean(enabledKey, false).apply();
+                        }
+                    } else if (cancelled) {
+                        controller.plugins.remove(pluginId);
+                        deleteFileIfExists(targetFile);
+                        controller.clearPluginSettingsPreferences(pluginId);
                     } else {
-                        FileLog.e("Failed to restore backup for plugin " + pluginId);
-                    }
-                } else if (!TextUtils.isEmpty(pluginId)) {
-                    getPluginsController().cleanupPlugin(pluginId);
-                    PyObject instance = pluginInstances.remove(pluginId);
-                    if (instance != null) {
-                        instance.close();
-                    }
-                    if (cancelled) {
-                        getPluginsController().plugins.remove(pluginId);
-                        if (targetFile != null && targetFile.exists()) {
-                            //noinspection ResultOfMethodCallIgnored
-                            targetFile.delete();
-                        }
-                        getPluginsController().clearPluginSettingsPreferences(pluginId);
-                    } else if (copiedToTarget && targetFile != null && targetFile.exists()) {
-                        if (resolvedPlugin == null) {
-                            resolvedPlugin = new Plugin(pluginId, pluginId);
-                            resolvedPlugin.setAuthor(LocaleController.getString(R.string.PluginNoAuthor));
-                            resolvedPlugin.setVersion("1.0");
-                        }
-                        resolvedPlugin.setEngine(PluginsConstants.PYTHON);
                         resolvedPlugin.setEnabled(false);
                         resolvedPlugin.setError(t);
-                        getPluginsController().plugins.put(pluginId, resolvedPlugin);
-                    } else {
-                        getPluginsController().plugins.remove(pluginId);
-                        if (targetFile != null && targetFile.exists()) {
-                            //noinspection ResultOfMethodCallIgnored
-                            targetFile.delete();
-                        }
-                        getPluginsController().clearPluginSettingsPreferences(pluginId);
+                        controller.plugins.put(pluginId, resolvedPlugin);
                     }
-                } else if (targetFile != null && targetFile.exists()) {
-                    //noinspection ResultOfMethodCallIgnored
-                    targetFile.delete();
                 }
-
-                getPluginsController().notifyPluginsChanged();
-                if (callback != null) {
-                    String error;
-                    if (cancelled) {
-                        error = INSTALL_CANCELLED;
-                    } else if (t instanceof PipController.UnsupportedDependencyException) {
-                        error = t.getMessage();
-                    } else {
-                        error = stackTraceToString(t);
-                    }
-                    AndroidUtilities.runOnUIThread(() -> callback.run(error));
+                FileLog.e("Failed to install plugin from " + sourceFilePath, t);
+                if (cancelled && t.getSuppressed().length == 0) {
+                    error = INSTALL_CANCELLED;
+                } else if (t instanceof PipController.UnsupportedDependencyException && t.getSuppressed().length == 0) {
+                    error = t.getMessage();
+                } else {
+                    error = stackTraceToString(t);
+                }
+            } finally {
+                if (stagedFile != null) {
+                    deleteFileIfExists(stagedFile);
+                }
+                if (backupFile != null) {
+                    deleteFileIfExists(backupFile);
+                }
+                if (previousSettings != null) {
+                    previousSettings.close();
                 }
             }
+            controller.notifyPluginsChanged();
+            if (callback != null) {
+                String result = error;
+                AndroidUtilities.runOnUIThread(() -> callback.run(result));
+            }
         });
+    }
+
+    private static void copyPluginFile(File source, File target) throws IOException {
+        try (FileInputStream input = new FileInputStream(source);
+             FileOutputStream output = new FileOutputStream(target)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            output.getFD().sync();
+        }
+    }
+
+    private static void restoreEnabledPreference(SharedPreferences preferences, String key, boolean present, boolean enabled) {
+        SharedPreferences.Editor edit = preferences.edit();
+        if (present) {
+            edit.putBoolean(key, enabled);
+        } else {
+            edit.remove(key);
+        }
+        edit.apply();
     }
 
     public PluginsController.PluginValidationResult validatePluginFromFile(String filePath) {
@@ -1576,8 +1670,14 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             if (!TextUtils.isEmpty(appVersion) && !matchesVersionRequirement(BuildVars.BUILD_VERSION_STRING, appVersion)) {
                 return new PluginsController.PluginValidationResult(null, "Plugin requires app version " + appVersion + ". Current is " + BuildVars.BUILD_VERSION_STRING);
             }
-            if (minVersion != null && !SharedConfig.versionBiggerOrEqual(BuildVars.BUILD_VERSION_STRING, minVersion)) {
-                return new PluginsController.PluginValidationResult(null, "Plugin requires app version " + minVersion + " or higher. Current is " + BuildVars.BUILD_VERSION_STRING);
+            if (minVersion != null) {
+                String minimum = parseMinimumVersion(minVersion);
+                if (minimum == null) {
+                    return new PluginsController.PluginValidationResult(null, LocaleController.getString(R.string.InvalidFormatError) + ": __min_version__");
+                }
+                if (!SharedConfig.versionBiggerOrEqual(BuildConfig.OFFICIAL_VERSION, minimum)) {
+                    return new PluginsController.PluginValidationResult(null, "Plugin requires app version " + minimum + " or higher. Current is " + BuildVars.BUILD_VERSION_STRING);
+                }
             }
             String sdkVersion = pluginMetadata.get("sdk_version");
             if (!TextUtils.isEmpty(sdkVersion) && !matchesVersionRequirement(SDK_VERSION, sdkVersion)) {
@@ -2027,6 +2127,22 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
         return requirements;
     }
 
+    private static String parseMinimumVersion(String requirement) {
+        java.util.regex.Matcher matcher = VERSION_REQUIREMENT_PATTERN.matcher(requirement);
+        if (!matcher.matches() || (matcher.group(1) != null && !">=".equals(matcher.group(1)))) {
+            return null;
+        }
+        String version = matcher.group(2);
+        try {
+            for (String part : version.split("\\.")) {
+                Integer.parseInt(part);
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return version;
+    }
+
     private static boolean matchesVersionRequirement(String currentVersion, String requirement) {
         if (TextUtils.isEmpty(currentVersion) || TextUtils.isEmpty(requirement)) {
             return true;
@@ -2230,10 +2346,9 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     @Override
     public void deletePlugin(String pluginId, Utilities.Callback<String> callback) {
-        if (pluginInstances.containsKey(pluginId)) {
-            unloadPlugin(pluginId);
-        }
+        unloadPlugin(pluginId);
         PipController.INSTANCE.uninstallDependencies(pluginId);
+        pruneDependencyPaths();
         getPluginsController().plugins.remove(pluginId);
         File file = new File(getPluginsController().pluginsDir, pluginId + ".py");
         if (file.exists()) {
