@@ -33,6 +33,8 @@ cdef set special_attrs = set(dir(type) +                        # Special Python
 cdef bint j_timing_enabled = False
 cdef double j_timing_min_ms = 0.0
 cdef bint j_modifiers_bootstrap_ready = False
+# Set once java.lang.Class itself can be reflected, so class proxies may fall back to its methods.
+cdef bint j_class_instance_ready = False
 
 
 cdef double _chaquopy_timing_now_ms() except? -1.0:
@@ -233,7 +235,10 @@ class JavaClass(type):
                     if result is not _J_NO_MEMBER:
                         return result
             if name not in special_attrs and name not in type_dict(cls):
-                reflect_member(cls, name)
+                if not reflect_member(cls, name):
+                    class_member = _chaquopy_class_instance_member(cls, name)
+                    if class_member is not None:
+                        return class_member
             return type.__getattribute__(cls, name)
         finally:
             if _timing_active:
@@ -930,6 +935,8 @@ cdef setup_bootstrap_classes():
         raise Exception(_bootstrap_error_message(
             "setup_bootstrap_classes failed in load_global_classes")) from e
 
+    global j_class_instance_ready
+    j_class_instance_ready = True
     j_modifiers_bootstrap_ready = True
 
 
@@ -1006,6 +1013,31 @@ cdef get_reflector(cls):
         reflector = Reflector.getInstance(Class(instance=cls.__dict__["_chaquopy_j_klass"]))
         type.__setattr__(cls, "_chaquopy_reflector", reflector)
     return reflector
+
+
+# A class proxy obtained from jclass() stands for the class itself, not for an instance of
+# java.lang.Class, so members such as getDeclaredMethods() are not found on it. When a name is
+# not a member of the represented Java class, resolve it against the reflected Class instance of
+# that class instead.
+cdef _chaquopy_class_instance_member(cls, str name):
+    if not j_class_instance_ready:
+        return None
+    if not _chaquopy_is_reflectable_java_class(cls):
+        return None
+    try:
+        member = reflect_member(Class, name)
+    except Exception:
+        return None
+    if isinstance(member, JavaMethod):
+        if member.is_static or member.is_constructor:
+            return None
+    elif not isinstance(member, JavaMultipleMethod):
+        return None
+    try:
+        klass_instance = Class(instance=cls.__dict__["_chaquopy_j_klass"])
+        return member.__get__(klass_instance, Class)
+    except Exception:
+        return None
 
 
 # Methods earlier in the list will override later ones with the same argument signature.
@@ -1373,7 +1405,10 @@ cdef _chaquopy_custom_class_getattr(cls, str name):
     if (not access_all) and \
        _chaquopy_should_use_direct_reflection_fast_path(name, static_only=True):
         if name not in type_dict(cls):
-            reflect_member(cls, name)
+            if not reflect_member(cls, name):
+                class_member = _chaquopy_class_instance_member(cls, name)
+                if class_member is not None:
+                    return class_member
         return type.__getattribute__(cls, name)
     plan = _chaquopy_build_getattr_plan(cls, name, access_all=access_all,
                                         use_getter_setter=use_gs, static_only=True)
