@@ -43,4 +43,9 @@ public class AppIconBulletinLayout extends Bulletin.ButtonLayout {
         imageView.setIsNekoXIcon(icon.isNekoX());
         textView.setText(AndroidUtilities.replaceTags(LocaleController.formatString(R.string.AppIconChangedTo, LocaleController.getString(icon.title))));
     }
+
+    @Override
+    protected CharSequence getAccessibilityText() {
+        return textView.getText();
+    }
 }
