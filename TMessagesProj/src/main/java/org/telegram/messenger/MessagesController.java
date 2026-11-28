@@ -14469,6 +14469,10 @@ public class MessagesController extends BaseController implements NotificationCe
     }
 
     public void processDialogsUpdateRead(final LongSparseIntArray dialogsToUpdate, LongSparseIntArray dialogsMentionsToUpdate) {
+        processDialogsUpdateRead(dialogsToUpdate, dialogsMentionsToUpdate, true);
+    }
+
+    void processDialogsUpdateRead(final LongSparseIntArray dialogsToUpdate, LongSparseIntArray dialogsMentionsToUpdate, boolean updateNotifications) {
         AndroidUtilities.runOnUIThread(() -> {
             boolean filterDialogsChanged = false;
             if (dialogsToUpdate != null) {
@@ -14549,7 +14553,7 @@ public class MessagesController extends BaseController implements NotificationCe
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
             }
             getNotificationCenter().postNotificationName(NotificationCenter.updateInterfaces, UPDATE_MASK_READ_DIALOG_MESSAGE);
-            if (dialogsToUpdate != null) {
+            if (updateNotifications && dialogsToUpdate != null) {
                 getNotificationsController().processDialogsUpdateRead(dialogsToUpdate);
             }
         });
@@ -15287,6 +15291,13 @@ public class MessagesController extends BaseController implements NotificationCe
             req.flags |= 1;
         }
         getConnectionsManager().sendRequest(req, null);
+    }
+
+    void markNotificationAsRead(long dialogId, long topicId, int maxId) {
+        markDialogAsRead(dialogId, maxId, maxId, 0, false, topicId, 0, true, 0);
+        if (topicId != 0 && maxId > 0 && DialogObject.isChatDialog(dialogId)) {
+            getMessagesStorage().updateRepliesMaxReadId(-dialogId, topicId, maxId, -1, true);
+        }
     }
 
     public void markDialogAsRead(long dialogId, int maxPositiveId, int maxNegativeId, int maxDate, boolean popup, long threadId, int countDiff, boolean readNow, int scheduledCount) {
