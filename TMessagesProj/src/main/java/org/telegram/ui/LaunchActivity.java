@@ -396,7 +396,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private Dialog localeDialog;
-    private boolean loadingLocaleDialog;
+    private LanguageAlertRequest languageAlertRequest;
     private HashMap<String, String> systemLocaleStrings;
     private HashMap<String, String> englishLocaleStrings;
 
@@ -2050,6 +2050,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             observersGroup = null;
         }
 
+        if (currentAccount != UserConfig.selectedAccount) {
+            languageAlertRequest = null;
+            if (localeDialog != null) {
+                Dialog dialog = localeDialog;
+                localeDialog = null;
+                dialog.dismiss();
+            }
+        }
         currentAccount = UserConfig.selectedAccount;
         observersGroup = NotificationCenter.getInstance(currentAccount)
             .createObserversGroup(this)
@@ -7907,6 +7915,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @Override
     protected void onDestroy() {
+        languageAlertRequest = null;
         GramWalletStorageAuth.onActivityDestroyed(this);
         PipCoordinator.getInstance().onActivityDestroy(this);
         isActive = false;
@@ -9098,9 +9107,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
     }
 
-    private void showLanguageAlertInternal(LocaleController.LocaleInfo systemInfo, LocaleController.LocaleInfo englishInfo, String systemLang) {
+    private void showLanguageAlertInternal(LocaleController.LocaleInfo systemInfo, LocaleController.LocaleInfo englishInfo, String systemLang, int account) {
         try {
-            loadingLocaleDialog = false;
             boolean firstSystem = systemInfo.builtIn || LocaleController.getInstance().isCurrentLocalLocale();
             AlertDialog.Builder builder = new AlertDialog.Builder(LaunchActivity.this);
             builder.setTitle(getStringForLanguageAlert(systemLocaleStrings, "ChooseYourLanguage", R.string.ChooseYourLanguage));
@@ -9147,12 +9155,15 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             linearLayout.addView(cell, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 50));
             builder.setView(linearLayout);
             builder.setNegativeButton(LocaleController.getString(R.string.OK), (dialog, which) -> {
-                LocaleController.getInstance().applyLanguage(selectedLanguage[0], true, false, currentAccount);
-                rebuildAllFragments(true);
+                if (currentAccount == account && UserConfig.selectedAccount == account) {
+                    LocaleController.getInstance().applyLanguage(selectedLanguage[0], true, false, account);
+                    rebuildAllFragments(true);
+                }
             });
             localeDialog = showAlertDialog(builder);
-            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-            preferences.edit().putString("language_showed2", systemLang).commit();
+            if (localeDialog != null && localeDialog.isShowing()) {
+                LocaleController.markLanguageSuggestionSeen(systemLang);
+            }
         } catch (Exception e) {
             FileLog.e(e);
         }
@@ -9177,107 +9188,127 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         canvas.restore();
     }
 
+    private static class LanguageAlertRequest {
+        final int account;
+        final String systemLang;
+        final boolean force;
+        final LocaleController.LocaleInfo systemInfo;
+        final LocaleController.LocaleInfo englishInfo;
+        HashMap<String, String> systemStrings;
+        HashMap<String, String> englishStrings;
+
+        LanguageAlertRequest(int account, String systemLang, boolean force, LocaleController.LocaleInfo systemInfo, LocaleController.LocaleInfo englishInfo) {
+            this.account = account;
+            this.systemLang = systemLang;
+            this.force = force;
+            this.systemInfo = systemInfo;
+            this.englishInfo = englishInfo;
+        }
+    }
+
+    private boolean canShowLanguageAlert(int account) {
+        return instance == this && !finished && !isFinishing() && !isDestroyed() && localeDialog == null &&
+                currentAccount == account && UserConfig.selectedAccount == account &&
+                !ApplicationLoader.mainInterfacePaused && UserConfig.getInstance(account).isClientActivated();
+    }
+
     private void showLanguageAlert(boolean force) {
-        if (!UserConfig.getInstance(currentAccount).isClientActivated()) {
+        final int account = currentAccount;
+        if (!canShowLanguageAlert(account)) {
             return;
         }
         try {
-            if (loadingLocaleDialog || ApplicationLoader.mainInterfacePaused) {
-                return;
-            }
-            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-            String showedLang = preferences.getString("language_showed2", "");
-            final String systemLang = MessagesController.getInstance(currentAccount).suggestedLangCode;
-            if (!force && showedLang.equals(systemLang)) {
-                if (BuildVars.LOGS_ENABLED) {
-                    FileLog.d("alert already showed for " + showedLang);
+            final String systemLang = LocaleController.normalizeLanguageSuggestion(MessagesController.getInstance(account).suggestedLangCode);
+            if (languageAlertRequest != null) {
+                if (languageAlertRequest.account == account && languageAlertRequest.systemLang.equals(systemLang)) {
+                    return;
                 }
+                languageAlertRequest = null;
+            }
+            if (systemLang.isEmpty() || (!force && LocaleController.hasSeenLanguageSuggestion(systemLang))) {
                 return;
             }
-
-            final LocaleController.LocaleInfo[] infos = new LocaleController.LocaleInfo[2];
-            String arg = systemLang.contains("-") ? systemLang.split("-")[0] : systemLang;
-            String alias;
-            if ("in".equals(arg)) {
-                alias = "id";
-            } else if ("iw".equals(arg)) {
-                alias = "he";
-            } else if ("jw".equals(arg)) {
-                alias = "jv";
-            } else {
-                alias = null;
+            LocaleController.LocaleInfo englishInfo = null;
+            LocaleController.LocaleInfo systemInfo = null;
+            int delimiter = systemLang.indexOf('-');
+            String arg = delimiter < 0 ? systemLang : systemLang.substring(0, delimiter);
+            String alias = null;
+            if ("in".equals(arg) || "iw".equals(arg) || "jw".equals(arg)) {
+                alias = LocaleController.getLocaleAlias(arg);
             }
-            for (int a = 0; a < LocaleController.getInstance().languages.size(); a++) {
-                LocaleController.LocaleInfo info = LocaleController.getInstance().languages.get(a);
+            for (LocaleController.LocaleInfo info : LocaleController.getInstance().languages) {
                 if (info.shortName.equals("en")) {
-                    infos[0] = info;
+                    englishInfo = info;
                 }
                 if (info.shortName.replace("_", "-").equals(systemLang) || info.shortName.equals(arg) || info.shortName.equals(alias)) {
-                    infos[1] = info;
+                    systemInfo = info;
                 }
-                if (infos[0] != null && infos[1] != null) {
+                if (englishInfo != null && systemInfo != null) {
                     break;
                 }
             }
-            if (infos[0] == null || infos[1] == null || infos[0] == infos[1]) {
+            if (englishInfo == null || systemInfo == null || englishInfo == systemInfo) {
                 return;
             }
             if (BuildVars.LOGS_ENABLED) {
-                FileLog.d("show lang alert for " + infos[0].getKey() + " and " + infos[1].getKey());
+                FileLog.d("show lang alert for " + englishInfo.getKey() + " and " + systemInfo.getKey());
             }
 
-            systemLocaleStrings = null;
-            englishLocaleStrings = null;
-            loadingLocaleDialog = true;
-
-            TLRPC.TL_langpack_getStrings req = new TLRPC.TL_langpack_getStrings();
-            req.lang_code = infos[1].getLangCode();
-            req.keys.add("English");
-            req.keys.add("ChooseYourLanguage");
-            req.keys.add("ChooseYourLanguageOther");
-            req.keys.add("ChangeLanguageLater");
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-                final HashMap<String, String> keys = new HashMap<>();
-                if (response instanceof Vector) {
-                    Vector vector = (Vector) response;
-                    for (int a = 0; a < vector.objects.size(); a++) {
-                        final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(a);
-                        keys.put(string.key, string.value);
-                    }
-                }
-                AndroidUtilities.runOnUIThread(() -> {
-                    systemLocaleStrings = keys;
-                    if (englishLocaleStrings != null && systemLocaleStrings != null) {
-                        showLanguageAlertInternal(infos[1], infos[0], systemLang);
-                    }
-                });
-            }, ConnectionsManager.RequestFlagWithoutLogin);
-
-            req = new TLRPC.TL_langpack_getStrings();
-            req.lang_code = infos[0].getLangCode();
-            req.keys.add("English");
-            req.keys.add("ChooseYourLanguage");
-            req.keys.add("ChooseYourLanguageOther");
-            req.keys.add("ChangeLanguageLater");
-            ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
-                final HashMap<String, String> keys = new HashMap<>();
-                if (response instanceof Vector) {
-                    final Vector vector = (Vector) response;
-                    for (int a = 0; a < vector.objects.size(); a++) {
-                        final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(a);
-                        keys.put(string.key, string.value);
-                    }
-                }
-                AndroidUtilities.runOnUIThread(() -> {
-                    englishLocaleStrings = keys;
-                    if (englishLocaleStrings != null && systemLocaleStrings != null) {
-                        showLanguageAlertInternal(infos[1], infos[0], systemLang);
-                    }
-                });
-            }, ConnectionsManager.RequestFlagWithoutLogin);
+            LanguageAlertRequest request = new LanguageAlertRequest(account, systemLang, force, systemInfo, englishInfo);
+            languageAlertRequest = request;
+            requestLanguageAlertStrings(request, true);
+            requestLanguageAlertStrings(request, false);
         } catch (Exception e) {
+            languageAlertRequest = null;
             FileLog.e(e);
         }
+    }
+
+    private void requestLanguageAlertStrings(LanguageAlertRequest request, boolean systemLanguage) {
+        TLRPC.TL_langpack_getStrings req = new TLRPC.TL_langpack_getStrings();
+        req.lang_code = (systemLanguage ? request.systemInfo : request.englishInfo).getLangCode();
+        req.keys.add("English");
+        req.keys.add("ChooseYourLanguage");
+        req.keys.add("ChooseYourLanguageOther");
+        req.keys.add("ChangeLanguageLater");
+        ConnectionsManager.getInstance(request.account).sendRequest(req, (response, error) -> {
+            final HashMap<String, String> keys = new HashMap<>();
+            if (response instanceof Vector<?> vector) {
+                for (TLObject object : vector.objects) {
+                    if (object instanceof TLRPC.TL_langPackString string) {
+                        keys.put(string.key, string.value);
+                    }
+                }
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (languageAlertRequest != request) {
+                    return;
+                }
+                if (systemLanguage) {
+                    request.systemStrings = keys;
+                } else {
+                    request.englishStrings = keys;
+                }
+                if (request.systemStrings == null || request.englishStrings == null) {
+                    return;
+                }
+                languageAlertRequest = null;
+                if (!canShowLanguageAlert(request.account)) {
+                    return;
+                }
+                String currentLanguage = LocaleController.normalizeLanguageSuggestion(MessagesController.getInstance(request.account).suggestedLangCode);
+                if (!request.systemLang.equals(currentLanguage)) {
+                    showLanguageAlert(false);
+                    return;
+                }
+                if (!request.force && LocaleController.hasSeenLanguageSuggestion(request.systemLang)) {
+                    return;
+                }
+                systemLocaleStrings = request.systemStrings;
+                englishLocaleStrings = request.englishStrings;
+                showLanguageAlertInternal(request.systemInfo, request.englishInfo, request.systemLang, request.account);
+            });
+        }, ConnectionsManager.RequestFlagWithoutLogin);
     }
 
     private void onPasscodePause() {

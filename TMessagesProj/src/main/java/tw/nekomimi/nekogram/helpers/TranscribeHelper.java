@@ -84,9 +84,49 @@ public class TranscribeHelper {
     private static final String OPENAI_COMPATIBLE_DEFAULT_PROMPT = GEMINI_PROMPT;
 
     public static boolean useTranscribeAI(int account) {
+        return resolveAiProvider(account) != TRANSCRIBE_AUTO;
+    }
+
+    private static int resolveAiProvider(int account) {
         int provider = NaConfig.INSTANCE.getTranscribeProvider().Int();
-        return provider == TRANSCRIBE_WORKERSAI || provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_OPENAI ||
-                (!UserConfig.getInstance(account).isPremium() && provider == TRANSCRIBE_AUTO);
+        if (provider != TRANSCRIBE_AUTO) {
+            return isProviderConfigured(provider) ? provider : TRANSCRIBE_AUTO;
+        }
+        if (UserConfig.getInstance(account).isPremium()) {
+            return TRANSCRIBE_AUTO;
+        }
+        if (isProviderConfigured(TRANSCRIBE_GEMINI)) {
+            return TRANSCRIBE_GEMINI;
+        }
+        if (isProviderConfigured(TRANSCRIBE_OPENAI)) {
+            return TRANSCRIBE_OPENAI;
+        }
+        return isProviderConfigured(TRANSCRIBE_WORKERSAI) ? TRANSCRIBE_WORKERSAI : TRANSCRIBE_AUTO;
+    }
+
+    private static boolean isProviderConfigured(int provider) {
+        return switch (provider) {
+            case TRANSCRIBE_GEMINI -> !getGeminiApiKey().isEmpty();
+            case TRANSCRIBE_OPENAI -> okhttp3.HttpUrl.parse(NaConfig.INSTANCE.getTranscribeProviderOpenAiApiBase().String().trim()) != null
+                    && !NaConfig.INSTANCE.getTranscribeProviderOpenAiModel().String().trim().isEmpty()
+                    && !NaConfig.INSTANCE.getTranscribeProviderOpenAiApiKey().String().trim().isEmpty();
+            case TRANSCRIBE_WORKERSAI -> !NaConfig.INSTANCE.getTranscribeProviderCfAccountID().String().trim().isEmpty()
+                    && !NaConfig.INSTANCE.getTranscribeProviderCfApiToken().String().trim().isEmpty();
+            default -> false;
+        };
+    }
+
+    private static String getGeminiApiKey() {
+        String apiKey = NaConfig.INSTANCE.getTranscribeProviderGeminiApiKey().String().trim();
+        if (!apiKey.isEmpty()) {
+            return apiKey;
+        }
+        for (String key : NaConfig.INSTANCE.getLlmProviderGeminiKey().String().split(",")) {
+            if (!key.trim().isEmpty()) {
+                return key.trim();
+            }
+        }
+        return "";
     }
 
     private static EditTextBoldCursor createAndSetupEditText(Context context, Theme.ResourcesProvider resourcesProvider, String initialText, String hintText, int imeOptions, boolean requestFocus) {
@@ -377,31 +417,19 @@ public class TranscribeHelper {
         extractor.release();
     }
 
-    public static void sendRequest(String path, boolean video, BiConsumer<String, Exception> callback) {
-        switch (NaConfig.INSTANCE.getTranscribeProvider().Int()) {
-            case TRANSCRIBE_AUTO:
-                if (!TextUtils.isEmpty(NaConfig.INSTANCE.getTranscribeProviderGeminiApiKey().String()) ||
-                        !TextUtils.isEmpty(NaConfig.INSTANCE.getLlmProviderGeminiKey().String())
-                ) {
-                    requestGeminiAi(path, video, callback);
-                } else if (!TextUtils.isEmpty(NaConfig.INSTANCE.getTranscribeProviderOpenAiApiBase().String()) &&
-                        !TextUtils.isEmpty(NaConfig.INSTANCE.getTranscribeProviderOpenAiModel().String()) &&
-                        !TextUtils.isEmpty(NaConfig.INSTANCE.getTranscribeProviderOpenAiApiKey().String())
-                ) {
-                    requestOpenAiCompatible(path, video, callback);
-                }
-                else {
-                    requestWorkersAi(path, video, callback);
-                }
-                break;
-            case TRANSCRIBE_GEMINI:
-                requestGeminiAi(path, video, callback);
-                break;
-            case TRANSCRIBE_OPENAI:
-                requestOpenAiCompatible(path, video, callback);
-                break;
-            default:
-                requestWorkersAi(path, video, callback);
+    public static void sendRequest(int account, String path, boolean video, BiConsumer<String, Exception> callback) {
+        switch (resolveAiProvider(account)) {
+            case TRANSCRIBE_GEMINI -> requestGeminiAi(path, video, callback);
+            case TRANSCRIBE_OPENAI -> requestOpenAiCompatible(path, video, callback);
+            case TRANSCRIBE_WORKERSAI -> requestWorkersAi(path, video, callback);
+            default -> {
+                int message = switch (NaConfig.INSTANCE.getTranscribeProvider().Int()) {
+                    case TRANSCRIBE_GEMINI -> R.string.GeminiApiKeyNotSet;
+                    case TRANSCRIBE_OPENAI -> R.string.OpenAiCredentialsNotSet;
+                    default -> R.string.CloudflareCredentialsNotSet;
+                };
+                callback.accept(null, new IllegalStateException(getString(message)));
+            }
         }
     }
 
@@ -456,10 +484,7 @@ public class TranscribeHelper {
     }
 
     private static void requestGeminiAi(String path, boolean video, BiConsumer<String, Exception> callback) {
-        String apiKey = NaConfig.INSTANCE.getTranscribeProviderGeminiApiKey().String();
-        if (TextUtils.isEmpty(apiKey)) {
-            apiKey = NaConfig.INSTANCE.getLlmProviderGeminiKey().String().split(",")[0].trim();
-        }
+        String apiKey = getGeminiApiKey();
         if (TextUtils.isEmpty(apiKey)) {
             callback.accept(null, new Exception(getString(R.string.GeminiApiKeyNotSet)));
             return;

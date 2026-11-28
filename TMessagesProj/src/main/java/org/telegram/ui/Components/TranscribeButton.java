@@ -217,6 +217,11 @@ public class TranscribeButton {
         if (parent == null) {
             return;
         }
+        final MessageObject message = parent.getMessageObject();
+        if (message == null) {
+            return;
+        }
+        final boolean premium = UserConfig.getInstance(message.currentAccount).isPremium() || TranscribeHelper.useTranscribeAI(message.currentAccount);
         clickedToOpen = false;
         boolean processClick, toOpen = !shouldBeOpen;
         if (!shouldBeOpen) {
@@ -712,7 +717,7 @@ public class TranscribeButton {
                         transcribeOperationsByDialogPosition = new HashMap<>();
                     }
                     transcribeOperationsByDialogPosition.put(reqInfoHash(messageObject), messageObject);
-                    TranscribeHelper.sendRequest(path, messageObject.isRoundVideo(), (text, exception) -> {
+                    TranscribeHelper.sendRequest(account, path, messageObject.isRoundVideo(), (text, exception) -> {
                         if (text != null) {
                             if (transcribeOperationsById == null) {
                                 transcribeOperationsById = new HashMap<>();
@@ -862,7 +867,7 @@ public class TranscribeButton {
                     transcribeOperationsByDialogPosition = new HashMap<>();
                 }
                 transcribeOperationsByDialogPosition.put(reqInfoHash(messageObject), messageObject);
-                TranscribeHelper.sendRequest(path, messageObject.isRoundVideo(), (text, exception) -> {
+                TranscribeHelper.sendRequest(account, path, messageObject.isRoundVideo(), (text, exception) -> {
                     if (text != null) {
                         if (transcribeOperationsById == null) {
                             transcribeOperationsById = new HashMap<>();
@@ -890,6 +895,7 @@ public class TranscribeButton {
                 });
                 return;
             }
+            return;
         }
 
         var path = MessageHelper.getPathToMessage(messageObject);

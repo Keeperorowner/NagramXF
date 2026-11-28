@@ -624,7 +624,13 @@ public abstract class WidePosts {
             restoreGroupedLayout(grouped);
             return;
         }
-        boolean withAvatar = shouldEmbedProfileAvatar(primary) || shouldSuppressExternalAvatar(primary);
+        final boolean compactIncoming = !grouped.messages.get(0).isOutOwner() && grouped.messages.get(0).isCompactMode();
+        // Compact rows already have matching pixel positions and cell spans.
+        if (compactIncoming && !grouped.hasSibling) {
+            restoreGroupedLayout(grouped);
+            return;
+        }
+        final boolean withAvatar = !compactIncoming && (shouldEmbedProfileAvatar(primary) || shouldSuppressExternalAvatar(primary));
         for (MessageObject.GroupedMessagePosition position : grouped.posArray) {
             if (position == null) {
                 continue;
@@ -660,8 +666,7 @@ public abstract class WidePosts {
         }
         normalizeGroupRows(grouped, target, withAvatar);
         final int remainder = GROUP_GRID - target;
-        final boolean inFeed = primary.searchType == 4;
-        final int rowEnd = inFeed && primary.isOutOwner() ? MessageObject.POSITION_FLAG_LEFT : MessageObject.POSITION_FLAG_RIGHT;
+        final int rowEnd = primary.isOutOwner() ? MessageObject.POSITION_FLAG_LEFT : MessageObject.POSITION_FLAG_RIGHT;
         boolean changed = false;
         for (MessageObject.GroupedMessagePosition position : grouped.posArray) {
             if (position == null) {
@@ -671,12 +676,12 @@ public abstract class WidePosts {
             if (state == null) {
                 continue;
             }
-            if (inFeed && state.spanSize == GROUP_GRID) {
+            if (state.spanSize == GROUP_GRID) {
                 // Stacked siblings draw at an offset inside a full-span cell.
                 position.spanSize = GROUP_GRID;
             } else {
                 position.spanSize = position.pw;
-                if ((inFeed || withAvatar) && (position.flags & rowEnd) != 0) {
+                if ((position.flags & rowEnd) != 0) {
                     position.spanSize += remainder;
                 }
             }
