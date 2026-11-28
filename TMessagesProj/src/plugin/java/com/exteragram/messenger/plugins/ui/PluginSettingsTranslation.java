@@ -87,6 +87,10 @@ public final class PluginSettingsTranslation {
         return !pending.isEmpty();
     }
 
+    public boolean isPending(String text) {
+        return enabled && pending.containsKey(text);
+    }
+
     /**
      * True only when the language detector positively identified the page texts as the effective
      * target locale, so translating them would not help. Everything else - no detector, a failed or

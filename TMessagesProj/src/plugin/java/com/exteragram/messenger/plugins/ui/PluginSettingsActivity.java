@@ -27,6 +27,7 @@ import com.exteragram.messenger.plugins.models.SwitchSetting;
 import com.exteragram.messenger.plugins.models.TextSetting;
 import com.exteragram.messenger.plugins.ui.components.PluginEditTextCell;
 import com.exteragram.messenger.plugins.ui.components.PluginTranslateButton;
+import com.exteragram.messenger.plugins.ui.components.PluginTranslationShimmer;
 import com.exteragram.messenger.plugins.ui.components.TranslatableText;
 import com.exteragram.messenger.preferences.utils.SettingsRegistry;
 import com.exteragram.messenger.utils.system.VibratorUtils;
@@ -131,8 +132,12 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         final boolean shown = plugin != null && translateButton.isEntryVisible();
         // the menu item owns the animated shown state and resizes the pill around the entry
         translateItem.setShown(shown, true);
-        translateItem.setContentDescription(LocaleController.getString(translateButton.isResetState()
-                ? R.string.PluginsSettingsShowOriginal : R.string.PluginsSettingsTranslate));
+        if (listView != null) {
+            listView.invalidate();
+        }
+        final int description = translateButton.isLoading() ? R.string.Loading
+                : translateButton.isResetState() ? R.string.PluginsSettingsShowOriginal : R.string.PluginsSettingsTranslate;
+        translateItem.setContentDescription(LocaleController.getString(description));
     }
 
     /** A batch that left texts untranslated: the entry stays for a retry, nothing is replaced silently. */
@@ -374,6 +379,7 @@ public class PluginSettingsActivity extends BaseFragment implements Notification
         listView.setSections();
         listView.setSectionsDrawBackground(true);
         listView.adapter.setApplyBackground(false);
+        listView.addItemDecoration(new PluginTranslationShimmer(translation, getResourceProvider()));
         translation.addListener(translationListener);
         listView.setClipToPadding(false);
         layoutManager = listView.layoutManager;

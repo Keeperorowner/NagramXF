@@ -143,6 +143,14 @@ public class TextCheckCell extends FrameLayout {
         checkBox.setIcon(icon);
     }
 
+    public TextView getTextView() {
+        return textView;
+    }
+
+    public TextView getValueTextView() {
+        return valueTextView;
+    }
+
     public Switch getCheckBox() {
         return checkBox;
     }
