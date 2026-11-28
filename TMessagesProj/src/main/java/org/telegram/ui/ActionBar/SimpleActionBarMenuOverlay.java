@@ -662,7 +662,7 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
         // the buttons (the whole pill, or just this button) fade and shrink away inside the shape (the first ~30%),
         // come back while the items are still fading out on closing
         final float ia = 1f - Utilities.clamp01(m / (opened ? 0.3f : 0.7f));
-        final View icon = startFromPill ? bar.getMenuView() : item.getIconView();
+        final View icon = startFromPill ? bar.getMenuPillContent(item) : item.getIconView();
         if (ia > 0.004f && icon != null) {
             computeViewRect(icon, tmpRect);
             final float s = 1f - 0.15f * Utilities.clamp01(m / 0.3f);

@@ -508,6 +508,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         avatarOptionsMenuItem = menuItem;
     }
 
+    public boolean isAvatarOptionsMenuItem(ActionBarMenuItem item) {
+        return item != null && item == avatarOptionsMenuItem;
+    }
+
     public ButtonBounce bounce = new ButtonBounce(this);
     private Runnable onLongClick = () -> {
         pressed = false;

@@ -368,6 +368,19 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     @Override
+    public View getMenuPillContent(ActionBarMenuItem item) {
+        if (hasCenteredAvatarPill() && chatAvatarContainer.isAvatarOptionsMenuItem(item)) {
+            return chatAvatarContainer.getAvatarImageView();
+        }
+        return menu;
+    }
+
+    private boolean hasCenteredAvatarPill() {
+        return chatAvatarContainer != null && chatAvatarContainer.useSeparateAvatarPill()
+                && chatAvatarContainer.hasVisibleAvatar() && !isActionModeShowed() && searchFactor <= 0f;
+    }
+
+    @Override
     public void setMenuOverlay(SimpleActionBarMenuOverlay overlay, ActionBarMenuItem item) {
         openMenuOverlay = overlay;
         openMenuItem = item;
@@ -2631,8 +2644,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         final int t = getHeight() - extraHeight - (getCurrentActionBarHeight() + s) / 2 - p;
         final int b = t + s + p * 2;
 
-        final boolean centeredAvatarPill = chatAvatarContainer != null && chatAvatarContainer.useSeparateAvatarPill()
-                && chatAvatarContainer.hasVisibleAvatar() && !isActionModeShowed() && searchFactor <= 0f;
+        final boolean centeredAvatarPill = hasCenteredAvatarPill();
 
         if (glassDrawable != null && !glassOnlyBack && drawGlassTitle) {
             if (centerTitleAndGlass && titleTextView[0] != null && titleTextView[0].getVisibility() == View.VISIBLE) {

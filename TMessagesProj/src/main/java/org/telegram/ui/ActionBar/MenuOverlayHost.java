@@ -36,12 +36,17 @@ public interface MenuOverlayHost {
 
     /**
      * The glass the menu of {@code item} grows out of, in this view: true for the whole pill of the buttons
-     * (then {@link #getMenuView()} is drawn by the overlay), false for a circle around the item.
+     * (then {@link #getMenuPillContent(ActionBarMenuItem)} is drawn by the overlay), false for a circle around the item.
      */
     boolean getMenuItemGlassRect(ActionBarMenuItem item, RectF out);
 
-    /** The pill with its buttons, drawn by the overlay while a menu grows out of it. */
+    /** The menu's ordinary button strip. */
     View getMenuView();
+
+    /** The foreground of the pill from which this item opens its menu. */
+    default View getMenuPillContent(ActionBarMenuItem item) {
+        return getMenuView();
+    }
 
     /** The overlay draws the glass of {@code item} while its menu is shown; null when it has closed. */
     void setMenuOverlay(@Nullable SimpleActionBarMenuOverlay overlay, @Nullable ActionBarMenuItem item);
