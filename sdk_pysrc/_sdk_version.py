@@ -8,7 +8,9 @@ Exposes the values the Java host (``PythonPluginsEngine``) reads:
 """
 from __future__ import annotations
 
-__version__ = "1.4.9.0"
+from _account_context import _call_account_hook
+
+__version__ = "1.4.9.1"
 __beta__ = False
 
 version_str = __version__

@@ -628,15 +628,17 @@ JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_makeClassInh
     return lsplant::MakeClassInheritable(env, cls) ? JNI_TRUE : JNI_FALSE;
 }
 
-// Forces the one-time native runtime initialization (shadowhook + LSPlant).
-// Used by AliuHookInitProvider to warm the runtime before Application.onCreate.
-JNIEXPORT void JNICALL Java_de_robv_android_xposed_XposedBridge_initRuntime(
+JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_initRuntime(
     JNIEnv *env, jclass) {
-    EnsureInitialized(env);
+    if (!EnsureInitialized(env)) {
+        LOGE("initRuntime: native runtime initialization failed");
+        return JNI_FALSE;
+    }
     LOGI("initRuntime: native runtime ready");
+    return JNI_TRUE;
 }
 
-JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_disableHiddenApiRestrictions(
+JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_disableHiddenApiRestrictions0(
     JNIEnv *env, jclass) {
     if (!EnsureInitialized(env)) {
         return JNI_FALSE;
@@ -644,7 +646,7 @@ JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_disableHidde
     return DisableHiddenApiRestrictionsInternal(env) ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_disableProfileSaver(
+JNIEXPORT jboolean JNICALL Java_de_robv_android_xposed_XposedBridge_disableProfileSaver0(
     JNIEnv *env, jclass) {
     if (!EnsureInitialized(env)) {
         return JNI_FALSE;

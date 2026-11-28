@@ -60,6 +60,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11.9'
+      - name: Check plugin SDK assets and account context
+        run: |
+          python -B Tools/build-plugin-sdk-zip.py --check
+          python -B Tools/test-plugin-sdk-account-context.py
       - name: Install Cython (Chaquopy bridge source build)
         run: pip install Cython==3.0.11
       - name: Configure Android SDK Path

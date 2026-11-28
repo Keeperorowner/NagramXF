@@ -16,14 +16,16 @@ from that side and are enforced here:
 Usage:
     py -3.11 Tools/build-plugin-sdk-zip.py [--check]
 
-``--check`` rebuilds into a temp dir and compares against the committed
-archives without writing anything (useful in CI).
+``--check`` compares the archives' unpacked sources, bytecode headers and
+version markers with the source tree without rebuilding them.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
+import marshal
 import py_compile
 import re
 import shutil
@@ -31,6 +33,7 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
+from types import CodeType
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "sdk_pysrc"
@@ -42,7 +45,7 @@ REQUIRED_MODULES = ("_sdk_version", "base_plugin", "plugin_settings")
 
 REQUIRED_PYTHON = (3, 11)
 
-# Fixed timestamp so the archive is byte-reproducible across machines.
+# Zip members do not include source modification times.
 ZIP_DATE_TIME = (1980, 1, 1, 0, 0, 0)
 
 
@@ -76,6 +79,7 @@ def compile_required(stage: Path) -> None:
             cfile=str(stage / f"{module}.pyc"),
             dfile=f"{module}.py",
             doraise=True,
+            invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH,
         )
 
 
@@ -104,6 +108,39 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def check_archive(path: Path, sources: dict[str, bytes], version: str) -> str | None:
+    if not path.is_file():
+        return "missing"
+    expected = sources.keys() | {f"{module}.pyc" for module in REQUIRED_MODULES} | {"v.txt"}
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = archive.namelist()
+            if len(names) != len(expected) or set(names) != expected:
+                return "archive entries differ from sdk_pysrc"
+            for name, data in sources.items():
+                if archive.read(name) != data:
+                    return f"{name} differs from sdk_pysrc"
+            if archive.read("v.txt") != version.encode("utf-8"):
+                return f"inner v.txt does not match __version__ ({version})"
+            for module in REQUIRED_MODULES:
+                source_name = f"{module}.py"
+                pyc_name = f"{module}.pyc"
+                pyc = archive.read(pyc_name)
+                # PEP 552: magic, flags (0b11 = checked hash), then source hash.
+                header = importlib.util.MAGIC_NUMBER + b"\x03\x00\x00\x00" + importlib.util.source_hash(sources[source_name])
+                if not pyc.startswith(header):
+                    return f"{pyc_name} does not match its source or Python 3.11"
+                try:
+                    code = marshal.loads(pyc[len(header):])
+                except (EOFError, ValueError, TypeError):
+                    return f"{pyc_name} has invalid bytecode"
+                if not isinstance(code, CodeType) or code.co_filename != source_name:
+                    return f"{pyc_name} has invalid module code"
+    except (OSError, RuntimeError, zipfile.BadZipFile) as error:
+        return f"unreadable archive: {error}"
+    return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -128,26 +165,25 @@ def main() -> int:
     files = source_files()
 
     if args.check:
-        with tempfile.TemporaryDirectory() as tmp:
-            reference = Path(tmp) / "sdk.zip"
-            build_archive(reference, version)
-            expected = sha256(reference)
-            failures = []
-            for abi in ABIS:
-                shipped = OUT_DIR / f"sdk-{abi}.zip"
-                if not shipped.exists():
-                    failures.append(f"{shipped.name}: missing")
-                elif sha256(shipped) != expected:
-                    failures.append(f"{shipped.name}: differs from sdk_pysrc")
-            v_txt = OUT_DIR / "v.txt"
-            if not v_txt.exists() or v_txt.read_text(encoding="utf-8").strip() != version:
-                failures.append(f"v.txt: does not match __version__ ({version})")
-            if failures:
-                print("SDK archives are stale:")
-                for failure in failures:
-                    print(f"  - {failure}")
-                print("Run: py -3.11 Tools/build-plugin-sdk-zip.py")
-                return 1
+        sources = {path.relative_to(SRC).as_posix(): path.read_bytes() for path in files}
+        for module in REQUIRED_MODULES:
+            if f"{module}.py" not in sources:
+                raise SystemExit(f"Required module missing from sdk_pysrc: {module}.py")
+        failures = []
+        for abi in ABIS:
+            shipped = OUT_DIR / f"sdk-{abi}.zip"
+            problem = check_archive(shipped, sources, version)
+            if problem:
+                failures.append(f"{shipped.name}: {problem}")
+        v_txt = OUT_DIR / "v.txt"
+        if not v_txt.exists() or v_txt.read_text(encoding="utf-8").strip() != version:
+            failures.append(f"v.txt: does not match __version__ ({version})")
+        if failures:
+            print("SDK archives are stale:")
+            for failure in failures:
+                print(f"  - {failure}")
+            print("Run: py -3.11 Tools/build-plugin-sdk-zip.py")
+            return 1
         print(f"SDK archives are up to date (v{version}, {len(files)} modules).")
         return 0
 

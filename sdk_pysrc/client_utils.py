@@ -1,15 +1,14 @@
 """client_utils — queues, requests, controllers, fragments, and send/edit helpers.
 
 Thin Python wrappers over Telegram internals reached through Chaquopy.
-Multi-account helpers accept an optional ``account`` (defaults to the account
-selected in the UI via ``UserConfig.selectedAccount``).
+Multi-account helpers use the explicit ``account``, the active callback scope,
+or the selected UI account, in that order.
 """
 from __future__ import annotations
 
-import contextlib
-
 from java import dynamic_proxy, jarray, jclass
 
+from _account_context import _set_hook_account, _wrap_with_current_account, account_scope, get_hook_account
 from android_utils import R, log
 
 # ---- queue names ----
@@ -41,10 +40,10 @@ from extera_utils.text_formatting import parse_text
 def _resolve_account(account):
     if account is not None:
         return int(account)
-    try:
-        return int(UserConfig.selectedAccount)
-    except Exception:
-        return 0
+    scoped_account = get_hook_account()
+    if scoped_account is not None:
+        return scoped_account
+    return get_selected_account()
 
 
 def get_queue_by_name(name):
@@ -57,34 +56,14 @@ def get_queue_by_name(name):
         return None
 
 
-@contextlib.contextmanager
-def account_scope(account):
-    """Temporarily set the hook account used by controller getters and callbacks."""
-    previous = get_hook_account()
-    _set_hook_account(account)
-    try:
-        yield account
-    finally:
-        _set_hook_account(previous)
-
-
 def run_on_queue(fn, queue_name=PLUGINS_QUEUE, delay=0):
-    """Run *fn* on the given background queue (default ``pluginsQueue``)."""
+    """Run *fn* on a background queue with the caller's callback scope."""
     if fn is None:
         return
     queue = get_queue_by_name(queue_name)
     if queue is None:
         return
-    account = get_hook_account()
-
-    def _wrapped():
-        _set_hook_account(account)
-        try:
-            fn()
-        finally:
-            _set_hook_account(None)
-
-    runnable = R(_wrapped)
+    runnable = R(_wrap_with_current_account(fn))
     try:
         if delay:
             queue.postRunnable(runnable, int(delay))
@@ -119,29 +98,6 @@ def get_current_account():
 def get_selected_account():
     """The account currently selected in the UI (alias for get_current_account)."""
     return get_current_account()
-
-
-def get_hook_account():
-    """The account scope the current hook callback was invoked for, or None outside one.
-
-    The engine sets this around hook callbacks, run_on_queue work scheduled from
-    them, and send_request callbacks.
-    """
-    return getattr(_hook_account_local, "_value", None)
-
-
-def _set_hook_account(account):
-    try:
-        _hook_account_local._value = int(account) if account is not None else None
-    except Exception:
-        _hook_account_local._value = None
-
-
-class _HookAccountLocal:
-    _value = None
-
-
-_hook_account_local = _HookAccountLocal()
 
 
 def get_context():
@@ -314,9 +270,8 @@ def _prepare_document(file_path):
 class RequestCallback(dynamic_proxy(RequestDelegate)):
     """A ``RequestDelegate`` backed by a Python callable ``fn(response, error)``.
 
-    ``account`` is optional: plugins may construct this directly as
-    ``RequestCallback(fn)``, in which case the currently selected account is
-    used for the hook-account scope established around the callback.
+    The callback runs in the account resolved at construction: the explicit
+    account, the enclosing callback scope, or the then-selected UI account.
     """
 
     def __init__(self, fn, account=None):
@@ -325,12 +280,9 @@ class RequestCallback(dynamic_proxy(RequestDelegate)):
         self._account = _resolve_account(account)
 
     def run(self, response, error):
-        _set_hook_account(self._account)
-        try:
+        with account_scope(self._account):
             if self._fn is not None:
                 self._fn(response, error)
-        finally:
-            _set_hook_account(None)
 
 
 def send_request(request, fn, account=None):

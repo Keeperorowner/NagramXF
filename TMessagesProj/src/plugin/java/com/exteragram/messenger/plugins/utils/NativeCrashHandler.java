@@ -7,23 +7,15 @@ import org.telegram.messenger.FileLog;
 
 import java.io.File;
 
+import de.robv.android.xposed.XposedBridge;
+
 public class NativeCrashHandler {
     private static final String CRASH_FLAG_FILENAME = "native_crash.flag";
-    private static boolean aliuHookLoaded;
-
-    static {
-        try {
-            System.loadLibrary("aliuhook");
-            aliuHookLoaded = true;
-        } catch (Throwable ignored) {
-            aliuHookLoaded = false;
-        }
-    }
 
     public static native void init(String path);
 
     public static boolean isNativeLibraryLoaded() {
-        return aliuHookLoaded;
+        return XposedBridge.isNativeLibraryLoaded();
     }
 
     public static void checkAndHandleNativeCrash() {
