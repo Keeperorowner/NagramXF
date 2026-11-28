@@ -61,6 +61,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Currency;
 import java.util.Date;
 import java.util.HashMap;
@@ -1015,6 +1016,47 @@ public class LocaleController {
         }
         result.append(variantCode);
         return result.toString();
+    }
+
+    private static final String LEGACY_LANGUAGE_SUGGESTION_KEY = "language_showed2";
+    private static final String SEEN_LANGUAGE_SUGGESTIONS_KEY = "language_suggestions_seen";
+
+    public static String normalizeLanguageSuggestion(String code) {
+        return code == null ? "" : code.trim().replace('_', '-').toLowerCase(Locale.ROOT);
+    }
+
+    private static HashSet<String> getSeenLanguageSuggestions(SharedPreferences preferences) {
+        HashSet<String> seen = new HashSet<>(preferences.getStringSet(SEEN_LANGUAGE_SUGGESTIONS_KEY, Collections.emptySet()));
+        String legacyCode = preferences.getString(LEGACY_LANGUAGE_SUGGESTION_KEY, null);
+        if (legacyCode != null) {
+            String code = normalizeLanguageSuggestion(legacyCode);
+            if (!code.isEmpty()) {
+                seen.add(code);
+            }
+            preferences.edit().putStringSet(SEEN_LANGUAGE_SUGGESTIONS_KEY, new HashSet<>(seen))
+                    .remove(LEGACY_LANGUAGE_SUGGESTION_KEY).apply();
+        }
+        return seen;
+    }
+
+    public static boolean hasSeenLanguageSuggestion(String code) {
+        return getSeenLanguageSuggestions(MessagesController.getGlobalMainSettings()).contains(normalizeLanguageSuggestion(code));
+    }
+
+    public static void markLanguageSuggestionSeen(String code) {
+        String normalizedCode = normalizeLanguageSuggestion(code);
+        if (normalizedCode.isEmpty()) {
+            return;
+        }
+        SharedPreferences preferences = MessagesController.getGlobalMainSettings();
+        HashSet<String> seen = getSeenLanguageSuggestions(preferences);
+        if (seen.add(normalizedCode)) {
+            preferences.edit().putStringSet(SEEN_LANGUAGE_SUGGESTIONS_KEY, seen).apply();
+        }
+    }
+
+    public static SharedPreferences.Editor clearLanguageSuggestionHistory(SharedPreferences.Editor editor) {
+        return editor.remove(LEGACY_LANGUAGE_SUGGESTION_KEY).remove(SEEN_LANGUAGE_SUGGESTIONS_KEY);
     }
 
     public static String getLocaleAlias(String code) {

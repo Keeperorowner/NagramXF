@@ -12019,7 +12019,8 @@ public class MessagesStorage extends BaseController {
         SQLitePreparedStatement state = null;
         SQLiteCursor cursor = null;
         try {
-            if (!isForum(dialogId, FORUM_TYPE_CHAT | FORUM_TYPE_BOT | FORUM_TYPE_DIRECT)) {
+            final int forumFlags = getForumTypeFlags(dialogId);
+            if ((forumFlags & (FORUM_TYPE_CHAT | FORUM_TYPE_BOT | FORUM_TYPE_DIRECT)) == 0) {
                 state = database.executeFast("UPDATE messages_v2 SET replies_data = ? WHERE mid = ? AND uid = ?");
                 TLRPC.MessageReplies currentReplies = null;
                 cursor = database.queryFinalized(String.format(Locale.US, "SELECT replies_data FROM messages_v2 WHERE mid = %d AND uid = %d", mid, dialogId));
@@ -12118,6 +12119,13 @@ public class MessagesStorage extends BaseController {
 
                 resetForumBadgeIfNeed(dialogId);
             }
+
+            if ((forumFlags & FORUM_TYPE_CHAT) != 0 && DialogObject.isChatDialog(dialogId) && mid > 0 && readMaxId > 0) {
+                // General-topic pushes may omit the topic ID.
+                final String topicWhere = mid == 1 ? "topicId IN (0, 1)" : "topicId = " + mid;
+                database.executeFast(String.format(Locale.US, "DELETE FROM unread_push_messages WHERE uid = %d AND %s AND mid BETWEEN 1 AND %d AND is_reaction = 0", dialogId, topicWhere, readMaxId)).stepThis().dispose();
+                getNotificationsController().processReadTopicMessages(dialogId, mid, readMaxId, true);
+            }
         } catch (Exception e) {
             checkSQLException(e);
         } finally {
@@ -12130,7 +12138,7 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    //if all topics read mark all dialog as read
+    // Refresh dialog counters without clearing notifications for topics missing locally.
     private void resetForumBadgeIfNeed(long dialogId) {
         SQLiteCursor cursor = null;
         try {
@@ -12148,7 +12156,7 @@ public class MessagesStorage extends BaseController {
                 database.executeFast(String.format(Locale.ENGLISH, "UPDATE dialogs SET unread_count = 0, unread_count_i = 0 WHERE did = %d", dialogId)).stepThis().dispose();
             }
             updateFiltersReadCounter(dialogsToUpdate, null, true);
-            getMessagesController().processDialogsUpdateRead(dialogsToUpdate, null);
+            getMessagesController().processDialogsUpdateRead(dialogsToUpdate, null, !isForum(dialogId, FORUM_TYPE_CHAT));
         } catch (Throwable e) {
             checkSQLException(e);
         } finally {

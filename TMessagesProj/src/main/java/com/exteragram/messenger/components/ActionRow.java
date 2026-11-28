@@ -5,9 +5,12 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.view.Gravity;
 import android.view.View;
+import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import androidx.annotation.StringRes;
 import androidx.core.content.ContextCompat;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -33,16 +36,25 @@ public class ActionRow extends FrameLayout {
         public final boolean enabled;
         public final View.OnClickListener action;
         public final View.OnLongClickListener longAction;
+        @StringRes public final int accessibilityLabel;
+        @StringRes public final int longActionAccessibilityLabel;
 
         public ActionItem(int icon, boolean enabled, View.OnClickListener action) {
             this(icon, enabled, action, null);
         }
 
         public ActionItem(int icon, boolean enabled, View.OnClickListener action, View.OnLongClickListener longAction) {
+            this(icon, enabled, action, longAction, 0, 0);
+        }
+
+        public ActionItem(int icon, boolean enabled, View.OnClickListener action, View.OnLongClickListener longAction,
+                          @StringRes int accessibilityLabel, @StringRes int longActionAccessibilityLabel) {
             this.icon = icon;
             this.enabled = enabled;
             this.action = action;
             this.longAction = longAction;
+            this.accessibilityLabel = accessibilityLabel;
+            this.longActionAccessibilityLabel = longActionAccessibilityLabel;
         }
 
         @Override
@@ -130,10 +142,30 @@ public class ActionRow extends FrameLayout {
                 super.setEnabled(enabled);
                 setAlpha(enabled ? 1.0f : 0.5f);
             }
+
+            @Override
+            public void onInitializeAccessibilityNodeInfo(AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(info);
+                if (actionItem.accessibilityLabel == 0) {
+                    return;
+                }
+                info.setClassName(Button.class.getName());
+                if (!isEnabled()) {
+                    info.setClickable(false);
+                    info.setLongClickable(false);
+                } else if (isLongClickable() && actionItem.longActionAccessibilityLabel != 0) {
+                    info.addAction(new AccessibilityNodeInfo.AccessibilityAction(AccessibilityNodeInfo.ACTION_LONG_CLICK,
+                            LocaleController.getString(actionItem.longActionAccessibilityLabel)));
+                }
+            }
         };
         ScaleStateListAnimator.apply(imageView, 0.15f, 1.5f);
         imageView.setScaleType(ImageView.ScaleType.CENTER);
         imageView.setEnabled(actionItem.enabled);
+        if (actionItem.accessibilityLabel != 0) {
+            imageView.setContentDescription(LocaleController.getString(actionItem.accessibilityLabel));
+            imageView.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        }
         imageView.setImageDrawable(ContextCompat.getDrawable(context, actionItem.icon).mutate());
         imageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_actionBarDefaultSubmenuItemIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         imageView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_dialogButtonSelector, resourcesProvider), 1, AndroidUtilities.dp(20)));

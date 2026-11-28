@@ -40758,7 +40758,11 @@ public class ChatActivity extends BaseFragment implements
             }
             PhotoViewer.getInstance().openPhoto(arrayList, arrayList.indexOf(message), dialog_id, 0, getTopicId(),photoViewerProvider);
         } else {
-            if (!PhotoViewer.getInstance().openPhoto(message, ChatActivity.this, message.type != 0 ? dialog_id : 0, message.type != 0 ? mergeDialogId : 0, message.type != 0 ? getTopicId() : 0, photoViewerProvider) && startStream) {
+            boolean hasMediaHistory = message.type != 0;
+            boolean discussion = isReplyChatComment();
+            long mediaThreadId = discussion ? threadMessageId : getTopicId();
+            if (!PhotoViewer.getInstance().openPhoto(message, ChatActivity.this, hasMediaHistory ? dialog_id : 0,
+                    hasMediaHistory && !discussion ? mergeDialogId : 0, hasMediaHistory ? mediaThreadId : 0, photoViewerProvider) && startStream) {
                 getFileLoader().cancelLoadFile(message.getDocument());
             }
         }

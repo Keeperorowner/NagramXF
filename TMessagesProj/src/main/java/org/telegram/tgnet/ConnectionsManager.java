@@ -808,7 +808,7 @@ FileLog.e(finalRequestObject + " got error " + error.code + " " + error.text);
 
     public void switchBackend(boolean restart) {
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-        preferences.edit().remove("language_showed2").commit();
+        LocaleController.clearLanguageSuggestionHistory(preferences.edit()).commit();
         native_switchBackend(currentAccount, restart);
     }
 

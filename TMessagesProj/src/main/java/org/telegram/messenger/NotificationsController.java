@@ -558,6 +558,11 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
+    private boolean isOpenNotificationTopic(long dialogId, long topicId) {
+        return dialogId == openedDialogId && ApplicationLoader.isScreenOn
+                && (openedTopicId == 0 || topicId == openedTopicId);
+    }
+
     public void setOpenedInBubble(long dialogId, boolean opened) {
         notificationsQueue.postRunnable(() -> {
             if (opened) {
@@ -1195,6 +1200,89 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
+    void processReadTopicMessages(long dialogId, long topicId, int maxId, boolean isForum) {
+        final long accountUserId = getUserConfig().getClientUserId();
+        final long session = getMessagesStorage().getStorageSession();
+        // Unread snapshots also pass through the UI queue before reaching notificationsQueue.
+        AndroidUtilities.runOnUIThread(() -> notificationsQueue.postRunnable(() -> {
+            if (!isCurrentNotificationSession(accountUserId, session)) {
+                return;
+            }
+            int removedCount = 0;
+            boolean hasRemainingMessages = false;
+            for (int i = pushMessages.size() - 1; i >= 0; i--) {
+                MessageObject message = pushMessages.get(i);
+                if (message.getDialogId() != dialogId) {
+                    continue;
+                }
+                if (!isReadTopicMessage(message, dialogId, topicId, maxId, isForum)) {
+                    hasRemainingMessages |= !message.isStoryPush && !message.isStoryReactionPush;
+                    continue;
+                }
+                pushMessages.remove(i);
+                removedCount++;
+                if (isPersonalMessage(message)) {
+                    personalCount--;
+                }
+                long key = getPushMessageKey(message);
+                SparseArray<MessageObject> messages = pushMessagesDict.get(key);
+                if (messages != null && isReadTopicMessage(messages.get(message.getId()), dialogId, topicId, maxId, isForum)) {
+                    messages.remove(message.getId());
+                    if (messages.size() == 0) {
+                        pushMessagesDict.remove(key);
+                    }
+                }
+            }
+            delayedPushMessages.removeIf(message -> isReadTopicMessage(message, dialogId, topicId, maxId, isForum));
+            if (removedCount == 0) {
+                return;
+            }
+            int oldCount = pushDialogs.get(dialogId, 0);
+            int newCount = Math.max(hasRemainingMessages ? 1 : 0, oldCount - removedCount);
+            if (newCount == 0) {
+                pushDialogs.remove(dialogId);
+                pushDialogsOverrideMention.remove(dialogId);
+                smartNotificationsDialogs.remove(dialogId);
+            } else {
+                pushDialogs.put(dialogId, newCount);
+            }
+            if (!getMessagesController().isCommunity(dialogId)) {
+                if (getMessagesController().isForum(dialogId)) {
+                    total_unread_count += (newCount > 0 ? 1 : 0) - (oldCount > 0 ? 1 : 0);
+                } else {
+                    total_unread_count += newCount - oldCount;
+                }
+            }
+            if (SharedConfig.showNotificationsForAllAccounts || currentAccount == UserConfig.selectedAccount) {
+                showOrUpdateNotification(false);
+            }
+            int pushDialogsCount = pushDialogs.size();
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!isCurrentNotificationSession(accountUserId, session)) {
+                    return;
+                }
+                if (popupMessages.removeIf(message -> isReadTopicMessage(message, dialogId, topicId, maxId, isForum))) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.pushMessagesUpdated);
+                }
+                popupReplyMessages.removeIf(message -> isReadTopicMessage(message, dialogId, topicId, maxId, isForum));
+                if (oldCount != newCount) {
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.notificationsCountUpdated, currentAccount);
+                    getNotificationCenter().postNotificationName(NotificationCenter.dialogsUnreadCounterChanged, pushDialogsCount);
+                }
+            });
+            if (showBadgeNumber && oldCount != newCount) {
+                setBadge(getTotalAllUnreadCount());
+            }
+        }));
+    }
+
+    private boolean isReadTopicMessage(MessageObject message, long dialogId, long topicId, int maxId, boolean isForum) {
+        return message != null && message.getDialogId() == dialogId && message.getId() > 0 && message.getId() <= maxId
+                && !message.messageOwner.from_scheduled && !message.isReactionPush && !message.isStoryPush
+                && !message.isStoryReactionPush && !message.isLiveStoryPush && !message.isStoryMentionPush
+                && MessageObject.getTopicId(currentAccount, message.messageOwner, isForum) == topicId;
+    }
+
     private int addToPopupMessages(ArrayList<MessageObject> popupArrayAdd, MessageObject messageObject, long dialogId, boolean isChannel, SharedPreferences preferences) {
         if (messageObject.isStoryReactionPush) return 0;
         int popup = 0;
@@ -1457,7 +1545,7 @@ public class NotificationsController extends BaseController implements Notificat
 
                 long originalDialogId = dialogId;
                 long topicId = MessageObject.getTopicId(currentAccount, messageObject.messageOwner, getMessagesController().isForum(messageObject));
-                if (dialogId == openedDialogId && ApplicationLoader.isScreenOn && !messageObject.isStoryReactionPush && !messageObject.isOauthPush) {
+                if (isOpenNotificationTopic(dialogId, topicId) && !messageObject.isStoryReactionPush && !messageObject.isOauthPush) {
                     if (!isFcm) {
                         playInChatSound();
                     }
@@ -1849,7 +1937,7 @@ public class NotificationsController extends BaseController implements Notificat
                         }
                         settingsCache.put(dialog_id, value);
                     }
-                    if (!value || dialog_id == openedDialogId && ApplicationLoader.isScreenOn) {
+                    if (!value || isOpenNotificationTopic(original_dialog_id, topicId)) {
                         continue;
                     }
                     if (sparseArray == null) {
@@ -1936,7 +2024,7 @@ public class NotificationsController extends BaseController implements Notificat
                         }
                         settingsCache.put(dialogId, value);
                     }
-                    if (!value || dialogId == openedDialogId && ApplicationLoader.isScreenOn) {
+                    if (!value || isOpenNotificationTopic(originalDialogId, topicId)) {
                         continue;
                     }
                     if (isPersonalMessage(messageObject)) {
@@ -4875,6 +4963,9 @@ public class NotificationsController extends BaseController implements Notificat
                 if (pushDialogs.size() == 1) {
                     if (chatId != 0) {
                         intent.putExtra("chatId", chatId);
+                        if (topicId != 0) {
+                            intent.putExtra("topicId", topicId);
+                        }
                     } else if (userId != 0) {
                         intent.putExtra("userId", userId);
                     }
@@ -5459,10 +5550,11 @@ public class NotificationsController extends BaseController implements Notificat
                 personCache.put(-chat.id, personBuilder.build());
             }
 
+            final Uri topicActionData = topicId == 0 ? null : Uri.parse("tg://notification/" + currentAccount + "/" + dialogId + "/" + topicId);
             NotificationCompat.Action wearReplyAction = null;
 
             if ((!isChannel || isSupergroup) && canReply && !SharedConfig.isWaitingForPasscodeEnter && selfUserId != dialogId && !UserObject.isReplyUser(dialogId) && MessagesController.getInstance(currentAccount).getSendPaidMessagesStars(dialogId) <= 0) {
-                Intent replyIntent = new Intent(ApplicationLoader.applicationContext, WearReplyReceiver.class);
+                Intent replyIntent = new Intent(ApplicationLoader.applicationContext, WearReplyReceiver.class).setData(topicActionData);
                 replyIntent.putExtra("dialog_id", dialogId);
                 replyIntent.putExtra("max_id", maxId);
                 replyIntent.putExtra("topic_id", topicId);
@@ -5471,7 +5563,8 @@ public class NotificationsController extends BaseController implements Notificat
                     ArrayList<Integer> voiceIdsList = new ArrayList<>();
                     for (int vi = 0; vi < messageObjects.size(); vi++) {
                         MessageObject vmo = messageObjects.get(vi);
-                        if (vmo != null && vmo.isVoice() && vmo.isContentUnread() && !vmo.isOut()) {
+                        if (vmo != null && vmo.isVoice() && vmo.isContentUnread() && !vmo.isOut()
+                                && MessageObject.getTopicId(currentAccount, vmo.messageOwner, getMessagesController().isForum(vmo)) == topicId) {
                             voiceIdsList.add(vmo.getId());
                         }
                     }
@@ -5869,10 +5962,11 @@ public class NotificationsController extends BaseController implements Notificat
             if (wearReplyAction != null) {
                 wearableExtender.addAction(wearReplyAction);
             }
-            Intent msgHeardIntent = new Intent(ApplicationLoader.applicationContext, AutoMessageHeardReceiver.class);
+            Intent msgHeardIntent = new Intent(ApplicationLoader.applicationContext, AutoMessageHeardReceiver.class).setData(topicActionData);
             msgHeardIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
             msgHeardIntent.setAction("org.telegram.messenger.ACTION_MESSAGE_HEARD");
             msgHeardIntent.putExtra("dialog_id", dialogId);
+            msgHeardIntent.putExtra("topic_id", topicId);
             msgHeardIntent.putExtra("max_id", maxId);
             msgHeardIntent.putExtra("currentAccount", currentAccount);
             PendingIntent readPendingIntent = PendingIntent.getBroadcast(ApplicationLoader.applicationContext, internalId, msgHeardIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);

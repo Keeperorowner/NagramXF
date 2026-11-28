@@ -16,7 +16,6 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.database.DataSetObserver;
 import android.graphics.Bitmap;
@@ -103,6 +102,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     private ViewPager viewPager;
     private BottomPagesView bottomPages;
     private TextView switchLanguageTextView;
+    private int continueLanguageRequestId;
     private GradientDrawable startMessagingButtonBackground;
     private TextView startMessagingButton;
     private FrameLayout frameLayout2;
@@ -478,6 +478,7 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void checkContinueText() {
+        final int requestId = ++continueLanguageRequestId;
         LocaleController.LocaleInfo englishInfo = null;
         LocaleController.LocaleInfo systemInfo = null;
         LocaleController.LocaleInfo currentLocaleInfo = LocaleController.getInstance().getCurrentLocaleInfo();
@@ -525,10 +526,9 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
                 final TLRPC.LangPackString string = (TLRPC.LangPackString) vector.objects.get(0);
                 if (string instanceof TLRPC.TL_langPackString) {
                     AndroidUtilities.runOnUIThread(() -> {
-                        if (!destroyed) {
+                        if (!destroyed && currentAccount == UserConfig.selectedAccount && requestId == continueLanguageRequestId) {
                             switchLanguageTextView.setText(string.value);
-                            SharedPreferences preferences = MessagesController.getGlobalMainSettings();
-                            preferences.edit().putString("language_showed2", finalSystemLang.toLowerCase()).apply();
+                            LocaleController.markLanguageSuggestionSeen(finalSystemLang);
                         }
                     });
                 }

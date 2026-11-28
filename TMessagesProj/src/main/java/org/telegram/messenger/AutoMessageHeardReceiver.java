@@ -20,6 +20,7 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         ApplicationLoader.postInitApplication();
         long dialogId = intent.getLongExtra("dialog_id", 0);
+        long topicId = intent.getLongExtra("topic_id", 0);
         int maxId = intent.getIntExtra("max_id", 0);
         int currentAccount = intent.getIntExtra("currentAccount", 0);
         if (dialogId == 0 || maxId == 0 || !UserConfig.isValidAccount(currentAccount)) {
@@ -33,8 +34,7 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
                     TLRPC.User user1 = accountInstance.getMessagesStorage().getUserSync(dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putUser(user1, true);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
-                        MessagesController.getInstance(currentAccount).markReactionsAsRead(dialogId, 0);
+                        markAsRead(accountInstance, dialogId, topicId, maxId);
                     });
                 });
                 return;
@@ -46,14 +46,18 @@ public class AutoMessageHeardReceiver extends BroadcastReceiver {
                     TLRPC.Chat chat1 = accountInstance.getMessagesStorage().getChatSync(-dialogId);
                     AndroidUtilities.runOnUIThread(() -> {
                         accountInstance.getMessagesController().putChat(chat1, true);
-                        MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
-                        MessagesController.getInstance(currentAccount).markReactionsAsRead(dialogId, 0);
+                        markAsRead(accountInstance, dialogId, topicId, maxId);
                     });
                 });
                 return;
             }
         }
-        MessagesController.getInstance(currentAccount).markDialogAsRead(dialogId, maxId, maxId, 0, false, 0, 0, true, 0);
-        MessagesController.getInstance(currentAccount).markReactionsAsRead(dialogId, 0);
+        markAsRead(accountInstance, dialogId, topicId, maxId);
+    }
+
+    private void markAsRead(AccountInstance accountInstance, long dialogId, long topicId, int maxId) {
+        MessagesController controller = accountInstance.getMessagesController();
+        controller.markNotificationAsRead(dialogId, topicId, maxId);
+        controller.markReactionsAsRead(dialogId, topicId);
     }
 }

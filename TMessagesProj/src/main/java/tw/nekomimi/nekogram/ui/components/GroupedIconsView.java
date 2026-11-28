@@ -56,7 +56,8 @@ public class GroupedIconsView extends ActionRow {
                 allowReplyPm ? v -> {
                     chatActivity.processSelectedOption(OPTION_REPLY_PM);
                     return true;
-                } : null
+                } : null,
+                R.string.Reply, allowReplyPm ? R.string.ReplyInPrivate : 0
         ));
 
         if (allowCopy) {
@@ -105,7 +106,8 @@ public class GroupedIconsView extends ActionRow {
                     allowForward ? v -> {
                         chatActivity.processSelectedOption(OPTION_FORWARD_NOQUOTE);
                         return true;
-                    } : null
+                    } : null,
+                    R.string.Forward, allowForward ? R.string.NoQuoteForward : 0
             ));
         }
 
@@ -114,7 +116,7 @@ public class GroupedIconsView extends ActionRow {
 
     private static ActionRow.ActionItem simpleItem(ChatActivity chatActivity, int icon, int option, boolean enabled) {
         View.OnClickListener clickListener = v -> chatActivity.processSelectedOption(option);
-        return new ActionRow.ActionItem(icon, enabled, clickListener);
+        return new ActionRow.ActionItem(icon, enabled, clickListener, null, actionLabel(option), 0);
     }
 
     private static ActionRow.ActionItem copyItem(ChatActivity chatActivity, int icon, int option, Integer longOption, boolean enabled) {
@@ -123,6 +125,19 @@ public class GroupedIconsView extends ActionRow {
             chatActivity.processSelectedOption(longOption);
             return true;
         };
-        return new ActionRow.ActionItem(icon, enabled, clickListener, longClickListener);
+        return new ActionRow.ActionItem(icon, enabled, clickListener, longClickListener,
+                actionLabel(option), longOption == null ? 0 : actionLabel(longOption));
+    }
+
+    private static int actionLabel(int option) {
+        return switch (option) {
+            case OPTION_DELETE -> R.string.Delete;
+            case OPTION_COPY -> R.string.Copy;
+            case OPTION_COPY_PHOTO -> R.string.CopyPhoto;
+            case OPTION_COPY_PHOTO_AS_STICKER -> R.string.CopyPhotoAsSticker;
+            case OPTION_COPY_LINK, OPTION_COPY_LINK_PM -> R.string.CopyLink;
+            case OPTION_EDIT -> R.string.Edit;
+            default -> 0;
+        };
     }
 }
