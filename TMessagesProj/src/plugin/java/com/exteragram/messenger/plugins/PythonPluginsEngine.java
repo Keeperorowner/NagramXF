@@ -2077,7 +2077,11 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             PyObject metadata = getPython().getModule("extera_utils.metadata_parser").callAttr("get_metadata", filePath);
             if (metadata != null) {
                 for (Map.Entry<PyObject, PyObject> entry : metadata.asMap().entrySet()) {
-                    result.put(entry.getKey().toString(), entry.getValue().toString());
+                    PyObject value = entry.getValue();
+                    // Python None represents an absent metadata value.
+                    if (value != null) {
+                        result.put(entry.getKey().toString(), value.toString());
+                    }
                 }
             }
         } catch (PyException e) {
