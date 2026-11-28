@@ -1625,6 +1625,22 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
 
+    private boolean centerTitleInAvailableSpace;
+    private int titleSpaceLeft;
+    private int titleSpaceWidth = -1;
+
+    public void setCenterTitleInAvailableSpace(boolean value) {
+        centerTitleInAvailableSpace = value;
+        requestLayout();
+    }
+
+    private int getCenteredTitleLeft(View title) {
+        if (titleSpaceWidth >= 0) {
+            return titleSpaceLeft + (titleSpaceWidth - title.getMeasuredWidth()) / 2;
+        }
+        return (getMeasuredWidth() - title.getMeasuredWidth()) / 2;
+    }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = MeasureSpec.getSize(widthMeasureSpec);
@@ -1679,13 +1695,24 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
         }
 
+        titleSpaceWidth = -1;
         for (int i = 0; i < 2; i++) {
             if (titleTextView[0] != null && titleTextView[0].getVisibility() != GONE || subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
                 int titleMenuWidth = menu != null ? menu.getMeasuredWidth() - (isSearchFieldVisible ? 0 : menu.getClosingSearchFieldWidth()) : 0;
                 int availableWidth;
                 if (centerTitleAndGlass || isCentered()) {
-                    int sideInset = Math.max(textLeft, titleMenuWidth + dp(16) + titleRightMargin);
+                    int rightInset = titleMenuWidth + dp(16) + titleRightMargin;
+                    int sideInset = Math.max(textLeft, rightInset);
                     availableWidth = width - sideInset * 2;
+                    if (centerTitleInAvailableSpace && !centerTitleAndGlass && !isSearchFieldVisible && availableWidth < dp(24)) {
+                        int leftInset = (glassMode ? dp(backButtonImageView != null && backButtonImageView.getVisibility() != GONE ? 76 : 24) : textLeft)
+                            + additionalTextLeft;
+                        int gapWidth = width - leftInset - rightInset;
+                        if (gapWidth > Math.max(availableWidth, 0)) {
+                            titleSpaceLeft = leftInset;
+                            titleSpaceWidth = availableWidth = gapWidth;
+                        }
+                    }
                 } else {
                     availableWidth = width - titleMenuWidth - dp(16) - textLeft - titleRightMargin;
                 }
@@ -1804,7 +1831,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                         textTop = (getCurrentActionBarHeight() - titleTextView[i].getTextHeight()) / 2;
                     }
                 }
-                int titleLeft = centerTitleAndGlass || isCentered() ? (getMeasuredWidth() - titleTextView[i].getMeasuredWidth()) / 2 : textLeft;
+                int titleLeft = centerTitleAndGlass || isCentered() ? getCenteredTitleLeft(titleTextView[i]) : textLeft;
                 titleTextView[i].layout(titleLeft, additionalTop + textTop - titleTextView[i].getPaddingTop(), titleLeft + titleTextView[i].getMeasuredWidth(), additionalTop + textTop + titleTextView[i].getTextHeight() - titleTextView[i].getPaddingTop() + titleTextView[i].getPaddingBottom());
             }
         }
@@ -1814,14 +1841,17 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
         if (subtitleTextView != null && subtitleTextView.getVisibility() != GONE) {
             int textTop = getCurrentActionBarHeight() / 2 + (getCurrentActionBarHeight() / 2 - subtitleTextView.getTextHeight()) / 2 - dp(2);
-            int titleLeft = centerTitleAndGlass || isCentered() ? (getMeasuredWidth() - subtitleTextView.getMeasuredWidth()) / 2 : textLeft;
+            int titleLeft = centerTitleAndGlass || isCentered() ? getCenteredTitleLeft(subtitleTextView) : textLeft;
             subtitleTextView.layout(titleLeft, additionalTop + textTop, titleLeft + subtitleTextView.getMeasuredWidth(), additionalTop + textTop + subtitleTextView.getTextHeight());
         }
 
         if (additionalSubtitleTextView != null && additionalSubtitleTextView.getVisibility() != GONE) {
             int textTop = getCurrentActionBarHeight() / 2 + (getCurrentActionBarHeight() / 2 - additionalSubtitleTextView.getTextHeight()) / 2 - dp(!AndroidUtilities.isTablet() && getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE ? 1 : 1);
 
-            if (isCentered()) {
+            if (titleSpaceWidth >= 0) {
+                int titleLeft = getCenteredTitleLeft(additionalSubtitleTextView);
+                additionalSubtitleTextView.layout(titleLeft, additionalTop + textTop, titleLeft + additionalSubtitleTextView.getMeasuredWidth(), additionalTop + textTop + additionalSubtitleTextView.getTextHeight());
+            } else if (isCentered()) {
                 additionalSubtitleTextView.layout(getMeasuredWidth() / 2 - additionalSubtitleTextView.getMeasuredWidth() / 2, additionalTop + textTop, getMeasuredWidth() / 2 + additionalSubtitleTextView.getMeasuredWidth() / 2, additionalTop + textTop + additionalSubtitleTextView.getTextHeight());
             } else {
                 additionalSubtitleTextView.layout(textLeft, additionalTop + textTop, textLeft + additionalSubtitleTextView.getMeasuredWidth(), additionalTop + textTop + additionalSubtitleTextView.getTextHeight());

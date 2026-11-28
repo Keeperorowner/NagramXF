@@ -3223,6 +3223,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         };
         actionBar.setAllowOverlayTitle(true);
+        actionBar.setCenterTitleInAvailableSpace(folderId == 0 && communityId == 0 && initialDialogsType == DIALOGS_TYPE_DEFAULT && !onlySelect);
         actionBar.setUseContainerForTitles();
         ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarDefaultSelector, getResourceProvider(), false);
         ThemeBind.actionBarItemsBackgroundColor(actionBar, Theme.key_actionBarActionModeDefaultSelector, getResourceProvider(), true);
