@@ -49,6 +49,9 @@ public:
     void getSessions(std::vector<int64_t> &sessions);
     void recreateSessions(HandshakeType type);
     void resetAddressAndPortNum();
+    bool isUsingTempAddresses();
+    bool isTempAddress(std::string &address);
+    void skipTempAddresses();
     bool isHandshakingAny();
     bool isHandshaking(bool media);
     bool isHandshaking(HandshakeType type);
@@ -102,6 +105,7 @@ private:
     std::vector<TcpAddress> addressesIpv4Download;
     std::vector<TcpAddress> addressesIpv6Download;
     std::vector<TcpAddress> addressesIpv4Temp;
+    bool tempAddressesSkipped = false;
     std::vector<std::unique_ptr<TL_future_salt>> serverSalts;
     std::vector<std::unique_ptr<TL_future_salt>> mediaServerSalts;
     uint32_t currentPortNumIpv4 = 0;

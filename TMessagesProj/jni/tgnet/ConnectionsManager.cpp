@@ -727,9 +727,20 @@ void ConnectionsManager::onConnectionClosed(Connection *connection, int reason) 
                     maxTimeout = 20;
                 }
                 if (disconnectTimeoutAmount >= maxTimeout) {
-                    if (!connection->hasUsefullData()) {
+                    if (!connection->hasUsefullData() && datacenter->isUsingTempAddresses() && datacenter->isTempAddress(connection->hostAddress)) {
+                        // The addresses from the dns config take the connections of a datacenter while it has no
+                        // temp key, until the app restarts. Where they can't be reached (behind many VPNs), a temp
+                        // key the server dropped was never made again: the app stayed connecting, though the usual
+                        // addresses work. Go back to those until the next dns config; if they time out too, it is
+                        // fetched again.
+                        if (LOGS_ENABLED) DEBUG_D("temp addresses don't answer, back to the usual ones");
+                        tempAddressesTlsHashMismatch = connection->hasTlsHashMismatch();
+                        datacenter->skipTempAddresses();
+                    } else if (!connection->hasUsefullData()) {
                         if (LOGS_ENABLED) DEBUG_D("start requesting new address and port due to timeout reach");
-                        requestingSecondAddressByTlsHashMismatch = connection->hasTlsHashMismatch();
+                        // a mismatch on the temp addresses may come from a wrong clock, which the dns config corrects
+                        requestingSecondAddressByTlsHashMismatch = connection->hasTlsHashMismatch() || tempAddressesTlsHashMismatch;
+                        tempAddressesTlsHashMismatch = false;
                         if (requestingSecondAddressByTlsHashMismatch) {
                             requestingSecondAddress = 1;
                         } else {

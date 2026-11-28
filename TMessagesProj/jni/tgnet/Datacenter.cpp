@@ -197,7 +197,7 @@ Datacenter::Datacenter(int32_t instance, NativeByteBuffer *data) {
 TcpAddress *Datacenter::getCurrentAddress(uint32_t flags) {
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && isUsingTempAddresses()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -255,7 +255,7 @@ int32_t Datacenter::getCurrentPort(uint32_t flags) {
     uint32_t currentAddressNum;
     uint32_t currentPortNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && isUsingTempAddresses()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -375,7 +375,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
     uint32_t currentPortNum;
     uint32_t currentAddressNum;
     std::vector<TcpAddress> *addresses;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && isUsingTempAddresses()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -444,7 +444,7 @@ void Datacenter::nextAddressOrPort(uint32_t flags) {
 
 bool Datacenter::isCustomPort(uint32_t flags) {
     uint32_t currentPortNum;
-    if (flags == 0 && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty()) {
+    if (flags == 0 && isUsingTempAddresses()) {
         flags = TcpAddressFlagTemp;
     }
     if ((flags & TcpAddressFlagTemp) != 0) {
@@ -495,12 +495,32 @@ void Datacenter::resetAddressAndPortNum() {
     storeCurrentAddressAndPortNum();
 }
 
+bool Datacenter::isUsingTempAddresses() {
+    // only the current datacenter goes back to the usual addresses on timeouts, so only it skips the temp ones
+    bool skipped = tempAddressesSkipped && datacenterId == ConnectionsManager::getInstance(instanceNum).currentDatacenterId;
+    return !skipped && (authKeyPerm == nullptr || PFS_ENABLED && authKeyTemp == nullptr) && !addressesIpv4Temp.empty();
+}
+
+bool Datacenter::isTempAddress(std::string &address) {
+    for (auto &tcpAddress : addressesIpv4Temp) {
+        if (tcpAddress.address == address) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Datacenter::skipTempAddresses() {
+    tempAddressesSkipped = true;
+}
+
 void Datacenter::replaceAddresses(std::vector<TcpAddress> &newAddresses, uint32_t flags) {
     isCdnDatacenter = (flags & 8) != 0;
     TcpAddress *currentTcpAddress = getCurrentAddress(flags);
     std::string currentAddress = currentTcpAddress != nullptr ? currentTcpAddress->address : "";
     if ((flags & TcpAddressFlagTemp) != 0) {
         addressesIpv4Temp = newAddresses;
+        tempAddressesSkipped = false;
     } else if ((flags & TcpAddressFlagDownload) != 0) {
         if ((flags & TcpAddressFlagIpv6) != 0) {
             addressesIpv6Download = newAddresses;
