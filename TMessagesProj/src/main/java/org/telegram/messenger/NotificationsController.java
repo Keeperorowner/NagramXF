@@ -105,6 +105,7 @@ import com.radolyn.ayugram.utils.AyuMessageUtils;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.NekoXConfig;
 import tw.nekomimi.nekogram.filters.AyuFilter;
+import tw.nekomimi.nekogram.helpers.MessageHelper;
 import xyz.nextalone.nagram.NaConfig;
 
 public class NotificationsController extends BaseController implements NotificationCenter.NotificationCenterDelegate {
@@ -1436,7 +1437,7 @@ public class NotificationsController extends BaseController implements Notificat
                     }
                     continue;
                 }
-                if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(messageObject)) {
+                if (MessageHelper.getInstance(currentAccount).isBlockedOrFiltered(messageObject)) {
                     continue;
                 }
                 // Ghost Mode: Schedule Messages — suppress notifications for our own scheduled-delivery messages.
@@ -1915,6 +1916,9 @@ public class NotificationsController extends BaseController implements Notificat
                         continue;
                     }
                     MessageObject messageObject = new MessageObject(currentAccount, message, false, false);
+                    if (MessageHelper.getInstance(currentAccount).isBlockedOrFiltered(messageObject)) {
+                        continue;
+                    }
                     if (isPersonalMessage(messageObject)) {
                         personalCount++;
                     }
@@ -5688,7 +5692,7 @@ public class NotificationsController extends BaseController implements Notificat
                         FileLog.d("showExtraNotifications: ["+dialogId+"] continue; topic id is not equal: topicId=" + topicId + " messageTopicId=" + messageTopicId + "; selfId=" + getUserConfig().getClientUserId());
                         continue;
                     }
-                    if (AyuFilter.shouldHideIgnoredBlockedMessages() && AyuFilter.isIgnoredBlockedMessage(messageObject)) {
+                    if (MessageHelper.getInstance(currentAccount).isBlockedOrFiltered(messageObject)) {
                         continue;
                     }
                     String message = getShortStringForMessage(messageObject, senderName, preview);

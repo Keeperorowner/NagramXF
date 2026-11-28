@@ -364,7 +364,9 @@ public class AyuFilter {
         }
 
         boolean result = isFilteredInternal(text, dialogId);
-        if (group != null || msg.getGroupId() == 0) {
+        // A push object shares the message id but has only the notification text, so its result
+        // must not be cached for the real message.
+        if (!msg.isFcmMessage() && (group != null || msg.getGroupId() == 0)) {
             AyuFilterCache.put(dialogId, msg, group, result);
         }
 
