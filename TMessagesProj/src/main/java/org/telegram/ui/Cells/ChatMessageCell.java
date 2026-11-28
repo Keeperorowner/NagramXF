@@ -13048,9 +13048,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             if (!transitionParams.imageChangeBoundsTransition || transitionParams.updatePhotoImageX) {
                 transitionParams.updatePhotoImageX = false;
                 float imageWidth = photoImage.getImageWidth();
-                if (isWideFeedPhoto()) {
-                    final int photoRightLimit = isCompactLayout() ? getCompactRight() : getBackgroundDrawableRight() - dp(2);
-                    imageWidth = Math.min(imageWidth, Math.max(0, Math.min(layoutWidth, photoRightLimit) - x));
+                if (drawBackground && isWidePostsImageMessage() && WidePosts.isExpandableMedia(currentMessageObject)) {
+                    final int mediaRight = isCompactLayout() ? getCompactRight() : getBackgroundDrawableRight() - dp(2);
+                    imageWidth = Math.min(imageWidth, Math.max(0, Math.min(layoutWidth, mediaRight) - x));
                 }
                 photoImage.setImageCoords((float) x, photoImage.getImageY(), imageWidth, photoImage.getImageHeight());
             }
