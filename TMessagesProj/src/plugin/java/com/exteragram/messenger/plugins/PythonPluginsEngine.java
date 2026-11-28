@@ -100,6 +100,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
     public static boolean SDK_BETA = false;
 
     public volatile PyObject basePluginClass;
+    private volatile PyObject accountHookDispatcher;
     public PyObject debuggerListener;
     private PyObject devServerClass;
     public static volatile boolean sdkInitialized;
@@ -357,7 +358,9 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
             sdkImportedInProcess = true;
             PyObject sdkVersionModule = python.getModule("_sdk_version");
             PyObject startResult = sdkVersionModule.callAttr("__start__");
-            sdkInitialized = startResult != null && startResult.toBoolean();
+            boolean started = startResult != null && startResult.toBoolean();
+            accountHookDispatcher = started ? sdkVersionModule.get("_call_account_hook") : null;
+            sdkInitialized = started;
             // The SDK is now pure Python (bundled in assets/plugins_pysdk), so the
             // Cython .so version / safe-mode checks that used to need patching are gone.
             if (sdkInitialized) {
@@ -1030,6 +1033,7 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
                 removePluginPathsFromSysPath();
                 python = null;
                 basePluginClass = null;
+                accountHookDispatcher = null;
                 sdkInitialized = false;
             }
             FileLog.d("Python plugin engine shut down.");
@@ -1968,39 +1972,29 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     @Override
     public PluginsController.HookResult<TLObject> executePreRequestHook(String hookName, int account, TLObject request, String pluginId) {
-        setHookAccountScope(account);
-        try {
-            return executeHook(pluginId, request, TLObject.class, PluginsConstants.REQUEST,
-                    (plugin, value) -> plugin.callAttr("pre_request_hook", hookName, account, value),
-                    error -> FileLog.e("Failed to execute pre_request_hook in " + pluginId + " for " + hookName, error));
-        } finally {
-            setHookAccountScope(-1);
-        }
+        return executeHook(pluginId, request, TLObject.class, PluginsConstants.REQUEST,
+                (plugin, value) -> callAccountHook(account, plugin, "pre_request_hook", hookName, account, value),
+                error -> FileLog.e("Failed to execute pre_request_hook in " + pluginId + " for " + hookName, error));
     }
 
-    private void setHookAccountScope(int account) {
-        if (!sdkInitialized || getPython() == null) {
-            return;
+    private PyObject callAccountHook(int account, PyObject plugin, String method, Object... args) {
+        PyObject dispatcher = accountHookDispatcher;
+        if (dispatcher == null) {
+            return plugin.callAttr(method, args);
         }
-        try {
-            PyObject modules = getPython().getModule("sys").get("modules");
-            if (modules == null || modules.callAttr("get", "client_utils") == null) {
-                return;
-            }
-            if (account >= 0) {
-                getPython().getModule("client_utils").callAttr("_set_hook_account", account);
-            } else {
-                getPython().getModule("client_utils").callAttr("_set_hook_account", (Object) null);
-            }
-        } catch (Throwable t) {
-            FileLog.e("Failed to set hook account scope", t);
-        }
+        // Keep the scope and callback in a single Python invocation on Java-owned threads.
+        Object[] dispatchArgs = new Object[3 + args.length];
+        dispatchArgs[0] = account;
+        dispatchArgs[1] = plugin;
+        dispatchArgs[2] = method;
+        System.arraycopy(args, 0, dispatchArgs, 3, args.length);
+        return dispatcher.call(dispatchArgs);
     }
 
     public PluginsController.HookResult<PluginsHooks.PostRequestResult> executePostRequestHook(String hookName, int account, TLObject response, TLRPC.TL_error error, PyObject plugin) {
         if (plugin != null) {
             try {
-                PyObject result = plugin.callAttr("post_request_hook", hookName, account, response, error);
+                PyObject result = callAccountHook(account, plugin, "post_request_hook", hookName, account, response, error);
                 if (result != null) {
                     String strategy = PyObjectUtils.getString(result, PluginsConstants.STRATEGY, "", true);
                     if (strategy.endsWith(PluginsConstants.Strategy.MODIFY) || strategy.endsWith(PluginsConstants.Strategy.MODIFY_FINAL)) {
@@ -2028,48 +2022,28 @@ public class PythonPluginsEngine implements PluginsController.PluginsEngine {
 
     @Override
     public PluginsController.HookResult<PluginsHooks.PostRequestResult> executePostRequestHook(String hookName, int account, TLObject response, TLRPC.TL_error error, String pluginId) {
-        setHookAccountScope(account);
-        try {
-            return executePostRequestHook(hookName, account, response, error, pluginInstances.get(pluginId));
-        } finally {
-            setHookAccountScope(-1);
-        }
+        return executePostRequestHook(hookName, account, response, error, pluginInstances.get(pluginId));
     }
 
     @Override
     public PluginsController.HookResult<TLRPC.Update> executeUpdateHook(String hookName, int account, TLRPC.Update update, String pluginId) {
-        setHookAccountScope(account);
-        try {
-            return executeHook(pluginId, update, TLRPC.Update.class, PluginsConstants.UPDATE,
-                    (plugin, value) -> plugin.callAttr("on_update_hook", hookName, account, value),
-                    error -> FileLog.e("Failed to execute on_update_hook for " + hookName, error));
-        } finally {
-            setHookAccountScope(-1);
-        }
+        return executeHook(pluginId, update, TLRPC.Update.class, PluginsConstants.UPDATE,
+                (plugin, value) -> callAccountHook(account, plugin, "on_update_hook", hookName, account, value),
+                error -> FileLog.e("Failed to execute on_update_hook for " + hookName, error));
     }
 
     @Override
     public PluginsController.HookResult<TLRPC.Updates> executeUpdatesHook(String hookName, int account, TLRPC.Updates updates, String pluginId) {
-        setHookAccountScope(account);
-        try {
-            return executeHook(pluginId, updates, TLRPC.Updates.class, PluginsConstants.UPDATES,
-                    (plugin, value) -> plugin.callAttr("on_updates_hook", hookName, account, value),
-                    error -> FileLog.e("Failed to execute on_updates_hook for " + hookName, error));
-        } finally {
-            setHookAccountScope(-1);
-        }
+        return executeHook(pluginId, updates, TLRPC.Updates.class, PluginsConstants.UPDATES,
+                (plugin, value) -> callAccountHook(account, plugin, "on_updates_hook", hookName, account, value),
+                error -> FileLog.e("Failed to execute on_updates_hook for " + hookName, error));
     }
 
     @Override
     public PluginsController.HookResult<SendMessagesHelper.SendMessageParams> executeSendMessageHook(int account, SendMessagesHelper.SendMessageParams params, String pluginId) {
-        setHookAccountScope(account);
-        try {
-            return executeHook(pluginId, params, SendMessagesHelper.SendMessageParams.class, PluginsConstants.PARAMS,
-                    (plugin, value) -> plugin.callAttr("on_send_message_hook", account, value),
-                    error -> FileLog.e("Failed to execute on_send_message_hook for " + pluginId, error));
-        } finally {
-            setHookAccountScope(-1);
-        }
+        return executeHook(pluginId, params, SendMessagesHelper.SendMessageParams.class, PluginsConstants.PARAMS,
+                (plugin, value) -> callAccountHook(account, plugin, "on_send_message_hook", account, value),
+                error -> FileLog.e("Failed to execute on_send_message_hook for " + pluginId, error));
     }
 
     public String fetchParameterValue(String filePath, String key) {

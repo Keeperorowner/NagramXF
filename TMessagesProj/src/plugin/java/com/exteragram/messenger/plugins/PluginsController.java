@@ -327,8 +327,14 @@ public class PluginsController implements PluginsHooks {
         return hasAvailablePluginsEngine();
     }
 
+    private static volatile boolean nativeStartupChecked;
+
+    public static boolean canInitializeNativeRuntime() {
+        return nativeStartupChecked && isPluginEngineSupported() && ExteraConfig.pluginsEngine && !ExteraConfig.pluginsSafeMode;
+    }
+
     public static void applyArtOpts() {
-        if (ExteraConfig.pluginsDisableArtOpts && isPluginEngineSupported()) {
+        if (ExteraConfig.pluginsDisableArtOpts && canInitializeNativeRuntime() && XposedBridge.isNativeAvailable()) {
             try {
                 XposedBridge.disableProfileSaver();
             } catch (Throwable t) {
@@ -338,7 +344,7 @@ public class PluginsController implements PluginsHooks {
     }
 
     public static boolean isPluginNativeRuntimeAvailable() {
-        return de.robv.android.xposed.XposedBridge.isNativeAvailable();
+        return XposedBridge.isNativeAvailable();
     }
 
     public static boolean isPluginRuntimeOperational() {
@@ -605,6 +611,7 @@ public class PluginsController implements PluginsHooks {
     }
 
     public void init(Runnable runnable) {
+        nativeStartupChecked = false;
         if (!isPluginEngineSupported() || !ExteraConfig.pluginsEngine) {
             if (runnable != null) {
                 runnable.run();
@@ -612,17 +619,11 @@ public class PluginsController implements PluginsHooks {
             return;
         }
 
-        NativeCrashHandler.checkAndHandleNativeCrash();
-        applyArtOpts();
-        watchdog.start();
-        if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
-            Utilities.pluginsQueue = new DispatchQueue("pluginsQueue");
-        }
-        if (preferences == null && ApplicationLoader.applicationContext != null) {
-            preferences = ApplicationLoader.applicationContext.getSharedPreferences("plugin_settings", 0);
-        }
-
         try {
+            if (preferences == null) {
+                preferences = getPluginSettingsPreferences();
+            }
+            NativeCrashHandler.checkAndHandleNativeCrash();
             boolean hadCrash = preferences != null && preferences.getBoolean(PREF_PENDING_CRASH, false);
             String crashedPluginId = preferences != null ? preferences.getString(PREF_CRASHED_PLUGIN_ID, null) : null;
             String safeModeReason = preferences != null ? preferences.getString(PREF_SAFE_MODE_REASON, null) : null;
@@ -651,7 +652,22 @@ public class PluginsController implements PluginsHooks {
                     }, 800);
                 }
             }
-        } catch (Exception ignored) {
+            nativeStartupChecked = preferences != null;
+        } catch (Exception e) {
+            FileLog.e("Failed to check plugin crash state; skipping native hook initialization.", e);
+        }
+
+        if (canInitializeNativeRuntime()) {
+            try {
+                XposedBridge.ensureInitialized();
+                applyArtOpts();
+            } catch (Throwable t) {
+                FileLog.e("Failed to initialize native hook runtime.", t);
+            }
+        }
+        watchdog.start();
+        if (Utilities.pluginsQueue == null || !Utilities.pluginsQueue.isAlive()) {
+            Utilities.pluginsQueue = new DispatchQueue("pluginsQueue");
         }
 
         pluginsDir = new File(ApplicationLoader.getFilesDirFixed(), PluginsConstants.PLUGINS);

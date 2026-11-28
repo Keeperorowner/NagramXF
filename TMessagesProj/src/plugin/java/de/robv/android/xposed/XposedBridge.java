@@ -1,8 +1,10 @@
 package de.robv.android.xposed;
 
-import android.util.Log;
 import android.os.SystemClock;
+import android.util.Log;
 
+import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.plugins.utils.NativeCrashHandler;
 import com.sun.jna.Callback;
 
 import org.telegram.messenger.FileLog;
@@ -32,9 +34,12 @@ public class XposedBridge {
     private static native boolean invokeConstructor0(Object instance, Constructor<?> constructor, Object[] args);
     private static native boolean makeClassInheritable0(Class<?> cls);
     private static native String getInitDiag();
-    public static native boolean disableHiddenApiRestrictions();
-    public static native boolean disableProfileSaver();
+    private static native boolean initRuntime();
+    private static native boolean disableHiddenApiRestrictions0();
+    private static native boolean disableProfileSaver0();
 
+    private static boolean initializationAttempted;
+    private static volatile boolean nativeLibraryLoaded;
     private static volatile boolean nativeAvailable;
 
     static {
@@ -45,37 +50,49 @@ public class XposedBridge {
         } catch (Throwable t) {
             throw new RuntimeException("Failed to initialize XposedBridge metadata", t);
         }
-        try {
-            System.loadLibrary("aliuhook");
-            nativeAvailable = true;
-        } catch (Throwable t) {
-            nativeAvailable = false;
-            Log.e("XposedBridge", "Xposed native runtime (libaliuhook.so) is unavailable; method hooking is disabled. " +
-                    "Plugins that hook Java methods will not function until the native library is provided.", t);
-        }
     }
 
-    public static void ensureInitialized() {
-        if (!nativeAvailable) {
+    public static synchronized void ensureInitialized() {
+        if (initializationAttempted || !PluginsController.canInitializeNativeRuntime()) {
+            return;
+        }
+        initializationAttempted = true;
+        try {
+            System.loadLibrary("aliuhook");
+            nativeLibraryLoaded = true;
+        } catch (Throwable t) {
+            Log.e(TAG, "Failed to load libaliuhook.so; method hooking is disabled", t);
             return;
         }
         try {
-            initRuntime();
+            // Install first so shadowhook can chain fatal signals to the crash flag handler.
+            NativeCrashHandler.init(NativeCrashHandler.getCrashFlagPath());
+            nativeAvailable = initRuntime();
         } catch (Throwable t) {
-            Log.e(TAG, "Failed to force native runtime initialization", t);
+            Log.e(TAG, "Native hook runtime initialization failed", t);
         }
     }
 
-    private static native void initRuntime();
-
     private static void ensureNativeAvailable() {
-        if (!nativeAvailable) {
-            throw new IllegalStateException("Xposed native runtime unavailable (libaliuhook.so not loaded); method hooking is disabled.");
+        if (!isNativeAvailable()) {
+            throw new IllegalStateException("Xposed native hook runtime unavailable; method hooking is disabled.");
         }
+    }
+
+    public static boolean isNativeLibraryLoaded() {
+        return nativeLibraryLoaded;
     }
 
     public static boolean isNativeAvailable() {
         return nativeAvailable;
+    }
+
+    public static boolean disableHiddenApiRestrictions() {
+        return isNativeAvailable() && PluginsController.canInitializeNativeRuntime() && disableHiddenApiRestrictions0();
+    }
+
+    public static boolean disableProfileSaver() {
+        return isNativeAvailable() && PluginsController.canInitializeNativeRuntime() && disableProfileSaver0();
     }
 
     private static void checkMethod(Member member) {
@@ -225,6 +242,7 @@ public class XposedBridge {
     @SuppressWarnings("unchecked")
     public static <T> T allocateInstance(Class<T> cls) {
         Objects.requireNonNull(cls);
+        ensureNativeAvailable();
         return (T) allocateInstance0(cls);
     }
 
@@ -234,6 +252,7 @@ public class XposedBridge {
         if (constructor.isVarArgs()) {
             throw new IllegalArgumentException("varargs parameters are not supported");
         }
+        ensureNativeAvailable();
         if (args.length == 0) {
             args = null;
         }

@@ -1,11 +1,13 @@
 # Plugin SDK Python source
 
 This is the source of truth for the Python plugin SDK that ships in
-`TMessagesProj/src/main/assets/plugins_pysdk/sdk-<abi>.zip`.
+`TMessagesProj/src/plugin/assets/plugins_pysdk/sdk-<abi>.zip`.
 
-The zip is byte-reproducible and contains precompiled `.pyc` files. The
-script `Tools/build-plugin-sdk-zip.py` rebuilds both ABI archives plus the
-outer `v.txt`.
+The zip contains Python sources and the required precompiled `.pyc` files.
+For a bundled SDK update, bump `_sdk_version.__version__` and use
+`Tools/build-plugin-sdk-zip.py` with Python 3.11 to rebuild both ABI archives
+and the outer `v.txt` before the plugin-flavor APK is built. Downloaded SDK
+updates use the separate signature workflow in `Tools/sign-plugin-sdk.ps1`.
 
 To verify the committed archives match this tree without writing anything:
 ```sh

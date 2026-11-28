@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from java import dynamic_proxy, jclass
 
+from _account_context import _wrap_with_current_account
+
 AndroidUtilities = jclass("org.telegram.messenger.AndroidUtilities")
 AppUtils = jclass("com.exteragram.messenger.utils.AppUtils")
 
@@ -69,10 +71,10 @@ class OnLongClickListener(dynamic_proxy(_OnLongClickListenerIface)):
 
 
 def run_on_ui_thread(func, delay=0):
-    """Schedule *func* on the Android UI thread, optionally after *delay* ms."""
+    """Schedule *func* on the UI thread with the caller's callback scope."""
     if func is None:
         return
-    runnable = R(func)
+    runnable = R(_wrap_with_current_account(func))
     if delay:
         AndroidUtilities.runOnUIThread(runnable, int(delay))
     else:

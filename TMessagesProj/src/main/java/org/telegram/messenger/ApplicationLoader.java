@@ -66,7 +66,6 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.plugins.PluginsConstants;
 import com.exteragram.messenger.plugins.PluginsController;
-import com.exteragram.messenger.plugins.utils.NativeCrashHandler;
 
 import static android.os.Build.VERSION.SDK_INT;
 
@@ -246,11 +245,6 @@ public class ApplicationLoader extends Application {
         }
         applicationInited = true;
         NativeLoader.initNativeLibs(ApplicationLoader.applicationContext);
-        try {
-            NativeCrashHandler.init(NativeCrashHandler.getCrashFlagPath());
-        } catch (Throwable e) {
-            FileLog.e(e);
-        }
 
         try {
             LocaleController.getInstance(); //TODO improve
