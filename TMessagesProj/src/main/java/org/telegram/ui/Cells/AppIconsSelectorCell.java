@@ -3,7 +3,6 @@ package org.telegram.ui.Cells;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -38,7 +37,6 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
-import org.telegram.ui.Components.AppIconBulletinLayout;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.ColoredImageSpan;
 import org.telegram.ui.Components.Easings;
@@ -46,15 +44,12 @@ import org.telegram.ui.Components.ExtendedGridLayoutManager;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.PremiumFeatureBottomSheet;
 import org.telegram.ui.Components.RecyclerListView;
-import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.LauncherIconController;
 import org.telegram.ui.PremiumPreviewFragment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 
 public class AppIconsSelectorCell extends RecyclerListView implements NotificationCenter.NotificationCenterDelegate {
     public final static float ICONS_ROUND_RADIUS = 100;
@@ -138,12 +133,7 @@ public class AppIconsSelectorCell extends RecyclerListView implements Notificati
                 }
             }
 
-            Theme.ResourcesProvider resourcesProvider = fragment.getResourceProvider();
-            AppIconBulletinLayout layout = new AppIconBulletinLayout(context, icon, resourcesProvider);
-            layout.setButton(new Bulletin.UndoButton(context, true, resourcesProvider)
-                    .setText(LocaleController.getString(R.string.RestartApp))
-                    .setUndoAction(() -> AppRestartHelper.triggerRebirth(context, new Intent(context, LaunchActivity.class))));
-            Bulletin.make(fragment, layout, Bulletin.DURATION_PROLONG).show();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_APP_ICON, icon);
         });
         updateIconsVisibility();
     }

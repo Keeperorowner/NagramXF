@@ -199,6 +199,7 @@ import org.telegram.utils.twidget.WidgetMedia;
 import org.telegram.ui.Components.ActivityWindowEmptyBackgroundDrawable;
 import org.telegram.ui.Components.AlertsCreator;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.AppIconBulletinLayout;
 import org.telegram.ui.Components.AttachBotIntroTopView;
 import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.BatteryDrawable;
@@ -8780,6 +8781,17 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                             BulletinFactory.of(container, null).createErrorBulletinSubtitle((String) args[1], (String) args[2], null).show();
                         }
                         break;
+                    case Bulletin.TYPE_APP_ICON: {
+                        LauncherIconController.LauncherIcon icon = (LauncherIconController.LauncherIcon) args[1];
+                        AppIconBulletinLayout layout = new AppIconBulletinLayout(this, icon, null);
+                        int duration = Bulletin.DURATION_SHORT;
+                        if (fragment != null) {
+                            Bulletin.make(fragment, layout, duration).show();
+                        } else {
+                            Bulletin.make(container, layout, duration).show();
+                        }
+                        break;
+                    }
                 }
             }
         } else if (id == NotificationCenter.groupCallUpdated) {
