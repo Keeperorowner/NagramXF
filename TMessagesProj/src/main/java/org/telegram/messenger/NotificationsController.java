@@ -111,6 +111,9 @@ public class NotificationsController extends BaseController implements Notificat
 
     public static final String EXTRA_VOICE_REPLY = "extra_voice_reply";
     public static String OTHER_NOTIFICATIONS_CHANNEL = null;
+    // ColorOS shows no heads-up for a group summary, so with notifications from several chats the notification
+    // of the new message alerts there instead of the summary
+    private static final boolean ALERT_BY_CHILD = Build.VERSION.SDK_INT >= 26 && !TextUtils.isEmpty(AndroidUtilities.getSystemProperty("ro.build.version.oplusrom"));
 
     private static final DispatchQueue2 notificationsQueue = new DispatchQueue2("notificationsQueue");
     private final ArrayList<MessageObject> pushMessages = new ArrayList<>();
@@ -5168,7 +5171,7 @@ public class NotificationsController extends BaseController implements Notificat
                     mBuilder.addAction(R.drawable.ic_ab_reply, LocaleController.getString(R.string.Reply), PendingIntent.getBroadcast(ApplicationLoader.applicationContext, 2, replyIntent, PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_UPDATE_CURRENT));
                 }
             }
-            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
+            showExtraNotifications(mBuilder, detailText, dialog_id, topicId, lastMessageObject.isStoryPush, chatName, vibrationPattern, ledColor, sound, configImportance, isDefault, isInApp, notifyDisabled, chatType);
             scheduleNotificationRepeat();
         } catch (Exception e) {
             FileLog.e(e);
@@ -5234,7 +5237,7 @@ public class NotificationsController extends BaseController implements Notificat
     }
 
     @SuppressLint("InlinedApi")
-    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
+    private void showExtraNotifications(NotificationCompat.Builder notificationBuilder, String summary, long lastDialogId, long lastTopicId, boolean lastIsStory, String chatName, long[] vibrationPattern, int ledColor, Uri sound, int importance, boolean isDefault, boolean isInApp, boolean isSilent, int chatType) {
         FileLog.d("showExtraNotifications pushMessages.size()=" + pushMessages.size());
         if (Build.VERSION.SDK_INT >= 26) {
             notificationBuilder.setChannelId(validateChannelId(lastDialogId, lastTopicId, chatName, vibrationPattern, ledColor, sound, importance, isDefault, isInApp, isSilent, chatType));
@@ -5322,6 +5325,9 @@ public class NotificationsController extends BaseController implements Notificat
         if (useSummaryNotification && Build.VERSION.SDK_INT >= 26) {
             checkOtherNotificationsChannel();
         }
+        // when the summary would alert, on ColorOS the notification of the new message alerts instead
+        final boolean alertByChild = ALERT_BY_CHILD && useSummaryNotification && !lastIsStory && !isSilent && importance >= NotificationManager.IMPORTANCE_DEFAULT;
+        boolean childAlerts = false;
 
         long selfUserId = getUserConfig().getClientUserId();
         boolean waitingForPasscode = AndroidUtilities.needShowPasscode() || SharedConfig.isWaitingForPasscodeEnter;
@@ -6039,9 +6045,10 @@ public class NotificationsController extends BaseController implements Notificat
                 FileLog.e(e);
             }
 
+            final boolean alerts = alertByChild && !dialogKey.story && dialogId == lastDialogId && topicId == lastTopicId;
             if (useSummaryNotification) {
                 builder.setGroup(notificationGroup);
-                builder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
+                builder.setGroupAlertBehavior(alerts ? NotificationCompat.GROUP_ALERT_CHILDREN : NotificationCompat.GROUP_ALERT_SUMMARY);
             }
 
             TL_keyboard.KeyboardInlineButton copybutton = null;
@@ -6116,7 +6123,13 @@ public class NotificationsController extends BaseController implements Notificat
             }
 
             if (Build.VERSION.SDK_INT >= 26) {
-                setNotificationChannel(mainNotification, builder, useSummaryNotification);
+                if (alerts) {
+                    // the channel of the chat: the other notifications of the group go to a silent one
+                    builder.setChannelId(mainNotification.getChannelId());
+                    childAlerts = true;
+                } else {
+                    setNotificationChannel(mainNotification, builder, useSummaryNotification);
+                }
             }
             FileLog.d("showExtraNotifications: holders.add " + dialogId);
             holders.add(new NotificationHolder(internalId, dialogId, dialogKey.story, topicId, name, user, chat, builder));
@@ -6126,6 +6139,10 @@ public class NotificationsController extends BaseController implements Notificat
         if (useSummaryNotification) {
             if (BuildVars.LOGS_ENABLED) {
                 FileLog.d("show summary with id " + notificationId);
+            }
+            if (childAlerts) {
+                notificationBuilder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN);
+                mainNotification = notificationBuilder.build();
             }
             try {
                 notificationManager.notify(notificationId, mainNotification);
