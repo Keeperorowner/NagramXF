@@ -269,6 +269,7 @@ public class NekoAppearanceSettingsActivity extends BaseNekoXSettingsActivity {
                     || key.equals(NekoConfig.tabStyleStroke.getKey())) {
                 getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
             } else if (key.equals(NaConfig.INSTANCE.getNotificationIcon().getKey())
+                    || key.equals(NaConfig.INSTANCE.getIconReplacements().getKey())
                     || key.equals(NekoConfig.tabletMode.getKey())
                     || key.equals(NaConfig.INSTANCE.getHideDividers().getKey())
                     || key.equals(NekoConfig.typeface.getKey())
